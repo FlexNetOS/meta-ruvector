@@ -51,6 +51,7 @@ def find_incoming_links(root: Path, target: Path) -> list[tuple[Path, int, str]]
     A link is considered to point at *target* if the link path, resolved
     relative to the linking file's directory, equals *target*.
     """
+    root = root.resolve()
     target = target.resolve()
     hits: list[tuple[Path, int, str]] = []
     link_re = re.compile(r"\]\(([^)#?\s]+)")
@@ -61,10 +62,15 @@ def find_incoming_links(root: Path, target: Path) -> list[tuple[Path, int, str]]
             for lineno, line in enumerate(md.read_text(errors="replace").splitlines(), 1):
                 for m in link_re.finditer(line):
                     href = m.group(1)
-                    if href.startswith(("http://", "https://", "mailto:", "/")):
+                    if href.startswith(("http://", "https://", "mailto:")):
                         continue
                     try:
-                        resolved = (md.parent / href).resolve()
+                        if href.startswith("/"):
+                            # Treat root-relative hrefs (the form used by our own
+                            # consolidation stubs) as relative to the repo root.
+                            resolved = (root / href.lstrip("/")).resolve()
+                        else:
+                            resolved = (md.parent / href).resolve()
                     except Exception:
                         continue
                     if resolved == target:
