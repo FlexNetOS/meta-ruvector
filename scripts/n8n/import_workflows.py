@@ -70,9 +70,28 @@ def import_one(path: Path) -> dict:
         res = http("POST", "/rest/workflows", payload)
         action = "created"
         wid = (res.get("data") or res).get("id")
-    if wid:
-        http("POST", f"/rest/workflows/{wid}/activate", {})
-    return {"file": path.name, "action": action, "id": wid, "response_keys": sorted(list(res.keys())) if isinstance(res, dict) else []}
+    # If the create/update call hit an HTTP error, http() returns a dict that
+    # contains "_status" (and no "id"). Surface this as a hard failure so the
+    # caller can exit non-zero instead of silently leaving the workflow
+    # un-activated.
+    err: dict | None = None
+    if isinstance(res, dict) and "_status" in res:
+        err = {"_status": res.get("_status"), "_text": res.get("_text") or res.get("message")}
+    activated = False
+    if wid and err is None:
+        act = http("POST", f"/rest/workflows/{wid}/activate", {})
+        if isinstance(act, dict) and "_status" in act:
+            err = {"_status": act.get("_status"), "_text": act.get("_text") or act.get("message"), "_phase": "activate"}
+        else:
+            activated = True
+    return {
+        "file": path.name,
+        "action": action,
+        "id": wid,
+        "activated": activated,
+        "error": err,
+        "response_keys": sorted(list(res.keys())) if isinstance(res, dict) else [],
+    }
 
 
 def main() -> int:
@@ -82,7 +101,19 @@ def main() -> int:
     results = []
     for p in sorted(WORKFLOW_DIR.glob("*.json")):
         results.append(import_one(p))
-    print(json.dumps({"n8n": N8N_HOST, "imported": results}, indent=2))
+    failed = [r for r in results if r.get("error") or not r.get("id")]
+    print(json.dumps({
+        "n8n": N8N_HOST,
+        "imported": results,
+        "summary": {"total": len(results), "failed": len(failed)},
+    }, indent=2))
+    if failed:
+        print(
+            f"\nERROR: {len(failed)} of {len(results)} workflows failed to import or activate. "
+            "See the 'error' field in each entry above.",
+            file=sys.stderr,
+        )
+        return 1
     return 0
 
 
