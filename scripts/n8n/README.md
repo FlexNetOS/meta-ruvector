@@ -105,6 +105,26 @@ The `kb-on-doc-change` workflow is wired to the audit pipeline in
 `crates/**/README.md`, CI calls this webhook to keep the vector store in
 sync, then triggers the duplicate scan for early warning of new conflicts.
 
+The expected payload is:
+
+```json
+{
+  "repo": "FlexNetOS/ruvector",
+  "sha":  "abc123…",
+  "changed_paths": [
+    "docs/audit/AUDIT_REPORT.md",
+    { "path": "docs/architecture/overview.md", "content": "<full file body>" }
+  ]
+}
+```
+
+Each `changed_paths` entry may be a bare string (the workflow then fetches the
+file body from `https://raw.githubusercontent.com/<repo>/<sha>/<path>`, with
+`Authorization: Bearer $GITHUB_TOKEN` for private repos) or an object that
+carries the body inline (skipping the GitHub round-trip). Entries whose fetch
+returns a 404 are forwarded to `kb-ingest` with `metadata.fetch_failed = true`
+so the shim can decide whether to drop them or store a stub.
+
 ## See also
 
 * [`docs/audit/AUDIT_REPORT.md`](../../docs/audit/AUDIT_REPORT.md) — the
