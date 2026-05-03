@@ -123,14 +123,18 @@ def main() -> int:
     # Pairwise near-dup detection — bucket by 50-shingle minhash signature to keep cheap.
     near_pairs: list[dict] = []
     files_for_pairs = list(file_shingles.keys())
-    # Bucketing: signature = sorted minhash of first N shingles using hash mod
+    # Bucketing: signature = sorted minhash of first N shingles using hash mod.
+    # Use SHA-256 (not the builtin hash()) so the bucket assignment is stable
+    # across process invocations — Python's hash() is randomized via
+    # PYTHONHASHSEED, and the AUDIT_REPORT advertises this script as
+    # deterministic so it can be re-run in CI.
     BUCKETS = 64
     bucket_index: dict[int, list[str]] = defaultdict(list)
     for f in files_for_pairs:
         sig_words = sorted(file_shingles[f])[:50]
         if not sig_words:
             continue
-        b = hash(sig_words[0]) % BUCKETS
+        b = int(hashlib.sha256(sig_words[0].encode("utf-8")).hexdigest(), 16) % BUCKETS
         bucket_index[b].append(f)
     seen = set()
     for b, members in bucket_index.items():
