@@ -50,7 +50,7 @@ human-readable reference.
 | 1. Identify | `crates/sona/src/reasoning_bank.rs` (`find_similar`) + `crates/prime-radiant/src/sona_tuning/tuner.rs` | Query ReasoningBank for unsolved patterns; pick the lowest-confidence trajectory. |
 | 2. Implement | external (weftos `weaver` or a Devin session) | ruvector does not edit code itself; it advises. |
 | 3. Validate | `crates/prime-radiant/src/execution/gate.rs` (witness chain) | Gate runs the test/benchmark and records a SHAKE-256 audit anchor. |
-| 4. Optimize | `crates/sona-tuning/` (Bayesian + PSO + grid) | Closed-loop hyperparameter search. |
+| 4. Optimize | `crates/prime-radiant/src/sona_tuning/` (Bayesian + PSO + grid) | Submodule of `prime-radiant`, **not** a standalone crate. Closed-loop hyperparameter search. |
 | 5. Distill | `ReasoningBank::add_trajectory` (re-exported by `sona`) | Pattern store — embeddings + verdicts. |
 
 ## Run it locally
@@ -75,16 +75,19 @@ cargo run -p prime-radiant --example apply_pattern -- \
 # 3. Validate — run the gate
 cargo test -p prime-radiant --test integration
 
-# 4. Optimize — invoke the tuner
-cargo run -p sona-tuning -- bayes --target validate_score --budget 20
+# 4. Optimize — invoke the tuner (sona_tuning is a module of prime-radiant,
+#    not a standalone package; expose via prime-radiant subcommand or example)
+cargo run -p prime-radiant --example tune_bayes -- --target validate_score --budget 20
 
 # 5. Distill — promote the trajectory
 cargo run -p sona-cli -- trajectory commit --verdict pass --pattern <id>
 ```
 
 The exact CLI surface above is aspirational where it does not yet exist;
-when implementing, prefer adding subcommands to existing binaries
-(`sona-cli`, `prime-radiant`) over creating new top-level crates.
+when implementing, prefer adding subcommands or examples to existing
+binaries (`prime-radiant` for the tuner, plus a future `sona-cli`) over
+creating new top-level crates. There is no `sona-tuning` workspace member
+in ruvector — sona_tuning lives at `crates/prime-radiant/src/sona_tuning/`.
 
 ## Memory substrate
 

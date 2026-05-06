@@ -46,8 +46,11 @@ runtime side.
 
 **Public surfaces a weft runtime can call:**
 
-1. `mcp-brain-server` HTTP API (default `http://localhost:7333` in dev,
-   or the deployed `pi.ruv.io` instance).
+1. `mcp-brain-server` HTTP API. Default bind is `0.0.0.0:8080` (override
+   with the `PORT` env var, see `crates/mcp-brain-server/src/main.rs`).
+   Use `http://localhost:8080` in dev; the public deployment is
+   `https://pi.ruv.io`. `/v1/status` is unauthenticated; `/v1/memories*`
+   require `Authorization: Bearer $BRAIN_API_KEY`.
 2. The MCP server registered as `pi-brain` in
    `.claude/skills/.../.mcp.json` style configs — methods `brain_status`,
    `brain_search`, `brain_share`, `brain_list`, `brain_drift`,
@@ -75,11 +78,13 @@ Run these after any change that touches the ruvector ↔ weftos contract.
 
 ```bash
 cd /path/to/ruvector
-cargo run -p mcp-brain-server &  # default port 7333
-curl -fsS http://localhost:7333/v1/status | jq
+# Default bind is 0.0.0.0:8080. Override with PORT=<n> if you need it.
+PORT=8080 cargo run -p mcp-brain-server &
+curl -fsS http://localhost:8080/v1/status | jq
 ```
 
-Expected: `{ "ok": true, "memories": <n>, "graph_edges": <n> }`.
+`/v1/status` is unauthenticated. Expected:
+`{ "ok": true, "memories": <n>, "graph_edges": <n> }`.
 
 ### 2. MCP brain tools register
 
@@ -91,14 +96,27 @@ weaver mcp list 2>&1 | grep -E '(pi-brain|ruvector)'
 
 ### 3. Round-trip a memory share + search
 
+Both `/v1/memories` (POST) and `/v1/memories/search` require an
+`Authorization: Bearer $BRAIN_API_KEY` header (extractor:
+`AuthenticatedContributor` in `crates/mcp-brain-server/src/auth.rs`).
+Missing or malformed header → 401. The API key must be ≥ 16 chars; for a
+local dev run, export your own value (e.g. `export BRAIN_API_KEY=dev-$(openssl
+rand -hex 16)`) and re-launch the server with `BRAIN_SYSTEM_KEY=$BRAIN_API_KEY`
+so the constant-time check accepts it.
+
 ```bash
+export BRAIN_API_KEY=...   # at least 16 chars; never commit this
+
 # share
-curl -X POST http://localhost:7333/v1/memories \
+curl -X POST http://localhost:8080/v1/memories \
+  -H "Authorization: Bearer $BRAIN_API_KEY" \
   -H 'Content-Type: application/json' \
   -d '{"category":"convention","title":"weftos uses scripts/build.sh","content":"Always use scripts/build.sh, never raw cargo.","tags":["weftos","build"]}'
 
 # search
-curl -fsS "http://localhost:7333/v1/memories/search?q=scripts/build.sh&limit=3" | jq '.[].title'
+curl -fsS "http://localhost:8080/v1/memories/search?q=scripts/build.sh&limit=3" \
+  -H "Authorization: Bearer $BRAIN_API_KEY" \
+  | jq '.[].title'
 ```
 
 Expected: the just-shared title appears in the result.
@@ -150,7 +168,8 @@ subcommand exists.
 | Symptom | Likely cause | Fix |
 |---|---|---|
 | `weaver mcp list` shows no `pi-brain` | MCP not registered | Register in the agent runtime's MCP config; see `~/.codex/mcp.json` or `.cursor-mcp.json` |
-| `brain_search` returns 401 | API key not in env | Set `BRAIN_API_KEY`; for `pi.ruv.io`, see `gcloud secrets versions access latest --secret=ANTHROPIC_API_KEY` style retrieval |
+| `curl /v1/memories` or `brain_search` returns 401 | Missing/short `Authorization: Bearer ...` header | Set `BRAIN_API_KEY` (≥ 16 chars); for `pi.ruv.io`, retrieve via `gcloud secrets versions access latest --secret=BRAIN_API_KEY`. For local dev, also set `BRAIN_SYSTEM_KEY` to the same value when launching `mcp-brain-server` so the constant-time check accepts it |
+| `curl http://localhost:7333` connection refused | Port mismatch | Brain server defaults to **8080**, not 7333. Either `curl :8080` or relaunch with `PORT=7333 cargo run -p mcp-brain-server` |
 | AgentDB HNSW query stack-overflows in CI | Missing `RUST_MIN_STACK=16777216` | Run cargo from the repo root so `.cargo/config.toml` is honored |
 | weftos wasm bundle exceeds 300KB after adding ruvector dep | dep not gated under `native` feature | Make the dep `optional = true`, gate it behind `native`, add a wasm shim |
 
