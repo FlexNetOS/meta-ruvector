@@ -22,7 +22,9 @@ set -euo pipefail
 
 GITNEXUS_VERSION="${GITNEXUS_VERSION:-latest}"
 
-log()  { printf '\033[1;34m[gitnexus]\033[0m %s\n' "$*"; }
+# All helpers route to stderr so callers can capture script output without
+# mixing in informational chatter (matches scripts/attractor.sh convention).
+log()  { printf '\033[1;34m[gitnexus]\033[0m %s\n' "$*" >&2; }
 warn() { printf '\033[1;33m[gitnexus]\033[0m %s\n' "$*" >&2; }
 fail() { printf '\033[1;31m[gitnexus]\033[0m %s\n' "$*" >&2; exit 1; }
 
