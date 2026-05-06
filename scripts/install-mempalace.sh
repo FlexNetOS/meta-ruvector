@@ -2,9 +2,9 @@
 # Install MemPalace (https://github.com/MemPalace/mempalace) for this
 # repository — local-first AI memory store with verbatim retrieval and
 # semantic search via ChromaDB. The palace itself lives at ~/.mempalace/
-# (per-user, NOT in this repo); this script installs the CLI, scopes a
-# wing for this repo via `mempalace init <root>`, and surfaces the
-# Claude Code plugin install command for any agent runtime on PATH.
+# (per-user, NOT in this repo); this script installs the CLI from PyPI
+# and surfaces the manual `mempalace init` command for callers who want
+# to scope a wing.
 #
 # MemPalace is the Phase 5 piece of the cross-repo self-learning
 # roadmap: the brain (ruvector) needs persistent memory across sessions
@@ -14,8 +14,19 @@
 # comprehension graph), this gives the agent three complementary
 # retrieval surfaces: structure, comprehension, and history.
 #
-# Idempotent: safe to re-run. `pip install --upgrade` and
-# `mempalace init` are both stable across invocations.
+# Idempotent: safe to re-run. `pip install --upgrade` is stable across
+# invocations.
+#
+# WHY WE DO NOT AUTO-RUN `mempalace init`: upstream issue
+# https://github.com/MemPalace/mempalace/issues/185 confirms that
+# `mempalace init <dir>` writes `<dir>/entities.json` AND
+# `<dir>/mempalace.yaml` into the directory passed as <dir>. Running it
+# against the repo root would dirty every contributor's checkout with
+# untracked generated files. We surface the command instead so callers
+# can run it explicitly against a directory they're happy to dirty
+# (e.g. `~/projects/myapp`, or a per-user staging dir under
+# `~/.mempalace/`). See the SKILL at
+# `.claude/skills/mempalace-usage/SKILL.md` for the recommended pattern.
 #
 # License note: MemPalace ships under MIT. This script only invokes the
 # upstream CLI; no MemPalace code is vendored.
@@ -25,7 +36,11 @@
 #   https://pypi.org/project/mempalace/
 #   https://mempalaceofficial.com/
 # The domain `mempalace.tech` is a known impostor. Do NOT install from
-# any other source. Upstream README: docs/HISTORY.md.
+# any other source. We pass `--index-url https://pypi.org/simple/`
+# explicitly to defeat any rogue `PIP_INDEX_URL`, `~/.pip/pip.conf`, or
+# `pip.ini` that would otherwise resolve `mempalace` from a malicious
+# mirror. Override only with `MEMPALACE_INDEX_URL` if you have a
+# verified internal PyPI proxy.
 
 set -euo pipefail
 
@@ -34,6 +49,12 @@ MEMPALACE_PIP_SPEC="mempalace"
 if [[ "$MEMPALACE_VERSION" != "latest" ]]; then
   MEMPALACE_PIP_SPEC="mempalace==${MEMPALACE_VERSION}"
 fi
+
+# Pin the package index to the official PyPI by default. Override at
+# call time only if you have a verified internal mirror. We do NOT honor
+# ambient `PIP_INDEX_URL` to avoid surprises in environments that
+# silently re-route pip to an internal proxy.
+MEMPALACE_INDEX_URL="${MEMPALACE_INDEX_URL:-https://pypi.org/simple/}"
 
 # All helpers route to stderr so callers can capture script output without
 # mixing in informational chatter (matches the in-repo logging convention).
@@ -62,13 +83,21 @@ cd "$REPO_ROOT"
 # Prefer pipx if available (isolated venv per CLI is the recommended
 # packaging for end-user Python tools), otherwise fall back to
 # `pip install --user`. We avoid system-wide installs to stay sudo-free.
+#
+# Both paths pin `--index-url` to the official PyPI so a rogue
+# `PIP_INDEX_URL` env var or `pip.conf` cannot silently redirect to a
+# malicious mirror that ships a poisoned `mempalace` package.
 if command -v pipx >/dev/null 2>&1; then
-  log "installing ${MEMPALACE_PIP_SPEC} via pipx (isolated venv)"
-  pipx install --force "${MEMPALACE_PIP_SPEC}" || fail "pipx install failed"
+  log "installing ${MEMPALACE_PIP_SPEC} via pipx (isolated venv) from ${MEMPALACE_INDEX_URL}"
+  pipx install --force \
+    --pip-args="--index-url=${MEMPALACE_INDEX_URL}" \
+    "${MEMPALACE_PIP_SPEC}" || fail "pipx install failed"
 else
-  log "installing ${MEMPALACE_PIP_SPEC} via pip --user (pipx not found)"
+  log "installing ${MEMPALACE_PIP_SPEC} via pip --user (pipx not found) from ${MEMPALACE_INDEX_URL}"
   log "  — install pipx for cleaner CLI isolation: pip install --user pipx"
-  python3 -m pip install --user --upgrade "${MEMPALACE_PIP_SPEC}" || \
+  python3 -m pip install --user --upgrade \
+    --index-url "${MEMPALACE_INDEX_URL}" \
+    "${MEMPALACE_PIP_SPEC}" || \
     fail "pip install failed — see https://github.com/MemPalace/mempalace#installation"
 fi
 
@@ -80,22 +109,29 @@ if ! command -v mempalace >/dev/null 2>&1; then
   warn "  e.g.  export PATH=\"\$HOME/.local/bin:\$PATH\""
 fi
 
-# ── Initialize palace for this repo ──────────────────────────────────
-# `mempalace init <dir>` is idempotent: it scans the directory, detects
-# people/projects from file content, creates rooms from folder structure,
-# and ensures ~/.mempalace/ exists. Re-running on the same dir merges the
-# new scan into the existing palace (additive, no clobber).
+# ── Next steps (no auto-init) ────────────────────────────────────────
+# We deliberately do NOT run `mempalace init` here. Per upstream issue
+# https://github.com/MemPalace/mempalace/issues/185, `mempalace init
+# <dir>` writes `<dir>/entities.json` and `<dir>/mempalace.yaml` into
+# the target directory — running it against the repo root would leave
+# every contributor with two untracked generated files after a clean
+# bootstrap, contradicting the SKILL's "in-repo state: none" guarantee.
 #
-# Storage lives at ~/.mempalace/ (per-user, cross-project). Multiple
-# repos share one palace — wings come from people, rooms from folders.
-# This is by design: agents remember context across all your projects.
-log "initializing palace wing for $(basename "$REPO_ROOT") (writes to ~/.mempalace/)"
-if command -v mempalace >/dev/null 2>&1; then
-  mempalace init "$REPO_ROOT" || warn "'mempalace init' returned non-zero — see ~/.mempalace/ for partial state"
-else
-  # Fall back to module invocation if the entry-point script isn't on PATH.
-  python3 -m mempalace init "$REPO_ROOT" || warn "'python3 -m mempalace init' returned non-zero"
-fi
+# Surface the command instead. Callers who want a project wing should
+# run it explicitly against a directory they're willing to dirty (e.g.
+# `~/projects/<name>`), or against a staging directory under
+# `~/.mempalace/projects/`.
+log ""
+log "install complete. To scope a wing for a project, run manually:"
+log "  mempalace init <project-dir>     # writes entities.json + mempalace.yaml into <project-dir>"
+log ""
+log "Storage lives at ~/.mempalace/ (per-user, cross-project). The"
+log "palace exists once 'mempalace init' has been run against any"
+log "directory; subsequent inits merge additively into the same palace."
+log ""
+log "Smoke test (does not modify any project directory):"
+log "  mempalace status"
+log "  mempalace list-wings"
 
 # ── MCP registration (optional) ──────────────────────────────────────
 # MemPalace ships a Claude Code plugin marketplace entry that registers

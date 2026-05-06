@@ -50,19 +50,43 @@ scripts/install-mempalace.sh
 
 This is idempotent. It:
 1. Verifies Python 3.9+ is on PATH.
-2. `pip install --user mempalace` (or `pipx install` if pipx is around).
-3. `mempalace init "$REPO_ROOT"` — scans this repo, derives rooms from
-   folder layout, ensures `~/.mempalace/` exists.
-4. Surfaces the Claude Code plugin install command if `claude` is on PATH.
+2. `pipx install mempalace` (preferred) or `pip install --user mempalace`,
+   with `--index-url https://pypi.org/simple/` pinned in both paths so
+   a rogue `PIP_INDEX_URL` / `pip.conf` cannot redirect to a poisoned
+   mirror. Override with `MEMPALACE_INDEX_URL=...` only for verified
+   internal proxies.
+3. Surfaces the Claude Code plugin install command if `claude` is on PATH.
+
+**The bootstrap does NOT call `mempalace init`.** Per upstream issue
+[MemPalace/mempalace#185](https://github.com/MemPalace/mempalace/issues/185),
+`mempalace init <dir>` writes `<dir>/entities.json` and
+`<dir>/mempalace.yaml` into the target directory — running it against
+the repo root would dirty every contributor's checkout with two
+untracked generated files. Instead, run init manually against a
+directory you're willing to dirty (a per-user staging dir, or a
+project directory outside the repo):
+
+```bash
+mkdir -p ~/.mempalace/projects/ruvector
+mempalace init ~/.mempalace/projects/ruvector   # safe to dirty; per-user
+```
+
+The palace database itself lives at `~/.mempalace/` regardless of where
+you ran init — the init target only receives the two metadata files.
 
 Mining (importing source/docs into the palace) is **OFF by default** —
-it can take minutes on ruvector's ~150-crate workspace. Opt in:
+it can take minutes on ruvector's ~150-crate workspace. Opt in only
+after you've run `mempalace init` somewhere:
 
 ```bash
 mempalace mine "$(pwd)"                                  # code + docs
 mempalace mine "$(pwd)" --mode convos                    # conversation exports
 mempalace mine ~/chats/ --mode convos --extract general  # auto-classify
 ```
+
+`mempalace mine <dir>` does NOT write `entities.json`/`mempalace.yaml`
+into `<dir>` — it only ingests file content into `~/.mempalace/`. Safe
+to run against any directory.
 
 ## MCP tool list (Claude Code, codex, etc.)
 
@@ -132,13 +156,19 @@ week).
 ## Smoke test
 
 ```bash
+# After bootstrap (CLI installed, no palace yet):
+mempalace --version       # confirms CLI is on PATH
+
+# After you have run `mempalace init <some-dir>` once anywhere:
 mempalace status          # confirms palace exists + connected
-mempalace list-wings      # shows the wing for this repo
+mempalace list-wings      # shows wings (empty until you mine)
 mempalace search "test"   # semantic search smoke test
 ```
 
-If any of these error with `palace not initialized`, re-run
-`scripts/install-mempalace.sh`.
+If `status` / `list-wings` / `search` error with `palace not
+initialized`, you haven't run `mempalace init <dir>` yet — run it
+against a directory you're willing to dirty (see Install above). The
+bootstrap script intentionally skips this step.
 
 ## License & provenance
 
