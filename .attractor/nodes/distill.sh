@@ -24,4 +24,9 @@ stamp="$(date -u +%Y%m%dT%H%M%SZ)"
 out="$RUNS_DIR/${stamp}.distill.jsonl"
 printf '{"distilled":true,"stub":true,"stamp":"%s"}\n' "$stamp" > "$out"
 
-echo "{\"distilled\":true,\"stub\":true,\"output\":\"$out\"}"
+# JSON-escape the output path. If $ROOT contains a quote or backslash
+# (rare but possible on dev hosts) the unescaped form would emit invalid
+# JSON and break the JSONL parser in the runner.
+escaped_out="${out//\\/\\\\}"
+escaped_out="${escaped_out//\"/\\\"}"
+printf '{"distilled":true,"stub":true,"output":"%s"}\n' "$escaped_out"
