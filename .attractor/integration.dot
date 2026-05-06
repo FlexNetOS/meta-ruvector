@@ -98,6 +98,12 @@ digraph ruvector_self_learning {
     identify  -> exit        [label = "no candidates",        condition = "$identify.verdict == 'skipped'"]
     implement -> validate
     validate  -> optimize    [label = "gate green"]
+    // CONTRACT: a red validate gate STILL distills, but with verdict=fail.
+    // The trajectory is recorded so ReasoningBank learns from failures
+    // (see distill.sh "failures train the bank too"). What's skipped is
+    // OPTIMIZE — there is nothing to optimize when validate failed. The
+    // runner enforces this by setting skip_optimize when validate fails,
+    // not by breaking the loop.
     validate  -> distill     [label = "gate red",             condition = "$validate.exit_code != 0"]
     optimize  -> distill
     distill   -> decide

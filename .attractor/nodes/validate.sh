@@ -2,8 +2,10 @@
 #
 # Attractor node 3: Validate (ruvector brain side).
 #
-# The validate node is the non-negotiable contract: if it fails, the
-# pipeline does NOT distill the trajectory.
+# The validate node is the contract gate: if it fails, the trajectory is
+# still distilled (verdict=fail, see distill.sh "failures train the bank
+# too") but optimize is skipped — there's nothing to optimize when the
+# build is broken. The runner enforces this; nodes don't decide routing.
 #
 # Real validation invokes:
 #
@@ -39,13 +41,21 @@ if [[ -n "${RUSTC_WRAPPER:-}" ]] && ! command -v "${RUSTC_WRAPPER}" >/dev/null 2
     unset RUSTC_WRAPPER
 fi
 
+# Capture stderr so that when validate fails the operator (or the
+# self-learning loop's identify node) can read why. Stdout stays the
+# pure JSON contract; the audit lives at $stderr_log and is referenced
+# from the JSON output.
+stderr_log="${ROOT}/.attractor/runs/validate.stderr"
+mkdir -p "$(dirname "$stderr_log")"
+
 # Cheapest meaningful signal. Heavier validation (nextest, integration
 # tests, brain-server smoke) is wired in once Phase 6's GitHub Actions
 # self-learning workflow lands.
-if RUST_MIN_STACK=16777216 cargo check --workspace --exclude ruvector-postgres >/dev/null 2>&1; then
-    echo '{"validated":true,"check":"cargo check --workspace --exclude ruvector-postgres"}'
+if RUST_MIN_STACK=16777216 cargo check --workspace --exclude ruvector-postgres \
+    >"$stderr_log" 2>&1; then
+    printf '{"validated":true,"check":"cargo check --workspace --exclude ruvector-postgres","stderr_log":"%s"}\n' "$stderr_log"
     exit 0
 fi
 
-echo '{"validated":false,"check":"cargo check --workspace --exclude ruvector-postgres"}'
+printf '{"validated":false,"check":"cargo check --workspace --exclude ruvector-postgres","stderr_log":"%s","hint":"see stderr_log for cargo check diagnostics"}\n' "$stderr_log"
 exit 1

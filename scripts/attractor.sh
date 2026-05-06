@@ -20,8 +20,9 @@
 # Exit codes:
 #   0   success
 #   1   user-error (bad args, missing DOT)
-#   2   validate node failed (this is the contract; do NOT distill)
-#   3   any other node failed
+#   2   validate node failed (recorded as fail trajectory; optimize skipped,
+#       distill still runs so ReasoningBank learns from the failure)
+#   3   identify, implement, optimize or distill failed (fail-fast)
 #
 # This script is intentionally dependency-light: it does not require
 # graphviz unless `validate --strict` is requested. Node scripts may
@@ -37,7 +38,11 @@ readonly NODE_ORDER=(identify implement validate optimize distill)
 
 # ---- Logging helpers ------------------------------------------------------
 
-if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
+# Logs go to stderr (>&2), so detect a TTY on fd 2, not fd 1. Otherwise
+# `attractor.sh run > out.json` would strip color from the still-visible
+# stderr, and `attractor.sh run 2> err.log` would leak ANSI codes into a
+# redirected log file.
+if [ -t 2 ] && [ -z "${NO_COLOR:-}" ]; then
     BOLD=$'\e[1m'; DIM=$'\e[2m'; RED=$'\e[31m'; GREEN=$'\e[32m'
     YELLOW=$'\e[33m'; CYAN=$'\e[36m'; NC=$'\e[0m'
 else
@@ -81,7 +86,9 @@ cmd_validate() {
     # Cheap syntactic check: ensure each node label is mentioned in the DOT.
     local missing=()
     for node in "${NODE_ORDER[@]}"; do
-        if ! grep -qE "^\s*${node}\s*\[" "$DOT_FILE"; then
+        # Use POSIX [[:space:]] instead of GNU `\s` so the validator works
+        # on BSD/macOS grep, busybox, and other non-GNU runners.
+        if ! grep -qE "^[[:space:]]*${node}[[:space:]]*\[" "$DOT_FILE"; then
             missing+=("$node")
         fi
     done
@@ -146,45 +153,97 @@ cmd_node() {
     exec "$script"
 }
 
+# JSON-string-escape stdin → stdout. Handles \, ", and control chars per
+# RFC 8259. Used to embed each node's stdout (which is its JSON contract)
+# inside the JSONL audit record without breaking the parser.
+json_escape() {
+    python3 -c 'import json,sys;sys.stdout.write(json.dumps(sys.stdin.read()))' 2>/dev/null \
+        || awk 'BEGIN{printf "\""} {gsub(/\\/,"\\\\");gsub(/"/,"\\\"");gsub(/\t/,"\\t");gsub(/\r/,"\\r");printf (NR>1?"\\n":"")$0} END{printf "\""}'
+}
+
 cmd_run() {
     require_dot_file
     mkdir -p "$RUNS_DIR"
     local stamp; stamp="$(date -u +%Y%m%dT%H%M%SZ)"
     local log_file="$RUNS_DIR/${stamp}.jsonl"
+    local stdout_dir="$RUNS_DIR/${stamp}-stdout"
+    mkdir -p "$stdout_dir"
 
     info "executing pipeline; log -> $log_file"
 
     local i=0
     local overall_status=0
+    local skip_optimize=0
     for node in "${NODE_ORDER[@]}"; do
         i=$((i + 1))
         local script="$NODES_DIR/${node}.sh"
         local started; started="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
         local status="ok"
         local rc=0
+        local out_file="$stdout_dir/${node}.out"
 
         printf "${BOLD}[%d/5] %s${NC}\n" "$i" "$node" >&2
-        if [ -x "$script" ]; then
-            if "$script"; then
-                ok "$node passed"
+
+        # Skip optimize if a prior validate failed; per the DOT spec
+        # validate red routes around optimize but still distills.
+        if [ "$node" = "optimize" ] && [ "$skip_optimize" -eq 1 ]; then
+            warn "validate failed earlier; skipping optimize per DOT spec"
+            status="skipped"
+            : > "$out_file"
+        elif [ -x "$script" ]; then
+            # Run the node, mirror stdout to the run artifact via tee
+            # so the audit log keeps every JSON contract verbatim and
+            # the operator still sees output on the terminal.
+            if "$script" 2>&1 | tee "$out_file" >&2; then
+                rc=${PIPESTATUS[0]:-0}
+                if [ "$rc" -eq 0 ]; then
+                    ok "$node passed"
+                else
+                    status="fail"
+                    err "$node failed (rc=$rc)"
+                fi
             else
-                rc=$?
+                rc=${PIPESTATUS[0]:-1}
                 status="fail"
                 err "$node failed (rc=$rc)"
             fi
         else
             warn "no node script at $script -- recording as 'stub'"
             status="stub"
+            : > "$out_file"
         fi
 
         local finished; finished="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-        printf '{"node":"%s","status":"%s","rc":%d,"started":"%s","finished":"%s"}\n' \
-            "$node" "$status" "$rc" "$started" "$finished" >> "$log_file"
 
-        # Validate is the contract; if it fails, do not distill.
+        # Capture only the LAST non-empty line of stdout — node scripts
+        # promise their final line is the JSON contract. The full stream
+        # remains on disk in $stdout_dir for deeper postmortem.
+        local last_line=""
+        if [ -s "$out_file" ]; then
+            last_line="$(awk 'NF{l=$0} END{print l}' "$out_file")"
+        fi
+        local output_json
+        output_json="$(printf '%s' "$last_line" | json_escape)"
+        if [ -z "$output_json" ]; then output_json='""'; fi
+
+        printf '{"node":"%s","status":"%s","rc":%d,"started":"%s","finished":"%s","output_json":%s}\n' \
+            "$node" "$status" "$rc" "$started" "$finished" "$output_json" >> "$log_file"
+
+        # Validate is the contract: if it fails, route around optimize
+        # but still distill the failed trajectory (per DOT spec).
         if [ "$node" = "validate" ] && [ "$status" = "fail" ]; then
-            err "validate failed; skipping optimize + distill"
+            warn "validate failed; routing around optimize, still distilling for ReasoningBank"
+            skip_optimize=1
             overall_status=2
+            continue
+        fi
+
+        # identify or implement failing means the trajectory is broken
+        # before it can be evaluated; fail-fast so we don't run validate
+        # on garbage and corrupt the bank.
+        if [ "$status" = "fail" ] && { [ "$node" = "identify" ] || [ "$node" = "implement" ]; }; then
+            err "$node failed before validate; aborting trajectory"
+            overall_status=3
             break
         fi
         if [ "$status" = "fail" ]; then
