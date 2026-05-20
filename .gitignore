@@ -70,6 +70,8 @@ claude-flow.config.json
 .swarm/
 .hive-mind/
 .claude-flow/
+.omc/
+.understand-anything/
 memory/
 coordination/
 memory/claude-flow-data.json
