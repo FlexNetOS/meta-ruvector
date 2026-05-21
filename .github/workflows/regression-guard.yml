@@ -134,16 +134,21 @@ jobs:
       - name: Require calculate_distance() inside HNSW overflow gate
         run: |
           set -e
-          # The `insert` function in index.rs must reach calculate_distance()
-          # AFTER the `> self.config.m * 2` overflow check fires — that is
-          # what proves the pruner is distance-aware, not FIFO.
-          if ! grep -nE 'calculate_distance' crates/ruvector-router-core/src/index.rs >/dev/null ; then
-            echo "::error::index.rs no longer references calculate_distance (regression of issue #430 bug C). Adjacency-list pruning must score candidates by distance."
+          FILE=crates/ruvector-router-core/src/index.rs
+          # The overflow gate itself must still exist.
+          if ! grep -nE '> self\.config\.m \* 2' "$FILE" >/dev/null ; then
+            echo "::error::HNSW overflow gate '> self.config.m * 2' removed — refusing to ship without the m*2/m prune semantics (#430)."
             exit 1
           fi
-          # And the overflow gate itself must still exist.
-          if ! grep -nE '> self\.config\.m \* 2' crates/ruvector-router-core/src/index.rs >/dev/null ; then
-            echo "::error::HNSW overflow gate '> self.config.m * 2' removed — refusing to ship without the m*2/m prune semantics (#430)."
+          # calculate_distance must appear *inside* the overflow block
+          # (within 20 lines after the gate), not just anywhere in the
+          # file. Searching the whole file would pass even if the pruner
+          # lost its distance scoring, because search code also calls
+          # calculate_distance.
+          GATE_LINE=$(grep -nE '> self\.config\.m \* 2' "$FILE" | head -1 | cut -d: -f1)
+          WINDOW_END=$((GATE_LINE + 20))
+          if ! sed -n "${GATE_LINE},${WINDOW_END}p" "$FILE" | grep -qE 'calculate_distance' ; then
+            echo "::error::calculate_distance is not called within the overflow gate block in index.rs (regression of issue #430 bug C). Adjacency-list pruning must score candidates by distance."
             exit 1
           fi
 
