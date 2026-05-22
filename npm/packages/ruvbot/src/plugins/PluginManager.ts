@@ -366,7 +366,7 @@ export class PluginManager extends EventEmitter<PluginEvents> {
   enablePlugin(name: string): Promise<boolean> {
     const plugin = this.plugins.get(name);
     if (!plugin || plugin.state === 'enabled') {
-      return false;
+      return Promise.resolve(false);
     }
 
     plugin.state = 'enabled';
@@ -380,7 +380,7 @@ export class PluginManager extends EventEmitter<PluginEvents> {
   disablePlugin(name: string): Promise<boolean> {
     const plugin = this.plugins.get(name);
     if (!plugin || plugin.state !== 'enabled') {
-      return false;
+      return Promise.resolve(false);
     }
 
     plugin.state = 'disabled';

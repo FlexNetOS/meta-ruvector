@@ -37,6 +37,7 @@ export interface RuvBotOptions {
   config?: Partial<BotConfig>;
   configPath?: string;
   autoStart?: boolean;
+  debug?: boolean;
 }
 
 export interface RuvBotEvents {

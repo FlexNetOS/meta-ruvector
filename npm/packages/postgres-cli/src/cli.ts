@@ -331,11 +331,12 @@ routing
   .requiredOption('--latency <number>', 'Observed latency in ms')
   .requiredOption('--success <boolean>', 'Whether request succeeded')
   .option('--quality <number>', 'Quality score for this request')
-  .action(async (options: UpdateMetricsOptions & { success: string }) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  .action(async (options: any) => {
     const client = new RuVectorClient(program.opts<ProgramOptions>().connection);
     await RoutingCommands.updateMetrics(client, {
-      ...options,
-      success: options.success === 'true',
+      ...(options as UpdateMetricsOptions),
+      success: (options as { success: string }).success === 'true',
     });
   });
 

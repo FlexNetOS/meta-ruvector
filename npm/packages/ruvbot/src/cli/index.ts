@@ -81,12 +81,14 @@ export function createCLI(): Command {
         }
 
         const bot = new RuvBot({
-          ...config,
+          config: {
+            ...config,
+            api: options.api !== false ? {
+              ...config.api,
+              port: parseInt(options.port, 10),
+            } : config.api,
+          },
           debug: options.debug,
-          api: options.api !== false ? {
-            ...config.api,
-            port: parseInt(options.port, 10),
-          } : undefined,
         });
 
         await bot.start();
