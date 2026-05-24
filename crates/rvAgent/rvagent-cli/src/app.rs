@@ -412,7 +412,10 @@ impl rvagent_tools::Backend for LocalFsBackend {
 
         // Truncate on a UTF-8 char boundary to avoid panicking.
         if combined.len() > MAX_OUTPUT_BYTES {
-            let truncate_at = combined.floor_char_boundary(MAX_OUTPUT_BYTES);
+            let mut truncate_at = MAX_OUTPUT_BYTES;
+            while !combined.is_char_boundary(truncate_at) {
+                truncate_at -= 1;
+            }
             combined.truncate(truncate_at);
             combined.push_str("\n... [output truncated]");
         }
