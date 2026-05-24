@@ -3138,8 +3138,17 @@ async fn reclassify(
 ) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
     check_read_only(&state)?;
 
-    // 1. Training cycle — rebuilds cluster centroids + SONA patterns
-    let training = run_training_cycle(&state);
+    // 1. Training cycle — rebuilds cluster centroids + SONA patterns.
+    // spawn_blocking avoids starving HTTP handlers during the CPU-intensive cycle.
+    let training = {
+        let st = state.clone();
+        tokio::task::spawn_blocking(move || run_training_cycle(&st))
+            .await
+            .map_err(|e| {
+                tracing::error!("Reclassify training cycle panicked: {e}");
+                (StatusCode::INTERNAL_SERVER_ERROR, format!("training cycle failed: {e}"))
+            })?
+    };
     *state.pipeline_metrics.last_training.write() = Some(chrono::Utc::now());
 
     // 2. Drift check — computes per-category centroid movement
