@@ -118,6 +118,9 @@ impl LinearBitNet {
 
     /// Fraction of weights that are zero (0.0–1.0).
     pub fn sparsity(&self) -> f32 {
+        if self.weight.is_empty() {
+            return 0.0;
+        }
         let zeros = self.weight.iter().filter(|&&w| w == 0).count();
         zeros as f32 / self.weight.len() as f32
     }

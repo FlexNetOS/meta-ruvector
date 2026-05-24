@@ -101,15 +101,21 @@ async fn embed(State(state): State<AppState>, Json(req): Json<EmbedRequest>) -> 
 
 async fn health(State(state): State<AppState>) -> impl IntoResponse {
     let Ok(engine) = state.engine.lock() else {
-        return Json(serde_json::json!({"status": "error", "error": "mutex poisoned"}));
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({"status": "error", "error": "mutex poisoned"})),
+        );
     };
-    Json(serde_json::json!({
-        "status": "ok",
-        "engine": engine.engine_name(),
-        "embed_dim": engine.dim(),
-        "corpus_size": engine.corpus_size(),
-        "rlm_active": engine.is_rlm_active(),
-    }))
+    (
+        StatusCode::OK,
+        Json(serde_json::json!({
+            "status": "ok",
+            "engine": engine.engine_name(),
+            "embed_dim": engine.dim(),
+            "corpus_size": engine.corpus_size(),
+            "rlm_active": engine.is_rlm_active(),
+        })),
+    )
 }
 
 #[tokio::main]

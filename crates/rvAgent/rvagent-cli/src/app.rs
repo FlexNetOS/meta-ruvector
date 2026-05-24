@@ -372,6 +372,8 @@ impl rvagent_tools::Backend for LocalFsBackend {
             let mut buf = Vec::new();
             if let Some(mut pipe) = stdout_pipe {
                 let _ = pipe.by_ref().take(MAX_OUTPUT_BYTES as u64).read_to_end(&mut buf);
+                // Keep draining so the child doesn't get SIGPIPE.
+                let _ = std::io::copy(&mut pipe, &mut std::io::sink());
             }
             buf
         });
@@ -379,6 +381,7 @@ impl rvagent_tools::Backend for LocalFsBackend {
             let mut buf = Vec::new();
             if let Some(mut pipe) = stderr_pipe {
                 let _ = pipe.by_ref().take(MAX_OUTPUT_BYTES as u64).read_to_end(&mut buf);
+                let _ = std::io::copy(&mut pipe, &mut std::io::sink());
             }
             buf
         });

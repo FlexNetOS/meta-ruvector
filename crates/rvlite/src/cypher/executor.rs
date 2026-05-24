@@ -424,19 +424,18 @@ impl<'a> Executor<'a> {
         clause: &ReturnClause,
         context: &ExecutionContext,
     ) -> Result<ExecutionResult, ExecutionError> {
-        let mut columns = Vec::new();
-        for item in &clause.items {
-            let col_name = item
-                .alias
-                .clone()
-                .unwrap_or_else(|| match &item.expression {
-                    Expression::Variable(var) => var.clone(),
-                    _ => "?column?".to_string(),
-                });
-            if !columns.contains(&col_name) {
-                columns.push(col_name);
-            }
-        }
+        let columns: Vec<String> = clause
+            .items
+            .iter()
+            .map(|item| {
+                item.alias
+                    .clone()
+                    .unwrap_or_else(|| match &item.expression {
+                        Expression::Variable(var) => var.clone(),
+                        _ => "?column?".to_string(),
+                    })
+            })
+            .collect();
 
         let mut result = ExecutionResult::new(columns.clone());
 
