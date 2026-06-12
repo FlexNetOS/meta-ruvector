@@ -363,7 +363,7 @@ class Intelligence {
 const server = new Server(
   {
     name: 'ruvector',
-    version: '0.2.29',
+    version: '0.2.30',
   },
   {
     capabilities: {
