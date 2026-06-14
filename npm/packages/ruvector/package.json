@@ -1,6 +1,6 @@
 {
   "name": "ruvector",
-  "version": "0.2.29",
+  "version": "0.2.30",
   "description": "Self-learning vector database for Node.js — hybrid search, Graph RAG, FlashAttention-3, HNSW, 50+ attention mechanisms",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -12,7 +12,7 @@
     "verify-dist": "node scripts/verify-dist.js",
     "prepack": "npm run build && npm run verify-dist",
     "prepublishOnly": "npm run build && npm run verify-dist",
-    "test": "node test/integration.js && node test/cli-commands.js && node test/sigterm-cleanup.js"
+    "test": "node test/integration.js && node test/cli-commands.js && node test/db-workflow.js && node test/sigterm-cleanup.js"
   },
   "keywords": [
     "vector",
