@@ -40,7 +40,7 @@ jobs:
           - host: ubuntu-22.04
             target: x86_64-unknown-linux-musl
             platform: linux-x64-musl
-            extraFlags: "--use-napi-cross"
+            extraFlags: "--zig"
           - host: ubuntu-22.04
             target: aarch64-unknown-linux-gnu
             platform: linux-arm64-gnu
@@ -48,7 +48,7 @@ jobs:
           - host: ubuntu-22.04
             target: aarch64-unknown-linux-musl
             platform: linux-arm64-musl
-            extraFlags: "--use-napi-cross"
+            extraFlags: "--zig"
           - host: macos-14
             target: x86_64-apple-darwin
             platform: darwin-x64
@@ -97,6 +97,12 @@ jobs:
       - name: Install dependencies
         working-directory: npm/packages/tiny-dancer
         run: npm install --ignore-scripts --omit=optional --force
+
+      - name: Setup Zig (musl cross-compile)
+        if: contains(matrix.settings.extraFlags, '--zig')
+        uses: goto-bus-stop/setup-zig@v2
+        with:
+          version: 0.13.0
 
       - name: Build native module
         working-directory: npm/packages/tiny-dancer
