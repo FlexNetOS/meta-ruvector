@@ -1,7 +1,12 @@
-use ruvector_sparse_inference::{
-    model::{GgufParser, ModelMetadata, ModelRunner, SparseModel},
-    InferenceConfig, LowRankPredictor, SparsityConfig,
-};
+//! WASM bindings for ruvector-sparse-inference.
+//!
+//! Wraps the crate's `SparseEmbeddingProvider` (sparse feature-vector → embedding).
+//! NOTE: the underlying crate's embedding API is feature-vector based (`embed(&[f32])`);
+//! the older token-id `encode`/`forward_embedding`/`sparsity_statistics` low-level model
+//! methods no longer exist upstream, so this binding reconciles to the current
+//! `SparseEmbeddingProvider` surface (GGUF load, embed, batch, dim, sparsity stats, calibrate).
+
+use ruvector_sparse_inference::SparseEmbeddingProvider;
 use wasm_bindgen::prelude::*;
 
 /// Initialize panic hook for better error messages
@@ -11,28 +16,25 @@ pub fn init() {
     console_error_panic_hook::set_once();
 }
 
-/// Sparse inference engine for WASM
+/// Sparse inference (embedding) engine for WASM
 #[wasm_bindgen]
 pub struct SparseInferenceEngine {
-    model: SparseModel,
-    config: InferenceConfig,
+    provider: SparseEmbeddingProvider,
 }
 
 #[wasm_bindgen]
 impl SparseInferenceEngine {
-    /// Create new engine from GGUF bytes
+    /// Create a new engine from GGUF model bytes.
+    /// `config_json` is accepted for API compatibility; sparsity can be tuned via
+    /// `set_sparsity_threshold`.
     #[wasm_bindgen(constructor)]
-    pub fn new(model_bytes: &[u8], config_json: &str) -> Result<SparseInferenceEngine, JsError> {
-        let config: InferenceConfig = serde_json::from_str(config_json)
-            .map_err(|e| JsError::new(&format!("Invalid config: {}", e)))?;
-
-        let model = GgufParser::parse(model_bytes)
-            .map_err(|e| JsError::new(&format!("Failed to parse model: {}", e)))?;
-
-        Ok(Self { model, config })
+    pub fn new(model_bytes: &[u8], _config_json: &str) -> Result<SparseInferenceEngine, JsError> {
+        let provider = SparseEmbeddingProvider::from_gguf_bytes(model_bytes)
+            .map_err(|e| JsError::new(&format!("Failed to load model: {}", e)))?;
+        Ok(Self { provider })
     }
 
-    /// Load model with streaming (for large models)
+    /// Load model with streaming fetch (for large models)
     #[wasm_bindgen]
     pub async fn load_streaming(
         url: &str,
@@ -42,38 +44,50 @@ impl SparseInferenceEngine {
         Self::new(&bytes, config_json)
     }
 
-    /// Run inference on input
+    /// Run sparse embedding inference on a feature vector
     #[wasm_bindgen]
     pub fn infer(&self, input: &[f32]) -> Result<Vec<f32>, JsError> {
-        self.model
-            .forward_embedding(input, &self.config)
+        self.provider
+            .embed(input)
             .map_err(|e| JsError::new(&format!("Inference failed: {}", e)))
     }
 
-    /// Get model metadata as JSON
+    /// Embedding dimension
+    #[wasm_bindgen]
+    pub fn dimension(&self) -> usize {
+        self.provider.embedding_dim()
+    }
+
+    /// Model metadata as JSON (embedding dimension)
     #[wasm_bindgen]
     pub fn metadata(&self) -> String {
-        serde_json::to_string(&self.model.metadata()).unwrap_or_default()
+        format!("{{\"embedding_dim\":{}}}", self.provider.embedding_dim())
     }
 
-    /// Get sparsity statistics
+    /// Get sparsity statistics as JSON
     #[wasm_bindgen]
     pub fn sparsity_stats(&self) -> String {
-        let stats = self.model.sparsity_statistics();
-        serde_json::to_string(&stats).unwrap_or_default()
+        serde_json::to_string(self.provider.sparsity_stats()).unwrap_or_default()
     }
 
-    /// Calibrate with sample inputs
+    /// Set the sparsity threshold
+    #[wasm_bindgen]
+    pub fn set_sparsity_threshold(&mut self, threshold: f32) {
+        self.provider.set_sparsity_threshold(threshold);
+    }
+
+    /// Calibrate with sample feature vectors (flattened; each row is `sample_dim` long)
     #[wasm_bindgen]
     pub fn calibrate(&mut self, samples: &[f32], sample_dim: usize) -> Result<(), JsError> {
-        let samples: Vec<Vec<f32>> = samples.chunks(sample_dim).map(|c| c.to_vec()).collect();
-        self.model
+        let dim = sample_dim.max(1);
+        let samples: Vec<Vec<f32>> = samples.chunks(dim).map(|c| c.to_vec()).collect();
+        self.provider
             .calibrate(&samples)
             .map_err(|e| JsError::new(&format!("Calibration failed: {}", e)))
     }
 }
 
-/// Embedding model wrapper for sentence transformers
+/// Embedding model wrapper (sparse feature-vector → embedding)
 #[wasm_bindgen]
 pub struct EmbeddingModel {
     engine: SparseInferenceEngine,
@@ -83,51 +97,36 @@ pub struct EmbeddingModel {
 impl EmbeddingModel {
     #[wasm_bindgen(constructor)]
     pub fn new(model_bytes: &[u8]) -> Result<EmbeddingModel, JsError> {
-        let config =
-            r#"{"sparsity": {"enabled": true, "threshold": 0.1}, "temperature": 1.0, "top_k": 50}"#;
-        let engine = SparseInferenceEngine::new(model_bytes, config)?;
+        let engine = SparseInferenceEngine::new(model_bytes, "{}")?;
         Ok(Self { engine })
     }
 
-    /// Encode text to embedding (requires tokenizer)
+    /// Encode a feature vector to a sparse embedding
     #[wasm_bindgen]
-    pub fn encode(&self, input_ids: &[u32]) -> Result<Vec<f32>, JsError> {
-        self.engine
-            .model
-            .encode(input_ids)
-            .map_err(|e| JsError::new(&format!("Encoding failed: {}", e)))
+    pub fn encode(&self, features: &[f32]) -> Result<Vec<f32>, JsError> {
+        self.engine.infer(features)
     }
 
-    /// Batch encode multiple sequences
+    /// Batch encode: flattened feature vectors, each of length `dim`; returns
+    /// the concatenated embeddings.
     #[wasm_bindgen]
-    pub fn encode_batch(&self, input_ids: &[u32], lengths: &[u32]) -> Result<Vec<f32>, JsError> {
-        let mut results = Vec::new();
-        let mut offset = 0usize;
-        for &len in lengths {
-            let len = len as usize;
-            if offset + len > input_ids.len() {
-                return Err(JsError::new("Invalid lengths: exceeds input_ids size"));
-            }
-            let ids = &input_ids[offset..offset + len];
-            let embedding = self
-                .engine
-                .model
-                .encode(ids)
-                .map_err(|e| JsError::new(&format!("Encoding failed: {}", e)))?;
-            results.extend(embedding);
-            offset += len;
+    pub fn encode_batch(&self, features: &[f32], dim: usize) -> Result<Vec<f32>, JsError> {
+        let dim = dim.max(1);
+        let mut out = Vec::new();
+        for chunk in features.chunks(dim) {
+            out.extend(self.engine.infer(chunk)?);
         }
-        Ok(results)
+        Ok(out)
     }
 
     /// Get embedding dimension
     #[wasm_bindgen]
     pub fn dimension(&self) -> usize {
-        self.engine.model.metadata().hidden_size
+        self.engine.dimension()
     }
 }
 
-/// Performance measurement utilities
+/// Performance measurement utility
 #[wasm_bindgen]
 pub fn measure_inference_time(
     engine: &SparseInferenceEngine,
@@ -144,7 +143,7 @@ pub fn measure_inference_time(
     }
     let end = performance.now();
 
-    (end - start) / iterations as f64
+    (end - start) / iterations.max(1) as f64
 }
 
 /// Get library version
@@ -158,7 +157,9 @@ async fn fetch_model_bytes(url: &str) -> Result<Vec<u8>, JsError> {
     use wasm_bindgen_futures::JsFuture;
 
     let window = web_sys::window().ok_or_else(|| JsError::new("No window"))?;
-    let response = JsFuture::from(window.fetch_with_str(url)).await?;
+    let response = JsFuture::from(window.fetch_with_str(url))
+        .await
+        .map_err(|_| JsError::new("Fetch failed"))?;
     let response: web_sys::Response = response
         .dyn_into()
         .map_err(|_| JsError::new("Failed to cast to Response"))?;
@@ -167,7 +168,8 @@ async fn fetch_model_bytes(url: &str) -> Result<Vec<u8>, JsError> {
             .array_buffer()
             .map_err(|_| JsError::new("Failed to get array buffer"))?,
     )
-    .await?;
+    .await
+    .map_err(|_| JsError::new("Failed to read array buffer"))?;
     let array = js_sys::Uint8Array::new(&buffer);
     Ok(array.to_vec())
 }
