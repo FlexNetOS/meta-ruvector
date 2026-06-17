@@ -1,0 +1,59 @@
+{
+  "name": "@ruvector/graph-node",
+  "version": "0.1.0",
+  "description": "High-performance Rust graph database for Node.js — native bindings for ruvector-graph (Cypher queries, hybrid vector+graph search)",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "napi": {
+    "name": "index",
+    "triples": {
+      "defaults": true,
+      "additional": [
+        "aarch64-apple-darwin",
+        "aarch64-unknown-linux-gnu",
+        "aarch64-unknown-linux-musl",
+        "aarch64-pc-windows-msvc",
+        "x86_64-unknown-linux-musl"
+      ]
+    }
+  },
+  "engines": {
+    "node": ">= 18"
+  },
+  "scripts": {
+    "artifacts": "napi artifacts",
+    "build": "napi build --platform --release",
+    "build:debug": "napi build --platform",
+    "prepublishOnly": "napi prepublish -t npm",
+    "version": "napi version",
+    "clean": "rm -rf *.node index.js index.d.ts npm"
+  },
+  "devDependencies": {
+    "@napi-rs/cli": "^2.18.0"
+  },
+  "files": [
+    "index.js",
+    "index.d.ts",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "graph",
+    "database",
+    "cypher",
+    "vector-search",
+    "hybrid-search",
+    "rust",
+    "napi"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ruvnet/ruvector.git",
+    "directory": "crates/ruvector-graph-node"
+  },
+  "homepage": "https://github.com/ruvnet/ruvector#readme",
+  "bugs": {
+    "url": "https://github.com/ruvnet/ruvector/issues"
+  }
+}
