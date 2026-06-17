@@ -39,7 +39,7 @@ Tests are split into three workspaces (configured in vite.config.ts):
 ### Stack
 
 - **SvelteKit 2** with Svelte 5 (uses runes: `$state`, `$effect`, `$bindable`)
-- **MongoDB** for persistence (auto-fallback to in-memory with MongoMemoryServer when `MONGODB_URL` not set)
+- **RVF document store** for persistence — a self-contained, zero-external-dependency store backed by RuVector's `.rvf` format. Persists to the directory in `RVF_DB_PATH` (default `./db`, file `ruvocal.rvf.json`). It preserves the MongoDB Collection API so all importing files work unchanged (see `src/lib/server/database.ts`). Optional pgvector backend via `DATABASE_URL` (`ruvector-postgres`). (Note: upstream chat-ui used MongoDB; this fork replaced it. `MONGODB_URL` is now read only by `scripts/populate.ts`.)
 - **TailwindCSS** for styling
 
 ### Key Directories
@@ -53,7 +53,7 @@ src/
 │   │   ├── textGeneration/  # LLM streaming pipeline
 │   │   ├── mcp/          # Model Context Protocol integration
 │   │   ├── router/       # Smart model routing (Omni)
-│   │   ├── database.ts   # MongoDB collections
+│   │   ├── database.ts   # RVF document store (Mongo-compatible Collection API)
 │   │   ├── models.ts     # Model registry from OPENAI_BASE_URL/models
 │   │   └── auth.ts       # OpenID Connect authentication
 │   ├── types/            # TypeScript interfaces (Conversation, Message, User, Model, etc.)
@@ -73,7 +73,7 @@ src/
 2. Server validates user, fetches conversation history
 3. Builds message tree structure (see `src/lib/utils/tree/`)
 4. Calls LLM endpoint via OpenAI client
-5. Streams response back, stores in MongoDB
+5. Streams response back, stores in the RVF document store
 
 ### Model Context Protocol (MCP)
 
@@ -89,6 +89,8 @@ Smart routing via Arch-Router model. Configured with:
 
 ### Database Collections
 
+Stored as collections in the RVF document store (Mongo-compatible Collection API):
+
 - `conversations` - Chat sessions with nested messages
 - `users` - User accounts (OIDC-backed)
 - `sessions` - Session data
@@ -97,15 +99,16 @@ Smart routing via Arch-Router model. Configured with:
 
 ## Environment Setup
 
-Copy `.env` to `.env.local` and configure:
+Copy `.env.example` to `.env.local` (or run `npm run updateLocalEnv` to generate it
+from `chart/env/dev.yaml`) and configure:
 
 ```env
 OPENAI_BASE_URL=https://router.huggingface.co/v1
 OPENAI_API_KEY=hf_***
-# MONGODB_URL is optional; omit for in-memory DB persisted to ./db
+# RVF_DB_PATH is optional; defaults to ./db (self-contained RVF store, no external DB needed)
 ```
 
-See `.env` for full list of variables including router config, MCP servers, auth, and feature flags.
+See `.env.example` for the full list of variables including RVF store path, router config, MCP servers, auth, and feature flags.
 
 ## Code Conventions
 
