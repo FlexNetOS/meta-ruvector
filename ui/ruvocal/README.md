@@ -38,7 +38,7 @@ OPENAI_API_KEY=hf_************************
 | OpenRouter                                    | `https://openrouter.ai/api/v1`     | `OPENAI_API_KEY=sk-or-v1-...`                                           |
 | Poe                                           | `https://api.poe.com/v1`           | `OPENAI_API_KEY=pk_...`                                                 |
 
-Check the root [`.env` template](./.env) for the full list of optional variables you can override.
+Check the [`.env.example` template](./.env.example) for the full list of optional variables you can override.
 
 **Step 2 – Install and launch the dev server:**
 
@@ -53,29 +53,23 @@ You now have Chat UI running locally. Open the browser and start chatting.
 
 ## Database Options
 
-Chat history, users, settings, files, and stats all live in MongoDB. You can point Chat UI at any MongoDB 6/7 deployment.
+> [!NOTE]
+> This RuVocal fork replaced MongoDB with a self-contained **RVF document store** backed by RuVector's `.rvf` format. Upstream chat-ui's MongoDB setup no longer applies; `MONGODB_URL` is read only by `scripts/populate.ts`.
+
+Chat history, users, settings, files, and stats all live in the RVF document store, which exposes a MongoDB-compatible Collection API (see `src/lib/server/database.ts`).
 
 > [!TIP]
-> For quick local development, you can skip this section. When `MONGODB_URL` is not set, Chat UI falls back to an embedded MongoDB that persists to `./db`.
+> For quick local development you don't need to configure anything — the store is zero-dependency and persists to a single file. Set `RVF_DB_PATH` to the directory where the store should live (default `./db`; the store file `ruvocal.rvf.json` is created inside it).
 
-### MongoDB Atlas (managed)
+### Optional: pgvector backend (`ruvector-postgres`)
 
-1. Create a free cluster at [mongodb.com](https://www.mongodb.com/pricing).
-2. Add your IP (or `0.0.0.0/0` for development) to the network access list.
-3. Create a database user and copy the connection string.
-4. Paste that string into `MONGODB_URL` in `.env.local`. Keep the default `MONGODB_DB_NAME=chat-ui` or change it per environment.
+For deployments that want a Postgres/pgvector backend, set `DATABASE_URL` to your connection string:
 
-Atlas keeps MongoDB off your laptop, which is ideal for teams or cloud deployments.
-
-### Local MongoDB (container)
-
-If you prefer to run MongoDB in a container:
-
-```bash
-docker run -d -p 27017:27017 --name mongo-chatui mongo:latest
+```env
+DATABASE_URL=postgres://user:pass@localhost:5432/ruvocal
 ```
 
-Then set `MONGODB_URL=mongodb://localhost:27017` in `.env.local`.
+This uses RuVector's `ruvector-postgres` (pgvector drop-in). Leave it unset to use the RVF store only.
 
 ## Launch
 
@@ -88,20 +82,24 @@ npm run dev
 
 The dev server listens on `http://localhost:5173` by default. Use `npm run build` / `npm run preview` for production builds.
 
-## Optional Docker Image
+## Docker
 
-The `chat-ui-db` image bundles MongoDB inside the container:
+Build from the included `Dockerfile` (see `docker-compose.yml` for a local stack). Because this fork uses the self-contained RVF document store, no bundled MongoDB is required — mount a volume at the `RVF_DB_PATH` directory to persist data:
 
 ```bash
 docker run \
   -p 3000:3000 \
   -e OPENAI_BASE_URL=https://router.huggingface.co/v1 \
   -e OPENAI_API_KEY=hf_*** \
-  -v chat-ui-data:/data \
-  ghcr.io/huggingface/chat-ui-db:latest
+  -e RVF_DB_PATH=/data \
+  -v ruvocal-data:/data \
+  ruvocal:latest
 ```
 
 All environment variables accepted in `.env.local` can be provided as `-e` flags.
+
+> [!NOTE]
+> Upstream chat-ui published a `chat-ui-db` image bundling MongoDB; that does not apply to this fork.
 
 ## Extra parameters
 
