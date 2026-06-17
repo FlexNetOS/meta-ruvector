@@ -29,6 +29,7 @@ pub enum TinyDancerError {
     ConfigError(String),
 
     /// Database error
+    #[cfg(not(target_arch = "wasm32"))]
     #[error("Database error: {0}")]
     DatabaseError(#[from] rusqlite::Error),
 
