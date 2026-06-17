@@ -159,3 +159,10 @@ crates/ruvector-hailo/Cargo.lock
 crates/ruvector-hailo-cluster/Cargo.lock
 crates/hailort-sys/Cargo.lock
 crates/ruvector-mmwave/Cargo.lock
+
+# cargo-install / build byproducts (leaked to repo root)
+/.crates.toml
+/.crates2.json
+/bin/
+bun.lock
+**/bun.lock
