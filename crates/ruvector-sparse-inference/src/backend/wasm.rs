@@ -96,8 +96,8 @@ fn dot_product_wasm_simd(a: &[f32], b: &[f32]) -> f32 {
     let mut sum = f32x4_splat(0.0);
 
     for i in 0..chunks {
-        let va = v128_load(a[i * 4..].as_ptr() as *const v128);
-        let vb = v128_load(b[i * 4..].as_ptr() as *const v128);
+        let va = unsafe { v128_load(a[i * 4..].as_ptr() as *const v128) };
+        let vb = unsafe { v128_load(b[i * 4..].as_ptr() as *const v128) };
         sum = f32x4_add(sum, f32x4_mul(va, vb));
     }
 
@@ -125,9 +125,9 @@ fn relu_wasm_simd(data: &mut [f32]) {
 
     for i in 0..chunks {
         let ptr = data[i * 4..].as_ptr() as *const v128;
-        let v = v128_load(ptr);
+        let v = unsafe { v128_load(ptr) };
         let result = f32x4_max(v, zero);
-        v128_store(data[i * 4..].as_mut_ptr() as *mut v128, result);
+        unsafe { v128_store(data[i * 4..].as_mut_ptr() as *mut v128, result) };
     }
 
     for i in (chunks * 4)..data.len() {
@@ -142,10 +142,10 @@ fn add_wasm_simd(a: &mut [f32], b: &[f32]) {
     for i in 0..chunks {
         let pa = a[i * 4..].as_ptr() as *const v128;
         let pb = b[i * 4..].as_ptr() as *const v128;
-        let va = v128_load(pa);
-        let vb = v128_load(pb);
+        let va = unsafe { v128_load(pa) };
+        let vb = unsafe { v128_load(pb) };
         let result = f32x4_add(va, vb);
-        v128_store(a[i * 4..].as_mut_ptr() as *mut v128, result);
+        unsafe { v128_store(a[i * 4..].as_mut_ptr() as *mut v128, result) };
     }
 
     for i in (chunks * 4)..a.len() {
@@ -161,10 +161,10 @@ fn axpy_wasm_simd(a: &mut [f32], b: &[f32], scalar: f32) {
     for i in 0..chunks {
         let pa = a[i * 4..].as_ptr() as *const v128;
         let pb = b[i * 4..].as_ptr() as *const v128;
-        let va = v128_load(pa);
-        let vb = v128_load(pb);
+        let va = unsafe { v128_load(pa) };
+        let vb = unsafe { v128_load(pb) };
         let result = f32x4_add(va, f32x4_mul(vb, vs));
-        v128_store(a[i * 4..].as_mut_ptr() as *mut v128, result);
+        unsafe { v128_store(a[i * 4..].as_mut_ptr() as *mut v128, result) };
     }
 
     for i in (chunks * 4)..a.len() {
