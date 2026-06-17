@@ -13,3 +13,6 @@ ruvector-temporal-tensor = { path = "../ruvector-temporal-tensor", features = ["
 
 [lib]
 crate-type = ["cdylib"]
+
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = false
