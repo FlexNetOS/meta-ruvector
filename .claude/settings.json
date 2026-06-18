@@ -43,7 +43,7 @@
           },
           {
             "type": "command",
-            "command": "jq -r '.tool_input.command // empty' 2>/dev/null | { read -r cmd; if echo \"$cmd\" | grep -q 'git commit'; then MSG=$(cd \"${CLAUDE_PROJECT_DIR:-.}\" && git log --oneline -1 2>/dev/null); curl -s -X POST 'https://pi.ruv.io/v1/pipeline/inject' -H 'Content-Type: application/json' -H 'Authorization: Bearer ${BRAIN_API_KEY:-ruvector-crawl-2026}' -d \"{\\\"source\\\":\\\"claude-commit\\\",\\\"title\\\":\\\"Commit: $MSG\\\",\\\"content\\\":\\\"$MSG\\\",\\\"tags\\\":[\\\"commit\\\",\\\"claude-code\\\",\\\"auto\\\"],\\\"category\\\":\\\"pattern\\\"}\" > /dev/null 2>&1; fi; } || true",
+            "command": "jq -r '.tool_input.command // empty' 2>/dev/null | { read -r cmd; if echo \"$cmd\" | grep -q 'git commit'; then MSG=$(cd \"${CLAUDE_PROJECT_DIR:-.}\" && git log --oneline -1 2>/dev/null); curl -s -X POST 'https://pi.ruv.io/v1/pipeline/inject' -H 'Content-Type: application/json' -H 'Authorization: Bearer ${BRAIN_API_KEY}' -d \"{\\\"source\\\":\\\"claude-commit\\\",\\\"title\\\":\\\"Commit: $MSG\\\",\\\"content\\\":\\\"$MSG\\\",\\\"tags\\\":[\\\"commit\\\",\\\"claude-code\\\",\\\"auto\\\"],\\\"category\\\":\\\"pattern\\\"}\" > /dev/null 2>&1; fi; } || true",
             "timeout": 10000,
             "async": true
           }
@@ -87,7 +87,7 @@
           },
           {
             "type": "command",
-            "command": "SUMMARY=$(cd \"${CLAUDE_PROJECT_DIR:-.}\" && echo \"Branch: $(git branch --show-current 2>/dev/null)\"; echo \"Commits:\"; git log --oneline -5 2>/dev/null; echo \"Diff:\"; git diff --stat HEAD~5 2>/dev/null | tail -3); TITLE=\"Claude session: $(date -u +%Y-%m-%dT%H:%M)\"; curl -s -X POST \"https://pi.ruv.io/v1/pipeline/inject\" -H \"Content-Type: application/json\" -H \"Authorization: Bearer ${BRAIN_API_KEY:-ruvector-crawl-2026}\" -d \"{\\\"source\\\":\\\"claude-session\\\",\\\"title\\\":\\\"$TITLE\\\",\\\"content\\\":\\\"$SUMMARY\\\",\\\"tags\\\":[\\\"session\\\",\\\"claude-code\\\",\\\"auto\\\"],\\\"category\\\":\\\"pattern\\\"}\" > /dev/null 2>&1 || true",
+            "command": "SUMMARY=$(cd \"${CLAUDE_PROJECT_DIR:-.}\" && echo \"Branch: $(git branch --show-current 2>/dev/null)\"; echo \"Commits:\"; git log --oneline -5 2>/dev/null; echo \"Diff:\"; git diff --stat HEAD~5 2>/dev/null | tail -3); TITLE=\"Claude session: $(date -u +%Y-%m-%dT%H:%M)\"; curl -s -X POST \"https://pi.ruv.io/v1/pipeline/inject\" -H \"Content-Type: application/json\" -H \"Authorization: Bearer ${BRAIN_API_KEY}\" -d \"{\\\"source\\\":\\\"claude-session\\\",\\\"title\\\":\\\"$TITLE\\\",\\\"content\\\":\\\"$SUMMARY\\\",\\\"tags\\\":[\\\"session\\\",\\\"claude-code\\\",\\\"auto\\\"],\\\"category\\\":\\\"pattern\\\"}\" > /dev/null 2>&1 || true",
             "timeout": 15000,
             "async": true,
             "statusMessage": "Sharing session summary to brain..."
@@ -194,7 +194,6 @@
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
     "CLAUDE_FLOW_V3_ENABLED": "true",
     "CLAUDE_FLOW_HOOKS_ENABLED": "true",
-    "BRAIN_API_KEY": "ruvector-crawl-2026",
     "BRAIN_URL": "https://pi.ruv.io"
   },
   "claudeFlow": {

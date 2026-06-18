@@ -7,7 +7,7 @@ set -euo pipefail
 CRAWL_INDEX="${1:-CC-MAIN-2026-08}"
 SEGMENT_NUM="${2:-0}"
 BRAIN_URL="${BRAIN_URL:-https://pi.ruv.io}"
-AUTH="Authorization: Bearer ruvector-crawl-2026"
+AUTH="Authorization: Bearer ${BRAIN_API_KEY:-}"
 WORK_DIR="/tmp/wet-processing"
 BATCH_SIZE=10  # items per batch inject call
 
