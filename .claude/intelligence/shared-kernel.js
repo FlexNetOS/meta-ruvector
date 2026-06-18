@@ -28,9 +28,17 @@ let ruvectorAvailable = false;
 
 try {
   const ruvector = await import('@ruvector/core');
-  VectorDB = ruvector.VectorDB;
-  ruvectorAvailable = true;
-  console.error('✅ @ruvector/core loaded - using native HNSW vector search');
+  // @ruvector/core is a CommonJS NAPI module, so ESM `import` puts its exports under
+  // `.default`. The native class is `VectorDb` — NAPI lower-camel-cases the Rust
+  // `VectorDB`, and the `export { VectorDb as VectorDB }` in index.d.ts is TYPE-ONLY
+  // (no runtime export). The old `ruvector.VectorDB` was undefined on both counts,
+  // which is why native HNSW silently stayed on the cosine fallback.
+  const core = ruvector.default ?? ruvector;
+  VectorDB = core.VectorDb ?? core.VectorDB; // real NAPI name first, then any alias
+  ruvectorAvailable = typeof VectorDB === 'function';
+  console.error(ruvectorAvailable
+    ? '✅ @ruvector/core loaded - using native HNSW vector search (VectorDb)'
+    : '⚠️ @ruvector/core loaded but no VectorDb export; using fallback cosine similarity');
 } catch (e) {
   console.error('⚠️ @ruvector/core not available, using fallback cosine similarity');
 }
