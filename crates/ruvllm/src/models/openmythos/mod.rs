@@ -84,14 +84,63 @@ impl MythosCache {
         self.seq_len == 0
     }
 
+    /// Create a cache with pre-allocated GQA KV buffers to avoid per-step
+    /// `Tensor::cat` growth (O(N²) → O(N) bandwidth across N decode steps).
+    ///
+    /// Pre-allocates `[b, kv_heads, max_seq, head_dim]` for every GQA layer.
+    /// The first forward call fills positions 0..prompt_len; subsequent single-
+    /// token decode steps use `scatter_set` to append at O(head_dim) cost.
+    pub fn with_prealloc(
+        cfg: &MythosConfig,
+        b: usize,
+        device: &candle_core::Device,
+        dtype: candle_core::DType,
+    ) -> candle_core::Result<Self> {
+        let kv_heads = cfg.n_kv_heads;
+        let head_dim = cfg.head_dim();
+        let max_seq = cfg.max_seq_len;
+        let mk_buf = |_| -> candle_core::Result<Option<KvLayerCache>> {
+            let k = candle_core::Tensor::zeros((b, kv_heads, max_seq, head_dim), dtype, device)?;
+            let v = candle_core::Tensor::zeros((b, kv_heads, max_seq, head_dim), dtype, device)?;
+            Ok(Some(KvLayerCache::GqaPrealloc { k, v, seq_len: 0, max_seq }))
+        };
+        // MLA layers share the same pre-alloc approach but use a different shape;
+        // for now only pre-alloc for GQA (AttnType::Gqa).
+        let prelude = if cfg.attn_type == AttnType::Gqa {
+            (0..cfg.prelude_layers).map(|_| mk_buf(())).collect::<candle_core::Result<Vec<_>>>()?
+        } else {
+            vec![None; cfg.prelude_layers]
+        };
+        let recurrent = if cfg.attn_type == AttnType::Gqa { mk_buf(())? } else { None };
+        let coda = if cfg.attn_type == AttnType::Gqa {
+            (0..cfg.coda_layers).map(|_| mk_buf(())).collect::<candle_core::Result<Vec<_>>>()?
+        } else {
+            vec![None; cfg.coda_layers]
+        };
+        Ok(Self { prelude, recurrent, coda, seq_len: 0 })
+    }
+
     /// Clear all cached state.
     pub fn reset(&mut self) {
         for c in &mut self.prelude {
-            *c = None;
+            // For GqaPrealloc, reset seq_len (the buffer is reused).
+            if let Some(KvLayerCache::GqaPrealloc { seq_len, .. }) = c {
+                *seq_len = 0;
+            } else {
+                *c = None;
+            }
         }
-        self.recurrent = None;
+        if let Some(KvLayerCache::GqaPrealloc { seq_len, .. }) = &mut self.recurrent {
+            *seq_len = 0;
+        } else {
+            self.recurrent = None;
+        }
         for c in &mut self.coda {
-            *c = None;
+            if let Some(KvLayerCache::GqaPrealloc { seq_len, .. }) = c {
+                *seq_len = 0;
+            } else {
+                *c = None;
+            }
         }
         self.seq_len = 0;
     }
@@ -354,9 +403,12 @@ impl OpenMythos {
         if prompt_ids.is_empty() {
             return Err(RuvLLMError::Generation("empty prompt".into()));
         }
-        // top_k_transfer: how many candidates to sort on GPU and transfer.
-        // Using top_k when set (40-200 typical); capped at 512 for top-p-only.
-        let top_k_transfer = if sampling.top_k > 0 { sampling.top_k } else { 512.min(self.cfg.vocab_size) };
+        // Greedy with no rep penalty: bypass sort/transfer entirely — use on-device argmax.
+        let is_greedy = sampling.temperature <= 0.0
+            && ((sampling.repetition_penalty - 1.0).abs() <= f32::EPSILON
+                || sampling.repetition_window == 0);
+        let top_k_transfer =
+            if sampling.top_k > 0 { sampling.top_k } else { 512.min(self.cfg.vocab_size) };
         let mut sampler = Sampler::new(sampling);
         let mut cache = MythosCache::new(&self.cfg);
         let mut history: Vec<u32> = prompt_ids.to_vec();
@@ -365,8 +417,12 @@ impl OpenMythos {
             Tensor::from_slice(prompt_ids, (1, prompt_ids.len()), &self.device)
                 .map_err(cand)?;
         let logits = self.forward_cached(&prompt, &mut cache, n_loops)?;
-        let (vals, idxs) = self.last_logits_topk(&logits, top_k_transfer)?;
-        let mut next = sampler.sample_topk(&vals, &idxs, &history);
+        let mut next = if is_greedy {
+            self.last_argmax(&logits)?
+        } else {
+            let (vals, idxs) = self.last_logits_topk(&logits, top_k_transfer)?;
+            sampler.sample_topk(&vals, &idxs, &history)
+        };
 
         let mut out = Vec::with_capacity(max_new_tokens);
         for _ in 0..max_new_tokens {
@@ -377,8 +433,12 @@ impl OpenMythos {
             }
             let step = Tensor::from_slice(&[next], (1, 1), &self.device).map_err(cand)?;
             let logits = self.forward_cached(&step, &mut cache, n_loops)?;
-            let (vals, idxs) = self.last_logits_topk(&logits, top_k_transfer)?;
-            next = sampler.sample_topk(&vals, &idxs, &history);
+            next = if is_greedy {
+                self.last_argmax(&logits)?
+            } else {
+                let (vals, idxs) = self.last_logits_topk(&logits, top_k_transfer)?;
+                sampler.sample_topk(&vals, &idxs, &history)
+            };
         }
         Ok(out)
     }
@@ -401,7 +461,11 @@ impl OpenMythos {
         if prompt_ids.is_empty() {
             return Err(RuvLLMError::Generation("empty prompt".into()));
         }
-        let top_k_transfer = if sampling.top_k > 0 { sampling.top_k } else { 512.min(self.cfg.vocab_size) };
+        let is_greedy = sampling.temperature <= 0.0
+            && ((sampling.repetition_penalty - 1.0).abs() <= f32::EPSILON
+                || sampling.repetition_window == 0);
+        let top_k_transfer =
+            if sampling.top_k > 0 { sampling.top_k } else { 512.min(self.cfg.vocab_size) };
         let mut sampler = Sampler::new(sampling);
         let mut cache = MythosCache::new(&self.cfg);
         let mut history: Vec<u32> = prompt_ids.to_vec();
@@ -410,8 +474,12 @@ impl OpenMythos {
             Tensor::from_slice(prompt_ids, (1, prompt_ids.len()), &self.device)
                 .map_err(cand)?;
         let logits = self.forward_cached(&prompt, &mut cache, n_loops)?;
-        let (vals, idxs) = self.last_logits_topk(&logits, top_k_transfer)?;
-        let mut next = sampler.sample_topk(&vals, &idxs, &history);
+        let mut next = if is_greedy {
+            self.last_argmax(&logits)?
+        } else {
+            let (vals, idxs) = self.last_logits_topk(&logits, top_k_transfer)?;
+            sampler.sample_topk(&vals, &idxs, &history)
+        };
 
         for _ in 0..max_new_tokens {
             if !on_token(next) {
@@ -423,8 +491,12 @@ impl OpenMythos {
             }
             let step = Tensor::from_slice(&[next], (1, 1), &self.device).map_err(cand)?;
             let logits = self.forward_cached(&step, &mut cache, n_loops)?;
-            let (vals, idxs) = self.last_logits_topk(&logits, top_k_transfer)?;
-            next = sampler.sample_topk(&vals, &idxs, &history);
+            next = if is_greedy {
+                self.last_argmax(&logits)?
+            } else {
+                let (vals, idxs) = self.last_logits_topk(&logits, top_k_transfer)?;
+                sampler.sample_topk(&vals, &idxs, &history)
+            };
         }
         Ok(())
     }

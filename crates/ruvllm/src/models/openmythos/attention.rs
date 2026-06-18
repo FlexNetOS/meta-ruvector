@@ -12,7 +12,16 @@ use crate::error::Result;
 #[derive(Clone)]
 pub enum KvLayerCache {
     /// GQA: rotated keys and values `[b, kv_heads, len, head_dim]`.
+    /// Grows via `Tensor::cat` on each decode step (legacy path).
     Gqa { k: Tensor, v: Tensor },
+    /// GQA with pre-allocated buffers — uses `scatter_set` for O(1) per-step
+    /// appends instead of O(N) cat copies. Allocated up to `max_seq` positions.
+    GqaPrealloc {
+        k: Tensor, // [b, kv_heads, max_seq, head_dim] — full buffer
+        v: Tensor,
+        seq_len: usize, // positions 0..seq_len are valid
+        max_seq: usize,
+    },
     /// MLA: compressed latent `[b, len, kv_lora_rank]` and rotated shared
     /// rope keys `[b, len, qk_rope_head_dim]`.
     Mla { c_kv: Tensor, k_rope: Tensor },
@@ -23,6 +32,7 @@ impl KvLayerCache {
     pub fn len(&self) -> usize {
         match self {
             KvLayerCache::Gqa { k, .. } => k.dim(2).unwrap_or(0),
+            KvLayerCache::GqaPrealloc { seq_len, .. } => *seq_len,
             KvLayerCache::Mla { c_kv, .. } => c_kv.dim(1).unwrap_or(0),
         }
     }
@@ -132,13 +142,37 @@ impl GqaAttention {
         let q = apply_rope(&q, cos, sin)?;
         let k_cur = apply_rope(&k, cos, sin)?;
 
-        // Concatenate with past (already-rotated) keys/values.
-        let (k_full, v_full) = match past {
-            Some(KvLayerCache::Gqa { k: pk, v: pv }) => (
-                Tensor::cat(&[pk, &k_cur], 2).map_err(cand)?,
-                Tensor::cat(&[pv, &v], 2).map_err(cand)?,
-            ),
-            _ => (k_cur, v),
+        // Accumulate KV: two paths depending on cache variant.
+        let (k_full, v_full, new_cache) = match past {
+            // Pre-allocated: scatter_set is O(new_data) not O(total); no new tensor.
+            Some(KvLayerCache::GqaPrealloc { k: buf_k, v: buf_v, seq_len, max_seq }) => {
+                // Index tensor: all positions write to `seq_len` along dim 2.
+                let idx = Tensor::full(*seq_len as u32, k_cur.shape(), k_cur.device())
+                    .map_err(cand)?;
+                buf_k.scatter_set(&idx, &k_cur, 2).map_err(cand)?;
+                buf_v.scatter_set(&idx, &v, 2).map_err(cand)?;
+                let new_seq = seq_len + seq;
+                let k_view = buf_k.narrow(2, 0, new_seq).map_err(cand)?;
+                let v_view = buf_v.narrow(2, 0, new_seq).map_err(cand)?;
+                let cache = KvLayerCache::GqaPrealloc {
+                    k: buf_k.clone(),
+                    v: buf_v.clone(),
+                    seq_len: new_seq,
+                    max_seq: *max_seq,
+                };
+                (k_view, v_view, cache)
+            }
+            // Legacy cat path (first call or non-preallocated cache).
+            Some(KvLayerCache::Gqa { k: pk, v: pv }) => {
+                let k_f = Tensor::cat(&[pk, &k_cur], 2).map_err(cand)?;
+                let v_f = Tensor::cat(&[pv, &v], 2).map_err(cand)?;
+                let cache = KvLayerCache::Gqa { k: k_f.clone(), v: v_f.clone() };
+                (k_f, v_f, cache)
+            }
+            _ => {
+                let cache = KvLayerCache::Gqa { k: k_cur.clone(), v: v.clone() };
+                (k_cur, v, cache)
+            }
         };
 
         let n_rep = self.n_heads / self.n_kv_heads;
@@ -164,10 +198,7 @@ impl GqaAttention {
         let out = self.o_proj.forward(&ctx).map_err(cand)?;
         Ok((
             out,
-            KvLayerCache::Gqa {
-                k: k_full,
-                v: v_full,
-            },
+            new_cache,
         ))
     }
 }
