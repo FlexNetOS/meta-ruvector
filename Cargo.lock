@@ -9371,6 +9371,7 @@ dependencies = [
  "anyhow",
  "criterion 0.5.1",
  "dashmap 6.1.0",
+ "half",
  "libc",
  "memmap2",
  "napi",
