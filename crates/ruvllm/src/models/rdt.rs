@@ -508,16 +508,15 @@ mod candle_impl {
             Ok(out)
         }
 
-        /// Cached pass: `past` is the prior (rotated) K/V; returns the block
-        /// output and the *full* (past + current) K/V for the caller to store.
+        /// Cached pass returning the updated `RdtKvCache` for the caller to store.
         pub fn forward_cached(
             &self,
             xs: &Tensor,
             cos: &Tensor,
             sin: &Tensor,
             mask: &Tensor,
-            past: Option<&(Tensor, Tensor)>,
-        ) -> Result<(Tensor, (Tensor, Tensor))> {
+            past: Option<&RdtKvCache>,
+        ) -> Result<(Tensor, RdtKvCache)> {
             let (b, seq, _h) = xs.dims3().map_err(cand)?;
 
             // --- Attention sub-layer (pre-norm + residual) ---
@@ -538,10 +537,10 @@ mod candle_impl {
             cos: &Tensor,
             sin: &Tensor,
             mask: &Tensor,
-            past: Option<&(Tensor, Tensor)>,
+            past: Option<&RdtKvCache>,
             b: usize,
             seq: usize,
-        ) -> Result<(Tensor, (Tensor, Tensor))> {
+        ) -> Result<(Tensor, RdtKvCache)> {
             let q = self.q_proj.forward(xs).map_err(cand)?;
             let k = self.k_proj.forward(xs).map_err(cand)?;
             let v = self.v_proj.forward(xs).map_err(cand)?;
@@ -572,18 +571,43 @@ mod candle_impl {
             let q = apply_rope(&q, cos, sin)?;
             let k_cur = apply_rope(&k, cos, sin)?;
 
-            // Concatenate with past (already-rotated) keys/values.
-            let (k_full, v_full) = match past {
-                Some((pk, pv)) => (
-                    Tensor::cat(&[pk, &k_cur], 2).map_err(cand)?,
-                    Tensor::cat(&[pv, &v], 2).map_err(cand)?,
-                ),
-                None => (k_cur, v),
+            let n_rep = self.num_heads / self.num_kv_heads;
+            // Accumulate KV — two paths matching OpenMythos GqaPrealloc/Gqa.
+            let (k, v, new_kv) = match past {
+                // Pre-allocated: scatter_set + skip repeat_kv on full history.
+                Some(RdtKvCache::Prealloc { k: buf_k, v: buf_v, seq_len, max_seq }) => {
+                    let k_cur_rep = repeat_kv(&k_cur, n_rep)?; // [b, n_heads, seq, hd]
+                    let v_rep_new = repeat_kv(&v, n_rep)?;
+                    let idx =
+                        Tensor::full(*seq_len as u32, k_cur_rep.shape(), k_cur_rep.device())
+                            .map_err(cand)?;
+                    buf_k.scatter_set(&idx, &k_cur_rep, 2).map_err(cand)?;
+                    buf_v.scatter_set(&idx, &v_rep_new, 2).map_err(cand)?;
+                    let new_seq = seq_len + seq;
+                    let k_v = buf_k.narrow(2, 0, new_seq).map_err(cand)?;
+                    let v_v = buf_v.narrow(2, 0, new_seq).map_err(cand)?;
+                    let cache = RdtKvCache::Prealloc {
+                        k: buf_k.clone(),
+                        v: buf_v.clone(),
+                        seq_len: new_seq,
+                        max_seq: *max_seq,
+                    };
+                    (k_v, v_v, cache)
+                }
+                // Legacy cat path.
+                Some(RdtKvCache::Cat(pk, pv)) => {
+                    let k_f = Tensor::cat(&[pk, &k_cur], 2).map_err(cand)?;
+                    let v_f = Tensor::cat(&[pv, &v], 2).map_err(cand)?;
+                    let k_r = repeat_kv(&k_f, n_rep)?;
+                    let v_r = repeat_kv(&v_f, n_rep)?;
+                    (k_r, v_r, RdtKvCache::Cat(k_f, v_f))
+                }
+                None => {
+                    let k_r = repeat_kv(&k_cur, n_rep)?;
+                    let v_r = repeat_kv(&v, n_rep)?;
+                    (k_r, v_r, RdtKvCache::Cat(k_cur, v))
+                }
             };
-
-            // GQA: repeat kv heads to match query heads.
-            let k = repeat_kv(&k_full, self.num_heads / self.num_kv_heads)?;
-            let v = repeat_kv(&v_full, self.num_heads / self.num_kv_heads)?;
 
             let scale = 1.0 / (self.head_dim as f64).sqrt();
             let scores = (q.matmul(&k.transpose(2, 3).map_err(cand)?).map_err(cand)? * scale)
@@ -601,7 +625,7 @@ mod candle_impl {
                 .reshape((b, seq, self.num_heads * self.head_dim))
                 .map_err(cand)?;
             let out = self.o_proj.forward(&ctx).map_err(cand)?;
-            Ok((out, (k_full, v_full)))
+            Ok((out, new_kv))
         }
 
         fn mlp(&self, xs: &Tensor) -> Result<Tensor> {
@@ -770,7 +794,9 @@ mod candle_impl {
             if prompt_ids.is_empty() {
                 return Err(RuvLLMError::Generation("empty prompt".into()));
             }
-            let mut cache = RdtCache::new();
+            let mut cache =
+                RdtCache::with_prealloc(&self.cfg, 1, &self.device, self.dtype)
+                    .unwrap_or_else(|_| RdtCache::new());
             let prompt =
                 Tensor::from_slice(prompt_ids, (1, prompt_ids.len()), &self.device)
                     .map_err(cand)?;
@@ -809,7 +835,9 @@ mod candle_impl {
                 512.min(self.cfg.vocab_size)
             };
             let mut sampler = crate::models::sampling::Sampler::new(sampling);
-            let mut cache = RdtCache::new();
+            let mut cache =
+                RdtCache::with_prealloc(&self.cfg, 1, &self.device, self.dtype)
+                    .unwrap_or_else(|_| RdtCache::new());
             let mut history: Vec<u32> = prompt_ids.to_vec();
 
             let prompt =
@@ -855,7 +883,9 @@ mod candle_impl {
                 512.min(self.cfg.vocab_size)
             };
             let mut sampler = crate::models::sampling::Sampler::new(sampling);
-            let mut cache = RdtCache::new();
+            let mut cache =
+                RdtCache::with_prealloc(&self.cfg, 1, &self.device, self.dtype)
+                    .unwrap_or_else(|_| RdtCache::new());
             let mut history: Vec<u32> = prompt_ids.to_vec();
 
             let prompt =
@@ -897,10 +927,10 @@ mod candle_impl {
             cos: &Tensor,
             sin: &Tensor,
             mask: &Tensor,
-            past: Option<&(Tensor, Tensor)>,
+            past: Option<&RdtKvCache>,
             b: usize,
             seq: usize,
-        ) -> Result<(Tensor, (Tensor, Tensor))> {
+        ) -> Result<(Tensor, RdtKvCache)> {
             let n = b * seq;
             let mut hidden = xs.clone();
 
@@ -911,7 +941,7 @@ mod candle_impl {
                 Tensor::ones((b, seq, 1), DType::F32, &self.device).map_err(cand)?;
             let mut depth_f32 =
                 Tensor::zeros((b, seq, 1), DType::F32, &self.device).map_err(cand)?;
-            let mut last_kv: Option<(Tensor, Tensor)> = None;
+            let mut last_kv: Option<RdtKvCache> = None;
 
             let max_loops = self.cfg.max_loops;
             for step in 0..max_loops {
@@ -971,18 +1001,65 @@ mod candle_impl {
 
     }
 
+    /// KV state for one RDT decode session.
+    pub enum RdtKvCache {
+        /// Grows via Tensor::cat (legacy / first-call path).
+        Cat(Tensor, Tensor),
+        /// Pre-allocated `[b, num_heads, max_seq, head_dim]` buffers with pre-repeated
+        /// KV. Uses scatter_set for O(1) appends and eliminates repeat_kv per step.
+        Prealloc {
+            k: Tensor,
+            v: Tensor,
+            seq_len: usize,
+            max_seq: usize,
+        },
+    }
+
+    impl RdtKvCache {
+        pub fn seq_len(&self) -> usize {
+            match self {
+                RdtKvCache::Cat(k, _) => k.dim(2).unwrap_or(0),
+                RdtKvCache::Prealloc { seq_len, .. } => *seq_len,
+            }
+        }
+    }
+
     /// Incremental KV cache for RDT decode (final-iteration K/V of the shared
     /// block, concatenated across decode steps).
-    #[derive(Default)]
     pub struct RdtCache {
-        kv: Option<(Tensor, Tensor)>,
+        pub(crate) kv: Option<RdtKvCache>,
         seq_len: usize,
+    }
+
+    impl Default for RdtCache {
+        fn default() -> Self {
+            Self { kv: None, seq_len: 0 }
+        }
     }
 
     impl RdtCache {
         pub fn new() -> Self {
             Self::default()
         }
+
+        /// Pre-allocated cache: eliminates Tensor::cat growth and repeat_kv.
+        pub fn with_prealloc(
+            cfg: &RdtConfig,
+            b: usize,
+            device: &Device,
+            dtype: DType,
+        ) -> Result<Self> {
+            let max_seq = cfg.max_position_embeddings;
+            let n_heads = cfg.num_heads;
+            let head_dim = cfg.head_dim();
+            let k = Tensor::zeros((b, n_heads, max_seq, head_dim), dtype, device).map_err(cand)?;
+            let v = Tensor::zeros((b, n_heads, max_seq, head_dim), dtype, device).map_err(cand)?;
+            Ok(Self {
+                kv: Some(RdtKvCache::Prealloc { k, v, seq_len: 0, max_seq }),
+                seq_len: 0,
+            })
+        }
+
         pub fn len(&self) -> usize {
             self.seq_len
         }
@@ -990,7 +1067,11 @@ mod candle_impl {
             self.seq_len == 0
         }
         pub fn reset(&mut self) {
-            self.kv = None;
+            if let Some(RdtKvCache::Prealloc { seq_len, .. }) = &mut self.kv {
+                *seq_len = 0;
+            } else {
+                self.kv = None;
+            }
             self.seq_len = 0;
         }
     }

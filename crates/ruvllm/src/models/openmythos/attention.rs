@@ -14,11 +14,10 @@ pub enum KvLayerCache {
     /// GQA: rotated keys and values `[b, kv_heads, len, head_dim]`.
     /// Grows via `Tensor::cat` on each decode step (legacy path).
     Gqa { k: Tensor, v: Tensor },
-    /// GQA with pre-allocated buffers. Uses `scatter_set` for O(1) appends and
-    /// stores **pre-repeated** KV (`[b, n_heads, max_seq, head_dim]`) to eliminate
-    /// the per-step `repeat_kv` copy from the decode hot path.
+    /// GQA with pre-allocated `[b, kv_heads, max_seq, head_dim]` buffers.
+    /// Uses `scatter_set` for O(1) per-step appends instead of O(N) cat copies.
     GqaPrealloc {
-        k: Tensor, // [b, n_heads, max_seq, head_dim] — pre-repeated
+        k: Tensor, // [b, kv_heads, max_seq, head_dim]
         v: Tensor,
         seq_len: usize,
         max_seq: usize,
@@ -144,21 +143,14 @@ impl GqaAttention {
         let k_cur = apply_rope(&k, cos, sin)?;
 
         // Accumulate KV: two paths depending on cache variant.
-        // For GqaPrealloc, store pre-repeated KV to eliminate repeat_kv per step.
-        let n_rep = self.n_heads / self.n_kv_heads;
-        let (k_rep, v_rep, new_cache) = match past {
-            // Pre-allocated: O(1) append via scatter_set + no repeat_kv needed.
+        let (k_full, v_full, new_cache) = match past {
+            // Pre-allocated: scatter_set is O(new_data) not O(total); no new tensor.
             Some(KvLayerCache::GqaPrealloc { k: buf_k, v: buf_v, seq_len, max_seq }) => {
-                // Repeat new KV once (small: [b, kv_heads, seq, head_dim] only).
-                let k_cur_rep = repeat_kv(&k_cur, n_rep)?; // [b, n_heads, seq, hd]
-                let v_rep_new = repeat_kv(&v, n_rep)?;
-                // Write into pre-allocated buffer at position seq_len.
-                let idx = Tensor::full(*seq_len as u32, k_cur_rep.shape(), k_cur_rep.device())
+                let idx = Tensor::full(*seq_len as u32, k_cur.shape(), k_cur.device())
                     .map_err(cand)?;
-                buf_k.scatter_set(&idx, &k_cur_rep, 2).map_err(cand)?;
-                buf_v.scatter_set(&idx, &v_rep_new, 2).map_err(cand)?;
+                buf_k.scatter_set(&idx, &k_cur, 2).map_err(cand)?;
+                buf_v.scatter_set(&idx, &v, 2).map_err(cand)?;
                 let new_seq = seq_len + seq;
-                // Narrow gives the full-history repeated KV — no extra repeat needed.
                 let k_view = buf_k.narrow(2, 0, new_seq).map_err(cand)?;
                 let v_view = buf_v.narrow(2, 0, new_seq).map_err(cand)?;
                 let cache = KvLayerCache::GqaPrealloc {
@@ -173,21 +165,18 @@ impl GqaAttention {
             Some(KvLayerCache::Gqa { k: pk, v: pv }) => {
                 let k_f = Tensor::cat(&[pk, &k_cur], 2).map_err(cand)?;
                 let v_f = Tensor::cat(&[pv, &v], 2).map_err(cand)?;
-                let k_rep = repeat_kv(&k_f, n_rep)?;
-                let v_rep = repeat_kv(&v_f, n_rep)?;
-                let cache = KvLayerCache::Gqa { k: k_f, v: v_f };
-                (k_rep, v_rep, cache)
+                let cache = KvLayerCache::Gqa { k: k_f.clone(), v: v_f.clone() };
+                (k_f, v_f, cache)
             }
             _ => {
-                let k_rep = repeat_kv(&k_cur, n_rep)?;
-                let v_rep = repeat_kv(&v, n_rep)?;
-                let cache = KvLayerCache::Gqa {
-                    k: k_cur,
-                    v,
-                };
-                (k_rep, v_rep, cache)
+                let cache = KvLayerCache::Gqa { k: k_cur.clone(), v: v.clone() };
+                (k_cur, v, cache)
             }
         };
+
+        let n_rep = self.n_heads / self.n_kv_heads;
+        let k_rep = repeat_kv(&k_full, n_rep)?;
+        let v_rep = repeat_kv(&v_full, n_rep)?;
 
         let scale = 1.0 / (self.head_dim as f64).sqrt();
         let scores = (q

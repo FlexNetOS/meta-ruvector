@@ -96,14 +96,14 @@ impl MythosCache {
         device: &candle_core::Device,
         dtype: candle_core::DType,
     ) -> candle_core::Result<Self> {
-        // Allocate [b, n_heads, max_seq, head_dim] — n_heads not kv_heads, so the
-        // buffer stores pre-repeated KV and repeat_kv() is not needed at decode time.
-        let n_heads = cfg.n_heads;
+        // Allocate [b, kv_heads, max_seq, head_dim] — compact buffer, repeat_kv
+        // still needed but scatter_set avoids O(N²) cat bandwidth.
+        let kv_heads = cfg.n_kv_heads;
         let head_dim = cfg.head_dim();
         let max_seq = cfg.max_seq_len;
         let mk_buf = |_| -> candle_core::Result<Option<KvLayerCache>> {
-            let k = candle_core::Tensor::zeros((b, n_heads, max_seq, head_dim), dtype, device)?;
-            let v = candle_core::Tensor::zeros((b, n_heads, max_seq, head_dim), dtype, device)?;
+            let k = candle_core::Tensor::zeros((b, kv_heads, max_seq, head_dim), dtype, device)?;
+            let v = candle_core::Tensor::zeros((b, kv_heads, max_seq, head_dim), dtype, device)?;
             Ok(Some(KvLayerCache::GqaPrealloc { k, v, seq_len: 0, max_seq }))
         };
         // MLA layers share the same pre-alloc approach but use a different shape;
