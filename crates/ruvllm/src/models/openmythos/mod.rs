@@ -368,7 +368,9 @@ impl OpenMythos {
         if prompt_ids.is_empty() {
             return Err(RuvLLMError::Generation("empty prompt".into()));
         }
-        let mut cache = MythosCache::new(&self.cfg);
+        let mut cache =
+            MythosCache::with_prealloc(&self.cfg, 1, &self.device, self.dtype)
+                .unwrap_or_else(|_| MythosCache::new(&self.cfg));
 
         let prompt =
             Tensor::from_slice(prompt_ids, (1, prompt_ids.len()), &self.device)
@@ -410,7 +412,9 @@ impl OpenMythos {
         let top_k_transfer =
             if sampling.top_k > 0 { sampling.top_k } else { 512.min(self.cfg.vocab_size) };
         let mut sampler = Sampler::new(sampling);
-        let mut cache = MythosCache::new(&self.cfg);
+        let mut cache =
+            MythosCache::with_prealloc(&self.cfg, 1, &self.device, self.dtype)
+                .unwrap_or_else(|_| MythosCache::new(&self.cfg));
         let mut history: Vec<u32> = prompt_ids.to_vec();
 
         let prompt =
@@ -467,7 +471,9 @@ impl OpenMythos {
         let top_k_transfer =
             if sampling.top_k > 0 { sampling.top_k } else { 512.min(self.cfg.vocab_size) };
         let mut sampler = Sampler::new(sampling);
-        let mut cache = MythosCache::new(&self.cfg);
+        let mut cache =
+            MythosCache::with_prealloc(&self.cfg, 1, &self.device, self.dtype)
+                .unwrap_or_else(|_| MythosCache::new(&self.cfg));
         let mut history: Vec<u32> = prompt_ids.to_vec();
 
         let prompt =
