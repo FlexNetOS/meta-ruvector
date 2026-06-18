@@ -208,6 +208,80 @@ class ReasoningBank {
         : 'insufficient-data'
     };
   }
+
+  // ── ReasoningBank-with-AgentDB capabilities (verdict / distillation / replay) ──
+  // Reward band that separates a success from a failure verdict (neutral in between).
+  static get VERDICT_BAND() { return 0.05; }
+
+  /**
+   * Verdict judgment: classify an outcome as 'success' | 'failure' | 'neutral'.
+   * Accepts a raw reward number or a trajectory-like object ({ reward }). Pure.
+   */
+  judge(rewardOrTrajectory) {
+    const r = typeof rewardOrTrajectory === 'number'
+      ? rewardOrTrajectory
+      : (rewardOrTrajectory?.reward ?? 0);
+    const band = ReasoningBank.VERDICT_BAND;
+    if (r > band) return 'success';
+    if (r < -band) return 'failure';
+    return 'neutral';
+  }
+
+  /** Verdict tally across the recorded trajectories (pure). */
+  judgeAll() {
+    const tally = { success: 0, failure: 0, neutral: 0, total: 0 };
+    for (const t of this.trajectories) { tally[this.judge(t)]++; tally.total++; }
+    return tally;
+  }
+
+  /**
+   * Memory distillation: consolidate the learned Q-table into a ranked set of
+   * reusable "lessons" (state -> best action) above a confidence floor, each
+   * carrying its verdict and how many updates back it. Read-only / pure.
+   */
+  distill({ minQ = 0.1, limit = 20 } = {}) {
+    const lessons = [];
+    for (const [state, actions] of Object.entries(this.qTable)) {
+      if (state === '_meta' || !actions) continue;
+      const sorted = Object.entries(actions)
+        .filter(([k]) => k !== '_meta')
+        .sort((a, b) => b[1] - a[1]);
+      if (sorted.length && sorted[0][1] >= minQ) {
+        lessons.push({
+          state,
+          action: sorted[0][0],
+          q: Number(sorted[0][1].toFixed(3)),
+          verdict: this.judge(sorted[0][1]),
+          updates: actions._meta?.updateCount ?? 0,
+        });
+      }
+    }
+    return lessons.sort((a, b) => b.q - a.q).slice(0, limit);
+  }
+
+  /**
+   * Experience replay: re-apply the Q-update for the most recent `n` stored
+   * trajectories to reinforce learning from past experience (smaller learning
+   * rate than live recording; appends NO new trajectory). In-memory by default;
+   * pass { persist: true } to write the qTable through. Returns the count applied.
+   */
+  replay(n = 50, { persist = false } = {}) {
+    const sample = this.trajectories.slice(-Math.max(0, n));
+    let applied = 0;
+    const replayLR = this.alpha * 0.5;
+    for (const t of sample) {
+      if (!t || !t.state || !t.action) continue;
+      const sk = t.state; // stored trajectories already hold a stateKey
+      if (!this.qTable[sk]) this.qTable[sk] = { _meta: { lastUpdate: null, updateCount: 0 } };
+      const cur = this.qTable[sk][t.action] || 0;
+      this.qTable[sk][t.action] = Math.min(0.8, Math.max(-0.5,
+        cur + replayLR * ((t.reward ?? 0) - cur)
+      ));
+      applied++;
+    }
+    if (persist && applied) this.save();
+    return applied;
+  }
 }
 
 export { ReasoningBank };

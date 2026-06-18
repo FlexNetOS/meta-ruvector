@@ -63,6 +63,23 @@ class RuVectorIntelligence {
     return this.reasoning.getBestAction(state, actions);
   }
 
+  // ReasoningBank-with-AgentDB: verdict judgment, memory distillation, experience replay.
+  judge(rewardOrTrajectory) {
+    return this.reasoning.judge(rewardOrTrajectory);
+  }
+
+  judgeAll() {
+    return this.reasoning.judgeAll();
+  }
+
+  distill(opts) {
+    return this.reasoning.distill(opts);
+  }
+
+  replay(n, opts) {
+    return this.reasoning.replay(n, opts);
+  }
+
   async route(task, context = {}) {
     await this.init();
     return this.router.route(task, context);
