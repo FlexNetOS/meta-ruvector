@@ -22,6 +22,15 @@ if (!existsSync(DATA_DIR)) {
   mkdirSync(DATA_DIR, { recursive: true });
 }
 
+// Isolated directory for the native HNSW persisted store. Lives under the
+// gitignored .claude-flow/ (NOT the tracked data/ dir, and NOT the CWD — the
+// crate otherwise defaults storage_path to "./ruvector.db", which collides with
+// any stray store in whatever directory node happens to run from).
+const HNSW_DIR = join(__dirname, '..', '..', '.claude-flow', 'intelligence');
+if (!existsSync(HNSW_DIR)) {
+  mkdirSync(HNSW_DIR, { recursive: true });
+}
+
 // Try to load @ruvector/core VectorDB
 let VectorDB = null;
 let ruvectorAvailable = false;
@@ -128,7 +137,7 @@ function cosineSimilarity(a, b) {
 
 export {
   readFileSync, writeFileSync, existsSync, mkdirSync, join, createHash,
-  DATA_DIR, MEMORY_FILE, TRAJECTORIES_FILE, PATTERNS_FILE, CALIBRATION_FILE,
+  DATA_DIR, HNSW_DIR, MEMORY_FILE, TRAJECTORIES_FILE, PATTERNS_FILE, CALIBRATION_FILE,
   FEEDBACK_FILE, ERROR_PATTERNS_FILE, SEQUENCES_FILE,
   poincareDistance, textToEmbedding, cosineSimilarity,
   VectorDB, ruvectorAvailable, attentionWasm,

@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, existsSync, MEMORY_FILE, poincareDistance, textToEmbedding, cosineSimilarity, VectorDB, ruvectorAvailable } from '../shared-kernel.js';
+import { readFileSync, writeFileSync, existsSync, join, MEMORY_FILE, HNSW_DIR, poincareDistance, textToEmbedding, cosineSimilarity, VectorDB, ruvectorAvailable } from '../shared-kernel.js';
 
 /**
  * Vector Memory with Native HNSW + Hyperbolic distance option
@@ -30,6 +30,11 @@ class VectorMemory {
         this.db = new VectorDB({
           dimensions: this.dimensions,
           distanceMetric: 'Cosine', // Native HNSW uses cosine, we post-process with hyperbolic
+          // Explicit, isolated, DIMENSION-KEYED store. Without storagePath the crate
+          // defaults to "./ruvector.db" in the CWD, where a stale store (e.g. a 384-dim
+          // one) silently overrides `dimensions` and breaks every insert. Keying the
+          // filename by dimension guarantees a change can never collide with an old store.
+          storagePath: join(HNSW_DIR, `ruvector-hnsw-${this.dimensions}.db`),
           hnswConfig: { m: 16, efConstruction: 200, efSearch: 100, maxElements: 50000 }
         });
 
