@@ -16,6 +16,7 @@ const CALIBRATION_FILE = join(DATA_DIR, 'calibration.json');
 const FEEDBACK_FILE = join(DATA_DIR, 'feedback.json');
 const ERROR_PATTERNS_FILE = join(DATA_DIR, 'error-patterns.json');
 const SEQUENCES_FILE = join(DATA_DIR, 'sequences.json');
+const FACTS_FILE = join(DATA_DIR, 'facts.json');
 
 // Ensure data directory exists
 if (!existsSync(DATA_DIR)) {
@@ -138,7 +139,7 @@ function cosineSimilarity(a, b) {
 export {
   readFileSync, writeFileSync, existsSync, mkdirSync, join, createHash,
   DATA_DIR, HNSW_DIR, MEMORY_FILE, TRAJECTORIES_FILE, PATTERNS_FILE, CALIBRATION_FILE,
-  FEEDBACK_FILE, ERROR_PATTERNS_FILE, SEQUENCES_FILE,
+  FEEDBACK_FILE, ERROR_PATTERNS_FILE, SEQUENCES_FILE, FACTS_FILE,
   poincareDistance, textToEmbedding, cosineSimilarity,
   VectorDB, ruvectorAvailable, attentionWasm,
 };

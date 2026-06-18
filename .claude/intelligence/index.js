@@ -16,6 +16,7 @@
 // RuVectorIntelligence aggregate and re-exports the original public interface.
 import { ruvectorAvailable } from './shared-kernel.js';
 import { VectorMemory } from './domains/vector-memory.js';
+import { MemoryPatterns } from './domains/memory-patterns.js';
 import { CalibrationTracker } from './domains/calibration-tracker.js';
 import { FeedbackLoop } from './domains/feedback-loop.js';
 import { ReasoningBank } from './domains/reasoning-bank.js';
@@ -29,6 +30,7 @@ import { NeuralRouter } from './domains/neural-router.js';
 class RuVectorIntelligence {
   constructor(options = {}) {
     this.memory = new VectorMemory({ hyperbolic: options.hyperbolic ?? true });
+    this.memoryPatterns = new MemoryPatterns(this.memory);
     this.reasoning = new ReasoningBank();
     this.calibration = new CalibrationTracker();
     this.feedback = new FeedbackLoop();
@@ -78,6 +80,55 @@ class RuVectorIntelligence {
 
   replay(n, opts) {
     return this.reasoning.replay(n, opts);
+  }
+
+  // === AgentDB Memory Patterns: session memory, facts, consolidation, hierarchy ===
+
+  /** Store one conversation turn in a session (embedded + semantically searchable). */
+  async storeMessage(sessionId, role, content, metadata = {}) {
+    await this.init();
+    return this.memoryPatterns.storeMessage(sessionId, role, content, metadata);
+  }
+
+  /** Chronological history for a session (oldest → newest), capped at `limit`. */
+  getSessionHistory(sessionId, limit = 20) {
+    return this.memoryPatterns.getSessionHistory(sessionId, limit);
+  }
+
+  /** Distinct sessions with turn counts and last activity. */
+  listSessions() {
+    return this.memoryPatterns.listSessions();
+  }
+
+  /** Upsert a structured long-term fact (category/key/value + confidence). */
+  storeFact(category, key, value, opts = {}) {
+    return this.memoryPatterns.storeFact(category, key, value, opts);
+  }
+
+  /** Retrieve facts (optionally filtered by category). */
+  getFacts(category = null) {
+    return this.memoryPatterns.getFacts(category);
+  }
+
+  /** Retrieve a single fact by exact category/key. */
+  getFact(category, key) {
+    return this.memoryPatterns.getFact(category, key);
+  }
+
+  /** Forget a fact by category/key. */
+  forgetFact(category, key) {
+    return this.memoryPatterns.forgetFact(category, key);
+  }
+
+  /** Prune the semantic store by importance/recency (consolidation). */
+  consolidateMemory(opts = {}) {
+    return this.memoryPatterns.consolidate(opts);
+  }
+
+  /** Assemble a layered context view (immediate/shortTerm/longTerm/semantic). */
+  async organizeMemory(query, opts = {}) {
+    await this.init();
+    return this.memoryPatterns.organize(query, opts);
   }
 
   async route(task, context = {}) {
@@ -140,6 +191,7 @@ class RuVectorIntelligence {
   stats() {
     return {
       memory: this.memory.getStats(),
+      memoryPatterns: this.memoryPatterns.getStats(),
       trajectories: this.reasoning.trajectories.length,
       patterns: Object.keys(this.reasoning.qTable).length,
       topPatterns: this.reasoning.getTopPatterns(5),
@@ -156,5 +208,5 @@ class RuVectorIntelligence {
 }
 
 
-export { RuVectorIntelligence, VectorMemory, ReasoningBank, NeuralRouter, CalibrationTracker, FeedbackLoop, ErrorPatternTracker, SequenceTracker };
+export { RuVectorIntelligence, VectorMemory, MemoryPatterns, ReasoningBank, NeuralRouter, CalibrationTracker, FeedbackLoop, ErrorPatternTracker, SequenceTracker };
 export default RuVectorIntelligence;

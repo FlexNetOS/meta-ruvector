@@ -62,6 +62,8 @@ say "[tests] suites"
   run "intelligence characterization" node "$CLAUDE_DIR/intelligence/test/characterization.test.mjs"
 [ -f "$CLAUDE_DIR/intelligence/test/reasoning-bank.test.mjs" ] && \
   run "reasoning-bank (verdict/distill/replay)" node "$CLAUDE_DIR/intelligence/test/reasoning-bank.test.mjs"
+[ -f "$CLAUDE_DIR/intelligence/test/memory-patterns.test.mjs" ] && \
+  run "memory-patterns (session/facts/consolidate/organize)" node "$CLAUDE_DIR/intelligence/test/memory-patterns.test.mjs"
 
 # Truth score + gate.
 total=$((pass + fail))
