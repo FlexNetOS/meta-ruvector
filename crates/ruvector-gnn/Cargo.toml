@@ -17,6 +17,7 @@ ruvector-core = { version = "2.1.0", path = "../ruvector-core", default-features
 ndarray = { version = "0.17.2", features = ["serde"] }
 rand = { workspace = true }
 rand_distr = { workspace = true }
+half = "2"
 
 # Serialization
 serde = { workspace = true }
