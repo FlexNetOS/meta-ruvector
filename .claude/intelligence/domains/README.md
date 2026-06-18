@@ -16,7 +16,7 @@ pinned by `test/characterization.test.mjs`).
 | Module | Responsibility | Data file |
 |--------|----------------|-----------|
 | `vector-memory.js` (`VectorMemory`) | semantic memory store + search (HNSW / cosine) | `memory.json` |
-| `reasoning-bank.js` (`ReasoningBank`) | trajectories, Q-table, A/B, pattern decay | `trajectories.json`, `patterns.json` |
+| `reasoning-bank.js` (`ReasoningBank`) | trajectories, Q-table, A/B, decay, + verdict judgment / memory distillation / experience replay | `trajectories.json`, `patterns.json` |
 | `calibration-tracker.js` (`CalibrationTracker`) | predicted-vs-actual confidence calibration | `calibration.json` |
 | `feedback-loop.js` (`FeedbackLoop`) | learn from followed/ignored suggestions | `feedback.json` |
 | `error-pattern-tracker.js` (`ErrorPatternTracker`) | error categorization + fix suggestion | `error-patterns.json` |

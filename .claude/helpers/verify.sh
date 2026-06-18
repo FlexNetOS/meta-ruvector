@@ -60,6 +60,8 @@ say "[tests] suites"
   run "swarm-orchestrator smoke" bash "$PROJECT_ROOT/tests/swarm/swarm-orchestrator-smoke.sh"
 [ -f "$CLAUDE_DIR/intelligence/test/characterization.test.mjs" ] && \
   run "intelligence characterization" node "$CLAUDE_DIR/intelligence/test/characterization.test.mjs"
+[ -f "$CLAUDE_DIR/intelligence/test/reasoning-bank.test.mjs" ] && \
+  run "reasoning-bank (verdict/distill/replay)" node "$CLAUDE_DIR/intelligence/test/reasoning-bank.test.mjs"
 
 # Truth score + gate.
 total=$((pass + fail))
