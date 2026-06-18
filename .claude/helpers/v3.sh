@@ -74,6 +74,11 @@ case "$1" in
     fi
     ;;
 
+  "swarm"|"sw")
+    shift
+    "$HELPERS_DIR/swarm-orchestrator.sh" "$@"
+    ;;
+
   "help"|"--help"|"-h"|"")
     echo "Claude Flow V3 Helper Tool"
     echo "=========================="
@@ -88,6 +93,7 @@ case "$1" in
     echo "  full-status, fs         Show both quick status and statusline"
     echo "  update <metric> <value> Update specific metric"
     echo "  init                    Initialize and validate environment"
+    echo "  swarm, sw <cmd>         Drive the swarm orchestrator (init/spawn/orchestrate/status/shutdown)"
     echo "  help                    Show this help message"
     echo ""
     echo "Update Examples:"
