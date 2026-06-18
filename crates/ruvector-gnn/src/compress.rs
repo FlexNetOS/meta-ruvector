@@ -477,19 +477,14 @@ impl TensorCompress {
 
 // === Half precision conversion helpers ===
 
-/// Convert f32 to f16 bits (simplified implementation)
+/// Convert f32 to IEEE 754 half-precision (binary16) bits.
 fn f32_to_f16_bits(value: f32) -> u16 {
-    // Simple conversion: scale to 16-bit range
-    // This is a simplified version, not IEEE 754 half precision
-    let scaled = (value * 1000.0).clamp(-32768.0, 32767.0);
-    ((scaled as i32) + 32768) as u16
+    half::f16::from_f32(value).to_bits()
 }
 
-/// Convert f16 bits to f32 (simplified implementation)
+/// Convert IEEE 754 half-precision (binary16) bits back to f32.
 fn f16_bits_to_f32(bits: u16) -> f32 {
-    // Reverse of f32_to_f16_bits
-    let value = bits as i32 - 32768;
-    value as f32 / 1000.0
+    half::f16::from_bits(bits).to_f32()
 }
 
 #[cfg(test)]

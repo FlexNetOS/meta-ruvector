@@ -429,7 +429,7 @@ impl Loss {
     }
 }
 
-/// TODO: Implement training configuration
+/// Training configuration (epochs, batch size, learning rate, loss, optimizer).
 #[derive(Debug, Clone)]
 pub struct TrainingConfig {
     /// Number of epochs
