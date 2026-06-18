@@ -527,10 +527,15 @@ impl QatTrainer {
         Ok(metrics)
     }
 
-    /// Forward pass with quantization
+    /// Forward pass with quantization.
+    ///
+    /// NOTE (ADR-261): this legacy token-based scaffold returns shape-only
+    /// placeholder logits and is **superseded** by the canonical candle-autodiff
+    /// QAT engine in [`crate::qat::candle_qat`] (`QuantizedMlp` + `train_qat_mse`),
+    /// which performs a real fake-quant forward + STE backprop + AdamW step.
+    /// This trainer has no model wired; prefer the candle engine for real QAT.
     fn forward_quantized(&self, _batch: &TrainingBatch) -> Result<Vec<f32>> {
-        // TODO: Implement actual forward pass through quantized model
-        // For now, return dummy logits
+        // Placeholder logits (shape-correct) — see candle_qat for the real engine.
         let batch_size = _batch.batch_size();
         let seq_len = _batch.seq_len();
         let vocab_size = 32000;
