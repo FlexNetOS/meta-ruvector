@@ -11,7 +11,9 @@
 
 use std::sync::Arc;
 
-use candle_core::{CpuStorage, CustomOp1, Device, Layout, Result as CandleResult, Shape, Tensor, Var};
+use candle_core::{
+    CpuStorage, CustomOp1, Device, Layout, Result as CandleResult, Shape, Tensor, Var,
+};
 use candle_nn::{AdamW, Optimizer};
 
 use crate::qat::differentiable_quant::DifferentiableQuantizer;
@@ -47,12 +49,7 @@ impl CustomOp1 for FakeQuant {
         Ok((CpuStorage::F32(dequant), layout.shape().clone()))
     }
 
-    fn bwd(
-        &self,
-        arg: &Tensor,
-        res: &Tensor,
-        grad_res: &Tensor,
-    ) -> CandleResult<Option<Tensor>> {
+    fn bwd(&self, arg: &Tensor, res: &Tensor, grad_res: &Tensor) -> CandleResult<Option<Tensor>> {
         // STE: dL/dw from the quantizer, given latent weights (arg), the quantized
         // output (res) and the upstream gradient (grad_res).
         let w = arg.flatten_all()?.to_vec1::<f32>()?;
@@ -65,7 +62,10 @@ impl CustomOp1 for FakeQuant {
 }
 
 /// Apply fake quantization to `w` (autograd-aware).
-pub fn fake_quantize(w: &Tensor, quantizer: Arc<dyn DifferentiableQuantizer>) -> CandleResult<Tensor> {
+pub fn fake_quantize(
+    w: &Tensor,
+    quantizer: Arc<dyn DifferentiableQuantizer>,
+) -> CandleResult<Tensor> {
     w.apply_op1(FakeQuant::new(quantizer))
 }
 
@@ -140,14 +140,15 @@ pub fn train_qat_mse(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::qat::differentiable_quant::create_quantizer;
     use crate::qat::config::QatConfig;
+    use crate::qat::differentiable_quant::create_quantizer;
     use candle_core::{Device, Tensor, Var};
 
     #[test]
     fn fake_quant_forward_quantizes_and_grad_flows() {
         let dev = Device::Cpu;
-        let q: Arc<dyn DifferentiableQuantizer> = Arc::from(create_quantizer(&QatConfig::default()));
+        let q: Arc<dyn DifferentiableQuantizer> =
+            Arc::from(create_quantizer(&QatConfig::default()));
 
         // A latent-weight Var; fake-quant it, sum, backprop.
         let w = Var::from_vec(vec![0.10f32, -0.37, 0.92, -0.05], (4,), &dev).unwrap();
