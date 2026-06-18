@@ -16,7 +16,7 @@
 // Configuration (from env vars)
 // ---------------------------------------------------------------------------
 const BRAIN_URL = process.env.BRAIN_URL || 'https://pi.ruv.io';
-const BRAIN_AUTH = process.env.BRAIN_AUTH || 'Bearer ruvector-crawl-2026';
+const BRAIN_AUTH = process.env.BRAIN_AUTH || `Bearer ${process.env.BRAIN_API_KEY || ''}`;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 const MAX_MEMORIES = parseInt(process.env.MAX_MEMORIES || '20', 10);

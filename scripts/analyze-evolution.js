@@ -4,7 +4,7 @@
 // ADR-119 implementation
 
 const BRAIN_URL = process.env.BRAIN_URL || 'https://pi.ruv.io';
-const AUTH = 'Bearer ruvector-crawl-2026';
+const AUTH = `Bearer ${process.env.BRAIN_API_KEY || ''}`;
 const fs = require('fs');
 const path = require('path');
 
