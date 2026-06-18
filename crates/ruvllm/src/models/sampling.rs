@@ -59,6 +59,112 @@ impl Sampler {
         Self { cfg, rng }
     }
 
+    /// Sample from pre-sorted top-k candidates supplied by the caller.
+    ///
+    /// `sorted_values[i]` is the logit for `sorted_indices[i]`, sorted
+    /// **descending**. This avoids the O(vocab) `logits.to_vec()` copy: only
+    /// `2 * top_k * 4` bytes need to be transferred from GPU vs `vocab * 4`.
+    ///
+    /// Repetition penalty is applied in-place to any candidate whose token id
+    /// appears in `recent`; tokens outside the top-k cannot be sampled so
+    /// excluding them from penalty is correct.
+    pub fn sample_topk(
+        &mut self,
+        sorted_values: &[f32],
+        sorted_indices: &[u32],
+        recent: &[u32],
+    ) -> u32 {
+        if sorted_indices.is_empty() {
+            return 0;
+        }
+
+        // Fast greedy with no rep penalty: first element is argmax.
+        if self.cfg.temperature <= 0.0
+            && ((self.cfg.repetition_penalty - 1.0).abs() <= f32::EPSILON
+                || self.cfg.repetition_window == 0)
+        {
+            return sorted_indices[0];
+        }
+
+        // Apply rep penalty to candidates that appear in the recent window.
+        let window_start = recent.len().saturating_sub(self.cfg.repetition_window);
+        let recent_w = &recent[window_start..];
+        let apply_pen = (self.cfg.repetition_penalty - 1.0).abs() > f32::EPSILON
+            && self.cfg.repetition_window > 0;
+
+        let mut cand: Vec<(u32, f32)> = sorted_values
+            .iter()
+            .zip(sorted_indices.iter())
+            .map(|(&v, &id)| {
+                let logit = if apply_pen && recent_w.contains(&id) {
+                    if v > 0.0 {
+                        v / self.cfg.repetition_penalty
+                    } else {
+                        v * self.cfg.repetition_penalty
+                    }
+                } else {
+                    v
+                };
+                (id, logit)
+            })
+            .collect();
+
+        // Greedy after rep penalty.
+        if self.cfg.temperature <= 0.0 {
+            return cand
+                .iter()
+                .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap())
+                .map(|&(id, _)| id)
+                .unwrap_or(0);
+        }
+
+        // Temperature scaling + re-sort (pen may have changed order).
+        let inv_t = 1.0 / self.cfg.temperature;
+        for (_, l) in cand.iter_mut() {
+            *l *= inv_t;
+        }
+        cand.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+
+        // Softmax over candidates (already top-k truncated by caller).
+        let max_l = cand.first().map(|&(_, l)| l).unwrap_or(0.0);
+        let mut probs: Vec<f32> =
+            cand.iter().map(|&(_, l)| (l - max_l).exp()).collect();
+        let sum: f32 = probs.iter().sum::<f32>().max(1e-9);
+        for p in probs.iter_mut() {
+            *p /= sum;
+        }
+
+        // Top-p (nucleus).
+        if self.cfg.top_p < 1.0 {
+            let mut cum = 0.0;
+            let mut cutoff = probs.len();
+            for (i, &p) in probs.iter().enumerate() {
+                cum += p;
+                if cum >= self.cfg.top_p {
+                    cutoff = i + 1;
+                    break;
+                }
+            }
+            cand.truncate(cutoff);
+            probs.truncate(cutoff);
+            let s: f32 = probs.iter().sum::<f32>().max(1e-9);
+            for p in probs.iter_mut() {
+                *p /= s;
+            }
+        }
+
+        // Multinomial draw.
+        let r: f32 = self.rng.gen::<f32>();
+        let mut acc = 0.0;
+        for (&(id, _), p) in cand.iter().zip(probs.iter()) {
+            acc += *p;
+            if r <= acc {
+                return id;
+            }
+        }
+        cand.last().map(|&(id, _)| id).unwrap_or(0)
+    }
+
     /// Sample a token id from `logits`, applying repetition penalty over
     /// `recent` tokens, temperature, top-k and top-p filtering.
     pub fn sample(&mut self, logits: &[f32], recent: &[u32]) -> u32 {

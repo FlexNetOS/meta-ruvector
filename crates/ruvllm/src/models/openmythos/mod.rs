@@ -354,6 +354,9 @@ impl OpenMythos {
         if prompt_ids.is_empty() {
             return Err(RuvLLMError::Generation("empty prompt".into()));
         }
+        // top_k_transfer: how many candidates to sort on GPU and transfer.
+        // Using top_k when set (40-200 typical); capped at 512 for top-p-only.
+        let top_k_transfer = if sampling.top_k > 0 { sampling.top_k } else { 512.min(self.cfg.vocab_size) };
         let mut sampler = Sampler::new(sampling);
         let mut cache = MythosCache::new(&self.cfg);
         let mut history: Vec<u32> = prompt_ids.to_vec();
@@ -362,7 +365,8 @@ impl OpenMythos {
             Tensor::from_slice(prompt_ids, (1, prompt_ids.len()), &self.device)
                 .map_err(cand)?;
         let logits = self.forward_cached(&prompt, &mut cache, n_loops)?;
-        let mut next = sampler.sample(&self.last_logits(&logits)?, &history);
+        let (vals, idxs) = self.last_logits_topk(&logits, top_k_transfer)?;
+        let mut next = sampler.sample_topk(&vals, &idxs, &history);
 
         let mut out = Vec::with_capacity(max_new_tokens);
         for _ in 0..max_new_tokens {
@@ -373,7 +377,8 @@ impl OpenMythos {
             }
             let step = Tensor::from_slice(&[next], (1, 1), &self.device).map_err(cand)?;
             let logits = self.forward_cached(&step, &mut cache, n_loops)?;
-            next = sampler.sample(&self.last_logits(&logits)?, &history);
+            let (vals, idxs) = self.last_logits_topk(&logits, top_k_transfer)?;
+            next = sampler.sample_topk(&vals, &idxs, &history);
         }
         Ok(out)
     }
@@ -396,6 +401,7 @@ impl OpenMythos {
         if prompt_ids.is_empty() {
             return Err(RuvLLMError::Generation("empty prompt".into()));
         }
+        let top_k_transfer = if sampling.top_k > 0 { sampling.top_k } else { 512.min(self.cfg.vocab_size) };
         let mut sampler = Sampler::new(sampling);
         let mut cache = MythosCache::new(&self.cfg);
         let mut history: Vec<u32> = prompt_ids.to_vec();
@@ -404,7 +410,8 @@ impl OpenMythos {
             Tensor::from_slice(prompt_ids, (1, prompt_ids.len()), &self.device)
                 .map_err(cand)?;
         let logits = self.forward_cached(&prompt, &mut cache, n_loops)?;
-        let mut next = sampler.sample(&self.last_logits(&logits)?, &history);
+        let (vals, idxs) = self.last_logits_topk(&logits, top_k_transfer)?;
+        let mut next = sampler.sample_topk(&vals, &idxs, &history);
 
         for _ in 0..max_new_tokens {
             if !on_token(next) {
@@ -416,7 +423,8 @@ impl OpenMythos {
             }
             let step = Tensor::from_slice(&[next], (1, 1), &self.device).map_err(cand)?;
             let logits = self.forward_cached(&step, &mut cache, n_loops)?;
-            next = sampler.sample(&self.last_logits(&logits)?, &history);
+            let (vals, idxs) = self.last_logits_topk(&logits, top_k_transfer)?;
+            next = sampler.sample_topk(&vals, &idxs, &history);
         }
         Ok(())
     }
@@ -445,6 +453,7 @@ impl OpenMythos {
     }
 
     /// Last-position logits row `[vocab]` as host floats.
+    /// Still used when the full distribution is needed (e.g. external callers).
     fn last_logits(&self, logits: &Tensor) -> Result<Vec<f32>> {
         let (_b, seq, _v) = logits.dims3().map_err(cand)?;
         let last = logits.i((0, seq - 1)).map_err(cand)?;
@@ -452,6 +461,41 @@ impl OpenMythos {
             .map_err(cand)?
             .to_vec1()
             .map_err(cand)
+    }
+
+    /// Extract sorted top-k `(values, token_ids)` at the last position using
+    /// on-device sort — transfers `2 * top_k * 4` bytes instead of `vocab * 4`.
+    ///
+    /// `k == 0` means "all vocab" (falls back to full transfer). Returns vectors
+    /// sorted in **descending** logit order.
+    fn last_logits_topk(
+        &self,
+        logits: &Tensor,
+        k: usize,
+    ) -> Result<(Vec<f32>, Vec<u32>)> {
+        let (_b, seq, vocab) = logits.dims3().map_err(cand)?;
+        let last = logits
+            .i((0, seq - 1))
+            .map_err(cand)?
+            .to_dtype(DType::F32)
+            .map_err(cand)?
+            .contiguous()
+            .map_err(cand)?; // sort_last_dim requires contiguous
+        let k = if k == 0 || k >= vocab { vocab } else { k };
+        // GPU sort (descending) → `(sorted_vals [vocab], sorted_indices [vocab])`.
+        let (vals, idxs) = last.sort_last_dim(false).map_err(cand)?;
+        // Narrow to top-k before transferring.
+        let vals_k: Vec<f32> = vals
+            .narrow(candle_core::D::Minus1, 0, k)
+            .map_err(cand)?
+            .to_vec1()
+            .map_err(cand)?;
+        let idxs_k: Vec<u32> = idxs
+            .narrow(candle_core::D::Minus1, 0, k)
+            .map_err(cand)?
+            .to_vec1()
+            .map_err(cand)?;
+        Ok((vals_k, idxs_k))
     }
 
     /// Argmax over the vocabulary at the last sequence position of `[1, seq, vocab]`.
