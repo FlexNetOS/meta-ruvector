@@ -30,10 +30,8 @@
 
 use wasm_bindgen::prelude::*;
 
-// Use wee_alloc for smaller WASM binary (~10KB reduction)
-#[cfg(feature = "wee_alloc")]
-#[global_allocator]
-static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
+// Allocator: the default global allocator (wee_alloc was dropped — it is unmaintained,
+// RUSTSEC-2022-0054, with no patched release).
 
 // ============================================================================
 // Module declarations
