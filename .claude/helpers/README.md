@@ -45,6 +45,18 @@ This directory contains helper scripts and utilities for V3 development.
   ```
   Smoke test: `bash tests/swarm/swarm-orchestrator-smoke.sh` (13 assertions).
 
+### ✅ Verification & Quality Gate
+- **`verify.sh`** - Runs the harness checks (bash/node syntax across all helpers +
+  intelligence modules, config JSON validity, and the test suites), computes a
+  **truth score** (checks passed / total), and gates at `VERIFY_THRESHOLD`
+  (default `0.95`). Exits non-zero below threshold — usable as a CI/pre-commit gate.
+  Reachable as `v3 verify`.
+  ```bash
+  .claude/helpers/verify.sh              # run all checks + score
+  VERIFY_THRESHOLD=1.0 v3 verify         # require a perfect score
+  ```
+  Self-test: `bash tests/verification/verify-smoke.sh` (4 assertions).
+
 ### 📊 V3 Progress Management
 - **`update-v3-progress.sh`** - Update V3 development metrics
   ```bash
