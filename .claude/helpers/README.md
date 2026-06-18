@@ -27,7 +27,23 @@ This directory contains helper scripts and utilities for V3 development.
   .claude/helpers/v3.sh update domain 3 # Update specific metrics
   .claude/helpers/v3.sh validate       # Validate configuration
   .claude/helpers/v3.sh full-status    # Complete status overview
+  .claude/helpers/v3.sh swarm status   # Drive the swarm orchestrator
   ```
+
+### 🐝 Swarm Orchestrator
+- **`swarm-orchestrator.sh`** - Top-level entry point that unifies the swarm
+  coordination primitives (`swarm-hooks.sh`: messaging / consensus / handoff)
+  into the declared hierarchical-mesh topology (`maxAgents` from
+  `settings.json`). Reachable as `v3 swarm <cmd>`.
+  ```bash
+  .claude/helpers/swarm-orchestrator.sh init                  # topology+maxAgents from settings.json
+  .claude/helpers/swarm-orchestrator.sh spawn coordinator queen
+  .claude/helpers/swarm-orchestrator.sh spawn coder
+  .claude/helpers/swarm-orchestrator.sh orchestrate "implement feature X"
+  .claude/helpers/swarm-orchestrator.sh status
+  .claude/helpers/swarm-orchestrator.sh shutdown
+  ```
+  Smoke test: `bash tests/swarm/swarm-orchestrator-smoke.sh` (13 assertions).
 
 ### 📊 V3 Progress Management
 - **`update-v3-progress.sh`** - Update V3 development metrics
