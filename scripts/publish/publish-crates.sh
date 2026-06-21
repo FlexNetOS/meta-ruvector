@@ -103,7 +103,7 @@ echo ""
 CRATES=(
     # Base dependencies (no internal dependencies)
     "crates/ruvector-core"
-    "crates/router-core"
+    "crates/ruvector-router-core"
 
     # Depends on ruvector-core
     "crates/ruvector-node"
@@ -112,9 +112,9 @@ CRATES=(
     "crates/ruvector-bench"
 
     # Depends on router-core
-    "crates/router-cli"
-    "crates/router-ffi"
-    "crates/router-wasm"
+    "crates/ruvector-router-cli"
+    "crates/ruvector-router-ffi"
+    "crates/ruvector-router-wasm"
 )
 
 # Track success/failure
