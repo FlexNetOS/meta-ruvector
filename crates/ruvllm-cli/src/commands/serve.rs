@@ -120,6 +120,7 @@ pub async fn run(
     let app = Router::new()
         // OpenAI-compatible endpoints
         .route("/v1/chat/completions", post(chat_completions))
+        .route("/v1/embeddings", post(embeddings))
         .route("/v1/models", get(list_models))
         // Health and metrics
         .route("/health", get(health_check))
@@ -224,6 +225,57 @@ struct ChatChoice {
 struct Usage {
     prompt_tokens: usize,
     completion_tokens: usize,
+    total_tokens: usize,
+}
+
+/// OpenAI-compatible embeddings request.
+///
+/// `input` accepts either a single string or an array of strings, mirroring
+/// the OpenAI `/v1/embeddings` contract that teri depends on.
+#[derive(Debug, Deserialize)]
+struct EmbeddingsRequest {
+    #[serde(default)]
+    model: String,
+    input: EmbeddingInput,
+}
+
+/// `input` may be a bare string or an array of strings.
+#[derive(Debug, Deserialize)]
+#[serde(untagged)]
+enum EmbeddingInput {
+    Single(String),
+    Batch(Vec<String>),
+}
+
+impl EmbeddingInput {
+    /// Normalize to a list of input strings.
+    fn into_vec(self) -> Vec<String> {
+        match self {
+            EmbeddingInput::Single(s) => vec![s],
+            EmbeddingInput::Batch(v) => v,
+        }
+    }
+}
+
+/// OpenAI-compatible embeddings response.
+#[derive(Debug, Serialize)]
+struct EmbeddingsResponse {
+    object: String,
+    data: Vec<EmbeddingData>,
+    model: String,
+    usage: EmbeddingUsage,
+}
+
+#[derive(Debug, Serialize)]
+struct EmbeddingData {
+    object: String,
+    index: usize,
+    embedding: Vec<f32>,
+}
+
+#[derive(Debug, Serialize)]
+struct EmbeddingUsage {
+    prompt_tokens: usize,
     total_tokens: usize,
 }
 
@@ -342,6 +394,85 @@ async fn chat_completions_non_stream(
     );
 
     Json(response)
+}
+
+/// OpenAI-compatible embeddings endpoint.
+///
+/// Accepts `{model, input}` where `input` is a string or array of strings,
+/// runs each input through `backend.get_embeddings`, and returns the OpenAI
+/// embeddings JSON shape teri expects:
+/// `{"object":"list","data":[{"object":"embedding","index":0,"embedding":[..]}],..}`.
+///
+/// Unlike the chat path there is NO mock fallback: if no model is loaded we
+/// return a clear `503` error rather than fabricating a vector, so a caller
+/// can never mistake a placeholder for a real embedding.
+async fn embeddings(
+    State(state): State<SharedState>,
+    Json(request): Json<EmbeddingsRequest>,
+) -> axum::response::Response {
+    let inputs = request.input.into_vec();
+    let model = request.model;
+
+    let mut state_lock = state.write().await;
+    state_lock.request_count += 1;
+
+    let backend = match state_lock.backend.as_ref() {
+        Some(b) if b.is_model_loaded() => b,
+        _ => {
+            drop(state_lock);
+            let body = serde_json::json!({
+                "error": {
+                    "message": "No model loaded: embeddings require a loaded model \
+                                (the server is running in mock mode)",
+                    "type": "model_not_loaded",
+                    "code": "model_not_loaded"
+                }
+            });
+            return (StatusCode::SERVICE_UNAVAILABLE, Json(body)).into_response();
+        }
+    };
+
+    let mut data = Vec::with_capacity(inputs.len());
+    let mut prompt_tokens = 0usize;
+
+    for (index, text) in inputs.iter().enumerate() {
+        // Rough token estimate (whitespace count), matching the chat path.
+        prompt_tokens += text.split_whitespace().count();
+
+        match backend.get_embeddings(text) {
+            Ok(embedding) => data.push(EmbeddingData {
+                object: "embedding".to_string(),
+                index,
+                embedding,
+            }),
+            Err(e) => {
+                drop(state_lock);
+                let body = serde_json::json!({
+                    "error": {
+                        "message": format!("Embedding generation failed: {}", e),
+                        "type": "embedding_error",
+                        "code": "embedding_error"
+                    }
+                });
+                return (StatusCode::INTERNAL_SERVER_ERROR, Json(body)).into_response();
+            }
+        }
+    }
+
+    state_lock.total_tokens += prompt_tokens as u64;
+    drop(state_lock);
+
+    let response = EmbeddingsResponse {
+        object: "list".to_string(),
+        data,
+        model,
+        usage: EmbeddingUsage {
+            prompt_tokens,
+            total_tokens: prompt_tokens,
+        },
+    };
+
+    Json(response).into_response()
 }
 
 /// SSE streaming chat completions
@@ -651,6 +782,7 @@ async fn root() -> impl IntoResponse {
         "version": env!("CARGO_PKG_VERSION"),
         "endpoints": {
             "chat": "/v1/chat/completions",
+            "embeddings": "/v1/embeddings",
             "models": "/v1/models",
             "health": "/health",
             "metrics": "/metrics"
@@ -749,5 +881,62 @@ mod tests {
             detect_architecture("Qwen/Qwen2.5-14B"),
             ruvllm::ModelArchitecture::Qwen
         );
+    }
+
+    #[test]
+    fn test_embeddings_request_accepts_single_string() {
+        let body = r#"{"model":"m","input":"hello world"}"#;
+        let req: EmbeddingsRequest = serde_json::from_str(body).expect("parse single");
+        assert_eq!(req.model, "m");
+        assert_eq!(req.input.into_vec(), vec!["hello world".to_string()]);
+    }
+
+    #[test]
+    fn test_embeddings_request_accepts_array() {
+        let body = r#"{"model":"m","input":["a","b","c"]}"#;
+        let req: EmbeddingsRequest = serde_json::from_str(body).expect("parse array");
+        assert_eq!(
+            req.input.into_vec(),
+            vec!["a".to_string(), "b".to_string(), "c".to_string()]
+        );
+    }
+
+    #[test]
+    fn test_embeddings_response_openai_shape() {
+        // The serialized response must match the OpenAI embeddings contract
+        // teri parses: object="list", data[].object="embedding", index, embedding.
+        let response = EmbeddingsResponse {
+            object: "list".to_string(),
+            data: vec![
+                EmbeddingData {
+                    object: "embedding".to_string(),
+                    index: 0,
+                    embedding: vec![0.1, 0.2, 0.3],
+                },
+                EmbeddingData {
+                    object: "embedding".to_string(),
+                    index: 1,
+                    embedding: vec![0.4, 0.5],
+                },
+            ],
+            model: "test-model".to_string(),
+            usage: EmbeddingUsage {
+                prompt_tokens: 4,
+                total_tokens: 4,
+            },
+        };
+
+        let v = serde_json::to_value(&response).expect("serialize");
+        assert_eq!(v["object"], "list");
+        assert_eq!(v["model"], "test-model");
+        assert_eq!(v["data"][0]["object"], "embedding");
+        assert_eq!(v["data"][0]["index"], 0);
+        // f32 0.3 widens to f64 on serialize, so compare with a tolerance.
+        let third = v["data"][0]["embedding"][2].as_f64().expect("f64");
+        assert!((third - 0.3).abs() < 1e-6, "got {}", third);
+        assert_eq!(v["data"][0]["embedding"].as_array().unwrap().len(), 3);
+        assert_eq!(v["data"][1]["index"], 1);
+        assert_eq!(v["usage"]["prompt_tokens"], 4);
+        assert_eq!(v["usage"]["total_tokens"], 4);
     }
 }
