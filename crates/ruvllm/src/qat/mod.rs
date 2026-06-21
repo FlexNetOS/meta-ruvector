@@ -129,8 +129,6 @@
 // ============================================================================
 
 mod calibration;
-#[cfg(feature = "candle")]
-mod candle_qat;
 mod config;
 mod differentiable_quant;
 mod distillation;
@@ -138,9 +136,6 @@ mod lora_qat;
 mod reasoning_loss;
 mod ste;
 mod training_loop;
-
-#[cfg(feature = "candle")]
-pub use candle_qat::{fake_quantize, FakeQuant};
 
 // ============================================================================
 // Public Re-exports

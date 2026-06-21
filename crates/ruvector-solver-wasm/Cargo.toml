@@ -215,6 +215,3 @@ overly_complex_bool_expr = { level = "allow", priority = 1 }
 zombie_processes = { level = "allow", priority = 1 }
 repeat_vec_with_capacity = { level = "allow", priority = 1 }
 missing_transmute_annotations = { level = "allow", priority = 1 }
-
-[package.metadata.wasm-pack.profile.release]
-wasm-opt = false

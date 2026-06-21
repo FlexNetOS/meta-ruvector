@@ -28,7 +28,7 @@ spec:
                 - name: BRAIN_URL
                   value: "https://pi.ruv.io"
                 - name: BRAIN_API_KEY
-                  value: "${BRAIN_API_KEY}"  # envsubst at apply time (envctl: secretctl secret get brain-api-key --reveal --apply)
+                  value: "ruvector-crawl-2026"
                 - name: DOMAINS
                   value: "pubmed.ncbi.nlm.nih.gov,ncbi.nlm.nih.gov,who.int,cancer.org,aad.org,dermnetnz.org,melanoma.org,arxiv.org,acm.org,ieee.org,nature.com,nejm.org,bmj.com"
                 - name: CRAWL_INDEX

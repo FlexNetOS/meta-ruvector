@@ -28,9 +28,7 @@ ignore = [
     # and revisit when the parent dep migrates.
 
     "RUSTSEC-2021-0140",  # rusttype — transitive via plotters; pure rendering, no untrusted input
-    # RUSTSEC-2022-0054 (wee_alloc) removed: the crate was dropped from all WASM crates
-    # (default allocator now), so it is no longer in the tree — no suppression needed, and
-    # cargo-audit will flag any reintroduction.
+    "RUSTSEC-2022-0054",  # wee_alloc — transitive via wasm-bindgen-cli internals
     "RUSTSEC-2024-0370",  # proc-macro-error — build-time only (proc-macro), no runtime exposure
     "RUSTSEC-2024-0380",  # pqcrypto-dilithium — replaced by pqcrypto-mldsa, awaiting parent migration
     "RUSTSEC-2024-0381",  # pqcrypto-kyber — replaced by pqcrypto-mlkem, awaiting parent migration

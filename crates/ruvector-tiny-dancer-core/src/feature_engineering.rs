@@ -5,7 +5,6 @@
 use crate::error::{Result, TinyDancerError};
 use crate::types::Candidate;
 use chrono::Utc;
-#[cfg(not(target_arch = "wasm32"))]
 use simsimd::SpatialSimilarity;
 
 /// Feature vector for a candidate
@@ -141,27 +140,12 @@ impl FeatureEngineer {
             )));
         }
 
-        // Native: SIMD-accelerated cosine via simsimd (returns cosine *distance*).
-        #[cfg(not(target_arch = "wasm32"))]
-        {
-            let distance = f32::cosine(a, b).ok_or_else(|| {
-                TinyDancerError::FeatureError("Cosine similarity failed".to_string())
-            })?;
-            Ok(1.0_f32 - distance as f32)
-        }
-        // wasm32: scalar cosine-similarity fallback (simsimd's C SIMD can't link on wasm).
-        #[cfg(target_arch = "wasm32")]
-        {
-            let dot: f32 = a.iter().zip(b).map(|(x, y)| x * y).sum();
-            let norm_a = a.iter().map(|x| x * x).sum::<f32>().sqrt();
-            let norm_b = b.iter().map(|y| y * y).sum::<f32>().sqrt();
-            if norm_a == 0.0 || norm_b == 0.0 {
-                return Err(TinyDancerError::FeatureError(
-                    "Cosine similarity failed".to_string(),
-                ));
-            }
-            Ok(dot / (norm_a * norm_b))
-        }
+        // Use simsimd for SIMD-accelerated cosine similarity
+        let similarity = f32::cosine(a, b)
+            .ok_or_else(|| TinyDancerError::FeatureError("Cosine similarity failed".to_string()))?;
+
+        // Convert distance to similarity (simsimd returns distance as f64)
+        Ok(1.0_f32 - similarity as f32)
     }
 
     /// Calculate recency score using exponential decay

@@ -32,7 +32,7 @@ DEOF
 
 cat > "$BUILD_DIR/env.yaml" <<ENVEOF
 BRAIN_URL: "https://pi.ruv.io"
-BRAIN_AUTH: "Bearer ${BRAIN_API_KEY}"
+BRAIN_AUTH: "Bearer ruvector-crawl-2026"
 GEMINI_API_KEY: "$GEMINI_KEY"
 GEMINI_MODEL: "gemini-2.5-flash"
 MAX_MEMORIES: "10"

@@ -17,7 +17,6 @@ ruvector-core = { version = "2.1.0", path = "../ruvector-core", default-features
 ndarray = { version = "0.17.2", features = ["serde"] }
 rand = { workspace = true }
 rand_distr = { workspace = true }
-half = "2"
 
 # Serialization
 serde = { workspace = true }
@@ -56,6 +55,13 @@ cold-tier = ["mmap"]  # Hyperbatch training for graphs exceeding RAM
 criterion = { workspace = true }
 proptest = { workspace = true }
 tempfile = "3.10"
+# BET 1 productionize (ADR-200): the real-trajectory validation harness drives the
+# diskann reuse policy. See docs/plans/bet1-productionize/PRE-REGISTRATION.md.
+ruvector-diskann = { path = "../ruvector-diskann", features = ["reuse-under-drift"] }
+
+[[example]]
+name = "diskann_real_trajectory"
+path = "examples/diskann_real_trajectory.rs"
 
 [lib]
 crate-type = ["rlib"]

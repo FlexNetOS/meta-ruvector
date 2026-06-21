@@ -240,9 +240,7 @@ impl RematerializationPolicy {
             memory_threshold,
             min_materialized,
             cost_model: RematerializationCostModel::default(),
-            // 16GB default on 64-bit; saturates to usize::MAX (~4GB) on 32-bit/wasm32
-            // targets where usize cannot represent 16GB (avoids const arithmetic overflow).
-            memory_tracker: MemoryTracker::new(16usize.saturating_mul(1024 * 1024 * 1024)),
+            memory_tracker: MemoryTracker::new(16 * 1024 * 1024 * 1024), // 16GB default
         }
     }
 

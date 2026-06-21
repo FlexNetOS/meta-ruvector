@@ -12,7 +12,6 @@ description = "WASM bindings for Tiny Dancer neural routing"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-getrandom = { version = "0.2", features = ["js"] }
 ruvector-tiny-dancer-core = { version = "2.0", path = "../ruvector-tiny-dancer-core" }
 
 # WASM dependencies
@@ -221,6 +220,3 @@ overly_complex_bool_expr = { level = "allow", priority = 1 }
 zombie_processes = { level = "allow", priority = 1 }
 repeat_vec_with_capacity = { level = "allow", priority = 1 }
 missing_transmute_annotations = { level = "allow", priority = 1 }
-
-[package.metadata.wasm-pack.profile.release]
-wasm-opt = false

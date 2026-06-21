@@ -5,7 +5,7 @@
 
 use crate::error::GnnError;
 use ndarray::{Array1, Array2, ArrayView1};
-use rand::{Rng, SeedableRng};
+use rand::SeedableRng;
 use rand_distr::{Distribution, Normal};
 use serde::{Deserialize, Serialize};
 
@@ -335,11 +335,6 @@ pub struct RuvectorLayer {
 
     /// Dropout rate
     dropout: f32,
-
-    /// Whether the layer is in training mode (dropout active). Not part of the
-    /// serialized model — defaults to eval (false) on load.
-    #[serde(skip)]
-    training: bool,
 }
 
 impl RuvectorLayer {
@@ -374,14 +369,7 @@ impl RuvectorLayer {
             attention: MultiHeadAttention::new(hidden_dim, heads)?,
             norm: LayerNorm::new(hidden_dim, 1e-5),
             dropout,
-            training: false,
         })
-    }
-
-    /// Set training mode. In training mode `forward` applies inverted dropout;
-    /// in eval mode (default) dropout is the identity.
-    pub fn set_training(&mut self, training: bool) {
-        self.training = training;
     }
 
     /// Forward pass through the GNN layer
@@ -461,30 +449,10 @@ impl RuvectorLayer {
         aggregated
     }
 
-    /// Apply inverted dropout.
-    ///
-    /// - Eval mode (default) or `dropout == 0`: identity (standard inference behavior).
-    /// - Training mode: each element is zeroed with probability `dropout` and the
-    ///   survivors are scaled by `1/(1-dropout)`, so the expected activation is
-    ///   preserved and no rescaling is needed at inference.
+    /// Apply dropout (simplified version - just scales by (1-dropout))
     fn apply_dropout(&self, input: &[f32]) -> Vec<f32> {
-        if !self.training || self.dropout <= 0.0 {
-            return input.to_vec();
-        }
-        let keep = 1.0 - self.dropout;
-        // dropout in [0,1] is validated in `new`; keep > 0 here.
-        let scale = 1.0 / keep;
-        let mut rng = rand::thread_rng();
-        input
-            .iter()
-            .map(|&x| {
-                if rng.gen::<f32>() < self.dropout {
-                    0.0
-                } else {
-                    x * scale
-                }
-            })
-            .collect()
+        let scale = 1.0 - self.dropout;
+        input.iter().map(|&x| x * scale).collect()
     }
 
     /// Element-wise vector addition

@@ -27,35 +27,7 @@ This directory contains helper scripts and utilities for V3 development.
   .claude/helpers/v3.sh update domain 3 # Update specific metrics
   .claude/helpers/v3.sh validate       # Validate configuration
   .claude/helpers/v3.sh full-status    # Complete status overview
-  .claude/helpers/v3.sh swarm status   # Drive the swarm orchestrator
   ```
-
-### 🐝 Swarm Orchestrator
-- **`swarm-orchestrator.sh`** - Top-level entry point that unifies the swarm
-  coordination primitives (`swarm-hooks.sh`: messaging / consensus / handoff)
-  into the declared hierarchical-mesh topology (`maxAgents` from
-  `settings.json`). Reachable as `v3 swarm <cmd>`.
-  ```bash
-  .claude/helpers/swarm-orchestrator.sh init                  # topology+maxAgents from settings.json
-  .claude/helpers/swarm-orchestrator.sh spawn coordinator queen
-  .claude/helpers/swarm-orchestrator.sh spawn coder
-  .claude/helpers/swarm-orchestrator.sh orchestrate "implement feature X"
-  .claude/helpers/swarm-orchestrator.sh status
-  .claude/helpers/swarm-orchestrator.sh shutdown
-  ```
-  Smoke test: `bash tests/swarm/swarm-orchestrator-smoke.sh` (13 assertions).
-
-### ✅ Verification & Quality Gate
-- **`verify.sh`** - Runs the harness checks (bash/node syntax across all helpers +
-  intelligence modules, config JSON validity, and the test suites), computes a
-  **truth score** (checks passed / total), and gates at `VERIFY_THRESHOLD`
-  (default `0.95`). Exits non-zero below threshold — usable as a CI/pre-commit gate.
-  Reachable as `v3 verify`.
-  ```bash
-  .claude/helpers/verify.sh              # run all checks + score
-  VERIFY_THRESHOLD=1.0 v3 verify         # require a perfect score
-  ```
-  Self-test: `bash tests/verification/verify-smoke.sh` (4 assertions).
 
 ### 📊 V3 Progress Management
 - **`update-v3-progress.sh`** - Update V3 development metrics

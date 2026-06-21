@@ -12,8 +12,6 @@ description = "WASM bindings for ruvector-router-core"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-uuid = { version = "1", features = ["js"] }
-getrandom = { version = "0.2", features = ["js"] }
 ruvector-router-core = { version = "2.0", path = "../ruvector-router-core" }
 
 # WASM dependencies
@@ -34,6 +32,3 @@ opt-level = "z"
 lto = true
 codegen-units = 1
 panic = "abort"
-
-[package.metadata.wasm-pack.profile.release]
-wasm-opt = false

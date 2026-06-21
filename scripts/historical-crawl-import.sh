@@ -5,7 +5,7 @@
 set -euo pipefail
 
 BRAIN_URL="${BRAIN_URL:-https://pi.ruv.io}"
-AUTH_HEADER="Authorization: Bearer ${BRAIN_API_KEY:-}"
+AUTH_HEADER="Authorization: Bearer ruvector-crawl-2026"
 LIMIT="${LIMIT:-50}"  # pages per domain per crawl
 
 # Target domains for medical/dermatology evolution tracking

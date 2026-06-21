@@ -135,20 +135,6 @@ function getGitInfo() {
   return result;
 }
 
-// Derive a display label from a model id (version parsed dynamically so it never goes stale)
-function labelFromModelId(modelId) {
-  if (!modelId) return null;
-  const id = String(modelId).toLowerCase();
-  const fam = id.match(/opus|sonnet|haiku/);
-  if (!fam) return null;
-  const name = fam[0][0].toUpperCase() + fam[0].slice(1);
-  const ver = id.match(/(\d+)[-.](\d+)/);
-  const verStr = ver ? ` ${ver[1]}.${ver[2]}` : '';
-  // Opus carries the 1M context window; reflect a 1m tag for any family if present
-  const ctx = fam[0] === 'opus' || /\b1m\b|\[1m\]/.test(id) ? ' (1M context)' : '';
-  return `${name}${verStr}${ctx}`;
-}
-
 // Detect model name from Claude config (pure file reads, no exec)
 function getModelName() {
   try {
@@ -166,8 +152,9 @@ function getModelName() {
                 const ts = usage[id] && usage[id].lastUsedAt ? new Date(usage[id].lastUsedAt).getTime() : 0;
                 if (ts > latest) { latest = ts; modelId = id; }
               }
-              const label = labelFromModelId(modelId);
-              if (label) return label;
+              if (modelId.includes('opus')) return 'Opus 4.6 (1M context)';
+              if (modelId.includes('sonnet')) return 'Sonnet 4.6';
+              if (modelId.includes('haiku')) return 'Haiku 4.5';
               return modelId.split('-').slice(1, 3).join(' ');
             }
           }
@@ -180,8 +167,10 @@ function getModelName() {
   // Fallback: settings.json model field
   const settings = getSettings();
   if (settings && settings.model) {
-    const label = labelFromModelId(settings.model);
-    if (label) return label;
+    const m = settings.model;
+    if (m.includes('opus')) return 'Opus 4.6 (1M context)';
+    if (m.includes('sonnet')) return 'Sonnet 4.6';
+    if (m.includes('haiku')) return 'Haiku 4.5';
   }
   return 'Claude Code';
 }

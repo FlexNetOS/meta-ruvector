@@ -20,7 +20,6 @@ pub mod feature_engineering;
 pub mod model;
 pub mod optimization;
 pub mod router;
-#[cfg(not(target_arch = "wasm32"))]
 pub mod storage;
 pub mod training;
 pub mod types;

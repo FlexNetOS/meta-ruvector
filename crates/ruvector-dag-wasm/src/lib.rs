@@ -10,8 +10,10 @@
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
-// Allocator: the default global allocator (wee_alloc was dropped — it is unmaintained,
-// RUSTSEC-2022-0054, with no patched release).
+// Use wee_alloc for smaller WASM binary (~10KB reduction)
+#[cfg(feature = "wee_alloc")]
+#[global_allocator]
+static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 /// Minimal DAG node - 9 bytes (u32 + u8 + f32)
 #[derive(Serialize, Deserialize, Clone, Copy)]

@@ -20,6 +20,7 @@ crossbeam = { workspace = true }
 parking_lot = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+simsimd = { workspace = true }
 thiserror = { workspace = true }
 anyhow = { workspace = true }
 tracing = { workspace = true }
@@ -34,6 +35,9 @@ rand_distr = { workspace = true }
 chrono = { workspace = true }
 uuid = { workspace = true }
 
+# Database
+rusqlite = { version = "0.32", features = ["bundled", "modern_sqlite"] }
+
 # Performance monitoring
 once_cell = { workspace = true }
 
@@ -42,12 +46,6 @@ bytemuck = "1.18"
 
 # Model serialization
 safetensors = "0.4"
-
-# Native-only deps (C/SIMD libraries that cannot target wasm32):
-# - rusqlite: bundled C SQLite. - simsimd: C SIMD intrinsics (scalar fallback on wasm).
-[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-rusqlite = { version = "0.32", features = ["bundled", "modern_sqlite"] }
-simsimd = { workspace = true }
 
 [dev-dependencies]
 criterion = { workspace = true }

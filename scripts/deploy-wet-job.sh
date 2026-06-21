@@ -78,7 +78,7 @@ echo "--- Building and deploying Cloud Run Job ---"
 cat > "$BUILD_DIR/env.yaml" <<ENVYAML
 CRAWL_INDEX: "$CRAWL_INDEX"
 BRAIN_URL: "https://pi.ruv.io"
-AUTH_HEADER: "Authorization: Bearer ${BRAIN_API_KEY}"
+AUTH_HEADER: "Authorization: Bearer ruvector-crawl-2026"
 BATCH_SIZE: "10"
 DOMAINS: "$DOMAIN_LIST"
 ENVYAML

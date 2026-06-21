@@ -55,7 +55,6 @@
     "body-parser": "^2.2.1"
   },
   "dependencies": {
-    "@claude-flow/memory": "^3.0.0-alpha.7",
-    "@napi-rs/cli": "^3.7.2"
+    "@claude-flow/memory": "^3.0.0-alpha.7"
   }
 }

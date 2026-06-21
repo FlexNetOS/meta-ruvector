@@ -171,7 +171,7 @@ impl SparseInferenceEngine {
 }
 
 /// Statistics about sparsity during inference
-#[derive(Debug, Clone, serde::Serialize)]
+#[derive(Debug, Clone)]
 pub struct SparsityStats {
     pub average_active_ratio: f64,
     pub min_active: usize,

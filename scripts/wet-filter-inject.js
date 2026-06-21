@@ -10,7 +10,7 @@ function getArg(name, def) {
 }
 
 const BRAIN_URL = getArg('brain-url', 'https://pi.ruv.io');
-const AUTH = getArg('auth', `Authorization: Bearer ${process.env.BRAIN_API_KEY || ''}`);
+const AUTH = getArg('auth', 'Authorization: Bearer ruvector-crawl-2026');
 const BATCH_SIZE = parseInt(getArg('batch-size', '10'), 10);
 const DOMAINS = getArg('domains', '').split(',').filter(Boolean);
 const CRAWL_INDEX = getArg('crawl-index', 'CC-MAIN-2026-08');
