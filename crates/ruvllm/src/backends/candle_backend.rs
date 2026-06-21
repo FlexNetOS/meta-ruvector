@@ -215,8 +215,15 @@ mod candle_impl {
 
     impl Default for CandleBackend {
         fn default() -> Self {
+            // Resolve the device the same way `new()` does instead of hardcoding CPU.
+            // `create_backend()` falls back to `CandleBackend::default()` when `new()`
+            // errors; a hardcoded `Device::Cpu` here silently stranded a `--features cuda`
+            // box on CPU (and ignored `RUVLLM_DEVICE`) on that path — the exact bug the
+            // device-selection work fixes. `select_device` already fail-safes to CPU for an
+            // unavailable device, so this only changes the *preference*, never panics.
+            let device = Self::select_device(Self::default_device()).unwrap_or(Device::Cpu);
             Self {
-                device: Device::Cpu,
+                device,
                 model: None,
                 tokenizer: None,
                 ruv_tokenizer: None,
@@ -383,10 +390,20 @@ mod candle_impl {
                     "cuda" | "gpu" => return DeviceType::Cuda(0),
                     other => {
                         if let Some(idx) = other.strip_prefix("cuda:") {
-                            if let Ok(n) = idx.parse::<usize>() {
+                            if let Ok(n) = idx.trim().parse::<usize>() {
                                 return DeviceType::Cuda(n);
                             }
                         }
+                        // An explicit operator override that we can't parse is a
+                        // configuration mistake (e.g. `cuda;0`, `cuda:x`, `vulkan`).
+                        // Warn loudly rather than silently falling through to the
+                        // platform default — a stranded GPU box is exactly what this
+                        // env override exists to prevent.
+                        tracing::warn!(
+                            "RUVLLM_DEVICE='{}' not recognized (expected cpu | metal | cuda | cuda:N); \
+                             using platform default",
+                            raw.trim()
+                        );
                     }
                 }
             }
@@ -394,9 +411,16 @@ mod candle_impl {
             {
                 DeviceType::Cuda(0)
             }
-            #[cfg(not(feature = "cuda"))]
+            // No CUDA feature: prefer Metal only where it can actually exist (macOS);
+            // on Linux/Windows default to CPU so we don't emit a spurious
+            // "Metal requested but not available" warning on every startup.
+            #[cfg(all(not(feature = "cuda"), target_os = "macos"))]
             {
-                DeviceType::default()
+                DeviceType::Metal
+            }
+            #[cfg(all(not(feature = "cuda"), not(target_os = "macos")))]
+            {
+                DeviceType::Cpu
             }
         }
 
@@ -985,7 +1009,15 @@ mod candle_impl {
                         rms_norm_eps,
                         rope_theta,
                         sliding_window: config.sliding_window,
-                        use_flash_attn: config.use_flash_attention,
+                        // Only request flash-attention when the candle flash-attn
+                        // kernels are actually compiled in. ruvllm does not build the
+                        // `flash-attn` feature (it needs nvcc-built CUDA kernels), and
+                        // candle-transformers' `flash_attn` is `unimplemented!()` without
+                        // it — so passing the config's `true` here panics EVERY chat
+                        // generation on both CPU and CUDA. Gating on `cfg!` falls back to
+                        // candle's standard attention (works everywhere) and auto-enables
+                        // if the feature is ever wired up.
+                        use_flash_attn: config.use_flash_attention && cfg!(feature = "flash-attn"),
                         head_dim: Some(head_dim),
                     };
 
@@ -1005,7 +1037,15 @@ mod candle_impl {
                         num_key_value_heads: num_kv_heads,
                         rms_norm_eps,
                         rope_theta: rope_theta as f32,
-                        use_flash_attn: config.use_flash_attention,
+                        // Only request flash-attention when the candle flash-attn
+                        // kernels are actually compiled in. ruvllm does not build the
+                        // `flash-attn` feature (it needs nvcc-built CUDA kernels), and
+                        // candle-transformers' `flash_attn` is `unimplemented!()` without
+                        // it — so passing the config's `true` here panics EVERY chat
+                        // generation on both CPU and CUDA. Gating on `cfg!` falls back to
+                        // candle's standard attention (works everywhere) and auto-enables
+                        // if the feature is ever wired up.
+                        use_flash_attn: config.use_flash_attention && cfg!(feature = "flash-attn"),
                         bos_token_id: None,
                         eos_token_id: None,
                         rope_scaling: None,
@@ -1031,11 +1071,13 @@ mod candle_impl {
                 ModelArchitecture::Gemma2 => {
                     let gemma2_config = Self::build_gemma2_config(&model_json, config)?;
 
-                    let model =
-                        gemma2_model::Model::new(config.use_flash_attention, &gemma2_config, vb)
-                            .map_err(|e| {
-                                RuvLLMError::Model(format!("Failed to create Gemma2 model: {}", e))
-                            })?;
+                    // See the Mistral/Llama arms: flash-attn is not compiled in ruvllm,
+                    // so requesting it panics at runtime. Gate on `cfg!` → standard attention.
+                    let use_flash_attn = config.use_flash_attention && cfg!(feature = "flash-attn");
+                    let model = gemma2_model::Model::new(use_flash_attn, &gemma2_config, vb)
+                        .map_err(|e| {
+                            RuvLLMError::Model(format!("Failed to create Gemma2 model: {}", e))
+                        })?;
 
                     LoadedModelInner::Gemma2(model)
                 }
@@ -1800,6 +1842,20 @@ mod candle_impl {
             let embeddings: Vec<f32> = pooled.to_vec1().map_err(|e| {
                 RuvLLMError::Generation(format!("Failed to read embedding vector: {}", e))
             })?;
+
+            // L2-normalize to unit length. The OpenAI `/v1/embeddings` contract
+            // returns unit-norm vectors, and every consumer here assumes it:
+            // cosine similarity (teri's `query_vec_similarity`) and the ruvector
+            // HNSW index both reduce to a dot product only when inputs are
+            // normalized. `simple_embedding()` already normalizes, so this also
+            // makes the two embedding paths consistent. A zero vector (degenerate
+            // all-special input) is returned as-is rather than dividing by zero.
+            let norm = embeddings.iter().map(|x| x * x).sum::<f32>().sqrt();
+            let embeddings = if norm > f32::EPSILON {
+                embeddings.iter().map(|x| x / norm).collect()
+            } else {
+                embeddings
+            };
 
             Ok(embeddings)
         }

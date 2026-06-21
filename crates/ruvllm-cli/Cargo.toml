@@ -38,6 +38,9 @@ tower-http = { version = "0.6", features = ["cors", "trace"] }
 # Serialization
 serde = { workspace = true }
 serde_json = { workspace = true }
+# base64 encoding for OpenAI `/v1/embeddings` encoding_format="base64" (the
+# default the official openai-python client sends). 0.22 is already in the lock.
+base64 = "0.22"
 
 # Error handling
 thiserror = { workspace = true }
