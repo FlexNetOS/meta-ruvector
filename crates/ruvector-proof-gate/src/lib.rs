@@ -31,6 +31,29 @@ mod payload;
 pub use gate::{HashChainGate, MerkleGate, NullGate, WriteGate};
 pub use payload::{GateError, GateVariant, WritePayload, WriteReceipt};
 
+/// Generate a deterministic synthetic dataset for benchmarks.
+///
+/// Returns `n` payloads with `dims`-dimensional f32 vectors. Uses a simple
+/// LCG so benchmarks are reproducible without an external RNG dependency.
+pub fn synthetic_payloads(n: usize, dims: usize) -> Vec<WritePayload> {
+    let mut state: u64 = 0x6b37_9d3c_2a85_f1e4;
+    let mut next = move || -> f32 {
+        // Xorshift64
+        state ^= state << 13;
+        state ^= state >> 7;
+        state ^= state << 17;
+        // Map to [-1, 1]
+        (state as i64 as f64 / i64::MAX as f64) as f32
+    };
+
+    (0..n)
+        .map(|i| {
+            let vector: Vec<f32> = (0..dims).map(|_| next()).collect();
+            WritePayload::new(i as u64, vector)
+        })
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -77,9 +100,15 @@ mod tests {
     #[test]
     fn hash_chain_verify_receipts() {
         let mut g = HashChainGate::new();
-        let receipts: Vec<_> = (0..20u64).map(|i| g.admit(&make_payload(i)).unwrap()).collect();
+        let receipts: Vec<_> = (0..20u64)
+            .map(|i| g.admit(&make_payload(i)).unwrap())
+            .collect();
         for r in &receipts {
-            assert!(g.verify_receipt(r), "receipt {} failed verification", r.sequence);
+            assert!(
+                g.verify_receipt(r),
+                "receipt {} failed verification",
+                r.sequence
+            );
         }
     }
 
@@ -119,7 +148,9 @@ mod tests {
     #[test]
     fn merkle_gate_verify_receipts() {
         let mut g = MerkleGate::new();
-        let receipts: Vec<_> = (0..20u64).map(|i| g.admit(&make_payload(i)).unwrap()).collect();
+        let receipts: Vec<_> = (0..20u64)
+            .map(|i| g.admit(&make_payload(i)).unwrap())
+            .collect();
         for r in &receipts {
             assert!(g.verify_receipt(r), "receipt {} failed", r.sequence);
         }
@@ -203,8 +234,16 @@ mod tests {
             merkle.admit(p).unwrap();
         }
         assert_eq!(null.chain_root(), [0u8; 32], "NullGate root must be zero");
-        assert_ne!(chain.chain_root(), [0u8; 32], "HashChain root must be non-zero");
-        assert_ne!(merkle.chain_root(), [0u8; 32], "Merkle root must be non-zero");
+        assert_ne!(
+            chain.chain_root(),
+            [0u8; 32],
+            "HashChain root must be non-zero"
+        );
+        assert_ne!(
+            merkle.chain_root(),
+            [0u8; 32],
+            "Merkle root must be non-zero"
+        );
         // HashChain and Merkle roots differ (different algorithms)
         assert_ne!(
             chain.chain_root(),
@@ -212,27 +251,4 @@ mod tests {
             "HashChain and Merkle roots must differ"
         );
     }
-}
-
-/// Generate a deterministic synthetic dataset for benchmarks.
-///
-/// Returns `n` payloads with `dims`-dimensional f32 vectors. Uses a simple
-/// LCG so benchmarks are reproducible without an external RNG dependency.
-pub fn synthetic_payloads(n: usize, dims: usize) -> Vec<WritePayload> {
-    let mut state: u64 = 0x6b37_9d3c_2a85_f1e4;
-    let mut next = move || -> f32 {
-        // Xorshift64
-        state ^= state << 13;
-        state ^= state >> 7;
-        state ^= state << 17;
-        // Map to [-1, 1]
-        (state as i64 as f64 / i64::MAX as f64) as f32
-    };
-
-    (0..n)
-        .map(|i| {
-            let vector: Vec<f32> = (0..dims).map(|_| next()).collect();
-            WritePayload::new(i as u64, vector)
-        })
-        .collect()
 }
