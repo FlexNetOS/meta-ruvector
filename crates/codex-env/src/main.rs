@@ -75,11 +75,17 @@ fn main() -> Result<()> {
                 codex_home,
             })?;
             println!(
-                "codex-env install ok: mirrored {} files ({} changed), installed {} prompts ({} changed), doctor verified config {}/{}, {} agents ({} config entries), {} hook handler(s), {} prompts ({} aliases) in {}",
+                "codex-env install ok: mirrored {} files ({} changed), installed {} prompts ({} changed), home settings {} at {}, doctor verified config {}/{}, {} agents ({} config entries), {} hook handler(s), {} prompts ({} aliases) in {}",
                 report.mirror.total_files,
                 report.mirror.changed_files,
                 report.prompts.total_files,
                 report.prompts.changed_files,
+                if report.home_settings.changed {
+                    "updated"
+                } else {
+                    "verified"
+                },
+                report.home_settings.config_path.display(),
                 report.doctor.config_model,
                 report.doctor.config_reasoning_effort,
                 report.doctor.agent_files,
@@ -130,12 +136,14 @@ fn main() -> Result<()> {
                 println!("{}", serde_json::to_string_pretty(&report)?);
             } else {
                 println!(
-                    "codex-env doctor ok: config {}/{}, approvals {}/{}, goals {}, {} agents ({} config entries; {}), {} hook event(s), {} hook handler(s), {} prompts ({} aliases) installed into {}",
+                    "codex-env doctor ok: config {}/{}, approvals {}/{}, goals {}, home context {}, skills {}, {} agents ({} config entries; {}), {} hook event(s), {} hook handler(s), {} prompts ({} aliases) installed into {}",
                     report.config_model,
                     report.config_reasoning_effort,
                     report.config_approval_policy,
                     report.config_approvals_reviewer,
                     report.config_goals_enabled,
+                    report.codex_home_settings.model_context_window,
+                    report.codex_home_settings.include_skill_instructions,
                     report.agent_files,
                     report.config_agent_entries,
                     format_counts(&report.agent_models),

@@ -6,6 +6,7 @@ use anyhow::{anyhow, Context, Result};
 use mlua::{Lua, Value};
 use serde::Serialize;
 use serde_json::json;
+use toml_edit::{value, DocumentMut, Item, Table};
 
 mod agent_roles;
 mod command_prompts;
@@ -74,8 +75,29 @@ pub struct CodexInstallOptions {
 pub struct CodexInstallReport {
     pub mirror: MirrorReport,
     pub prompts: PromptInstallReport,
+    pub home_settings: CodexHomeSettingsReport,
     pub doctor: DoctorReport,
 }
+
+#[derive(Debug, Clone, Serialize)]
+pub struct CodexHomeSettingsReport {
+    pub config_path: PathBuf,
+    pub changed: bool,
+    pub model: String,
+    pub model_reasoning_effort: String,
+    pub approval_policy: String,
+    pub approvals_reviewer: String,
+    pub model_context_window: i64,
+    pub multi_agent_enabled: bool,
+    pub goals_enabled: bool,
+    pub include_skill_instructions: bool,
+}
+
+pub const REQUIRED_CODEX_MODEL: &str = "gpt-5.5";
+pub const REQUIRED_CODEX_REASONING_EFFORT: &str = "high";
+pub const REQUIRED_CODEX_APPROVAL_POLICY: &str = "on-request";
+pub const REQUIRED_CODEX_APPROVALS_REVIEWER: &str = "auto_review";
+pub const REQUIRED_CODEX_CONTEXT_WINDOW: i64 = 4_000_000;
 
 #[derive(Debug, Default)]
 struct LuaPolicy {
@@ -319,6 +341,7 @@ pub fn install_codex_env(options: CodexInstallOptions) -> Result<CodexInstallRep
         codex_home: options.codex_home.clone(),
         check: false,
     })?;
+    let home_settings = ensure_codex_home_settings(&options.codex_home)?;
     let doctor = doctor_codex_surface(DoctorOptions {
         repo_root: options.repo_root,
         lua_policy: options.lua_policy,
@@ -328,7 +351,208 @@ pub fn install_codex_env(options: CodexInstallOptions) -> Result<CodexInstallRep
     Ok(CodexInstallReport {
         mirror,
         prompts,
+        home_settings,
         doctor,
+    })
+}
+
+pub fn ensure_codex_home_settings(codex_home: &Path) -> Result<CodexHomeSettingsReport> {
+    let config_path = codex_home.join("config.toml");
+    let original = if config_path.exists() {
+        fs::read_to_string(&config_path)
+            .with_context(|| format!("failed to read {}", config_path.display()))?
+    } else {
+        String::new()
+    };
+    let mut document = original
+        .parse::<DocumentMut>()
+        .with_context(|| format!("failed to parse {}", config_path.display()))?;
+
+    set_root_string(&mut document, "model", REQUIRED_CODEX_MODEL);
+    set_root_string(
+        &mut document,
+        "model_reasoning_effort",
+        REQUIRED_CODEX_REASONING_EFFORT,
+    );
+    set_root_string(
+        &mut document,
+        "approval_policy",
+        REQUIRED_CODEX_APPROVAL_POLICY,
+    );
+    set_root_string(
+        &mut document,
+        "approvals_reviewer",
+        REQUIRED_CODEX_APPROVALS_REVIEWER,
+    );
+    set_root_integer(
+        &mut document,
+        "model_context_window",
+        REQUIRED_CODEX_CONTEXT_WINDOW,
+    );
+    set_root_string(&mut document, "web_search", "live");
+    set_table_bool(&mut document, "features", "multi_agent", true);
+    set_table_bool(&mut document, "features", "goals", true);
+    set_table_bool(&mut document, "skills", "include_instructions", true);
+
+    let rendered = document.to_string();
+    let changed = rendered != original;
+    if changed {
+        write_file(&PlannedFile {
+            path: config_path.clone(),
+            bytes: rendered.into_bytes(),
+            executable: false,
+        })?;
+    }
+
+    validate_codex_home_settings_at(codex_home, changed)
+}
+
+pub(crate) fn validate_codex_home_settings(codex_home: &Path) -> Result<CodexHomeSettingsReport> {
+    validate_codex_home_settings_at(codex_home, false)
+}
+
+fn validate_codex_home_settings_at(
+    codex_home: &Path,
+    changed: bool,
+) -> Result<CodexHomeSettingsReport> {
+    let config_path = codex_home.join("config.toml");
+    let config = fs::read_to_string(&config_path)
+        .with_context(|| format!("failed to read {}", config_path.display()))?;
+    let parsed = toml::from_str::<toml::Value>(&config)
+        .with_context(|| format!("failed to parse {}", config_path.display()))?;
+    let model = required_home_string(&parsed, "model", &config_path)?;
+    let model_reasoning_effort =
+        required_home_string(&parsed, "model_reasoning_effort", &config_path)?;
+    let approval_policy = required_home_string(&parsed, "approval_policy", &config_path)?;
+    let approvals_reviewer = required_home_string(&parsed, "approvals_reviewer", &config_path)?;
+    let model_context_window =
+        required_home_integer(&parsed, "model_context_window", &config_path)?;
+    let multi_agent_enabled =
+        required_home_bool(&parsed, &["features", "multi_agent"], &config_path)?;
+    let goals_enabled = required_home_bool(&parsed, &["features", "goals"], &config_path)?;
+    let include_skill_instructions =
+        required_home_bool(&parsed, &["skills", "include_instructions"], &config_path)?;
+
+    if model != REQUIRED_CODEX_MODEL {
+        return Err(anyhow!(
+            "{} must set model to {REQUIRED_CODEX_MODEL}, found {model}",
+            config_path.display()
+        ));
+    }
+    if model_reasoning_effort != REQUIRED_CODEX_REASONING_EFFORT {
+        return Err(anyhow!(
+            "{} must set model_reasoning_effort to {REQUIRED_CODEX_REASONING_EFFORT}, found {model_reasoning_effort}",
+            config_path.display()
+        ));
+    }
+    if approval_policy != REQUIRED_CODEX_APPROVAL_POLICY {
+        return Err(anyhow!(
+            "{} must set approval_policy to {REQUIRED_CODEX_APPROVAL_POLICY}, found {approval_policy}",
+            config_path.display()
+        ));
+    }
+    if approvals_reviewer != REQUIRED_CODEX_APPROVALS_REVIEWER {
+        return Err(anyhow!(
+            "{} must set approvals_reviewer to {REQUIRED_CODEX_APPROVALS_REVIEWER}, found {approvals_reviewer}",
+            config_path.display()
+        ));
+    }
+    if model_context_window < REQUIRED_CODEX_CONTEXT_WINDOW {
+        return Err(anyhow!(
+            "{} must set model_context_window >= {REQUIRED_CODEX_CONTEXT_WINDOW}, found {model_context_window}",
+            config_path.display()
+        ));
+    }
+    if !multi_agent_enabled {
+        return Err(anyhow!(
+            "{} must enable features.multi_agent",
+            config_path.display()
+        ));
+    }
+    if !goals_enabled {
+        return Err(anyhow!(
+            "{} must enable features.goals",
+            config_path.display()
+        ));
+    }
+    if !include_skill_instructions {
+        return Err(anyhow!(
+            "{} must enable skills.include_instructions",
+            config_path.display()
+        ));
+    }
+
+    Ok(CodexHomeSettingsReport {
+        config_path,
+        changed,
+        model,
+        model_reasoning_effort,
+        approval_policy,
+        approvals_reviewer,
+        model_context_window,
+        multi_agent_enabled,
+        goals_enabled,
+        include_skill_instructions,
+    })
+}
+
+fn set_root_string(document: &mut DocumentMut, key: &str, expected: &str) {
+    document[key] = value(expected);
+}
+
+fn set_root_integer(document: &mut DocumentMut, key: &str, expected: i64) {
+    document[key] = value(expected);
+}
+
+fn set_table_bool(document: &mut DocumentMut, table: &str, key: &str, expected: bool) {
+    let table = ensure_table(document, table);
+    table[key] = value(expected);
+}
+
+fn ensure_table<'a>(document: &'a mut DocumentMut, key: &str) -> &'a mut Table {
+    let root = document.as_table_mut();
+    let needs_table = root.get(key).is_none_or(|item| !item.is_table());
+    if needs_table {
+        root.insert(key, Item::Table(Table::new()));
+    }
+    root.get_mut(key)
+        .expect("table item inserted above")
+        .as_table_mut()
+        .expect("table item inserted above")
+}
+
+fn required_home_string(config: &toml::Value, key: &str, path: &Path) -> Result<String> {
+    config
+        .get(key)
+        .and_then(toml::Value::as_str)
+        .map(ToOwned::to_owned)
+        .ok_or_else(|| anyhow!("{} is missing required string {key}", path.display()))
+}
+
+fn required_home_integer(config: &toml::Value, key: &str, path: &Path) -> Result<i64> {
+    config
+        .get(key)
+        .and_then(toml::Value::as_integer)
+        .ok_or_else(|| anyhow!("{} is missing required integer {key}", path.display()))
+}
+
+fn required_home_bool(config: &toml::Value, keys: &[&str], path: &Path) -> Result<bool> {
+    let mut current = config;
+    for key in keys {
+        current = current.get(*key).ok_or_else(|| {
+            anyhow!(
+                "{} is missing required key {}",
+                path.display(),
+                keys.join(".")
+            )
+        })?;
+    }
+    current.as_bool().ok_or_else(|| {
+        anyhow!(
+            "{} required key {} must be bool",
+            path.display(),
+            keys.join(".")
+        )
     })
 }
 
