@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::Path;
 
@@ -11,6 +11,195 @@ use super::{
     escape_toml_string, first_heading, is_executable, is_ignored_path, normalize_generated_bytes,
     normalize_generated_text, strip_leading_frontmatter, yaml_scalar, PlannedFile,
 };
+
+#[derive(Debug, Clone, Copy)]
+struct CodexAgentTeam {
+    name: &'static str,
+    description: &'static str,
+    strategy: &'static str,
+    parallel: bool,
+    consolidation_owner: &'static str,
+    agents: &'static [&'static str],
+}
+
+#[derive(Debug, Clone)]
+struct CodexAgentTeamPlan {
+    name: &'static str,
+    description: &'static str,
+    strategy: &'static str,
+    parallel: bool,
+    consolidation_owner: &'static str,
+    agents: Vec<String>,
+}
+
+fn codex_agent_teams() -> &'static [CodexAgentTeam] {
+    &[
+        CodexAgentTeam {
+            name: "core",
+            description: "Plan, research, implement, test, and review broad repo work.",
+            strategy: "parallel-evidence-then-parent-implementation",
+            parallel: true,
+            consolidation_owner: "parent",
+            agents: &[
+                "claude-core-planner",
+                "claude-core-researcher",
+                "claude-core-coder",
+                "claude-core-tester",
+                "claude-core-reviewer",
+            ],
+        },
+        CodexAgentTeam {
+            name: "review",
+            description:
+                "Find correctness, production, security, and regression risks before shipping.",
+            strategy: "parallel-review-then-parent-remediation",
+            parallel: true,
+            consolidation_owner: "parent",
+            agents: &[
+                "reviewer",
+                "claude-core-reviewer",
+                "claude-testing-production-validator",
+                "claude-v3-security-auditor",
+            ],
+        },
+        CodexAgentTeam {
+            name: "rust",
+            description: "Trace Rust code paths, implement Rust changes, test, and optimize.",
+            strategy: "parallel-rust-research-then-parent-patch",
+            parallel: true,
+            consolidation_owner: "parent",
+            agents: &[
+                "explorer",
+                "claude-core-coder",
+                "claude-core-tester",
+                "claude-v3-performance-engineer",
+            ],
+        },
+        CodexAgentTeam {
+            name: "security",
+            description:
+                "Review architecture, audit implementation, inspect PII, and harden defenses.",
+            strategy: "parallel-security-analysis-then-parent-remediation",
+            parallel: true,
+            consolidation_owner: "parent",
+            agents: &[
+                "claude-v3-security-architect",
+                "claude-v3-security-auditor",
+                "claude-v3-pii-detector",
+                "claude-v3-aidefence-guardian",
+            ],
+        },
+        CodexAgentTeam {
+            name: "github",
+            description:
+                "Prepare PRs, review GitHub feedback, and keep repository automation aligned.",
+            strategy: "parallel-github-coordination-then-parent-publish",
+            parallel: true,
+            consolidation_owner: "parent",
+            agents: &[
+                "claude-github-pr-manager",
+                "claude-github-code-review-swarm",
+                "claude-github-workflow-automation",
+            ],
+        },
+        CodexAgentTeam {
+            name: "swarm",
+            description:
+                "Coordinate larger multi-agent efforts with hierarchical and hive-mind controllers.",
+            strategy: "parallel-swarm-coordination-then-parent-decision",
+            parallel: true,
+            consolidation_owner: "parent",
+            agents: &[
+                "claude-swarm-hierarchical-coordinator",
+                "claude-hive-mind-queen-coordinator",
+                "claude-v3-v3-queen-coordinator",
+            ],
+        },
+    ]
+}
+
+fn available_agent_names(agent_roles: &[CodexAgentRole]) -> BTreeSet<String> {
+    let mut names = ["explorer", "reviewer", "docs_researcher"]
+        .into_iter()
+        .map(ToOwned::to_owned)
+        .collect::<BTreeSet<_>>();
+    names.extend(agent_roles.iter().map(|role| role.role_name.clone()));
+    names
+}
+
+fn fallback_agent_team_members(available: &BTreeSet<String>) -> Vec<String> {
+    ["explorer", "reviewer", "docs_researcher"]
+        .into_iter()
+        .filter(|agent| available.contains(*agent))
+        .map(ToOwned::to_owned)
+        .collect()
+}
+
+fn codex_agent_team_plan(agent_roles: &[CodexAgentRole]) -> Vec<CodexAgentTeamPlan> {
+    let available = available_agent_names(agent_roles);
+    let fallback = fallback_agent_team_members(&available);
+    codex_agent_teams()
+        .iter()
+        .map(|team| {
+            let mut agents = team
+                .agents
+                .iter()
+                .filter(|agent| available.contains(**agent))
+                .map(|agent| (*agent).to_owned())
+                .collect::<Vec<_>>();
+            if agents.len() < 2 {
+                agents = fallback.clone();
+            }
+            CodexAgentTeamPlan {
+                name: team.name,
+                description: team.description,
+                strategy: team.strategy,
+                parallel: team.parallel,
+                consolidation_owner: team.consolidation_owner,
+                agents,
+            }
+        })
+        .collect()
+}
+
+fn codex_agent_team_markdown(agent_roles: &[CodexAgentRole]) -> String {
+    codex_agent_team_plan(agent_roles)
+        .iter()
+        .map(|team| format!("- {}: {}", team.name, team.agents.join(", ")))
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
+pub(super) fn codex_agent_teams_json(
+    codex_dir: &Path,
+    agent_roles: &[CodexAgentRole],
+) -> Result<PlannedFile> {
+    let teams = codex_agent_team_plan(agent_roles)
+        .iter()
+        .map(|team| {
+            json!({
+                "name": team.name,
+                "description": team.description,
+                "strategy": team.strategy,
+                "parallel": team.parallel,
+                "consolidationOwner": team.consolidation_owner,
+                "agents": team.agents,
+            })
+        })
+        .collect::<Vec<_>>();
+    let output = json!({
+        "schemaVersion": 1,
+        "generatedBy": "codex-env",
+        "teams": teams,
+    });
+    let mut text = serde_json::to_string_pretty(&output)?;
+    text.push('\n');
+    Ok(PlannedFile {
+        path: codex_dir.join("agent-teams.json"),
+        bytes: text.into_bytes(),
+        executable: false,
+    })
+}
 
 pub(super) fn read_claude_env(claude_dir: &Path) -> Result<BTreeMap<String, String>> {
     let settings_path = claude_dir.join("settings.json");
@@ -189,32 +378,33 @@ commands such as `/prompts:sparc-code`, `/prompts:sparc:code`, and
     )
 }
 
-pub(super) fn codex_native_workflow_prompts(codex_dir: &Path) -> Vec<PlannedFile> {
+pub(super) fn codex_native_workflow_prompts(
+    codex_dir: &Path,
+    agent_roles: &[CodexAgentRole],
+) -> Vec<PlannedFile> {
+    let team_markdown = codex_agent_team_markdown(agent_roles);
     [
         (
             "codex-agent-team.md",
             "Spawn a Codex-native subagent team from repo custom agents",
             "[TEAM=core|review|rust|security|github|swarm] [GOAL]",
-            r#"Use Codex-native subagents for this goal: $ARGUMENTS
+            format!(
+                r#"Use Codex-native subagents for this goal: $ARGUMENTS
 
 Select the smallest effective team. Spawn the agents in parallel, wait for all results, then consolidate:
 Use the configured custom agent TOMLs as the routing source: heavy agents run on `gpt-5.5`, lighter explorer/template agents run on `gpt-5.4-mini`, and each agent carries its own reasoning effort.
 
-- core: claude-core-planner, claude-core-researcher, claude-core-coder, claude-core-tester, claude-core-reviewer
-- review: reviewer, claude-core-reviewer, claude-testing-production-validator, claude-v3-security-auditor
-- rust: explorer, claude-core-coder, claude-core-tester, claude-v3-performance-engineer
-- security: claude-v3-security-architect, claude-v3-security-auditor, claude-v3-pii-detector, claude-v3-aidefence-guardian
-- github: claude-github-pr-manager, claude-github-code-review-swarm, claude-github-workflow-automation
-- swarm: claude-swarm-hierarchical-coordinator, claude-hive-mind-queen-coordinator, claude-v3-v3-queen-coordinator
+{team_markdown}
 
 Give each subagent a bounded brief with concrete evidence to return. Do not let subagents modify the same file concurrently. After all results return, decide the implementation path, make the edits in the parent thread, verify, commit, push, and update the PR when publishing applies.
-"#,
+"#
+            ),
         ),
         (
             "codex-auto-loop.md",
             "Run the full Codex autonomous implementation loop",
             "[GOAL]",
-            r#"Run the Codex autonomous loop for this goal: $ARGUMENTS
+            String::from(r#"Run the Codex autonomous loop for this goal: $ARGUMENTS
 
 1. Recall project memory and read the closest AGENTS.md instructions.
 2. Inspect current git, branch, PR, and generated-surface state before trusting prior context.
@@ -225,13 +415,13 @@ Give each subagent a bounded brief with concrete evidence to return. Do not let 
 7. Run targeted tests plus mirror/install checks, then broader gates proportional to risk.
 8. Commit, push, and open or update the PR. Store ICM memory for significant completed work.
 9. Continue with the next gap unless the whole objective is proven complete.
-"#,
+"#),
         ),
         (
             "codex-gap-hunt.md",
             "Run a deep Codex parity gap hunt before upgrading",
             "[SURFACE=hooks|agents|skills|prompts|all] [GOAL]",
-            r#"Run a deep current-state gap hunt for this Codex surface: $ARGUMENTS
+            String::from(r#"Run a deep current-state gap hunt for this Codex surface: $ARGUMENTS
 
 Compare the actual repo state against Codex-native behavior, not Claude assumptions:
 
@@ -242,7 +432,7 @@ Compare the actual repo state against Codex-native behavior, not Claude assumpti
 - auto loop: AGENTS.md, ICM recall/store, verification gates, commit/push/PR workflow
 
 Return missed items ranked by user impact. Implement only upgrades that move Codex closer to the requested final state, then verify with authoritative command output.
-"#,
+"#),
         ),
     ]
     .into_iter()
@@ -265,31 +455,32 @@ Return missed items ranked by user impact. Implement only upgrades that move Cod
     .collect()
 }
 
-pub(super) fn codex_native_workflow_skills(skills_dir: &Path) -> Vec<PlannedFile> {
+pub(super) fn codex_native_workflow_skills(
+    skills_dir: &Path,
+    agent_roles: &[CodexAgentRole],
+) -> Vec<PlannedFile> {
+    let team_markdown = codex_agent_team_markdown(agent_roles);
     [
         (
             "codex-agent-team",
             "Use when a task should spawn a Codex-native team of project custom agents for parallel research, implementation planning, review, security, GitHub, or swarm coordination.",
-            r#"# Codex Agent Team
+            format!(
+                r#"# Codex Agent Team
 
 Use Codex subagents explicitly. Pick the smallest effective team, spawn agents in parallel, wait for all results, then consolidate in the parent thread.
 Use the configured custom agent TOMLs as the model-routing source: heavy agents run on `gpt-5.5`, lighter explorer/template agents run on `gpt-5.4-mini`, and each agent carries its own reasoning effort.
 
 Recommended teams:
-- core: claude-core-planner, claude-core-researcher, claude-core-coder, claude-core-tester, claude-core-reviewer
-- review: reviewer, claude-core-reviewer, claude-testing-production-validator, claude-v3-security-auditor
-- rust: explorer, claude-core-coder, claude-core-tester, claude-v3-performance-engineer
-- security: claude-v3-security-architect, claude-v3-security-auditor, claude-v3-pii-detector, claude-v3-aidefence-guardian
-- github: claude-github-pr-manager, claude-github-code-review-swarm, claude-github-workflow-automation
-- swarm: claude-swarm-hierarchical-coordinator, claude-hive-mind-queen-coordinator, claude-v3-v3-queen-coordinator
+{team_markdown}
 
 Give each subagent a bounded brief and a required evidence format. Keep write ownership in the parent thread unless a subagent has an isolated file scope.
-"#,
+"#
+            ),
         ),
         (
             "codex-auto-loop",
             "Use when the user wants autonomous end-to-end Codex execution with memory recall, gap analysis, implementation, verification, commit, push, and PR updates.",
-            r#"# Codex Auto Loop
+            String::from(r#"# Codex Auto Loop
 
 Run this loop until the requested end state is true or a real blocker is proven:
 
@@ -301,12 +492,12 @@ Run this loop until the requested end state is true or a real blocker is proven:
 6. Run targeted gates, mirror checks, install checks, and risk-appropriate broader gates.
 7. Commit, push, update or open the PR, and store ICM memory for significant work.
 8. Continue to the next gap while the active objective remains incomplete.
-"#,
+"#),
         ),
         (
             "codex-gap-hunt",
             "Use when auditing Codex parity gaps across hooks, helpers, prompts, skills, custom agents, subagents, settings, MCP, and auto-loop workflows.",
-            r#"# Codex Gap Hunt
+            String::from(r#"# Codex Gap Hunt
 
 Audit from current evidence, not memory. Compare source and generated surfaces:
 
@@ -317,7 +508,7 @@ Audit from current evidence, not memory. Compare source and generated surfaces:
 - AGENTS.md, ICM, verification, commit/push/PR workflow
 
 Rank gaps by user impact, then implement upgrades only. Verify with commands that prove the touched surface works.
-"#,
+"#),
         ),
     ]
     .into_iter()

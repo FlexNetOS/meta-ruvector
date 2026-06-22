@@ -20,7 +20,7 @@ use agent_roles::{
 use command_prompts::{clean_codex_prompts, command_prompt_plan, stale_codex_prompt_files};
 pub use doctor::{doctor_codex_surface, DoctorOptions, DoctorReport};
 use generated::{
-    codex_agent_profiles, codex_agents_md, codex_config, codex_hooks_json,
+    codex_agent_profiles, codex_agent_teams_json, codex_agents_md, codex_config, codex_hooks_json,
     codex_native_workflow_prompts, codex_native_workflow_skills, command_skill_plan,
     copy_tree_plan, read_claude_env,
 };
@@ -147,10 +147,14 @@ pub fn mirror_codex_surface(options: MirrorOptions) -> Result<MirrorReport> {
         bytes: codex_agents_md().into_bytes(),
         executable: false,
     });
+    planned.push(codex_agent_teams_json(&codex_dir, &agent_role_plan.roles)?);
     planned.extend(codex_agent_profiles(&codex_dir));
     planned.extend(agent_role_plan.files);
     planned.extend(prompt_plan.files);
-    planned.extend(codex_native_workflow_prompts(&codex_dir));
+    planned.extend(codex_native_workflow_prompts(
+        &codex_dir,
+        &agent_role_plan.roles,
+    ));
     planned.extend(codex_prompt_helpers(&codex_dir));
     planned.push(PlannedFile {
         path: codex_dir.join("hooks.json"),
@@ -172,6 +176,7 @@ pub fn mirror_codex_surface(options: MirrorOptions) -> Result<MirrorReport> {
     )?);
     planned.extend(codex_native_workflow_skills(
         &repo_root.join(".agents/skills"),
+        &agent_role_plan.roles,
     ));
     planned.push(PlannedFile {
         path: codex_dir.join("mirror-symbols.json"),
