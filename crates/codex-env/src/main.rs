@@ -100,9 +100,11 @@ fn main() -> Result<()> {
                 println!("{}", serde_json::to_string_pretty(&report)?);
             } else {
                 println!(
-                    "codex-env doctor ok: config {}/{}, {} agents ({}), {} hook event(s), {} hook handler(s), {} prompts installed into {}",
+                    "codex-env doctor ok: config {}/{}, approvals {}/{}, {} agents ({}), {} hook event(s), {} hook handler(s), {} prompts installed into {}",
                     report.config_model,
                     report.config_reasoning_effort,
+                    report.config_approval_policy,
+                    report.config_approvals_reviewer,
                     report.agent_files,
                     format_counts(&report.agent_models),
                     report.hook_events.len(),
