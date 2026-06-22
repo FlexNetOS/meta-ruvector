@@ -34,7 +34,10 @@ fn mirror_generates_codex_and_skill_files() {
     .unwrap();
 
     assert!(report.changed_files > 0);
-    assert!(root.join(".codex/config.toml").exists());
+    let config = fs::read_to_string(root.join(".codex/config.toml")).unwrap();
+    assert!(config.contains("model_context_window = 4000000"));
+    assert!(config.contains("[skills]\ninclude_instructions = true"));
+    assert!(config.contains("[agents]\nmax_threads = 15\nmax_depth = 3"));
     assert!(root.join(".codex/hooks/rust-check.sh").exists());
     assert_eq!(
         fs::read(root.join(".codex/mirror/.claude/hooks/rust-check.sh")).unwrap(),

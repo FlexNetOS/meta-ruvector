@@ -38,6 +38,7 @@ pub(super) fn codex_config(env: &BTreeMap<String, String>, footer: Option<&str>)
 approval_policy = "on-request"
 sandbox_mode = "workspace-write"
 web_search = "live"
+model_context_window = 4000000
 
 [mcp_servers.github]
 command = "npx"
@@ -76,9 +77,12 @@ CLAUDE_FLOW_MEMORY_BACKEND = "hybrid"
 [features]
 multi_agent = true
 
+[skills]
+include_instructions = true
+
 [agents]
-max_threads = 6
-max_depth = 1
+max_threads = 15
+max_depth = 3
 
 [agents.explorer]
 description = "Read-only codebase explorer for gathering evidence before changes are proposed."
