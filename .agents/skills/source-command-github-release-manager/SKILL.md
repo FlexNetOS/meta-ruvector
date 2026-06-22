@@ -1,6 +1,6 @@
 ---
 name: source-command-github-release-manager
-description: "GitHub Release Manager"
+description: 'GitHub Release Manager'
 ---
 
 # /github/release-manager

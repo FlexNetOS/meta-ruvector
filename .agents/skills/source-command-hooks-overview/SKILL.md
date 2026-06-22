@@ -1,6 +1,6 @@
 ---
 name: source-command-hooks-overview
-description: "Claude Code Hooks for claude-flow"
+description: 'Claude Code Hooks for claude-flow'
 ---
 
 # /hooks/overview

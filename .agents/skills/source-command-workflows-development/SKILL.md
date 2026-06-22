@@ -1,6 +1,6 @@
 ---
 name: source-command-workflows-development
-description: "Development Workflow Coordination"
+description: 'Development Workflow Coordination'
 ---
 
 # /workflows/development

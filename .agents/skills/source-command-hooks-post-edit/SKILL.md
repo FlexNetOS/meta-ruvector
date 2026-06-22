@@ -1,6 +1,6 @@
 ---
 name: source-command-hooks-post-edit
-description: "hook post-edit"
+description: 'hook post-edit'
 ---
 
 # /hooks/post-edit

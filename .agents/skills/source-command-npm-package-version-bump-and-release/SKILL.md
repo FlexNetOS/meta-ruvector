@@ -1,6 +1,6 @@
 ---
 name: source-command-npm-package-version-bump-and-release
-description: "/npm-package-version-bump-and-release"
+description: '/npm-package-version-bump-and-release'
 ---
 
 # /npm-package-version-bump-and-release

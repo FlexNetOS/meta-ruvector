@@ -1,6 +1,6 @@
 ---
 name: source-command-sparc-ask
-description: "❓Ask"
+description: '❓Ask'
 ---
 
 # /sparc/ask

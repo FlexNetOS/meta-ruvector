@@ -1,6 +1,6 @@
 ---
 name: source-command-github-pr-manager
-description: "GitHub PR Manager"
+description: 'GitHub PR Manager'
 ---
 
 # /github/pr-manager

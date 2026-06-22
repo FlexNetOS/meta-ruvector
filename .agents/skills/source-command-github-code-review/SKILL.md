@@ -1,6 +1,6 @@
 ---
 name: source-command-github-code-review
-description: "code-review"
+description: 'code-review'
 ---
 
 # /github/code-review

@@ -1,6 +1,6 @@
 ---
 name: source-command-github-readme
-description: "Github Commands"
+description: 'Github Commands'
 ---
 
 # /github/README

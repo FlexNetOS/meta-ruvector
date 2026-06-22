@@ -1,6 +1,6 @@
 ---
 name: source-command-hive-mind-hive-mind-wizard
-description: "hive-mind-wizard"
+description: 'hive-mind-wizard'
 ---
 
 # /hive-mind/hive-mind-wizard

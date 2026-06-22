@@ -1,6 +1,6 @@
 ---
 name: source-command-github-github-swarm
-description: "github swarm"
+description: 'github swarm'
 ---
 
 # /github/github-swarm

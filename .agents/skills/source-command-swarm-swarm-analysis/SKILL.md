@@ -1,6 +1,6 @@
 ---
 name: source-command-swarm-swarm-analysis
-description: "swarm-analysis"
+description: 'swarm-analysis'
 ---
 
 # /swarm/swarm-analysis

@@ -1,6 +1,6 @@
 ---
 name: source-command-sparc-optimizer
-description: "SPARC Optimizer Mode"
+description: 'SPARC Optimizer Mode'
 ---
 
 # /sparc/optimizer

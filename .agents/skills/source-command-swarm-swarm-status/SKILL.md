@@ -1,6 +1,6 @@
 ---
 name: source-command-swarm-swarm-status
-description: "swarm-status"
+description: 'swarm-status'
 ---
 
 # /swarm/swarm-status

@@ -1,6 +1,6 @@
 ---
 name: source-command-optimization-parallel-execution
-description: "Parallel Task Execution"
+description: 'Parallel Task Execution'
 ---
 
 # /optimization/parallel-execution

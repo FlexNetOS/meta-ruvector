@@ -1,6 +1,6 @@
 ---
 name: source-command-ci-guard-and-supply-chain-hardening
-description: "/ci-guard-and-supply-chain-hardening"
+description: '/ci-guard-and-supply-chain-hardening'
 ---
 
 # /ci-guard-and-supply-chain-hardening

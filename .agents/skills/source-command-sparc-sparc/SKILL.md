@@ -1,6 +1,6 @@
 ---
 name: source-command-sparc-sparc
-description: "⚡\u{fe0f} SPARC Orchestrator"
+description: '⚡️ SPARC Orchestrator'
 ---
 
 # /sparc/sparc

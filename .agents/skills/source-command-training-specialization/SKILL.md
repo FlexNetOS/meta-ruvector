@@ -1,6 +1,6 @@
 ---
 name: source-command-training-specialization
-description: "Agent Specialization Training"
+description: 'Agent Specialization Training'
 ---
 
 # /training/specialization

@@ -1,6 +1,6 @@
 ---
 name: source-command-hive-mind-hive-mind-resume
-description: "hive-mind-resume"
+description: 'hive-mind-resume'
 ---
 
 # /hive-mind/hive-mind-resume

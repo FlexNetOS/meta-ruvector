@@ -1,6 +1,6 @@
 ---
 name: source-command-automation-self-healing
-description: "Self-Healing Workflows"
+description: 'Self-Healing Workflows'
 ---
 
 # /automation/self-healing

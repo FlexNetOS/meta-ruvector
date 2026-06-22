@@ -1,6 +1,6 @@
 ---
 name: source-command-sparc-memory-manager
-description: "SPARC Memory Manager Mode"
+description: 'SPARC Memory Manager Mode'
 ---
 
 # /sparc/memory-manager

@@ -1,6 +1,6 @@
 ---
 name: source-command-sparc-sparc-modes
-description: "SPARC Modes Overview"
+description: 'SPARC Modes Overview'
 ---
 
 # /sparc/sparc-modes

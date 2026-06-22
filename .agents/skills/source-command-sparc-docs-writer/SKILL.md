@@ -1,6 +1,6 @@
 ---
 name: source-command-sparc-docs-writer
-description: "📚 Documentation Writer"
+description: '📚 Documentation Writer'
 ---
 
 # /sparc/docs-writer

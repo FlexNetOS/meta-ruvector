@@ -1,6 +1,6 @@
 ---
 name: source-command-sparc-architect
-description: "SPARC Architect Mode"
+description: 'SPARC Architect Mode'
 ---
 
 # /sparc/architect

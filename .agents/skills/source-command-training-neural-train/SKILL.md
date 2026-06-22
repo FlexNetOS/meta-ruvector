@@ -1,6 +1,6 @@
 ---
 name: source-command-training-neural-train
-description: "neural-train"
+description: 'neural-train'
 ---
 
 # /training/neural-train

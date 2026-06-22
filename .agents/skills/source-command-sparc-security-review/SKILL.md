@@ -1,6 +1,6 @@
 ---
 name: source-command-sparc-security-review
-description: "🛡\u{fe0f} Security Reviewer"
+description: '🛡️ Security Reviewer'
 ---
 
 # /sparc/security-review

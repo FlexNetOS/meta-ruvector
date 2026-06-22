@@ -1,6 +1,6 @@
 ---
 name: source-command-sparc-post-deployment-monitoring-mode
-description: "📈 Deployment Monitor"
+description: '📈 Deployment Monitor'
 ---
 
 # /sparc/post-deployment-monitoring-mode

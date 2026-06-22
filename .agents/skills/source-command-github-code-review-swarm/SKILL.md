@@ -1,6 +1,6 @@
 ---
 name: source-command-github-code-review-swarm
-description: "Code Review Swarm - Automated Code Review with AI Agents"
+description: 'Code Review Swarm - Automated Code Review with AI Agents'
 ---
 
 # /github/code-review-swarm

@@ -1,6 +1,6 @@
 ---
 name: source-command-workflows-research
-description: "Research Workflow Coordination"
+description: 'Research Workflow Coordination'
 ---
 
 # /workflows/research

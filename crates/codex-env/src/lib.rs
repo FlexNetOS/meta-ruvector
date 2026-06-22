@@ -8,12 +8,14 @@ use serde::Serialize;
 use serde_json::json;
 
 mod agent_roles;
+mod command_prompts;
 mod generated;
 mod raw_mirror;
 
 use agent_roles::{
     claude_agent_role_plan, clean_claude_agent_roles, stale_claude_agent_role_files,
 };
+use command_prompts::{clean_codex_prompts, command_prompt_plan, stale_codex_prompt_files};
 use generated::{
     codex_agent_profiles, codex_agents_md, codex_config, codex_hooks_json, command_skill_plan,
     copy_tree_plan, read_claude_env,
@@ -41,6 +43,23 @@ pub struct MirrorReport {
     pub generated: Vec<PathBuf>,
 }
 
+#[derive(Debug, Clone)]
+pub struct PromptInstallOptions {
+    pub repo_root: PathBuf,
+    pub codex_home: PathBuf,
+    pub check: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct PromptInstallReport {
+    pub repo_root: PathBuf,
+    pub source_dir: PathBuf,
+    pub target_dir: PathBuf,
+    pub total_files: usize,
+    pub changed_files: usize,
+    pub verified_files: usize,
+}
+
 #[derive(Debug, Default)]
 struct LuaPolicy {
     config_footer: Option<String>,
@@ -66,6 +85,7 @@ pub fn mirror_codex_surface(options: MirrorOptions) -> Result<MirrorReport> {
     let policy = load_lua_policy(options.lua_policy.as_deref(), &repo_root, &claude_dir)?;
     let claude_files = claude_source_files(&repo_root, &claude_dir)?;
     let agent_role_plan = claude_agent_role_plan(&claude_dir.join("agents"), &codex_dir)?;
+    let prompt_plan = command_prompt_plan(&claude_dir.join("commands"), &codex_dir)?;
     let mut planned = Vec::new();
 
     planned.extend(raw_claude_mirror_plan(
@@ -90,6 +110,8 @@ pub fn mirror_codex_surface(options: MirrorOptions) -> Result<MirrorReport> {
     });
     planned.extend(codex_agent_profiles(&codex_dir));
     planned.extend(agent_role_plan.files);
+    planned.extend(prompt_plan.files);
+    planned.extend(codex_prompt_helpers(&codex_dir));
     planned.push(PlannedFile {
         path: codex_dir.join("hooks.json"),
         bytes: codex_hooks_json(&claude_dir)?.into_bytes(),
@@ -127,10 +149,12 @@ pub fn mirror_codex_surface(options: MirrorOptions) -> Result<MirrorReport> {
     let mut generated = Vec::new();
     let stale_raw_mirror_files = stale_raw_mirror_files(&repo_root, &codex_dir, &claude_files)?;
     let stale_agent_role_files = stale_claude_agent_role_files(&repo_root, &codex_dir, &planned)?;
+    let stale_prompt_files = stale_codex_prompt_files(&repo_root, &codex_dir, &planned)?;
 
     if !options.check {
         clean_raw_mirror(&codex_dir)?;
         clean_claude_agent_roles(&codex_dir)?;
+        clean_codex_prompts(&codex_dir)?;
     }
 
     for file in &planned {
@@ -172,6 +196,19 @@ pub fn mirror_codex_surface(options: MirrorOptions) -> Result<MirrorReport> {
         ));
     }
 
+    if options.check && !stale_prompt_files.is_empty() {
+        return Err(anyhow!(
+            "Codex prompt mirror has {} stale file(s): {}",
+            stale_prompt_files.len(),
+            stale_prompt_files
+                .iter()
+                .take(5)
+                .map(|path| path.display().to_string())
+                .collect::<Vec<_>>()
+                .join(", ")
+        ));
+    }
+
     if options.check && changed_files > 0 {
         return Err(anyhow!(
             "Codex mirror is stale: {changed_files} generated file(s) differ"
@@ -186,6 +223,67 @@ pub fn mirror_codex_surface(options: MirrorOptions) -> Result<MirrorReport> {
         changed_files,
         verified_files,
         generated,
+    })
+}
+
+pub fn install_codex_prompts(options: PromptInstallOptions) -> Result<PromptInstallReport> {
+    let repo_root = options.repo_root.canonicalize().with_context(|| {
+        format!(
+            "failed to canonicalize repo root {}",
+            options.repo_root.display()
+        )
+    })?;
+    let source_dir = repo_root.join(".codex/prompts");
+    let target_dir = options.codex_home.join("prompts");
+    if !source_dir.exists() {
+        return Err(anyhow!(
+            "{} does not exist; run `cargo run -p codex-env -- mirror` first",
+            source_dir.display()
+        ));
+    }
+
+    let mut planned = Vec::new();
+    for entry in fs::read_dir(&source_dir)? {
+        let entry = entry?;
+        let path = entry.path();
+        if !path.is_file() || path.extension().and_then(|value| value.to_str()) != Some("md") {
+            continue;
+        }
+        planned.push(PlannedFile {
+            path: target_dir.join(entry.file_name()),
+            bytes: fs::read(path)?,
+            executable: false,
+        });
+    }
+    planned.sort_by(|a, b| a.path.cmp(&b.path));
+
+    let mut changed_files = 0;
+    let mut verified_files = 0;
+    for file in &planned {
+        let exists_with_same_content = fs::read(&file.path).is_ok_and(|bytes| bytes == file.bytes);
+        if exists_with_same_content {
+            verified_files += 1;
+        } else {
+            changed_files += 1;
+        }
+        if !options.check {
+            write_file(file)?;
+        }
+    }
+
+    if options.check && changed_files > 0 {
+        return Err(anyhow!(
+            "Codex home prompts are stale: {changed_files} prompt file(s) differ"
+        ));
+    }
+
+    Ok(PromptInstallReport {
+        repo_root,
+        source_dir,
+        target_dir,
+        total_files: planned.len(),
+        changed_files,
+        verified_files,
     })
 }
 
@@ -271,6 +369,30 @@ fn manifest_json(
         "files": files
     });
     Ok(format!("{}\n", serde_json::to_string_pretty(&manifest)?))
+}
+
+fn codex_prompt_helpers(codex_dir: &Path) -> Vec<PlannedFile> {
+    vec![PlannedFile {
+        path: codex_dir.join("helpers/install-prompts.sh"),
+        bytes: normalize_generated_text(
+            r#"#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+codex_home="${CODEX_HOME:-${HOME}/.codex}"
+
+cargo run -p codex-env -- --repo "${repo_root}" install-prompts --codex-home "${codex_home}"
+
+cat <<'MSG'
+Installed Codex prompt mirrors.
+Restart Codex, then invoke Claude command mirrors as /prompts:<name>.
+Examples: /prompts:sparc-code, /prompts:claude-flow-swarm
+MSG
+"#,
+        )
+        .into_bytes(),
+        executable: true,
+    }]
 }
 
 fn write_file(file: &PlannedFile) -> Result<()> {
@@ -402,6 +524,25 @@ fn strip_leading_frontmatter(markdown: &str) -> &str {
     &rest[end + "\n---\n".len()..]
 }
 
+fn yaml_frontmatter_scalar(markdown: &str, key: &str) -> Option<String> {
+    let rest = markdown.strip_prefix("---\n")?;
+    let end = rest.find("\n---\n")?;
+    let frontmatter = &rest[..end];
+    for line in frontmatter.lines() {
+        let Some((candidate, value)) = line.split_once(':') else {
+            continue;
+        };
+        if candidate.trim() == key {
+            let value = value.trim();
+            if value.is_empty() || matches!(value, "|" | ">") {
+                return None;
+            }
+            return Some(value.trim_matches('"').trim_matches('\'').trim().to_owned());
+        }
+    }
+    None
+}
+
 fn yaml_scalar(value: &str) -> String {
-    format!("{:?}", value)
+    format!("'{}'", value.replace('\'', "''"))
 }

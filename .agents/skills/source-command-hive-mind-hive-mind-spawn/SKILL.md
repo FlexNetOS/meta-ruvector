@@ -1,6 +1,6 @@
 ---
 name: source-command-hive-mind-hive-mind-spawn
-description: "hive-mind-spawn"
+description: 'hive-mind-spawn'
 ---
 
 # /hive-mind/hive-mind-spawn

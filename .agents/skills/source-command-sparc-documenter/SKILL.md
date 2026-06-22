@@ -1,6 +1,6 @@
 ---
 name: source-command-sparc-documenter
-description: "SPARC Documenter Mode"
+description: 'SPARC Documenter Mode'
 ---
 
 # /sparc/documenter

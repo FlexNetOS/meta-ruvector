@@ -1,6 +1,6 @@
 ---
 name: source-command-sparc-innovator
-description: "SPARC Innovator Mode"
+description: 'SPARC Innovator Mode'
 ---
 
 # /sparc/innovator

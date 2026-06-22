@@ -1,6 +1,6 @@
 ---
 name: source-command-sparc-analyzer
-description: "SPARC Analyzer Mode"
+description: 'SPARC Analyzer Mode'
 ---
 
 # /sparc/analyzer

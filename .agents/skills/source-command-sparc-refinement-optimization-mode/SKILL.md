@@ -1,6 +1,6 @@
 ---
 name: source-command-sparc-refinement-optimization-mode
-description: "🧹 Optimizer"
+description: '🧹 Optimizer'
 ---
 
 # /sparc/refinement-optimization-mode

@@ -1,6 +1,6 @@
 ---
 name: source-command-analysis-token-efficiency
-description: "Token Usage Optimization"
+description: 'Token Usage Optimization'
 ---
 
 # /analysis/token-efficiency

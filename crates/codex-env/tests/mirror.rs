@@ -1,6 +1,6 @@
 use std::fs;
 
-use codex_env::{mirror_codex_surface, MirrorOptions};
+use codex_env::{install_codex_prompts, mirror_codex_surface, MirrorOptions, PromptInstallOptions};
 
 #[test]
 fn mirror_generates_codex_and_skill_files() {
@@ -42,7 +42,7 @@ fn mirror_generates_codex_and_skill_files() {
     fs::write(root.join(".claude/skills/demo/SKILL.md"), "# Demo\n").unwrap();
     fs::write(
         root.join(".claude/commands/sparc/code.md"),
-        "# Code\nBody\n",
+        "---\ndescription: Write code through SPARC\n---\n\n# Code\nBody with $ARGUMENTS and shell \"$FOO\".\n",
     )
     .unwrap();
 
@@ -104,6 +104,13 @@ fn mirror_generates_codex_and_skill_files() {
     assert!(root
         .join(".agents/skills/source-command-sparc-code/SKILL.md")
         .exists());
+    let prompt = fs::read_to_string(root.join(".codex/prompts/sparc-code.md")).unwrap();
+    assert!(prompt.contains("description: 'Write code through SPARC'"));
+    assert!(prompt.contains("argument-hint: [ARGUMENTS]"));
+    assert!(prompt.contains("Source: `.claude/commands/sparc/code.md`"));
+    assert!(prompt.contains("Arguments supplied to this prompt: $ARGUMENTS"));
+    assert!(prompt.contains("Body with $ARGUMENTS and shell \"$$FOO\"."));
+    assert!(root.join(".codex/helpers/install-prompts.sh").exists());
 
     let inventory: serde_json::Value =
         serde_json::from_slice(&fs::read(root.join(".codex/mirror-symbols.json")).unwrap())
@@ -133,6 +140,45 @@ fn mirror_generates_codex_and_skill_files() {
     let check = mirror_codex_surface(MirrorOptions {
         repo_root: root.to_path_buf(),
         lua_policy: None,
+        check: true,
+    })
+    .unwrap();
+    assert_eq!(check.changed_files, 0);
+}
+
+#[test]
+fn install_prompts_copies_generated_prompt_commands() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path().join("repo");
+    let codex_home = temp.path().join("codex-home");
+    fs::create_dir_all(root.join(".claude/commands")).unwrap();
+    fs::write(root.join(".claude/settings.json"), r#"{"env":{}}"#).unwrap();
+    fs::write(
+        root.join(".claude/commands/demo.md"),
+        "---\ndescription: Demo prompt\n---\n\n# Demo\nUse $ARGUMENTS.\n",
+    )
+    .unwrap();
+
+    mirror_codex_surface(MirrorOptions {
+        repo_root: root.clone(),
+        lua_policy: None,
+        check: false,
+    })
+    .unwrap();
+
+    let report = install_codex_prompts(PromptInstallOptions {
+        repo_root: root.clone(),
+        codex_home: codex_home.clone(),
+        check: false,
+    })
+    .unwrap();
+    assert_eq!(report.total_files, 1);
+    assert_eq!(report.changed_files, 1);
+    assert!(codex_home.join("prompts/demo.md").exists());
+
+    let check = install_codex_prompts(PromptInstallOptions {
+        repo_root: root,
+        codex_home,
         check: true,
     })
     .unwrap();

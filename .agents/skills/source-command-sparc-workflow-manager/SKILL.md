@@ -1,6 +1,6 @@
 ---
 name: source-command-sparc-workflow-manager
-description: "SPARC Workflow Manager Mode"
+description: 'SPARC Workflow Manager Mode'
 ---
 
 # /sparc/workflow-manager

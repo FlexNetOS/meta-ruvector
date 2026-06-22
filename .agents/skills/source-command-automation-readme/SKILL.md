@@ -1,6 +1,6 @@
 ---
 name: source-command-automation-readme
-description: "Automation Commands"
+description: 'Automation Commands'
 ---
 
 # /automation/README

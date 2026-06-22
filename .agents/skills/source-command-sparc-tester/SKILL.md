@@ -1,6 +1,6 @@
 ---
 name: source-command-sparc-tester
-description: "SPARC Tester Mode"
+description: 'SPARC Tester Mode'
 ---
 
 # /sparc/tester

@@ -1,6 +1,6 @@
 ---
 name: source-command-hive-mind-hive-mind-memory
-description: "hive-mind-memory"
+description: 'hive-mind-memory'
 ---
 
 # /hive-mind/hive-mind-memory

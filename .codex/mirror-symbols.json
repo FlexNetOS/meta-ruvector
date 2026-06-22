@@ -6052,9 +6052,9 @@
       "mirror": ".codex/mirror/.claude/skills/gitnexus-usage/SKILL.md",
       "kind": "skill",
       "executable": false,
-      "bytes": 4333,
-      "sourceSha256": "d74fcfd7c5ca646cf42d2a058d2c97320fb4ca9dd075401da5fc4f28a510c365",
-      "mirrorSha256": "d74fcfd7c5ca646cf42d2a058d2c97320fb4ca9dd075401da5fc4f28a510c365",
+      "bytes": 4335,
+      "sourceSha256": "682196365ad8ea6cb733ade08330f1dd4937fe796c369f8bab1ae597d885f94b",
+      "mirrorSha256": "682196365ad8ea6cb733ade08330f1dd4937fe796c369f8bab1ae597d885f94b",
       "symbols": {
         "extension": "md",
         "fileName": "SKILL.md",
@@ -6204,13 +6204,17 @@
       "mirror": ".codex/mirror/.claude/skills/ruvector/SKILL.md",
       "kind": "skill",
       "executable": false,
-      "bytes": 4234,
-      "sourceSha256": "727be4051d6ecf670e6fdc2216a0ab4d9c6d10eacbc4269c7db46bf7b15cf9ad",
-      "mirrorSha256": "727be4051d6ecf670e6fdc2216a0ab4d9c6d10eacbc4269c7db46bf7b15cf9ad",
+      "bytes": 4397,
+      "sourceSha256": "2e96e65abfb91a349dc90bdf79974ef308a59751f24cf334ba046d41a32c18d8",
+      "mirrorSha256": "2e96e65abfb91a349dc90bdf79974ef308a59751f24cf334ba046d41a32c18d8",
       "symbols": {
         "extension": "md",
         "fileName": "SKILL.md",
         "firstHeading": "ruvector Development Patterns",
+        "frontmatter": {
+          "description": "Use for ruvector repository development patterns, npm release workflows, package synchronization, CI guardrails, and supply-chain hardening.",
+          "name": "ruvector"
+        },
         "pathSlug": "skills-ruvector-skill-md"
       }
     },

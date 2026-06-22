@@ -1,6 +1,6 @@
 ---
 name: source-command-training-readme
-description: "Training Commands"
+description: 'Training Commands'
 ---
 
 # /training/README
