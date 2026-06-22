@@ -1,6 +1,11 @@
-//! ROS3 Embedded Systems Support
+//! agentic-robotics-embedded - placeholder for future embedded support
 //!
-//! Provides support for embedded systems using Embassy and RTIC
+//! This crate is currently a small `std` skeleton. It exports two
+//! configuration types — [`EmbeddedPriority`] and [`EmbeddedConfig`] — that
+//! sketch the intended embedded API surface. Real embedded support (no-std,
+//! Embassy, RTIC, target-specific HALs) is **not** implemented yet: the
+//! relevant dependencies are commented out in `Cargo.toml` and the `embassy`
+//! / `rtic` Cargo features are present but empty (they enable nothing today).
 
 
 /// Embedded task priority

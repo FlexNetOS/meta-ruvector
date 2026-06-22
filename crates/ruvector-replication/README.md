@@ -5,41 +5,44 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Rust](https://img.shields.io/badge/rust-1.77%2B-orange.svg)](https://www.rust-lang.org)
 
-**Multi-master vector replication with quorum writes, vector clocks, and automatic conflict resolution.**
+**Primary/secondary vector replication with vector clocks, conflict resolution, and automatic failover.**
 
 ```toml
 ruvector-replication = "0.1.1"
 ```
 
-When your vector database runs on more than one node, you need a way to keep data in sync without losing writes or slowing down queries. ruvector-replication handles that: it replicates vectors across nodes, resolves conflicts automatically, and lets you trade off consistency versus speed per-write. It plugs into the [RuVector](https://github.com/FlexNetOS/ruvector) ecosystem alongside Raft consensus and auto-sharding.
+When your vector database runs on more than one node, you need a way to keep data
+in sync without losing writes. `ruvector-replication` provides the building blocks:
+a replica set with role/health tracking (`ReplicaSet`), a synchronization manager
+with configurable sync modes (`SyncManager` / `SyncMode`), vector-clock-based
+conflict resolution (`VectorClock`), and automatic failover (`FailoverManager`). It
+plugs into the [RuVector](https://github.com/ruvnet/ruvector) ecosystem alongside
+Raft consensus.
 
 | | Single-node vector DB | ruvector-replication |
 |---|---|---|
-| **Availability** | One node goes down, everything stops | Replicas serve reads and accept writes |
-| **Write scaling** | One writer | Multi-master -- write to any node |
-| **Conflict handling** | N/A | Vector clocks, last-write-wins, or CRDTs |
-| **Consistency control** | N/A | Per-write: One, Quorum, or All |
-| **Sync efficiency** | N/A | Incremental deltas with compression |
-| **Recovery** | Manual restore from backup | Automatic replica recovery |
+| **Availability** | One node goes down, everything stops | Secondaries serve reads; primary can be promoted |
+| **Topology** | One node | Primary + Secondary + Witness roles |
+| **Conflict handling** | N/A | Vector clocks + last-write-wins / merge resolvers |
+| **Sync control** | N/A | Per `SyncManager`: `Sync`, `Async`, or `SemiSync` |
+| **Recovery** | Manual restore from backup | `FailoverManager` promotes a secondary |
 
 ## Quick Start
 
 ```rust
-use ruvector_replication::{Replicator, ReplicationConfig, ConsistencyLevel};
+use std::sync::Arc;
+use ruvector_replication::{ReplicaSet, ReplicaRole, SyncMode, SyncManager, ReplicationLog};
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let config = ReplicationConfig {
-        replication_factor: 3,
-        consistency_level: ConsistencyLevel::Quorum,
-        sync_interval: Duration::from_millis(100),
-        batch_size: 1000,
-        compression: true,
-        ..Default::default()
-    };
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Build a replica set and register replicas with roles.
+    let mut replica_set = ReplicaSet::new("cluster-1");
+    replica_set.add_replica("replica-1", "192.168.1.10:9001", ReplicaRole::Primary)?;
+    replica_set.add_replica("replica-2", "192.168.1.11:9001", ReplicaRole::Secondary)?;
 
-    let replicator = Replicator::new(config).await?;
-    replicator.start().await?;
+    // Wire up a sync manager over the replica set and a replication log.
+    let log = Arc::new(ReplicationLog::new("replica-1"));
+    let manager = SyncManager::new(Arc::new(replica_set), log);
+    manager.set_sync_mode(SyncMode::SemiSync { min_replicas: 1 });
 
     Ok(())
 }
@@ -47,130 +50,176 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ## Key Features
 
-| Feature | What It Does | Why It Matters |
-|---------|-------------|----------------|
-| **Multi-master replication** | Write to any node in the cluster | No single point of failure for writes |
-| **Configurable consistency** | Choose One, Quorum, or All per write | Trade latency for safety on a per-operation basis |
-| **Vector clock conflict resolution** | Track causal ordering across nodes | Detect and resolve concurrent writes correctly |
-| **CRDT support** | Conflict-free replicated data types | Guaranteed convergence without coordination |
-| **Change streams** | Real-time replication event stream | Monitor sync status and react to changes |
-| **Incremental sync with compression** | Only send deltas, compressed on the wire | Minimize bandwidth between nodes |
-| **Automatic recovery** | Replicas catch up after failures | No manual intervention on node restart |
-| **Bandwidth throttling** | Cap replication throughput | Protect production traffic from replication storms |
+| Feature | What It Does | Where |
+|---------|-------------|-------|
+| **Replica set management** | Add/remove replicas, track role & health, promote a secondary to primary | `ReplicaSet`, `Replica` |
+| **Sync modes** | `Sync` (wait for all), `Async` (fire-and-forget), `SemiSync { min_replicas }` | `SyncMode`, `SyncManager` |
+| **Replication log** | Append-and-verify ordered log entries with checksums | `ReplicationLog`, `LogEntry` |
+| **Vector-clock conflict resolution** | Track causal ordering; detect concurrent writes | `VectorClock`, `ClockOrdering`, `Versioned<T>` |
+| **Pluggable resolvers** | Last-write-wins or a custom merge function | `ConflictResolver`, `LastWriteWins`, `MergeFunction` |
+| **Change streams** | Observe replication change events | `ReplicationStream`, `ChangeEvent`, `ChangeOperation` |
+| **Automatic failover** | Health monitoring + secondary promotion with split-brain prevention | `FailoverManager`, `FailoverPolicy`, `HealthStatus` |
 
-### Write with Replication
+### Manage the replica set
 
 ```rust
-use ruvector_replication::{Replicator, WriteOptions};
+use ruvector_replication::{ReplicaSet, ReplicaRole};
 
-// Write with quorum consistency
-let options = WriteOptions {
-    consistency: ConsistencyLevel::Quorum,
-    timeout: Duration::from_secs(5),
-};
+# fn run() -> Result<(), Box<dyn std::error::Error>> {
+let mut set = ReplicaSet::new("cluster-1");
+set.add_replica("r1", "10.0.0.1:9001", ReplicaRole::Primary)?;
+set.add_replica("r2", "10.0.0.2:9001", ReplicaRole::Secondary)?;
+set.add_replica("r3", "10.0.0.3:9001", ReplicaRole::Witness)?;
 
-replicator.write(vector_entry, options).await?;
+// Inspect topology and health.
+let _primary = set.get_primary();            // Option<Replica>
+let _secondaries = set.get_secondaries();     // Vec<Replica>
+let _healthy = set.get_healthy_replicas();    // Vec<Replica>
+println!("replicas: {}", set.replica_count());
+println!("has quorum: {}", set.has_quorum());
 
-// Write with eventual consistency (faster)
-let options = WriteOptions {
-    consistency: ConsistencyLevel::One,
-    ..Default::default()
-};
-
-replicator.write(vector_entry, options).await?;
+// Promote a secondary if the primary fails.
+set.promote_to_primary("r2")?;
+# Ok(())
+# }
 ```
 
-### Monitor Replication
+### Configure synchronization
 
 ```rust
-// Get replication lag
-let lag = replicator.lag().await?;
-println!("Replication lag: {:?}", lag);
+use std::sync::Arc;
+use ruvector_replication::{ReplicaSet, ReplicaRole, ReplicationLog, SyncManager, SyncMode};
 
-// Get replica status
-for replica in replicator.replicas().await? {
-    println!("{}: {} (lag: {}ms)",
-        replica.id,
-        replica.status,
-        replica.lag_ms
-    );
-}
+# fn run() -> Result<(), Box<dyn std::error::Error>> {
+let mut set = ReplicaSet::new("cluster-1");
+set.add_replica("r1", "10.0.0.1:9001", ReplicaRole::Primary)?;
 
-// Subscribe to replication events
-let mut stream = replicator.events().await?;
-while let Some(event) = stream.next().await {
-    match event {
-        ReplicationEvent::Synced { node_id, entries } => {
-            println!("Synced {} entries to {}", entries, node_id);
-        }
-        ReplicationEvent::Conflict { key, resolution } => {
-            println!("Conflict on {}: {:?}", key, resolution);
-        }
-        _ => {}
-    }
+let log = Arc::new(ReplicationLog::new("r1"));
+let manager = SyncManager::new(Arc::new(set), log);
+
+// Choose a sync mode:
+manager.set_sync_mode(SyncMode::Sync);                         // wait for all replicas
+manager.set_sync_mode(SyncMode::Async);                        // don't wait
+manager.set_sync_mode(SyncMode::SemiSync { min_replicas: 1 }); // wait for N
+
+let _mode = manager.sync_mode();
+let _pos = manager.current_position();
+# Ok(())
+# }
+```
+
+### Conflict resolution with vector clocks
+
+```rust
+use ruvector_replication::{VectorClock, ClockOrdering};
+
+let mut a = VectorClock::new();
+let mut b = VectorClock::new();
+
+a.increment("r1");
+b.increment("r2");
+
+match a.compare(&b) {
+    ClockOrdering::Concurrent => println!("concurrent writes — resolve conflict"),
+    ClockOrdering::Before => println!("a happened before b"),
+    ClockOrdering::After => println!("a happened after b"),
+    ClockOrdering::Equal => println!("equal"),
 }
+```
+
+### Automatic failover
+
+```rust
+use std::sync::Arc;
+use parking_lot::RwLock;
+use ruvector_replication::{ReplicaSet, ReplicaRole, FailoverManager, FailoverPolicy};
+
+# fn run() -> Result<(), Box<dyn std::error::Error>> {
+let mut set = ReplicaSet::new("cluster-1");
+set.add_replica("r1", "10.0.0.1:9001", ReplicaRole::Primary)?;
+set.add_replica("r2", "10.0.0.2:9001", ReplicaRole::Secondary)?;
+
+let failover = FailoverManager::with_policy(
+    Arc::new(RwLock::new(set)),
+    FailoverPolicy {
+        auto_failover: true,
+        failure_threshold: 3,
+        prevent_split_brain: true,
+        ..Default::default()
+    },
+);
+
+println!("failover in progress: {}", failover.is_failover_in_progress());
+let _history = failover.health_history();
+# Ok(())
+# }
 ```
 
 ## API Overview
 
-### Core Types
+### Re-exported types (crate root)
 
 ```rust
-// Replication configuration
-pub struct ReplicationConfig {
-    pub replication_factor: usize,
-    pub consistency_level: ConsistencyLevel,
-    pub sync_interval: Duration,
-    pub batch_size: usize,
-    pub compression: bool,
-    pub conflict_resolution: ConflictResolution,
-}
+// Replica management (src/replica.rs)
+pub struct ReplicaSet;
+pub struct Replica;             // id, address, role, status, lag_ms, log_position, priority
+pub enum ReplicaRole { Primary, Secondary, Witness }
+pub enum ReplicaStatus { Healthy, Lagging, Offline, Recovering }
 
-// Consistency levels
-pub enum ConsistencyLevel {
-    One,      // Write to one replica
-    Quorum,   // Write to majority
-    All,      // Write to all replicas
-}
+// Synchronization (src/sync.rs)
+pub struct SyncManager;
+pub struct ReplicationLog;
+pub struct LogEntry;
+pub enum SyncMode { Sync, Async, SemiSync { min_replicas: usize } }
 
-// Conflict resolution strategies
-pub enum ConflictResolution {
-    LastWriteWins,
-    VectorClock,
-    Custom(Box<dyn ConflictResolver>),
-}
+// Conflict resolution (src/conflict.rs)
+pub struct VectorClock;
+pub enum ClockOrdering { Equal, Before, After, Concurrent }
+pub trait ConflictResolver<T: Clone>;
+pub struct LastWriteWins;
+pub struct MergeFunction<T, F>;
 
-// Replica information
-pub struct ReplicaInfo {
-    pub id: NodeId,
-    pub status: ReplicaStatus,
-    pub lag_ms: u64,
-    pub last_sync: DateTime<Utc>,
-}
+// Change streaming (src/stream.rs)
+pub struct ReplicationStream;
+pub struct ChangeEvent;
+pub enum ChangeOperation;
+
+// Failover (src/failover.rs)
+pub struct FailoverManager;
+pub struct FailoverPolicy;      // auto_failover, failure_threshold, min_quorum, prevent_split_brain, …
+pub enum HealthStatus;
+
+// Errors
+pub enum ReplicationError { ReplicaNotFound(String), NoPrimary, QuorumNotMet { needed, available }, SplitBrain, /* … */ }
+pub type Result<T> = std::result::Result<T, ReplicationError>;
 ```
 
-### Replicator Operations
+### Key operations
 
 ```rust
-impl Replicator {
-    pub async fn new(config: ReplicationConfig) -> Result<Self>;
-    pub async fn start(&self) -> Result<()>;
-    pub async fn stop(&self) -> Result<()>;
+// ReplicaSet
+pub fn new(cluster_id: impl Into<String>) -> Self;
+pub fn add_replica(&mut self, id: impl Into<String>, address: impl Into<String>, role: ReplicaRole) -> Result<()>;
+pub fn remove_replica(&mut self, id: &str) -> Result<()>;
+pub fn get_primary(&self) -> Option<Replica>;
+pub fn get_secondaries(&self) -> Vec<Replica>;
+pub fn get_healthy_replicas(&self) -> Vec<Replica>;
+pub fn promote_to_primary(&mut self, id: &str) -> Result<()>;
+pub fn replica_count(&self) -> usize;
+pub fn has_quorum(&self) -> bool;
 
-    // Write operations
-    pub async fn write(&self, entry: VectorEntry, options: WriteOptions) -> Result<()>;
-    pub async fn write_batch(&self, entries: Vec<VectorEntry>, options: WriteOptions) -> Result<()>;
+// SyncManager
+pub fn new(replica_set: Arc<ReplicaSet>, log: Arc<ReplicationLog>) -> Self;
+pub fn set_sync_mode(&self, mode: SyncMode);
+pub fn sync_mode(&self) -> SyncMode;
+pub fn current_position(&self) -> u64;
+pub fn verify_entry(&self, sequence: u64) -> Result<bool>;
 
-    // Monitoring
-    pub async fn lag(&self) -> Result<Duration>;
-    pub async fn replicas(&self) -> Result<Vec<ReplicaInfo>>;
-    pub async fn events(&self) -> Result<impl Stream<Item = ReplicationEvent>>;
-
-    // Management
-    pub async fn add_replica(&self, node_id: NodeId) -> Result<()>;
-    pub async fn remove_replica(&self, node_id: NodeId) -> Result<()>;
-    pub async fn force_sync(&self, node_id: NodeId) -> Result<()>;
-}
+// FailoverManager
+pub fn new(replica_set: Arc<RwLock<ReplicaSet>>) -> Self;
+pub fn with_policy(replica_set: Arc<RwLock<ReplicaSet>>, policy: FailoverPolicy) -> Self;
+pub fn is_failover_in_progress(&self) -> bool;
+pub fn health_history(&self) -> Vec<HealthCheck>;
 ```
 
 ## Architecture
@@ -197,17 +246,34 @@ impl Replicator {
 └─────────────────────────────────────────────────────────┘
 ```
 
+## Planned / WIP
+
+Earlier drafts of this README documented a high-level `Replicator` façade that does
+not exist in the code. The following types/methods are **not** present — use the
+building blocks above instead:
+
+- **`Replicator` / `ReplicationConfig`** — there is no top-level `Replicator` type
+  nor a `ReplicationConfig`. Compose `ReplicaSet` + `SyncManager` (+
+  `FailoverManager`) directly.
+- **`ConsistencyLevel` (One / Quorum / All) and `WriteOptions`** — consistency is
+  expressed through `SyncMode` (`Sync` / `Async` / `SemiSync { min_replicas }`) on
+  the `SyncManager`, not per-write `WriteOptions`.
+- **`ReplicationEvent` / `ReplicaInfo`** — change streaming is via
+  `ReplicationStream` + `ChangeEvent` / `ChangeOperation`; replica metadata is the
+  `Replica` struct.
+- **`replicator.write()` / `.lag()` / `.replicas()` / `.force_sync()`** — these
+  methods do not exist. Append through `ReplicationLog`, inspect replicas via
+  `ReplicaSet`, and drive recovery via `FailoverManager`.
+
 ## Related Crates
 
-- **[ruvector-core](../ruvector-core/)** - Core vector database engine
-- **[ruvector-cluster](../ruvector-cluster/)** - Clustering and sharding
+- **[ruvector-router-core](../ruvector-router-core/)** - Core vector database engine
 - **[ruvector-raft](../ruvector-raft/)** - Raft consensus
 
 ## Documentation
 
 - **[Main README](../../README.md)** - Complete project overview
-- **[API Documentation](https://docs.rs/ruvector-replication)** - Full API reference
-- **[GitHub Repository](https://github.com/FlexNetOS/ruvector)** - Source code
+- **[GitHub Repository](https://github.com/ruvnet/ruvector)** - Source code
 
 ## License
 
@@ -217,10 +283,10 @@ impl Replicator {
 
 <div align="center">
 
-**Part of [Ruvector](https://github.com/FlexNetOS/ruvector) - Built by [rUv](https://ruv.io)**
+**Part of [Ruvector](https://github.com/ruvnet/ruvector) - Built by [rUv](https://ruv.io)**
 
-[![Star on GitHub](https://img.shields.io/github/stars/FlexNetOS/ruvector?style=social)](https://github.com/FlexNetOS/ruvector)
+[![Star on GitHub](https://img.shields.io/github/stars/ruvnet/ruvector?style=social)](https://github.com/ruvnet/ruvector)
 
-[Documentation](https://docs.rs/ruvector-replication) | [Crates.io](https://crates.io/crates/ruvector-replication) | [GitHub](https://github.com/FlexNetOS/ruvector)
+[Documentation](https://docs.rs/ruvector-replication) | [Crates.io](https://crates.io/crates/ruvector-replication) | [GitHub](https://github.com/ruvnet/ruvector)
 
 </div>

@@ -2,6 +2,12 @@
 //!
 //! High-performance PostgreSQL extension for vector similarity search.
 //! A drop-in replacement for pgvector with SIMD optimizations.
+//!
+//! The extension registers **346 `#[pg_extern]` SQL functions** across the
+//! modules declared below (count: `grep -rE '^\s*#\[pg_extern' src/ | wc -l`).
+//! Many live in feature-gated modules (`solver`, `math`, `tda`, `sona`,
+//! `domain_expansion`, `embeddings`, `gated_transformer`), so the set of
+//! functions actually installed depends on the enabled Cargo features.
 
 // Allow development-stage lints for work-in-progress code
 #![allow(unexpected_cfgs)] // pgrx macros (pg12/pg13) and optional features (tokio)

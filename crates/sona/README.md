@@ -61,10 +61,10 @@ Most AI systems stop learning the moment they leave training. When a user gives 
 
 ```toml
 [dependencies]
-ruvector-sona = "0.1.1"
+ruvector-sona = "0.2.0"
 
 # With all features
-ruvector-sona = { version = "0.1.1", features = ["serde-support"] }
+ruvector-sona = { version = "0.2.0", features = ["serde-support"] }
 ```
 
 ### Node.js (npm)

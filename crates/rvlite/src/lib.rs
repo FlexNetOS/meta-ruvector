@@ -56,7 +56,7 @@ pub use storage::{GraphState, RvLiteState, TripleStoreState, VectorState};
 #[wasm_bindgen(start)]
 pub fn init() {
     console_error_panic_hook::set_once();
-    web_sys::console::log_1(&"RvLite v0.2.0 - SQL, SPARQL, Cypher + Persistence".into());
+    web_sys::console::log_1(&"RvLite v0.3.0 - SQL, SPARQL, Cypher + Persistence".into());
 }
 
 /// Error type for RvLite
@@ -215,7 +215,7 @@ impl RvLite {
 
     /// Get version string
     pub fn get_version(&self) -> String {
-        "0.2.0".to_string()
+        env!("CARGO_PKG_VERSION").to_string()
     }
 
     /// Get enabled features

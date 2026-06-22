@@ -51,13 +51,15 @@ memory.forget();
 
 ## Crate Layout
 
-| Module           | Purpose                                  |
-|------------------|------------------------------------------|
-| `timeline`       | Core DAG and logical clock management    |
-| `decay`          | T1/T2 decoherence eviction policies      |
-| `anticipation`   | Trajectory extrapolation engine           |
-| `consolidation`  | Salience-based memory consolidation       |
-| `transfer`       | Cross-domain timeline provenance          |
+| Module              | Purpose                                  |
+|---------------------|------------------------------------------|
+| `causal`            | Causal graph DAG and antecedent tracking |
+| `quantum_decay`     | T1/T2 decoherence eviction policies      |
+| `anticipation`      | Trajectory extrapolation engine          |
+| `consolidation`     | Salience-based memory consolidation      |
+| `short_term`        | Short-term volatile buffer               |
+| `long_term`         | Long-term consolidated store             |
+| `transfer_timeline` | Cross-domain timeline provenance         |
 
 ## Requirements
 

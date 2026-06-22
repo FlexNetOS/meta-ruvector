@@ -6,7 +6,7 @@ rust-version.workspace = true
 license.workspace = true
 authors.workspace = true
 repository.workspace = true
-description = "Node.js bindings for RuVector Graph Transformer via NAPI-RS"
+description = "Self-contained graph-transformer implementation (proof-gated attention, verified training) exposed to Node.js via NAPI-RS"
 
 [lib]
 crate-type = ["cdylib"]

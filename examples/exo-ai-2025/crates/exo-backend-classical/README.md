@@ -1,27 +1,27 @@
 # exo-backend-classical
 
-Classical compute backend for the EXO-AI cognitive substrate with SIMD
-acceleration. Implements the `SubstrateBackend` trait from `exo-core` on
-standard CPU hardware, optimised for throughput and energy efficiency.
+Classical substrate backend for the EXO-AI cognitive substrate. Implements the
+`SubstrateBackend` trait from `exo-core` on top of the high-performance
+`ruvector-core` vector database and `ruvector-graph` graph database, providing a
+classical (discrete) implementation of the substrate abstractions.
 
 ## Features
 
-- **SIMD-accelerated vector operations** -- uses platform SIMD intrinsics
-  (SSE4.2, AVX2, NEON) for fast dot products, cosine similarity, and
-  element-wise transforms.
-- **Dither quantization integration** -- applies stochastic dithered
-  quantization to compress activations while preserving gradient signal.
-- **Thermodynamic layer (thermorust)** -- wraps every compute step with
-  Landauer energy accounting so the substrate can track real
-  thermodynamic cost.
-- **Domain bridge with Thompson sampling** -- routes cross-domain
-  queries to the most promising transfer path using Thompson sampling
-  over historical success rates.
-- **Transfer orchestrator** -- coordinates end-to-end knowledge
-  transfers across domains.
-- **5-phase cross-domain transfer pipeline** -- executes transfers
-  through assess, align, project, adapt, and validate phases for
-  reliable domain migration.
+- **Vector similarity search** -- `similarity_search` delegates to a
+  `ruvector-core`-backed vector index for k-nearest-neighbour queries.
+- **Discrete pattern insertion** -- `manifold_deform` performs a discrete
+  insert into the vector index (no continuous deformation in the classical
+  backend), returning a `ManifoldDelta::DiscreteInsert`.
+- **Hypergraph storage** -- bundles a `GraphWrapper` (exposed via `graph_db()`)
+  for hyperedge operations.
+- **Dither quantization** (`dither_quantizer`) -- stochastic dithered
+  quantization of activations (`DitheredQuantizer`).
+- **Thermodynamic layer** (`thermo_layer`) -- Landauer-style energy accounting
+  (`ThermoLayer`, `ThermoSignal`).
+- **Domain bridge with Thompson sampling** (`domain_bridge`) -- cross-domain
+  transfer adapters (`ExoRetrievalDomain`, `ExoGraphDomain`, `ExoTransferAdapter`).
+- **Transfer orchestrator** (`transfer_orchestrator`) -- coordinates transfer
+  cycles (`ExoTransferOrchestrator`).
 
 ## Quick Start
 
@@ -35,33 +35,35 @@ exo-backend-classical = "0.1"
 Basic usage:
 
 ```rust
-use exo_backend_classical::ClassicalBackend;
+use exo_backend_classical::{ClassicalBackend, ClassicalConfig};
 use exo_core::SubstrateBackend;
 
-let backend = ClassicalBackend::new()
-    .with_simd(true)
-    .with_dither_quantization(8); // 8-bit dithered
+// With default configuration (768 dimensions, cosine distance)
+let backend = ClassicalBackend::new(ClassicalConfig::default())?;
 
-// Run a forward pass
-let output = backend.forward(&input_tensor)?;
+// Or construct with a specific dimensionality
+let backend = ClassicalBackend::with_dimensions(384)?;
 
-// Check thermodynamic cost
-println!("Energy: {:.4} kT", backend.energy_cost());
+// Inspect the configured dimensionality
+println!("Dimensions: {}", backend.dimension());
 
-// Cross-domain transfer (5-phase pipeline)
-let result = backend.transfer("vision", "language", &payload)?;
-println!("Transfer score: {:.4}", result.quality);
+// Similarity search (k nearest neighbours, optional filter)
+let query = vec![0.0_f32; 384];
+let results = backend.similarity_search(&query, 10, None)?;
+println!("Found {} results", results.len());
+# Ok::<(), exo_core::Error>(())
 ```
 
 ## Crate Layout
 
-| Module      | Purpose                                      |
-|-------------|----------------------------------------------|
-| `simd`      | Platform-specific SIMD kernels                |
-| `quantize`  | Dither quantization and de-quantization       |
-| `thermo`    | Landauer energy tracking (thermorust)         |
-| `bridge`    | Domain bridge with Thompson sampling          |
-| `transfer`  | 5-phase cross-domain transfer orchestrator    |
+| Module                  | Purpose                                              |
+|-------------------------|------------------------------------------------------|
+| `vector`                | `ruvector-core`-backed vector index wrapper          |
+| `graph`                 | `ruvector-graph`-backed hypergraph wrapper           |
+| `dither_quantizer`      | Stochastic dither quantization of activations        |
+| `thermo_layer`          | Landauer-style thermodynamic energy accounting       |
+| `domain_bridge`         | Domain bridge with Thompson sampling                 |
+| `transfer_orchestrator` | Cross-domain transfer cycle orchestrator             |
 
 ## Requirements
 

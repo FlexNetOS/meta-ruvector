@@ -11,11 +11,17 @@
 ruvector-domain-expansion = "0.1"
 ```
 
-Most AI systems learn one task at a time. Train a model on genomics and it can't trade stocks. Teach it quantum circuits and it won't plan workflows. `ruvector-domain-expansion` changes that: knowledge learned in one domain automatically transfers to other domains — and it **proves** the transfer actually helped before committing it. Genomics priors seed molecular design. Trading risk models improve resource allocation. Quantum noise detection accelerates signal processing. This is how real generalization works. Part of the [RuVector](https://github.com/FlexNetOS/ruvector) ecosystem.
+Most AI systems learn one task at a time. `ruvector-domain-expansion` is a
+cross-domain transfer-learning engine: knowledge (compact Beta priors) learned
+in one domain can seed another — and it **proves** the transfer actually helped
+before committing it. The crate ships **three built-in domains** (Rust program
+synthesis, structured planning, tool orchestration) and is **extensible to any
+problem space** via the `Domain` trait. Part of the
+[RuVector](https://github.com/ruvnet/ruvector) ecosystem.
 
 | | ruvector-domain-expansion | Traditional Fine-Tuning |
 |---|---|---|
-| **Learning scope** | Learns across 13+ domains — genomics, trading, quantum, code, planning | One task at a time |
+| **Learning scope** | Three built-in domains (Rust synthesis, planning, tool orchestration); add your own via the `Domain` trait | One task at a time |
 | **Transfer** | Automatic: priors from Domain 1 seed Domain 2 | Manual: retrain from scratch per domain |
 | **Verification** | Transfer only accepted if it helps target without hurting source | No verification — hope it works |
 | **Strategy selection** | Thompson Sampling picks the best approach per context | Fixed strategy for all inputs |
@@ -26,12 +32,12 @@ Most AI systems learn one task at a time. Train a model on genomics and it can't
 
 ```rust
 use ruvector_domain_expansion::{
-    DomainExpansionEngine, DomainId, ContextBucket, ArmId,
+    DomainExpansionEngine, DomainId, ContextBucket, ArmId, Solution,
 };
 
 let mut engine = DomainExpansionEngine::new();
 
-// Generate training tasks in any domain
+// Generate training tasks in a built-in domain
 let domain = DomainId("rust_synthesis".into());
 let tasks = engine.generate_tasks(&domain, 10, 0.5); // 10 tasks, medium difficulty
 
@@ -39,13 +45,20 @@ let tasks = engine.generate_tasks(&domain, 10, 0.5); // 10 tasks, medium difficu
 let bucket = ContextBucket { difficulty_tier: "medium".into(), category: "algorithm".into() };
 let arm = engine.select_arm(&domain, &bucket).unwrap();
 
+// A candidate solution (you produce these however you like)
+let solution = Solution {
+    task_id: tasks[0].id.clone(),
+    content: "fn double(xs: &[i64]) -> Vec<i64> { xs.iter().map(|&x| x * 2).collect() }".into(),
+    data: serde_json::Value::Null,
+};
+
 // Evaluate and learn
 let eval = engine.evaluate_and_record(&domain, &tasks[0], &solution, bucket, arm);
 
-// Transfer knowledge to a completely different domain
+// Transfer learned priors to another built-in domain
 let target = DomainId("structured_planning".into());
 engine.initiate_transfer(&domain, &target);
-// Planning now starts at 0.70 accuracy instead of 0.30 — transfer verified and promoted
+// The target domain now starts from transferred priors instead of uniform ones.
 ```
 
 ## Key Features
@@ -63,34 +76,44 @@ engine.initiate_transfer(&domain, &target);
 | **Cost Curve & Scoreboard** | Tracks convergence speed per domain with acceleration metrics | Proves that transfer actually accelerated learning |
 | **RVF Integration** | Package trained models as cognitive containers (optional `rvf` feature) | Ship a trained domain expansion engine as a single `.rvf` file |
 
-## Domain Ecosystem
+## Domains
 
-Domain expansion draws on the full RuVector capability stack. Each domain contributes unique knowledge that transfers to others through shared embedding spaces.
+This crate ships **three built-in domains**, all implementing the `Domain`
+trait. `DomainExpansionEngine::new()` registers exactly these three
+(`engine.domain_ids()` returns `rust_synthesis`, `structured_planning`,
+`tool_orchestration`).
 
-### Core Domains (Built-In)
+### Built-In Domains
 
-| Domain | What It Generates | What It Evaluates |
-|--------|------------------|-------------------|
-| **Rust Synthesis** | Rust function specs (transforms, filters, searches) | Correctness, efficiency, idiomatic style |
-| **Structured Planning** | Multi-step plans with dependencies and resources | Feasibility, completeness, dependency ordering |
-| **Tool Orchestration** | Tool coordination tasks (parallel, error handling) | Correct sequencing, parallelism, failure recovery |
+| Domain (`DomainId`) | What It Generates | What It Evaluates |
+|---------------------|-------------------|-------------------|
+| **Rust Synthesis** (`rust_synthesis`) | Rust function specs (transforms, filters, searches) | Correctness, efficiency, idiomatic style |
+| **Structured Planning** (`structured_planning`) | Multi-step plans with dependencies and resources | Feasibility, completeness, dependency ordering |
+| **Tool Orchestration** (`tool_orchestration`) | Tool coordination tasks (parallel, error handling) | Correct sequencing, parallelism, failure recovery |
 
-### Specialized Domains (via RuVector Crates & Examples)
+### Adding Your Own Domains
 
-| Domain | Crate / Example | What It Brings | Transfer Value |
-|--------|----------------|----------------|----------------|
-| **Genomics** | [rvDNA](../../examples/dna/) | Variant calling, k-mer HNSW embeddings, 64-dim SNP risk profiles | Sparse structured features seed any domain needing compact representations |
-| **Algorithmic Trading** | [neural-trader](../../examples/neural-trader/) | Kelly sizing, LSTM-Transformer prediction, DRL portfolio ensembles | Rich reward signals (Sharpe, drawdown) map directly to evaluation scoring |
-| **Quantum Computing** | [ruQu](../../crates/ruQu/) | Coherence gating, circuit optimization, noise drift detection | Verification methodology — "is it safe to act?" — inspired TransferVerification |
-| **Neuromorphic AI** | [spiking-neural](../../examples/meta-cognition-spiking-neural-network/) | STDP learning, meta-plasticity, hyperbolic attention | Proves cross-domain acceleration is biologically real and measurable |
-| **Graph Intelligence** | [graph-transformer](../ruvector-graph-transformer/) | Proof-gated mutation, Nash equilibrium attention, causal Granger layers | Formal proofs before committing changes — same pattern as transfer acceptance |
-| **Nervous Systems** | [nervous-system](../ruvector-nervous-system/) | One-shot BTSP learning, hyperdimensional computing, circadian duty cycles | Cold-start acceleration — learn from single examples, like transfer priors |
-| **Scientific OCR** | [scipix](../../examples/scipix/) | LaTeX/MathML extraction, equation vectorization at 50ms/image | Structured mathematical knowledge bootstraps reasoning patterns |
-| **Knowledge Graphs** | [graph](../../examples/graph/) | Cypher queries, hybrid vector+graph search, community detection | Graph structure reveals which domain clusters should share priors |
-| **Self-Learning Search** | [ruvector-gnn](../ruvector-gnn/) | GCN/GAT/GraphSAGE on HNSW topology | GraphSAGE handles new domains without retraining — inductive generalization |
-| **Online Adaptation** | [sona](../sona/) | MicroLoRA (<1ms), EWC++ memory preservation, trajectory tracking | Fast-path arm updates + slow-path prior consolidation without forgetting |
+The engine is extensible: implement the `Domain` trait and register it with
+`engine.register_domain(Box::new(MyDomain::new()))`. The trait requires
+`id`, `name`, `generate_tasks`, `evaluate`, `embed`, `embedding_dim`, and
+`reference_solution`. Any domain that produces `DomainEmbedding` vectors in a
+shared space can participate in transfer.
 
-### How Domains Connect
+```rust
+use ruvector_domain_expansion::{DomainExpansionEngine, Domain};
+
+let mut engine = DomainExpansionEngine::new();   // 3 built-ins registered
+// engine.register_domain(Box::new(MyCustomDomain::new()));
+```
+
+> **Note on the wider RuVector ecosystem.** Other RuVector crates and examples
+> (e.g. `ruvector-gnn`, `sona`, `ruvector-graph-transformer`) provide
+> complementary capabilities, but they are **not** registered domains in this
+> engine — you would integrate them yourself behind the `Domain` trait. The
+> tables below are *illustrative* of the kinds of domains you could build, not a
+> list of built-ins.
+
+### How Transfer Connects Domains
 
 ```
                     ┌──────────────┐
@@ -102,9 +125,8 @@ Domain expansion draws on the full RuVector capability stack. Each domain contri
             ┌──────────────┼──────────────┐
             │              │              │
      ┌──────▼──────┐ ┌────▼─────┐ ┌──────▼──────┐
-     │  Genomics   │ │ Trading  │ │  Quantum    │
-     │  64-dim SNP │ │ Sharpe   │ │  Coherence  │
-     │  profiles   │ │ rewards  │ │  gates      │
+     │    Rust     │ │ Planning │ │    Tool     │
+     │  Synthesis  │ │          │ │ Orchestr.   │
      └──────┬──────┘ └────┬─────┘ └──────┬──────┘
             │              │              │
             └──────┬───────┘──────┬───────┘
@@ -112,48 +134,51 @@ Domain expansion draws on the full RuVector capability stack. Each domain contri
             ┌──────▼──────┐ ┌────▼──────────┐
             │  Shared     │ │  Transfer     │
             │  Embedding  │ │  Verification │
-            │  Space      │ │  Gate         │
-            └──────┬──────┘ └────┬──────────┘
-                   │              │
-            ┌──────▼──────────────▼──────┐
-            │  SONA (MicroLoRA + EWC++) │
-            │  Live adaptation without  │
-            │  forgetting old domains   │
-            └───────────────────────────┘
+            │  Space      │ │  (TransferVer)│
+            └─────────────┘ └───────────────┘
 ```
 
-Every domain produces embeddings in the same vector space. When you transfer from genomics to planning, the engine extracts compact priors (Beta posteriors from Thompson Sampling), seeds them into the target domain, and verifies the transfer helped — using the same coherence metrics that quantum computing uses to decide "is this circuit safe to run?"
+Every domain produces `DomainEmbedding` vectors in the same space. When you
+transfer between domains, the engine extracts compact priors (Beta posteriors
+from Thompson Sampling), seeds them into the target domain, and verifies the
+transfer helped (`TransferVerification`) — promoting it only if the target
+improved without the source regressing.
 
 ## How Transfer Works
 
+Using the built-in domains: train on `rust_synthesis`, transfer the learned
+priors to `structured_planning`.
+
 ```
-Domain 1 (Genomics)                Domain 2 (Drug Design)
+Domain 1 (rust_synthesis)          Domain 2 (structured_planning)
 ┌─────────────────────┐            ┌─────────────────────┐
-│ Train on 100 tasks   │            │ Start from scratch   │
+│ Train on tasks       │            │ Start from scratch   │
 │ Extract posteriors   │───prior──▶│ Seed with priors     │
-│ Score: 0.85          │            │ Score after 45 runs: │
-│                      │            │   0.70 (vs 0.30      │
-│ k-mer embeddings     │            │   without transfer)  │
-│ SNP risk profiles    │            │                      │
+│ Score: 0.85          │            │ Score after transfer │
+│                      │            │   improves vs the    │
+│                      │            │   no-transfer        │
+│                      │            │   baseline           │
 └─────────────────────┘            └─────────────────────┘
                                            │
-                                    Verification Gate:
-                                    ✓ Target improved (coherence check)
-                                    ✓ Source didn't regress (EWC++ protected)
+                                    TransferVerification:
+                                    ✓ Target improved
+                                    ✓ Source didn't regress
                                     ✓ Acceleration > 1.0 (scoreboard)
                                     → Transfer PROMOTED
 ```
 
-### Cross-Domain Transfer Examples
+### Cross-Domain Transfer (illustrative)
+
+These pairings are *examples of the kind of transfer the engine enables*. Only
+the three built-in domains are registered out of the box; the rest would be
+implemented via the `Domain` trait.
 
 | Source Domain | Target Domain | What Transfers | Why It Works |
 |--------------|---------------|----------------|--------------|
-| Genomics | Molecular Design | Sequence similarity priors, structural feature embeddings | Both work with sparse biological feature vectors |
-| Trading | Resource Allocation | Risk/reward tradeoff models, Kelly-style sizing | Same math — allocate limited budget across uncertain options |
-| Quantum | Signal Processing | Noise detection patterns, drift thresholds | Both need to separate signal from noise in noisy data |
-| Spiking Neural | Attention Design | STDP timing rules, lateral inhibition patterns | Biological attention and AI attention share structural principles |
-| Graph Transformer | Code Synthesis | Dependency ordering, proof-gated mutation logic | Code compilation and graph mutation both require valid ordering |
-| Scientific OCR | Planning | Equation structure, logical step decomposition | Mathematical proofs and multi-step plans share sequential reasoning |
+| Rust Synthesis | Structured Planning | Strategy priors (which arm works) per difficulty/category | Both reward correct, well-ordered, idiomatic structure |
+| Structured Planning | Tool Orchestration | Dependency-ordering priors | Plans and tool pipelines share sequential, dependency-aware structure |
+| Genomics (custom) | Molecular Design (custom) | Sparse feature embeddings | Both work with sparse biological feature vectors |
+| Trading (custom) | Resource Allocation (custom) | Risk/reward tradeoff priors | Same math — allocate limited budget across uncertain options |
 
 ## Feature Flags
 
@@ -198,19 +223,20 @@ ruvector-domain-expansion = { version = "0.1", features = ["rvf"] }
 | `AccelerationScoreboard` | Measures how much faster transfer makes learning |
 | `ParetoFront` | Non-dominated set of kernels across accuracy/cost/robustness |
 
-## Underlying Infrastructure
+## Dependencies
 
-The domain expansion engine is built on top of these RuVector primitives:
+This crate is intentionally lightweight. Its runtime dependencies are:
 
-| Layer | Crate | Role in Domain Expansion |
-|-------|-------|--------------------------|
-| **Retrieval** | [ruvector-gnn](../ruvector-gnn/) | GraphSAGE finds similar contexts across domains without retraining |
-| **Adaptation** | [sona](../sona/) | MicroLoRA applies arm updates in <1ms; EWC++ prevents forgetting |
-| **Verification** | [ruvector-coherence](../ruvector-coherence/) | Measures whether transfer preserved semantic quality (95% CI) |
-| **Attention** | [ruvector-attn-mincut](../ruvector-attn-mincut/) | Min-cut prunes irrelevant domain connections before transfer |
-| **Computation** | [ruvector-solver](../ruvector-solver/) | Forward Push PPR finds localized relevance across domain knowledge graphs |
-| **Graph** | [ruvector-graph-transformer](../ruvector-graph-transformer/) | Proof-gated mutations ensure only verified knowledge transfers |
-| **Packaging** | [rvf](../rvf/) | Ship a trained engine as a single `.rvf` cognitive container |
+| Crate | Role |
+|-------|------|
+| `serde` / `serde_json` | (De)serialization of tasks, solutions, priors |
+| `rand` | Sampling for Thompson Sampling / population search |
+| `rvf-types`, `rvf-wire`, `rvf-crypto` | **Optional** (`rvf` feature) — package a trained engine as a `.rvf` container |
+
+It does **not** depend on `ruvector-gnn`, `sona`, `ruvector-coherence`,
+`ruvector-attn-mincut`, `ruvector-solver`, or `ruvector-graph-transformer`. Those
+are separate RuVector crates you could integrate as custom domains, but the
+transfer/verification logic here is self-contained.
 
 ## License
 
@@ -218,4 +244,4 @@ The domain expansion engine is built on top of these RuVector primitives:
 
 ---
 
-Part of [RuVector](https://github.com/FlexNetOS/ruvector) — the self-learning vector database.
+Part of [RuVector](https://github.com/ruvnet/ruvector) — the self-learning vector database.

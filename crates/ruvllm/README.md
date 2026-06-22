@@ -24,7 +24,7 @@ RuvLLM loads GGUF models and runs them on your hardware with full acceleration -
 | **Vector DB integration** | Built-in (RuVector) | Separate service | Not available | Not available | Not available |
 | **Speculative decoding** | Yes | N/A | Yes | No | Yes |
 | **Continuous batching** | Yes | N/A | No | No | Yes |
-| **Production serving** | mistral-rs backend | N/A | Server mode | Server mode | Native |
+| **Production serving** | Continuous batch scheduler | N/A | Server mode | Server mode | Native |
 
 ## Key Features
 
@@ -39,7 +39,6 @@ RuvLLM loads GGUF models and runs them on your hardware with full acceleration -
 | **Continuous batching** | Dynamic batch scheduling for concurrent requests | 2-3x throughput improvement for serving |
 | **MicroLoRA** | Per-request fine-tuning with rank 1-2 adapters | Personalize responses in <1 ms without full retraining |
 | **HuggingFace Hub** | Download and upload models directly | One-line model access, easy sharing |
-| **mistral-rs backend** | PagedAttention, X-LoRA, ISQ for production serving | Scale to 50+ concurrent users |
 | **Task-specific adapters** | 5 pre-trained LoRA adapters (coder, researcher, security, architect, reviewer) | Instant specialization with hot-swap |
 
 > Part of the [RuVector](https://github.com/FlexNetOS/ruvector) ecosystem -- the self-learning vector database with graph intelligence, local AI, and PostgreSQL built in.
@@ -47,10 +46,13 @@ RuvLLM loads GGUF models and runs them on your hardware with full acceleration -
 ## Quick Start
 
 ```rust
-use ruvllm::prelude::*;
+// ruvllm has no `prelude` module — import the types directly from the crate root.
+// `CandleBackend` requires the `candle` feature.
+use std::path::Path;
+use ruvllm::{CandleBackend, DeviceType, GenerateParams, ModelConfig};
 
 let mut backend = CandleBackend::with_device(DeviceType::Metal)?;
-backend.load_gguf("models/qwen2.5-7b-q4_k.gguf", ModelConfig::default())?;
+backend.load_gguf(Path::new("models/qwen2.5-7b-q4_k.gguf"), &ModelConfig::default())?;
 
 let response = backend.generate("Explain quantum computing in simple terms.",
     GenerateParams {
@@ -143,8 +145,9 @@ See [`ruvllm_sparse_attention`](../ruvllm_sparse_attention/README.md) for the fu
 | **Candle** | Single user, edge, WASM | Metal, CUDA, CPU |
 | **Core ML** | Apple Silicon efficiency | Apple Neural Engine (38 TOPS) |
 | **Hybrid Pipeline** | Maximum throughput on Mac | GPU for attention, ANE for MLP |
-| **mistral-rs** | Production serving (10-100 users) | PagedAttention, X-LoRA, ISQ |
 | **Hailo-10H** | Pi 5 + AI HAT+ cluster | Sparse O(N log N) attention, GQA, KV cache decode |
+
+> **Planned:** a `mistral-rs` backend (PagedAttention, X-LoRA, ISQ) for production serving is scaffolded in `backends::mistral` but is gated behind an unpublished `mistralrs` dependency. See [mistral-rs Backend (Planned)](#mistral-rs-backend-planned) below.
 
 ### Feature Flags
 
@@ -164,9 +167,10 @@ See [`ruvllm_sparse_attention`](../ruvllm_sparse_attention/README.md) for the fu
 | `gguf-mmap` | Memory-mapped GGUF loading |
 | `async-runtime` | Tokio async support |
 | `wasm` | WebAssembly support |
-| `mistral-rs` | mistral-rs backend (PagedAttention, X-LoRA, ISQ) |
-| `mistral-rs-metal` | mistral-rs with Apple Silicon acceleration |
-| `mistral-rs-cuda` | mistral-rs with NVIDIA CUDA acceleration |
+| `quantize` | Quantization helpers and TurboQuant (default-on) |
+| `hub-download` | HuggingFace Hub auto-download (default-on) |
+
+> The `mistral-rs` feature flags (`mistral-rs`, `mistral-rs-metal`, `mistral-rs-cuda`) are commented out in `Cargo.toml` and **not yet available** — they depend on the unpublished `mistralrs` crate. They will be enabled once `mistralrs` ships on crates.io.
 
 ## Architecture
 
@@ -263,21 +267,25 @@ See [`ruvllm_sparse_attention`](../ruvllm_sparse_attention/README.md) for the fu
 <details>
 <summary>🍎 Apple Neural Engine (ANE) Integration</summary>
 
-RuvLLM v2.0 includes full ANE support via Core ML:
+RuvLLM includes ANE support via Core ML. `CoreMLBackend` is exported from
+`backends`; `AneStrategy` and `HybridPipeline` require the `hybrid-ane` feature.
 
 ```rust
-use ruvllm::backends::coreml::{CoreMLBackend, AneStrategy};
+// CoreMLBackend::new() takes no arguments; compute units are configured separately.
+use ruvllm::backends::{CoreMLBackend, ComputeUnits};
 
-// Create ANE-optimized backend
-let backend = CoreMLBackend::new(AneStrategy::PreferAneForMlp)?;
+let backend = CoreMLBackend::new()?
+    .with_compute_units(ComputeUnits::CpuAndNeuralEngine);
+```
 
-// Or use hybrid pipeline for best performance
-use ruvllm::backends::HybridPipeline;
+```rust
+// Hybrid GPU+ANE pipeline (requires the `hybrid-ane` feature).
+// `AneStrategy` and `HybridPipeline` are re-exported from `ruvllm::backends`.
+use ruvllm::backends::{AneStrategy, HybridPipeline, HybridPipelineConfig};
 
-let pipeline = HybridPipeline::new(HybridConfig {
+let pipeline = HybridPipeline::new(HybridPipelineConfig {
     ane_strategy: AneStrategy::Adaptive,
-    gpu_for_attention: true,  // Attention on GPU
-    ane_for_mlp: true,        // MLP/FFN on ANE
+    metal_for_attention: true,  // Attention on Metal GPU, MLP routed to ANE
     ..Default::default()
 })?;
 ```
@@ -313,9 +321,9 @@ lora.adapt(&input_embedding, feedback)?;
 // Apply learned updates
 lora.apply_updates(0.01); // learning rate
 
-// Get adaptation stats
-let stats = lora.stats();
-println!("Samples: {}, Avg quality: {:.2}", stats.samples, stats.avg_quality);
+// Inspect adapter counters
+println!("Adaptations: {}", lora.adaptation_count());
+println!("Params: {}, Memory: {} bytes", lora.param_count(), lora.memory_bytes());
 ```
 
 ## SONA Three-Tier Learning
@@ -323,13 +331,11 @@ println!("Samples: {}, Avg quality: {:.2}", stats.samples, stats.avg_quality);
 Continuous improvement with three learning loops:
 
 ```rust
-use ruvllm::optimization::{SonaLlm, SonaLlmConfig, ConsolidationStrategy};
+use ruvllm::{SonaLlm, SonaLlmConfig, TrainingSample};
 
 let config = SonaLlmConfig {
     instant_lr: 0.01,
     background_interval_ms: 100,
-    deep_trigger_threshold: 100.0,
-    consolidation_strategy: ConsolidationStrategy::EwcMerge,
     ..Default::default()
 };
 
@@ -340,22 +346,22 @@ let result = sona.instant_adapt("user query", "model response", 0.85);
 println!("Instant adapt: {}μs", result.latency_us);
 
 // 2. Background Loop (~100ms): Pattern consolidation
-if let result = sona.maybe_background() {
-    if result.applied {
-        println!("Consolidated {} samples", result.samples_used);
+if let Some(bg) = sona.maybe_background() {
+    if bg.applied {
+        println!("Consolidated {} samples", bg.samples_used);
     }
 }
 
-// 3. Deep Loop (minutes): Full optimization
+// 3. Deep Loop (minutes): Full optimization over a batch of samples
 if sona.should_trigger_deep() {
-    let result = sona.deep_optimize(OptimizationTrigger::QualityThreshold(100.0));
+    let dataset: Vec<TrainingSample> = collect_training_samples();
+    let result = sona.deep_optimize(&dataset);
     println!("Deep optimization: {:.1}s", result.latency_us as f64 / 1_000_000.0);
 }
 
-// Check learning stats
+// Check learning stats (LearningLoopStats)
 let stats = sona.stats();
-println!("Total samples: {}", stats.total_samples);
-println!("Accumulated quality: {:.2}", stats.accumulated_quality);
+println!("{:?}", stats);
 ```
 
 ## Two-Tier KV Cache
@@ -363,16 +369,16 @@ println!("Accumulated quality: {:.2}", stats.accumulated_quality);
 Memory-efficient caching with automatic tiering:
 
 ```rust
-use ruvllm::kv_cache::{TwoTierKvCache, KvCacheConfig};
+use ruvllm::{TwoTierKvCache, KvCacheConfig, Precision};
 
 let config = KvCacheConfig {
     tail_length: 256,              // Recent tokens in FP16
     tail_precision: Precision::FP16,
     store_precision: Precision::Q4,  // Older tokens in Q4
     max_tokens: 8192,
-    num_layers: 32,
     num_kv_heads: 8,
     head_dim: 128,
+    migration_batch: 64,           // Tokens migrated tail -> store per batch
 };
 
 let cache = TwoTierKvCache::new(config);
@@ -382,7 +388,7 @@ cache.append(&keys, &values)?;
 let stats = cache.stats();
 println!("Tail: {} tokens, Store: {} tokens", stats.tail_tokens, stats.store_tokens);
 println!("Compression ratio: {:.2}x", stats.compression_ratio);
-println!("Memory saved: {:.1} MB", stats.memory_saved_mb);
+println!("Tail bytes: {}, Store bytes: {}", stats.tail_bytes, stats.store_bytes);
 ```
 
 ## TurboQuant KV-Cache Compression
@@ -397,8 +403,8 @@ use ruvllm::quantize::turbo_quant::{
 
 // Compress KV-cache entries at 3-bit (10.7x compression)
 let config = TurboQuantConfig {
-    bits: TurboQuantBits::Bit3_5,
-    use_qjl: true, // Random projection for better quality
+    bits: TurboQuantBits::Bits3_5,
+    enable_qjl_residual: true, // QJL residual correction for better inner products
     ..Default::default()
 };
 let compressor = TurboQuantCompressor::new(config)?;
@@ -417,7 +423,7 @@ let scores = compressor.inner_product_batch_optimized(
 let mut cache = TurboQuantCacheTier::new(config)?;
 cache.push(&keys_f32, &values_f32, position)?;
 let stats = cache.stats();
-println!("Memory: {} bytes, Entries: {}", stats.memory_bytes, stats.num_entries);
+println!("Compressed: {} bytes, Pairs: {}", stats.compressed_bytes, stats.num_pairs);
 
 // Quantized embedding store with search
 let mut store = TurboQuantEmbeddingStore::new(dim, config)?;
@@ -437,29 +443,33 @@ let results = store.search(&query, top_k)?; // Returns (id, score) pairs
 High-throughput serving with dynamic batching:
 
 ```rust
-use ruvllm::serving::{ContinuousBatchScheduler, SchedulerConfig, InferenceRequest};
+use ruvllm::{
+    ContinuousBatchScheduler, SchedulerConfig, KvCachePoolConfig,
+    RequestQueue, InferenceRequest, PreemptionMode, GenerateParams,
+};
 
-let scheduler = ContinuousBatchScheduler::new(SchedulerConfig {
-    max_batch_size: 32,
-    max_batch_tokens: 4096,
-    max_waiting_time_ms: 50,
-    preemption_mode: PreemptionMode::Recompute,
-    ..Default::default()
-});
+let mut scheduler = ContinuousBatchScheduler::new(
+    SchedulerConfig {
+        max_batch_size: 32,
+        max_tokens_per_batch: 4096,
+        preemption_mode: PreemptionMode::Recompute,
+        ..Default::default()
+    },
+    KvCachePoolConfig::default(),
+);
 
-// Add requests
-scheduler.add_request(InferenceRequest::new(tokens, params))?;
+// Queue requests (prompt token ids + generation params)
+let mut queue = RequestQueue::new();
+queue.add(InferenceRequest::new(tokens, GenerateParams::default()));
 
-// Process batch
-while let Some(batch) = scheduler.get_next_batch() {
-    let outputs = backend.forward_batch(&batch)?;
-    scheduler.process_outputs(outputs)?;
-}
+// Schedule the next batch of work
+let batch = scheduler.schedule(&mut queue);
+println!("Batch: {} requests, {} tokens", batch.requests.len(), batch.total_tokens);
 
-// Get throughput stats
+// Inspect scheduler stats (SchedulerStats)
 let stats = scheduler.stats();
-println!("Throughput: {:.1} tok/s", stats.tokens_per_second);
-println!("Batch utilization: {:.1}%", stats.avg_batch_utilization * 100.0);
+println!("Batches scheduled: {}", stats.batches_scheduled);
+println!("KV cache utilization: {:.1}%", stats.kv_cache_utilization * 100.0);
 ```
 
 ## Speculative Decoding
@@ -468,61 +478,79 @@ Accelerate generation with draft models:
 
 ```rust
 use ruvllm::speculative::{SpeculativeDecoder, SpeculativeConfig};
+use ruvllm::GenerateParams;
 
 let config = SpeculativeConfig {
-    draft_tokens: 4,           // Tokens to draft per step
+    lookahead: 4,              // Tokens to speculate ahead per step
     acceptance_threshold: 0.8, // Min probability for acceptance
     ..Default::default()
 };
 
-let decoder = SpeculativeDecoder::new(
-    target_model,
-    draft_model,
-    config,
-)?;
+// new(main_model, draft_model, config) -> SpeculativeDecoder
+let decoder = SpeculativeDecoder::new(main_model, draft_model, config);
 
-// Generate with speculation
-let output = decoder.generate(prompt, GenerateParams {
+// generate(prompt, params) -> Result<String>
+let text = decoder.generate(prompt, GenerateParams {
     max_tokens: 256,
     ..Default::default()
 })?;
+println!("{}", text);
 
-println!("Acceptance rate: {:.1}%", output.stats.acceptance_rate * 100.0);
-println!("Speedup: {:.2}x", output.stats.speedup);
+// Acceptance metrics live on the decoder (SpeculativeStats)
+let stats = decoder.stats();
+println!("Acceptance rate: {:.1}%", stats.acceptance_rate * 100.0);
+println!("Speedup: {:.2}x", stats.speedup);
 ```
+
+> Note: `SpeculativeConfig` is also re-exported at the crate root as
+> `ruvllm::SpeculativeDecodingConfig` (aliased to avoid a name clash with the
+> `optimization` module's own `SpeculativeConfig`).
 
 ## GGUF Model Loading
 
 Efficient loading with memory mapping:
 
 ```rust
-use ruvllm::gguf::{GgufLoader, GgufConfig};
+use std::path::Path;
+use ruvllm::{GgufLoader, LoadConfig};
 
-let loader = GgufLoader::new(GgufConfig {
-    mmap_enabled: true,       // Memory-map for fast loading
-    validate_checksum: true,  // Verify file integrity
+// LoadConfig derives Default; enable memory mapping for large models.
+let config = LoadConfig {
+    use_mmap: true,        // Memory-map for fast loading
+    keep_quantized: true,  // Keep weights quantized (don't dequantize to F32)
     ..Default::default()
-});
+};
 
-// Load model metadata
-let metadata = loader.read_metadata("model.gguf")?;
-println!("Model: {}", metadata.name);
-println!("Parameters: {}B", metadata.parameters / 1_000_000_000);
-println!("Quantization: {:?}", metadata.quantization);
+// new(path, config) reads the GGUF header up front.
+let loader = GgufLoader::new(Path::new("model.gguf"), config)?;
 
-// Load into backend
-let tensors = loader.load_tensors("model.gguf")?;
-backend.load_tensors(tensors)?;
+// Inspect the extracted model configuration (GgufModelConfig).
+let cfg = loader.model_config();
+println!("Architecture: {:?}", cfg.architecture);
+println!("Context length: {:?}", cfg.context_length);
+println!("Layers: {:?}", cfg.layer_count);
+
+// Load all weights (or use load_layer / load_tensor for partial loads).
+let weights = loader.load_weights()?;
 ```
 
+## mistral-rs Backend (Planned)
+
+> **Status: not yet functional.** The config types below (`MistralBackend`,
+> `MistralBackendConfig`, `XLoraConfig`, `IsqConfig`, `IsqMethod`) are
+> re-exported from `ruvllm::backends` and the scaffolding exists in
+> `backends::mistral_backend`, but the actual inference path depends on the
+> **unpublished `mistralrs` crate**. The `mistral-rs` / `mistral-rs-metal` /
+> `mistral-rs-cuda` feature flags are commented out in `Cargo.toml` and will be
+> enabled once `mistralrs` ships on crates.io. Treat this as a design preview.
+
 <details>
-<summary>🚀 mistral-rs Backend (Production Serving)</summary>
+<summary>🚀 mistral-rs Backend (planned production serving)</summary>
 
-RuvLLM v2.3 includes integration with [mistral-rs](https://github.com/EricLBuehler/mistral.rs) for production-scale LLM serving with advanced memory management.
+The planned [mistral-rs](https://github.com/EricLBuehler/mistral.rs) integration
+targets production-scale serving with advanced memory management.
 
-> **Note**: The mistral-rs crate is not yet published to crates.io. The integration is designed and ready—enable it when mistral-rs becomes available.
-
-### Key Features
+### Planned Features
 
 | Feature | Description | Benefit |
 |---------|-------------|---------|
@@ -530,52 +558,32 @@ RuvLLM v2.3 includes integration with [mistral-rs](https://github.com/EricLBuehl
 | **X-LoRA** | Per-token adapter routing | <1ms routing overhead, multi-task inference |
 | **ISQ** | In-Situ Quantization (AWQ, GPTQ, RTN) | Runtime quantization without re-export |
 
-### Usage Example
+### Config Surface (types exist today; backend is a stub)
 
 ```rust
-use ruvllm::backends::mistral::{
+// These types are re-exported from ruvllm::backends.
+use ruvllm::backends::{
     MistralBackend, MistralBackendConfig,
-    PagedAttentionConfig, XLoraConfig, IsqConfig
+    XLoraConfig, IsqConfig, IsqMethod,
 };
 
-// Configure mistral-rs backend for production serving
-let config = MistralBackendConfig::builder()
-    // PagedAttention: Enable 50+ concurrent users
-    .paged_attention(PagedAttentionConfig {
-        block_size: 16,
-        max_blocks: 4096,
-        gpu_memory_fraction: 0.9,
-        enable_prefix_caching: true,
-    })
-    // X-LoRA: Per-token adapter routing
-    .xlora(XLoraConfig {
-        adapters: vec![
-            "adapters/coder".into(),
-            "adapters/researcher".into(),
-        ],
-        top_k: 2,
-        temperature: 0.3,
-    })
-    // ISQ: Runtime quantization
-    .isq(IsqConfig {
-        bits: 4,
-        method: IsqMethod::AWQ,
-        calibration_samples: 128,
-    })
-    .build();
-
-let mut backend = MistralBackend::new(config)?;
-backend.load_model("mistralai/Mistral-7B-Instruct-v0.2", ModelConfig::default())?;
-
-// Generate with PagedAttention + X-LoRA
-let response = backend.generate("Write secure authentication code", GenerateParams {
-    max_tokens: 512,
-    temperature: 0.7,
+// MistralBackendConfig derives Default; fields are plain structs/Options.
+let config = MistralBackendConfig {
+    xlora: Some(XLoraConfig::default()),
+    isq: Some(IsqConfig {
+        method: IsqMethod::AWQ, // also: GPTQ, ...
+        ..Default::default()
+    }),
+    max_batch_size: 32,
+    max_seq_len: 4096,
     ..Default::default()
-})?;
+};
+
+// MistralBackend::new() takes no arguments today (stub until `mistralrs` lands).
+let _backend = MistralBackend::new()?;
 ```
 
-### When to Use mistral-rs vs Candle
+### When to Use mistral-rs vs Candle (once available)
 
 | Scenario | Recommended Backend | Reason |
 |----------|---------------------|--------|
@@ -585,20 +593,14 @@ let response = backend.generate("Write secure authentication code", GeneratePara
 | Runtime quantization | mistral-rs | ISQ without model re-export |
 | WASM / Browser | Candle | mistral-rs doesn't support WASM |
 
-### Feature Flags
+### Feature Flags (planned, commented out in `Cargo.toml`)
 
 ```toml
-# Enable mistral-rs (when available on crates.io)
-ruvllm = { version = "2.1", features = ["mistral-rs"] }
-
-# With Metal acceleration (Apple Silicon)
-ruvllm = { version = "2.1", features = ["mistral-rs-metal"] }
-
-# With CUDA acceleration (NVIDIA)
-ruvllm = { version = "2.1", features = ["mistral-rs-cuda"] }
+# Not yet available — depends on the unpublished `mistralrs` crate.
+# ruvllm = { version = "2.1", features = ["mistral-rs"] }
+# ruvllm = { version = "2.1", features = ["mistral-rs-metal"] }
+# ruvllm = { version = "2.1", features = ["mistral-rs-cuda"] }
 ```
-
-See [ADR-008: mistral-rs Integration](../../docs/adr/ADR-008-mistral-rs-integration.md) for detailed architecture decisions.
 
 </details>
 
@@ -617,13 +619,14 @@ See [ADR-008: mistral-rs Integration](../../docs/adr/ADR-008-mistral-rs-integrat
 ### Model Configuration
 
 ```rust
+use ruvllm::{ModelConfig, Quantization};
+
 let config = ModelConfig {
-    max_context: 8192,
+    max_sequence_length: 8192,
     use_flash_attention: true,
-    quantization: Quantization::Q4K,
-    kv_cache_config: KvCacheConfig::default(),
-    rope_scaling: Some(RopeScaling::Linear { factor: 2.0 }),
+    quantization: Some(Quantization::Q4K),
     sliding_window: Some(4096),
+    rope_theta: Some(1_000_000.0),
     ..Default::default()
 };
 ```
@@ -657,25 +660,26 @@ cargo bench --bench serving_bench --features inference-metal
 Download and upload models to HuggingFace Hub:
 
 ```rust
-use ruvllm::hub::{ModelDownloader, ModelUploader, RuvLtraRegistry, DownloadConfig};
+use std::path::Path;
+use ruvllm::hub::{ModelDownloader, ModelUploader, RuvLtraRegistry};
 
-// Download from Hub
-let downloader = ModelDownloader::new(DownloadConfig::default());
-let model_path = downloader.download(
-    "ruvector/ruvltra-small-q4km",
-    Some("./models"),
-)?;
-
-// Or use the registry for RuvLTRA models
+// Look up a known RuvLTRA model from the registry (get returns Option<&ModelInfo>).
 let registry = RuvLtraRegistry::new();
-let model = registry.get("ruvltra-medium", "Q4_K_M")?;
+let model_info = registry.get("ruvltra-small").expect("model in registry");
 
-// Upload to Hub (requires HF_TOKEN)
+// Download it. ModelDownloader::new() takes no args;
+// download(&ModelInfo, Option<&Path>) -> Result<PathBuf>.
+let downloader = ModelDownloader::new();
+let model_path = downloader.download(model_info, Some(Path::new("./models")))?;
+println!("Downloaded to: {}", model_path.display());
+
+// Upload to Hub. ModelUploader::new(token);
+// upload(path, repo_id, Option<ModelMetadata>) -> Result<String> (the repo URL).
 let uploader = ModelUploader::new("hf_your_token");
 let url = uploader.upload(
     "./my-model.gguf",
     "username/my-ruvltra-model",
-    Some(metadata),
+    None, // or Some(ModelMetadata { .. })
 )?;
 println!("Uploaded to: {}", url);
 ```
@@ -686,28 +690,31 @@ println!("Uploaded to: {}", url);
 Pre-trained adapters optimized for Claude Flow agent types:
 
 ```rust
-use ruvllm::lora::{RuvLtraAdapters, AdapterTrainer, AdapterMerger, HotSwapManager};
+use ruvllm::lora::{RuvLtraAdapters, AdapterMerger, MergeConfig, LoraConfig, HotSwapManager};
 
-// Create adapter for specific task
+// Create adapter for specific task -> Result<MicroLoRA>
 let adapters = RuvLtraAdapters::new();
-let coder = adapters.create_lora("coder", 768)?;       // Rank 16, code generation
-let security = adapters.create_lora("security", 768)?; // Rank 16, vulnerability detection
+let coder = adapters.create_lora("coder", 768)?;       // code generation
+let security = adapters.create_lora("security", 768)?; // vulnerability detection
 
-// Available adapters:
-// - coder:     Rank 16, Alpha 32.0, targets attention (Q,K,V,O)
-// - researcher: Rank 8, Alpha 16.0, targets Q,K,V
-// - security:  Rank 16, Alpha 32.0, targets attention + MLP
-// - architect: Rank 12, Alpha 24.0, targets Q,V + Gate,Up
-// - reviewer:  Rank 8, Alpha 16.0, targets Q,V
+// Available adapter presets:
+// - coder, researcher, security, architect, reviewer
 
-// Merge adapters for multi-task models
+// Merge adapters for multi-task models.
+// MergeConfig::weighted takes a HashMap<String, f32>; merge takes (name, adapter) pairs
+// and an output LoraConfig (built via LoraConfig::builder).
 let merger = AdapterMerger::new(MergeConfig::weighted(weights));
-let multi_task = merger.merge(&[coder, security], &output_config, 768)?;
+let output_config = LoraConfig::builder("multi_task").rank(16).build();
+let multi_task = merger.merge(
+    &[("coder".to_string(), coder), ("security".to_string(), security)],
+    &output_config,
+    768,
+)?;
 
-// Hot-swap adapters at runtime
+// Hot-swap adapters at runtime (set_active / prepare_standby take MicroLoRA by value)
 let mut manager = HotSwapManager::new();
-manager.set_active(coder);
-manager.prepare_standby(security);
+manager.set_active(adapters.create_lora("coder", 768)?);
+manager.prepare_standby(adapters.create_lora("security", 768)?);
 manager.swap()?; // Zero-downtime switch
 ```
 
@@ -727,33 +734,32 @@ manager.swap()?; // Zero-downtime switch
 <details>
 <summary>🧪 Evaluation Harness (v2.3)</summary>
 
-RuvLLM includes a comprehensive evaluation harness for benchmarking model quality:
+RuvLLM includes an evaluation harness for loading models and SWE-Bench tasks.
+Build the harness with `RealEvaluationHarness::with_config` (which loads the
+model when a path is set), then inspect with `is_model_loaded()`:
 
 ```rust
-use ruvllm::evaluation::{RealEvaluationHarness, EvalConfig, AblationMode};
+use ruvllm::evaluation::{RealEvaluationHarness, EvalConfig, RealInferenceConfig};
 
-// Create harness with GGUF model
-let harness = RealEvaluationHarness::with_gguf(
-    "./models/tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf",
+// EvalConfig and RealInferenceConfig both derive Default.
+let harness = RealEvaluationHarness::with_config(
     EvalConfig::default(),
+    RealInferenceConfig {
+        model_path: "./models/tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf".to_string(),
+        enable_hnsw: true,
+        enable_sona: true,
+        ..Default::default()
+    },
 )?;
 
-// Run single evaluation
-let result = harness.evaluate(
-    "Fix the null pointer exception in this code",
-    "def process(data):\n    return data.split()",
-    AblationMode::Full,
-)?;
-
-println!("Success: {}, Quality: {:.2}", result.success, result.quality_score);
-
-// Run full ablation study (5 modes)
-let report = harness.run_ablation_study(&tasks)?;
-for (mode, metrics) in &report.mode_metrics {
-    println!("{:?}: {:.1}% success, {:.2} quality",
-        mode, metrics.success_rate * 100.0, metrics.avg_quality);
-}
+assert!(harness.is_model_loaded());
 ```
+
+> **Planned:** a one-call `evaluate(...)` and `run_ablation_study(...)` scoring
+> API (returning success/quality per `AblationMode`) is on the roadmap. The
+> `AblationMode` enum (`Baseline`, `RetrievalOnly`, `AdaptersOnly`,
+> `RetrievalPlusAdapters`, `Full`) already exists; the driving loop is exposed
+> today via the `run_eval` example rather than a single harness method.
 
 ### Ablation Modes
 
@@ -768,11 +774,13 @@ for (mode, metrics) in &report.mode_metrics {
 ### SWE-Bench Task Loader
 
 ```rust
-use ruvllm::evaluation::swe_bench::SweBenchLoader;
+use ruvllm::evaluation::swe_bench::{SweBenchLoader, SweBenchConfig};
 
-// Load SWE-Bench tasks
-let loader = SweBenchLoader::new();
-let tasks = loader.load_subset("lite", 50)?; // 50 tasks from lite subset
+// SweBenchConfig has `lite()` / `test()` presets; new(config) builds the loader.
+let loader = SweBenchLoader::new(SweBenchConfig::lite());
+
+// Load tasks from a JSONL file (or use load_from_file / load_from_cache_or_url).
+let tasks = loader.load_from_jsonl("./data/swe-bench-lite.jsonl")?;
 
 for task in &tasks {
     println!("Instance: {}", task.instance_id);
@@ -848,7 +856,7 @@ match backend.generate(prompt, params) {
     Err(RuvLLMError::Model(e)) => eprintln!("Model error: {}", e),
     Err(RuvLLMError::OutOfMemory(e)) => eprintln!("OOM: {}", e),
     Err(RuvLLMError::Generation(e)) => eprintln!("Generation failed: {}", e),
-    Err(RuvLLMError::Ane(e)) => eprintln!("ANE error: {}", e),
+    Err(RuvLLMError::CoreML(e)) => eprintln!("Core ML / ANE error: {}", e),
     Err(RuvLLMError::Gguf(e)) => eprintln!("GGUF loading error: {}", e),
     Err(e) => eprintln!("Error: {}", e),
 }

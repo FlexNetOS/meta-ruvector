@@ -9,11 +9,20 @@
 
 `ruvector-core` is the foundational library that powers the entire [RuVector](https://github.com/FlexNetOS/ruvector) ecosystem. It gives you a production-grade vector database you can embed directly into any Rust application: insert vectors, search them in under a millisecond, filter by metadata, and compress storage up to 32x -- all without external services. If you need vector search as a library instead of a server, this is the crate.
 
+> ⚠️ **AgenticDB embeddings are PLACEHOLDERS by default.** The `AgenticDB`
+> agentic layer (behind the `storage` feature) uses **hash-based
+> `HashEmbedding` vectors by default — these are NOT semantic**. "dog" and
+> "cat" will not be similar; "dog" and "god" will. For real semantic search you
+> must supply a real embedding provider: build with the `onnx-embeddings`
+> feature for local `OnnxEmbedding`, or use `ApiEmbedding` (the default
+> `api-embeddings` feature). The core `VectorDB` does **not** embed text at all —
+> you pass it `f32` vectors you produced yourself. See the [Embeddings](#embeddings) section.
+
 | | ruvector-core | Typical Vector Database |
 |---|---|---|
 | **Deployment** | Embed as a Rust dependency -- no server, no network calls | Run a separate service, manage connections |
 | **Query latency** | <0.5 ms p50 at 1M vectors with HNSW | ~1-5 ms depending on network and index |
-| **Memory compression** | Scalar (4x), Product (8-32x), Binary (32x) quantization built in | Often requires paid tiers or external tools |
+| **Memory compression** | Scalar (4x), Int4 (8x), Product (8-16x), Binary (32x) quantization built in | Often requires paid tiers or external tools |
 | **SIMD acceleration** | SimSIMD hardware-optimized distance calculations, automatic | Manual tuning or not available |
 | **Search modes** | Dense vectors, sparse BM25, hybrid, MMR diversity, filtered -- all in one API | Typically dense-only; hybrid and filtering are add-ons |
 | **Storage** | Zero-copy mmap with `redb` -- instant loading, no deserialization | Load time scales with dataset size |
@@ -37,9 +46,16 @@ ruvector-core = "0.1.0"
 ruvector-core = { version = "0.1.0", features = ["simd", "uuid-support"] }
 ```
 
-Available features:
+Available features (defaults: `simd`, `simd-avx512`, `storage`, `hnsw`, `api-embeddings`, `parallel`):
 - `simd` (default): Enable SIMD-optimized distance calculations
-- `uuid-support` (default): Enable UUID generation for vector IDs
+- `simd-avx512` (default): Enable AVX-512 SIMD paths where available
+- `storage` (default): REDB-backed persistence; also gates the `AgenticDB` agentic layer
+- `hnsw` (default): HNSW approximate-nearest-neighbor index
+- `parallel` (default): Rayon batch processing and lock-free structures
+- `uuid-support`: Enable UUID generation for vector IDs
+- `api-embeddings` (default): `ApiEmbedding` — call an external embedding API (not available in WASM)
+- `onnx-embeddings`: `OnnxEmbedding` — local ONNX semantic embeddings (`ort` + `tokenizers` + `hf-hub`, not available in WASM)
+- `real-embeddings`: `CandleEmbedding` provider
 
 ## Key Features
 
@@ -48,7 +64,7 @@ Available features:
 | **HNSW Indexing** | Hierarchical Navigable Small World graphs for O(log n) approximate nearest neighbor search | Sub-millisecond queries at million-vector scale |
 | **Multiple Distance Metrics** | Euclidean, Cosine, Dot Product, Manhattan | Match the metric to your embedding model without conversion |
 | **Scalar Quantization** | Compress vectors to 8-bit integers (4x reduction) | Cut memory by 75% with 98% recall preserved |
-| **Product Quantization** | Split vectors into subspaces with codebooks (8-32x reduction) | Store millions of vectors on a single machine |
+| **Product Quantization** | Split vectors into subspaces with codebooks (8-16x reduction) | Store millions of vectors on a single machine |
 | **Binary Quantization** | 1-bit representation (32x reduction) | Ultra-fast screening pass for massive datasets |
 | **SIMD Distance** | Hardware-accelerated distance via SimSIMD | Up to 80K QPS on 8 cores without code changes |
 | **Zero-Copy I/O** | Memory-mapped storage loads instantly | No deserialization step -- open a file and search immediately |
@@ -298,6 +314,26 @@ let mmr = MMRSearch::new(MMRConfig {
     ..Default::default()
 });
 ```
+
+## Embeddings
+
+`ruvector-core` stores and searches `f32` vectors — it does **not** turn text
+into vectors for you in the core `VectorDB` API. Embedding providers are
+exposed via the `EmbeddingProvider` trait and these concrete types (gated by
+feature):
+
+| Provider | Feature | Semantic? | Notes |
+|----------|---------|-----------|-------|
+| `HashEmbedding` | always available | ❌ **No** | Deterministic hash of characters. A placeholder for tests/benchmarks. **Not** semantic. |
+| `ApiEmbedding` | `api-embeddings` (default) | ✅ Yes | Calls a remote embedding API (e.g. OpenAI). Not available in WASM. |
+| `OnnxEmbedding` | `onnx-embeddings` | ✅ Yes | Local ONNX model via `ort` + `tokenizers`. Not available in WASM. |
+| `CandleEmbedding` | `real-embeddings` | ✅ Yes | Candle-based provider. |
+
+> **AgenticDB defaults to `HashEmbedding`.** If you use `AgenticDB` (the
+> `storage`-gated agentic layer that re-exports `AgenticDB`, `PolicyMemoryStore`,
+> `SessionStateIndex`, `WitnessLog`, etc.) without wiring in a real provider,
+> similarity is character-based, not meaning-based. Enable `onnx-embeddings`
+> (`OnnxEmbedding`) or use `ApiEmbedding` for production semantic search.
 
 ## Performance
 

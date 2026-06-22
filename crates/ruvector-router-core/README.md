@@ -4,42 +4,36 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Performance](https://img.shields.io/badge/latency-<0.5ms-green.svg)](../../docs/TECHNICAL_PLAN.md)
 
-**High-performance vector database and neural routing inference engine built in Rust.**
+**High-performance vector database engine built in Rust.**
 
-Core engine powering Ruvector's intelligent request distribution, model selection, and sub-millisecond vector similarity search. Combines advanced indexing algorithms with SIMD-optimized distance calculations for maximum performance.
+`ruvector-router-core` is the core storage and retrieval engine powering Ruvector's
+sub-millisecond vector similarity search. It combines HNSW indexing with persistent
+storage for fast approximate nearest-neighbor queries.
 
 ## 🎯 Overview
 
-Router Core is the foundation of Ruvector's vector database capabilities, providing:
+Router Core provides the foundation of Ruvector's vector database capabilities:
 
-- **Neural Routing**: Intelligent request distribution across multiple models and endpoints
 - **Vector Database**: High-performance storage and retrieval with HNSW indexing
-- **Model Selection**: Adaptive routing strategies for multi-model AI systems
-- **SIMD Acceleration**: Hardware-optimized vector operations via simsimd
-- **Memory Efficiency**: Advanced quantization techniques (4-32x compression)
-- **Zero Dependencies**: Pure Rust implementation with minimal external dependencies
+- **HNSW Indexing**: Hierarchical Navigable Small World approximate nearest-neighbor search
+- **Multiple Distance Metrics**: Euclidean, Cosine, Dot Product, Manhattan
+- **Persistent Storage**: Durable vector storage with metadata
+- **Builder API**: Ergonomic configuration via `VectorDB::builder()`
+
+> **Crate name vs. library path:** the package is `ruvector-router-core`, so the
+> `use` path in Rust is `ruvector_router_core` (underscores).
 
 ## ⚡ Key Features
 
-### Core Capabilities
-
-- **Sub-Millisecond Search**: <0.5ms p50 latency with HNSW indexing
-- **HNSW Indexing**: Hierarchical Navigable Small World for fast approximate nearest neighbor search
-- **Multiple Distance Metrics**: Euclidean, Cosine, Dot Product, Manhattan
-- **Advanced Quantization**: Scalar (4x), Product (8-16x), Binary (32x) compression
-- **SIMD Optimizations**: Hardware-accelerated distance calculations
-- **Zero-Copy I/O**: Memory-mapped files for efficient data access
-- **Thread-Safe**: Concurrent read/write operations with minimal locking
-- **Persistent Storage**: Durable vector storage with redb backend
-
-### Neural Routing Features
-
-- **Intelligent Request Distribution**: Route queries to optimal model endpoints
-- **Load Balancing**: Distribute workload across multiple inference servers
-- **Model Selection**: Automatically select best model based on query characteristics
-- **Adaptive Strategies**: Learn and optimize routing decisions over time
-- **Latency Optimization**: Minimize end-to-end inference time
-- **Failover Support**: Automatic fallback to backup endpoints
+- **HNSW Indexing**: fast approximate nearest-neighbor search, tunable via `m`,
+  `ef_construction`, and `ef_search`.
+- **Multiple Distance Metrics**: `DistanceMetric::Euclidean`, `Cosine`, `DotProduct`,
+  `Manhattan` (see [`src/distance.rs`](src/distance.rs)).
+- **Metadata Filtering**: post-filter search results by exact metadata key/value match.
+- **Batch Inserts**: `insert_batch` for bulk loading.
+- **Index Rebuild on Open**: persisted vectors are reloaded into the in-memory HNSW
+  when a `VectorDB` is reopened against an existing storage path.
+- **Thread-Safe**: built on `parking_lot` for concurrent access.
 
 ## 📦 Installation
 
@@ -47,14 +41,7 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-router-core = "0.1.0"
-```
-
-Or use the full ruvector package:
-
-```toml
-[dependencies]
-ruvector-core = "0.1.0"
+ruvector-router-core = "0.1.0"
 ```
 
 ## 🚀 Quick Start
@@ -62,19 +49,20 @@ ruvector-core = "0.1.0"
 ### Basic Vector Database
 
 ```rust
-use router_core::{VectorDB, VectorEntry, SearchQuery, DistanceMetric};
+use ruvector_router_core::{VectorDB, VectorEntry, SearchQuery, DistanceMetric};
 use std::collections::HashMap;
 
-// Create database with builder pattern
+# fn main() -> ruvector_router_core::Result<()> {
+// Create database with the builder pattern
 let db = VectorDB::builder()
-    .dimensions(384)           // Vector dimensions
+    .dimensions(384)                          // Vector dimensions
     .distance_metric(DistanceMetric::Cosine)
-    .hnsw_m(32)               // HNSW connections per node
-    .hnsw_ef_construction(200) // Construction accuracy
+    .hnsw_m(32)                               // HNSW connections per node
+    .hnsw_ef_construction(200)                // Construction accuracy
     .storage_path("./vectors.db")
     .build()?;
 
-// Insert vectors
+// Insert a vector
 let entry = VectorEntry {
     id: "doc1".to_string(),
     vector: vec![0.1; 384],
@@ -89,605 +77,286 @@ let query = SearchQuery {
     vector: vec![0.1; 384],
     k: 10,                     // Top 10 results
     filters: None,
-    threshold: Some(0.8),      // Minimum similarity
-    ef_search: Some(100),      // Search accuracy
+    threshold: Some(0.8),      // Distance threshold (optional)
+    ef_search: Some(100),      // Search accuracy (optional)
 };
 
 let results = db.search(query)?;
 for result in results {
     println!("{}: {}", result.id, result.score);
 }
+# Ok(())
+# }
 ```
 
 ### Batch Operations
 
 ```rust
-use router_core::{VectorDB, VectorEntry};
+use ruvector_router_core::{VectorDB, VectorEntry};
+use std::collections::HashMap;
 
-// Insert multiple vectors efficiently
+# fn run(db: &VectorDB) -> ruvector_router_core::Result<()> {
+// Insert multiple vectors in one call
 let entries: Vec<VectorEntry> = (0..1000)
     .map(|i| VectorEntry {
-        id: format!("doc{}", i),
+        id: format!("doc{i}"),
         vector: vec![0.1; 384],
         metadata: HashMap::new(),
         timestamp: chrono::Utc::now().timestamp(),
     })
     .collect();
 
-// Batch insert (much faster than individual inserts)
-db.insert_batch(entries)?;
+let ids = db.insert_batch(entries)?;
+println!("Inserted {} vectors", ids.len());
 
-// Check statistics
+// Inspect database statistics
 let stats = db.stats();
 println!("Total vectors: {}", stats.total_vectors);
-println!("Avg latency: {:.2}μs", stats.avg_query_latency_us);
+println!("Avg latency: {:.2}us", stats.avg_query_latency_us);
+
+// Count vectors / list IDs
+println!("count = {}", db.count()?);
+let _all_ids = db.get_all_ids()?;
+# Ok(())
+# }
 ```
 
-### Advanced Configuration
+### Configuration
 
 ```rust
-use router_core::{VectorDB, DistanceMetric, QuantizationType};
+use ruvector_router_core::{VectorDB, DistanceMetric};
 
+# fn main() -> ruvector_router_core::Result<()> {
 let db = VectorDB::builder()
     .dimensions(768)                          // Larger embeddings
-    .max_elements(10_000_000)                 // 10M vectors
-    .distance_metric(DistanceMetric::Cosine)  // Cosine similarity
+    .max_elements(10_000_000)                 // Capacity hint
+    .distance_metric(DistanceMetric::Cosine)  // Cosine distance
     .hnsw_m(64)                               // More connections = higher recall
     .hnsw_ef_construction(400)                // Higher accuracy during build
-    .hnsw_ef_search(200)                      // Search-time accuracy
-    .quantization(QuantizationType::Scalar)   // 4x memory compression
-    .mmap_vectors(true)                       // Memory-mapped storage
+    .hnsw_ef_search(200)                      // Default search-time accuracy
+    .mmap_vectors(true)                       // Memory-mapping flag
     .storage_path("./large_db.redb")
     .build()?;
-```
-
-## 🧠 Neural Routing Strategies
-
-Router Core supports multiple routing strategies for intelligent request distribution:
-
-### 1. **Round-Robin Routing**
-
-Simple load balancing across endpoints:
-
-```rust
-use router_core::routing::{Router, RoundRobinStrategy};
-
-let router = Router::new(RoundRobinStrategy::new(vec![
-    "http://model1:8080",
-    "http://model2:8080",
-    "http://model3:8080",
-]));
-
-let endpoint = router.select_endpoint(&query)?;
-```
-
-### 2. **Latency-Based Routing**
-
-Route to fastest available endpoint:
-
-```rust
-use router_core::routing::{Router, LatencyBasedStrategy};
-
-let router = Router::new(LatencyBasedStrategy::new(vec![
-    ("http://model1:8080", 50),  // 50ms avg latency
-    ("http://model2:8080", 30),  // 30ms avg latency (preferred)
-    ("http://model3:8080", 100), // 100ms avg latency
-]));
-```
-
-### 3. **Semantic Routing**
-
-Route based on query similarity to model specializations:
-
-```rust
-use router_core::routing::{Router, SemanticStrategy};
-
-// Define model specializations with example vectors
-let models = vec![
-    ("general-model", vec![0.1; 384]),  // General queries
-    ("code-model", vec![0.8, 0.2, ...]), // Code-related queries
-    ("math-model", vec![0.3, 0.9, ...]), // Math queries
-];
-
-let router = Router::new(SemanticStrategy::new(models));
-
-// Routes to most appropriate model based on query vector
-let endpoint = router.select_endpoint(&query_vector)?;
-```
-
-### 4. **Adaptive Routing**
-
-Learn optimal routing decisions over time:
-
-```rust
-use router_core::routing::{Router, AdaptiveStrategy};
-
-let mut router = Router::new(AdaptiveStrategy::new());
-
-// Router learns from feedback
-router.record_request(&query, &endpoint, latency, success)?;
-
-// Routing improves with more data
-let best_endpoint = router.select_endpoint(&query)?;
+# let _ = db;
+# Ok(())
+# }
 ```
 
 ## 🎨 Distance Metrics
 
-Router Core supports multiple distance metrics with SIMD optimization:
-
-### Cosine Similarity
-
-Best for normalized embeddings (recommended for most AI applications):
+Router Core supports four distance metrics via the `DistanceMetric` enum. The
+free functions in [`src/distance.rs`](src/distance.rs) let you compute distances
+directly:
 
 ```rust
-use router_core::{DistanceMetric, distance::calculate_distance};
+use ruvector_router_core::DistanceMetric;
+use ruvector_router_core::distance::calculate_distance;
 
+# fn main() -> ruvector_router_core::Result<()> {
 let a = vec![1.0, 0.0, 0.0];
 let b = vec![0.9, 0.1, 0.0];
 
-let dist = calculate_distance(&a, &b, DistanceMetric::Cosine)?;
-// Returns 1 - cosine_similarity (0 = identical, 2 = opposite)
+// Cosine: returns 1 - cosine_similarity (0 = identical)
+let _cos = calculate_distance(&a, &b, DistanceMetric::Cosine)?;
+
+// Euclidean (L2): sqrt(sum((a[i] - b[i])^2))
+let _l2 = calculate_distance(&a, &b, DistanceMetric::Euclidean)?;
+
+// Dot product: -sum(a[i] * b[i]) (negated so smaller = more similar)
+let _dot = calculate_distance(&a, &b, DistanceMetric::DotProduct)?;
+
+// Manhattan (L1): sum(|a[i] - b[i]|)
+let _l1 = calculate_distance(&a, &b, DistanceMetric::Manhattan)?;
+# Ok(())
+# }
 ```
 
-### Euclidean Distance (L2)
+Additional distance helpers (also in `distance`): `euclidean_distance`,
+`cosine_similarity`, `dot_product`, `manhattan_distance`, and `batch_distance`.
 
-Measures absolute geometric distance:
+## 🔍 Metadata Filtering
 
-```rust
-let dist = calculate_distance(&a, &b, DistanceMetric::Euclidean)?;
-// Returns sqrt(sum((a[i] - b[i])^2))
-```
-
-### Dot Product
-
-Fast similarity for pre-normalized vectors:
+`SearchQuery::filters` is an optional `HashMap<String, serde_json::Value>`. When
+set, results are retained only when every key/value matches the entry metadata
+exactly:
 
 ```rust
-let dist = calculate_distance(&a, &b, DistanceMetric::DotProduct)?;
-// Returns -sum(a[i] * b[i]) (negated for distance)
-```
+use ruvector_router_core::SearchQuery;
+use std::collections::HashMap;
 
-### Manhattan Distance (L1)
+let mut filters = HashMap::new();
+filters.insert("category".to_string(), serde_json::json!("footwear"));
+filters.insert("in_stock".to_string(), serde_json::json!(true));
 
-Sum of absolute differences:
-
-```rust
-let dist = calculate_distance(&a, &b, DistanceMetric::Manhattan)?;
-// Returns sum(|a[i] - b[i]|)
-```
-
-## 🗜️ Quantization Techniques
-
-Reduce memory usage with minimal accuracy loss:
-
-### Scalar Quantization (4x compression)
-
-Compress float32 to int8:
-
-```rust
-use router_core::{QuantizationType, VectorDB};
-
-let db = VectorDB::builder()
-    .dimensions(384)
-    .quantization(QuantizationType::Scalar)
-    .build()?;
-
-// Automatic quantization on insert
-// 384 dims × 4 bytes = 1536 bytes → 384 bytes + overhead
-```
-
-### Product Quantization (8-16x compression)
-
-Divide vector into subspaces and quantize independently:
-
-```rust
-let db = VectorDB::builder()
-    .dimensions(384)
-    .quantization(QuantizationType::Product {
-        subspaces: 8,    // Divide into 8 subspaces
-        k: 256,          // 256 centroids per subspace
-    })
-    .build()?;
-
-// 384 dims × 4 bytes = 1536 bytes → 8 bytes + overhead
-```
-
-### Binary Quantization (32x compression)
-
-Compress to 1 bit per dimension:
-
-```rust
-let db = VectorDB::builder()
-    .dimensions(384)
-    .quantization(QuantizationType::Binary)
-    .build()?;
-
-// 384 dims × 4 bytes = 1536 bytes → 48 bytes + overhead
-// Fast Hamming distance for similarity
-```
-
-### Compression Ratio Comparison
-
-```rust
-use router_core::quantization::calculate_compression_ratio;
-
-let dims = 384;
-
-let none_ratio = calculate_compression_ratio(dims, QuantizationType::None);
-// 1x - no compression
-
-let scalar_ratio = calculate_compression_ratio(dims, QuantizationType::Scalar);
-// ~4x compression
-
-let product_ratio = calculate_compression_ratio(
-    dims,
-    QuantizationType::Product { subspaces: 8, k: 256 }
-);
-// ~8-16x compression
-
-let binary_ratio = calculate_compression_ratio(dims, QuantizationType::Binary);
-// ~32x compression
+let query = SearchQuery {
+    vector: vec![0.1; 384],
+    k: 20,
+    filters: Some(filters),
+    threshold: None,
+    ef_search: None,
+};
+# let _ = query;
 ```
 
 ## 📊 HNSW Index Configuration
 
-Tune the HNSW index for your performance/accuracy requirements:
+Tune the HNSW index via the builder for your performance/accuracy requirements.
 
 ### M Parameter (Connections per Node)
 
-Controls graph connectivity and search accuracy:
-
 ```rust
-// Low M = faster build, less memory, lower recall
-let db_fast = VectorDB::builder()
-    .hnsw_m(16)  // Minimal connections
-    .build()?;
-
-// Medium M = balanced (default)
-let db_balanced = VectorDB::builder()
-    .hnsw_m(32)  // Default setting
-    .build()?;
-
-// High M = slower build, more memory, higher recall
-let db_accurate = VectorDB::builder()
-    .hnsw_m(64)  // Maximum accuracy
-    .build()?;
+use ruvector_router_core::VectorDB;
+# fn build(b: ruvector_router_core::vector_db::VectorDbBuilder) {}
+// Lower M = faster build, less memory, lower recall
+let _ = VectorDB::builder().hnsw_m(16);
+// Default
+let _ = VectorDB::builder().hnsw_m(32);
+// Higher M = slower build, more memory, higher recall
+let _ = VectorDB::builder().hnsw_m(64);
 ```
 
 ### ef_construction (Build-Time Accuracy)
 
-Controls accuracy during index construction:
-
 ```rust
-// Fast build, lower recall
-let db_fast = VectorDB::builder()
-    .hnsw_ef_construction(100)
-    .build()?;
-
-// Balanced (default)
-let db_balanced = VectorDB::builder()
-    .hnsw_ef_construction(200)
-    .build()?;
-
-// Slow build, maximum recall
-let db_accurate = VectorDB::builder()
-    .hnsw_ef_construction(400)
-    .build()?;
+use ruvector_router_core::VectorDB;
+let _ = VectorDB::builder().hnsw_ef_construction(100); // fast build
+let _ = VectorDB::builder().hnsw_ef_construction(200); // default
+let _ = VectorDB::builder().hnsw_ef_construction(400); // high recall
 ```
 
 ### ef_search (Query-Time Accuracy)
 
-Can be adjusted per query for dynamic performance/accuracy tradeoff:
+`ef_search` can be overridden per query via `SearchQuery::ef_search`:
 
 ```rust
-// Fast search, lower recall
+use ruvector_router_core::SearchQuery;
+# let query_vec = vec![0.0f32; 384];
 let query_fast = SearchQuery {
-    vector: query_vec,
+    vector: query_vec.clone(),
     k: 10,
-    ef_search: Some(50),  // Override default
-    ..Default::default()
+    filters: None,
+    threshold: None,
+    ef_search: Some(50),   // Lower = faster, lower recall
 };
 
-// Accurate search
 let query_accurate = SearchQuery {
     vector: query_vec,
     k: 10,
-    ef_search: Some(200),  // Higher accuracy
-    ..Default::default()
+    filters: None,
+    threshold: None,
+    ef_search: Some(200),  // Higher = more accurate
 };
+# let _ = (query_fast, query_accurate);
 ```
 
 ## 🎯 Use Cases
-
-### Multi-Model AI Systems
-
-Route queries to specialized models based on content:
-
-```rust
-// Route code questions to code model, math to math model, etc.
-let router = SemanticRouter::new(vec![
-    ("gpt-4-code", code_specialization_vector),
-    ("gpt-4-math", math_specialization_vector),
-    ("gpt-4-general", general_specialization_vector),
-]);
-
-let best_model = router.route(&user_query_embedding)?;
-```
-
-### Load Balancing
-
-Distribute inference load across multiple servers:
-
-```rust
-// Balance load across 10 GPU servers
-let router = LoadBalancer::new(vec![
-    "gpu-0.internal:8080",
-    "gpu-1.internal:8080",
-    // ... gpu-9
-]);
-
-let endpoint = router.next_endpoint()?;
-```
 
 ### RAG (Retrieval-Augmented Generation)
 
 Fast context retrieval for LLMs:
 
 ```rust
+use ruvector_router_core::{VectorDB, VectorEntry, SearchQuery};
+use std::collections::HashMap;
+
+# fn ingest(db: &VectorDB, documents: Vec<(String, Vec<f32>, HashMap<String, serde_json::Value>)>) -> ruvector_router_core::Result<()> {
 // Store document embeddings
-for doc in documents {
-    let embedding = embed_model.encode(&doc.text)?;
+for (id, embedding, metadata) in documents {
     db.insert(VectorEntry {
-        id: doc.id,
+        id,
         vector: embedding,
-        metadata: doc.metadata,
-        timestamp: now(),
+        metadata,
+        timestamp: chrono::Utc::now().timestamp(),
     })?;
 }
+# Ok(())
+# }
 
-// Retrieve relevant context for query
-let query_embedding = embed_model.encode(&user_query)?;
+# fn retrieve(db: &VectorDB, query_embedding: Vec<f32>) -> ruvector_router_core::Result<()> {
+// Retrieve relevant context for a query
 let context_docs = db.search(SearchQuery {
     vector: query_embedding,
-    k: 5,  // Top 5 most relevant
+    k: 5,
+    filters: None,
     threshold: Some(0.7),
-    ..Default::default()
+    ef_search: None,
 })?;
-```
-
-### Semantic Search
-
-Build intelligent search engines:
-
-```rust
-// Index product catalog
-for product in catalog {
-    let embedding = encode_product(&product)?;
-    db.insert(VectorEntry {
-        id: product.sku,
-        vector: embedding,
-        metadata: product.to_metadata(),
-        timestamp: now(),
-    })?;
-}
-
-// Search by natural language
-let search_embedding = encode_query("comfortable running shoes")?;
-let results = db.search(SearchQuery {
-    vector: search_embedding,
-    k: 20,
-    filters: Some(HashMap::from([
-        ("category", "footwear"),
-        ("in_stock", true),
-    ])),
-    ..Default::default()
-})?;
+# let _ = context_docs;
+# Ok(())
+# }
 ```
 
 ### Agent Memory Systems
 
-Store and retrieve agent experiences:
+Store and retrieve agent observations:
 
 ```rust
-// Store agent observations
+use ruvector_router_core::{VectorDB, VectorEntry, SearchQuery};
+use std::collections::HashMap;
+
 struct AgentMemory {
     db: VectorDB,
 }
 
 impl AgentMemory {
-    pub fn remember(&self, observation: &str, context: Vec<f32>) -> Result<()> {
+    fn remember(&self, observation: &str, context: Vec<f32>) -> ruvector_router_core::Result<String> {
+        let mut metadata = HashMap::new();
+        metadata.insert("observation".to_string(), serde_json::json!(observation));
         self.db.insert(VectorEntry {
             id: uuid::Uuid::new_v4().to_string(),
             vector: context,
-            metadata: HashMap::from([
-                ("observation", observation.into()),
-                ("timestamp", now().into()),
-            ]),
-            timestamp: now(),
+            metadata,
+            timestamp: chrono::Utc::now().timestamp(),
         })
     }
 
-    pub fn recall(&self, query_context: Vec<f32>, k: usize) -> Result<Vec<String>> {
+    fn recall(&self, query_context: Vec<f32>, k: usize) -> ruvector_router_core::Result<Vec<String>> {
         let results = self.db.search(SearchQuery {
             vector: query_context,
             k,
-            ..Default::default()
+            filters: None,
+            threshold: None,
+            ef_search: None,
         })?;
 
-        Ok(results.iter()
+        Ok(results
+            .iter()
             .filter_map(|r| r.metadata.get("observation"))
-            .map(|v| v.as_str().unwrap().to_string())
+            .filter_map(|v| v.as_str())
+            .map(|s| s.to_string())
             .collect())
     }
 }
 ```
 
-## 🔧 Configuration Guide
-
-### Optimizing for Different Workloads
-
-#### High Throughput (Batch Processing)
-
-```rust
-let db = VectorDB::builder()
-    .dimensions(384)
-    .hnsw_m(16)                  // Lower M for faster queries
-    .hnsw_ef_construction(100)   // Faster build
-    .hnsw_ef_search(50)          // Lower default search accuracy
-    .quantization(QuantizationType::Scalar)  // Compress for speed
-    .mmap_vectors(true)          // Reduce memory pressure
-    .build()?;
-```
-
-#### High Accuracy (Research/Analysis)
-
-```rust
-let db = VectorDB::builder()
-    .dimensions(768)
-    .hnsw_m(64)                  // Maximum connections
-    .hnsw_ef_construction(400)   // High build accuracy
-    .hnsw_ef_search(200)         // High search accuracy
-    .quantization(QuantizationType::None)  // No compression
-    .build()?;
-```
-
-#### Memory Constrained (Edge Devices)
-
-```rust
-let db = VectorDB::builder()
-    .dimensions(256)             // Smaller embeddings
-    .max_elements(100_000)       // Limit dataset size
-    .hnsw_m(16)                  // Fewer connections
-    .quantization(QuantizationType::Binary)  // 32x compression
-    .mmap_vectors(true)          // Use disk instead of RAM
-    .build()?;
-```
-
-#### Balanced (Production Default)
-
-```rust
-let db = VectorDB::builder()
-    .dimensions(384)
-    .hnsw_m(32)
-    .hnsw_ef_construction(200)
-    .hnsw_ef_search(100)
-    .quantization(QuantizationType::Scalar)
-    .mmap_vectors(true)
-    .build()?;
-```
-
-## 📈 Performance Characteristics
-
-### Latency Benchmarks
-
-```
-Configuration          Query Latency (p50)    Recall@10
-─────────────────────────────────────────────────────────
-Uncompressed, M=64     0.3ms                  98.5%
-Scalar Quant, M=32     0.4ms                  96.2%
-Product Quant, M=32    0.5ms                  94.8%
-Binary Quant, M=16     0.6ms                  91.3%
-```
-
-### Memory Usage (1M vectors @ 384 dims)
-
-```
-Quantization           Memory Usage    Compression Ratio
-───────────────────────────────────────────────────────
-None (float32)         1536 MB         1x
-Scalar (int8)          392 MB          3.9x
-Product (8 subspaces)  120 MB          12.8x
-Binary (1 bit/dim)     52 MB           29.5x
-```
-
-### Throughput (1M vectors)
-
-```
-Operation              Throughput      Notes
-─────────────────────────────────────────────────────────
-Single Insert          ~100K/sec       Sequential
-Batch Insert           ~500K/sec       Parallel (rayon)
-Query (k=10)           ~50K QPS        ef_search=100
-Query (k=100)          ~20K QPS        ef_search=100
-```
-
-## 🏗️ Integration with Vector Database
-
-Router Core integrates seamlessly with the main Ruvector database:
-
-```rust
-use ruvector_core::VectorDB as MainDB;
-use router_core::VectorDB as RouterDB;
-
-// Use router-core for specialized routing logic
-let router_db = RouterDB::builder()
-    .dimensions(384)
-    .build()?;
-
-// Or use main ruvector-core for full features
-let main_db = MainDB::builder()
-    .dimensions(384)
-    .build()?;
-
-// Both share the same API!
-```
-
 ## 🧪 Building and Testing
 
-### Build
-
 ```bash
-# Build library
-cargo build --release -p router-core
+# Build
+cargo build --release -p ruvector-router-core
 
-# Build with all features
-cargo build --release -p router-core --all-features
+# Test
+cargo test -p ruvector-router-core
 
-# Build static library
-cargo build --release -p router-core --lib
+# Benchmark
+cargo bench -p ruvector-router-core
 ```
 
-### Test
+## 📚 API Reference
 
-```bash
-# Run all tests
-cargo test -p router-core
+### Core Types (re-exported at the crate root)
 
-# Run specific test
-cargo test -p router-core test_hnsw_insert_and_search
-
-# Run with logging
-RUST_LOG=debug cargo test -p router-core
-```
-
-### Benchmark
-
-```bash
-# Run benchmarks
-cargo bench -p router-core
-
-# Run specific benchmark
-cargo bench -p router-core --bench vector_search
-
-# With criterion output
-cargo bench -p router-core -- --output-format verbose
-```
-
-## 📚 API Documentation
-
-### Core Types
-
-- **`VectorDB`**: Main database interface
-- **`VectorEntry`**: Vector with ID, data, and metadata
-- **`SearchQuery`**: Query parameters for similarity search
-- **`SearchResult`**: Search result with ID, score, and metadata
-- **`DistanceMetric`**: Enum for distance calculation methods
-- **`QuantizationType`**: Enum for compression methods
+- **`VectorDB`**: main database interface
+- **`VectorEntry`**: vector with `id`, `vector`, `metadata`, `timestamp`
+- **`SearchQuery`**: `vector`, `k`, `filters`, `threshold`, `ef_search`
+- **`SearchResult`**: `id`, `score`, `metadata`, `vector`
+- **`DistanceMetric`**: `Euclidean | Cosine | DotProduct | Manhattan`
+- **`Result`** / **`VectorDbError`**: error handling
 
 ### Key Methods
 
 ```rust
-// VectorDB
+// VectorDB (see src/vector_db.rs)
 pub fn new(config: VectorDbConfig) -> Result<Self>
 pub fn builder() -> VectorDbBuilder
 pub fn insert(&self, entry: VectorEntry) -> Result<String>
@@ -697,41 +366,39 @@ pub fn delete(&self, id: &str) -> Result<bool>
 pub fn get(&self, id: &str) -> Result<Option<VectorEntry>>
 pub fn stats(&self) -> VectorDbStats
 pub fn count(&self) -> Result<usize>
+pub fn get_all_ids(&self) -> Result<Vec<String>>
 
-// Distance calculations
+// Distance helpers (module `distance`)
 pub fn calculate_distance(a: &[f32], b: &[f32], metric: DistanceMetric) -> Result<f32>
 pub fn batch_distance(query: &[f32], vectors: &[Vec<f32>], metric: DistanceMetric) -> Result<Vec<f32>>
-
-// Quantization
-pub fn quantize(vector: &[f32], qtype: QuantizationType) -> Result<QuantizedVector>
-pub fn dequantize(quantized: &QuantizedVector) -> Vec<f32>
-pub fn calculate_compression_ratio(original_dims: usize, qtype: QuantizationType) -> f32
 ```
+
+## 🚧 Planned / WIP
+
+The following are present in the configuration surface but **not yet wired into
+storage/search**. They are documented here for transparency and may change:
+
+- **Quantization** — `QuantizationType` (`None | Scalar | Product { subspaces, k } |
+  Binary`) and the builder's `.quantization(..)` setter exist, along with the
+  `quantization` module's `quantize` / `dequantize` /
+  `calculate_compression_ratio` helpers. However, the configured quantization is
+  **not** currently applied inside the index or storage layers — inserts and
+  searches operate on full-precision `f32` vectors. Treat compression ratios as
+  theoretical until this is integrated.
+- **Neural / semantic routing strategies** — earlier drafts of this README
+  documented a `routing::` module (request routers, load balancers, adaptive
+  strategies). **No such module exists in this crate.** Routing is out of scope
+  for `ruvector-router-core`, which is purely the vector storage/search engine.
 
 ## 🔗 Links
 
-- **Main Repository**: [github.com/FlexNetOS/ruvector](https://github.com/FlexNetOS/ruvector)
-- **Documentation**: [docs/README.md](../../docs/README.md)
-- **API Reference**: [docs/api/RUST_API.md](../../docs/api/RUST_API.md)
-- **Performance Guide**: [docs/optimization/PERFORMANCE_TUNING_GUIDE.md](../../docs/optimization/PERFORMANCE_TUNING_GUIDE.md)
+- **Main Repository**: [github.com/ruvnet/ruvector](https://github.com/ruvnet/ruvector)
 - **Examples**: [examples/](../../examples/)
 
 ## 📊 Related Crates
 
-- **`ruvector-core`**: Full-featured vector database (superset of router-core)
-- **`ruvector-node`**: Node.js bindings via NAPI-RS
-- **`ruvector-wasm`**: WebAssembly bindings for browsers
-- **`router-cli`**: Command-line interface for router operations
-- **`router-ffi`**: Foreign function interface for C/C++
-- **`router-wasm`**: WebAssembly bindings for router
-
-## 🤝 Contributing
-
-Contributions are welcome! Please see:
-
-- **[Contributing Guidelines](../../docs/development/CONTRIBUTING.md)**
-- **[Development Guide](../../docs/development/MIGRATION.md)**
-- **[Code of Conduct](../../CODE_OF_CONDUCT.md)**
+- **`ruvector-raft`**: Raft consensus for distributed metadata
+- **`ruvector-replication`**: Multi-node replication and synchronization
 
 ## 📜 License
 
@@ -739,23 +406,18 @@ MIT License - see [LICENSE](../../LICENSE) for details.
 
 ## 🙏 Acknowledgments
 
-Built with battle-tested technologies:
+Built with:
 
 - **HNSW**: Hierarchical Navigable Small World algorithm
-- **Product Quantization**: Memory-efficient vector compression
-- **simsimd**: SIMD-accelerated similarity computations
 - **redb**: Embedded database for persistent storage
-- **rayon**: Data parallelism for batch operations
 - **parking_lot**: High-performance synchronization primitives
 
 ---
 
 <div align="center">
 
-**Part of the [Ruvector](https://github.com/FlexNetOS/ruvector) ecosystem**
+**Part of the [Ruvector](https://github.com/ruvnet/ruvector) ecosystem**
 
-Built by [rUv](https://ruv.io) • Production Ready • MIT Licensed
-
-[Documentation](../../docs/README.md) • [API Reference](../../docs/api/RUST_API.md) • [Examples](../../examples/) • [Benchmarks](../../benchmarks/)
+Built by [rUv](https://ruv.io) • MIT Licensed
 
 </div>

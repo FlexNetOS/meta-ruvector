@@ -4,7 +4,7 @@ Multi-Pi cluster coordinator for ruvector's Hailo-8 NPU embedding workers.
 Implements P2C+EWMA load balancing, fingerprint enforcement, optional
 in-process caching, and Tailscale-tag-based discovery.
 
-> **Status:** library + 8 CLI binaries production-shaped; **204 tests**
+> **Status:** library + 9 CLI binaries production-shaped; **204 tests**
 > passing across lib unit / cluster integration / 7 CLI integration /
 > 7 doctest suites (iter 253).
 >
@@ -223,6 +223,10 @@ embed_batch_with_request_id(self, texts, id).await  -> Vec<Vec<f32>>
 | `ruvector-hailo-embed` | stdin / `--text` → JSONL embeddings |
 | `ruvector-hailo-stats` | Fleet observability (TSV / JSON / Prom) |
 | `ruvector-hailo-cluster-bench` | Sustained-load harness |
+| `ruvector-mmwave-bridge` | Decode mmWave frames → cluster embed RPC |
+| `ruview-csi-bridge` | RuView CSI frames → cluster embed RPC |
+| `ruvllm-bridge` | JSONL stdin/stdout adapter to embed without gRPC |
+| `ruvllm-pi-worker` | Per-Pi ruvllm completion worker |
 
 The 3 user-facing binaries (`embed`, `stats`, `cluster-bench`) share a
 common flag vocabulary documented in [ADR-168][adr168].

@@ -3,88 +3,33 @@
 [![Crates.io](https://img.shields.io/crates/v/agentic-robotics-core.svg)](https://crates.io/crates/agentic-robotics-core)
 [![Documentation](https://docs.rs/agentic-robotics-core/badge.svg)](https://docs.rs/agentic-robotics-core)
 [![License](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue.svg)](../../LICENSE)
-[![ROS2 Compatible](https://img.shields.io/badge/ROS2-Compatible-green.svg)](https://www.ros.org)
 
-**The fastest robotics middleware for Rust - 10x faster than ROS2, 100% compatible**
+**Rust robotics middleware — typed pub/sub messaging, services, and serialization**
 
-Part of the [Agentic Robotics](https://github.com/FlexNetOS/vibecast) framework - high-performance robotics middleware built for autonomous agents and modern robotic systems.
+Part of the [Agentic Robotics](https://github.com/ruvnet/vibecast) framework. The
+crate is internally branded "ROS3" (its message type names use the `ros3_msgs/`
+prefix and `init()` logs "ROS3 Core").
 
 ---
 
 ## 🎯 What is agentic-robotics-core?
 
-`agentic-robotics-core` is a high-performance robotics middleware library that provides publish-subscribe messaging, service calls, and serialization for building robot systems. Think of it as **ROS2, but written in Rust, with 10x better performance**.
+`agentic-robotics-core` is a Rust library that provides the building blocks for
+robot messaging:
 
-### Why Choose Agentic Robotics?
+- Typed **publishers** and **subscribers** (`Publisher<T>` / `Subscriber<T>`)
+- Request/response **services** (`Service<Req, Res>` / `Queryable<Req, Res>`)
+- Pluggable **serialization** (CDR, JSON, with an rkyv path stubbed out)
+- A **Zenoh** session wrapper for future middleware integration
+- A small set of built-in message types (`RobotState`, `PointCloud`, `Pose`, `Point3D`)
 
-**If you're building robots, you need:**
-- ⚡ Real-time performance (microsecond latency, not milliseconds)
-- 🔒 Memory safety (no segfaults, data races, or use-after-free)
-- 🚀 High throughput (millions of messages per second)
-- 🔄 Easy integration (works with existing ROS2 ecosystems)
-- 📦 Modern tooling (Cargo, async/await, type safety)
-
-**agentic-robotics-core delivers all of this.**
-
----
-
-## 🚀 Performance: Real Numbers
-
-We don't just claim performance - we measure it. Here are **real benchmarks** from production hardware:
-
-| Operation | agentic-robotics | ROS2 (rclcpp) | **Speedup** |
-|-----------|------------------|---------------|-------------|
-| **Message serialization** | 540 ns | 5 µs | **9.3x faster** |
-| **Pub/sub latency** | < 1 µs | 10-50 µs | **10-50x faster** |
-| **Channel messaging** | 30 ns | 500 ns | **16x faster** |
-| **Throughput** | 1.8M msg/s | 100k msg/s | **18x faster** |
-| **Message overhead** | 4 bytes | 24 bytes | **6x smaller** |
-| **Memory allocations** | 1 ns | 50-100 ns | **50-100x faster** |
-
-**Translation:** Your robot control loops can run at **1kHz instead of 100Hz**. Your sensor fusion can process **10x more data**. Your autonomous vehicles can react **10x faster**.
-
----
-
-## 🆚 ROS2 vs Agentic Robotics: The Real Difference
-
-### Same APIs, Better Performance
-
-```rust
-// ROS2 (rclcpp) - C++
-auto node = rclcpp::Node::make_shared("robot");
-auto pub = node->create_publisher<std_msgs::msg::String>("/status", 10);
-std_msgs::msg::String msg;
-msg.data = "Robot active";
-pub->publish(msg);
-
-// Agentic Robotics - Rust (same concepts!)
-let mut node = Node::new("robot")?;
-let pub = node.publish::<String>("/status")?;
-pub.publish(&"Robot active".to_string()).await?;
-```
-
-### What You Get with Agentic Robotics
-
-✅ **Full ROS2 compatibility** - Use CDR/DDS, bridge with ROS2 nodes seamlessly
-✅ **10x faster** - Sub-microsecond latency measured on real hardware
-✅ **Memory safe** - No segfaults, no data races, compiler-enforced safety
-✅ **Modern async/await** - Built on Tokio, plays nice with Rust ecosystem
-✅ **Zero-copy serialization** - Direct encoding to network buffers
-✅ **Lock-free pub/sub** - Wait-free fast path for local communication
-
-### When to Choose Agentic Robotics Over ROS2
-
-**Choose Agentic Robotics if:**
-- 🎯 You need **real-time performance** (< 1ms control loops)
-- 🦀 You're building in **Rust** (or want memory safety)
-- 🚀 You need **high throughput** (sensor fusion, vision, SLAM)
-- 💰 You're running on **embedded/edge devices** (low overhead)
-- 🔋 You need **energy efficiency** (battery-powered robots)
-
-**Stick with ROS2 if:**
-- 📦 You have massive existing ROS2 codebases (but you can still bridge!)
-- 🐍 You need Python support (coming soon to Agentic Robotics)
-- 🛠️ You rely heavily on ROS2 tools (rviz, rqt - but these work via bridges)
+> ⚠️ **Maturity / status.** This is an early-stage crate. The networking layer
+> is not wired up yet: `Publisher::publish` serializes the message and updates
+> stats but does not yet send it over a live transport, the `Zenoh` type is a
+> placeholder, `Subscriber` is an in-process channel, `Service::call` returns an
+> error ("not implemented"), and the rkyv serialization path is stubbed. The
+> typed API surface below is real and tested; the distributed transport behind
+> it is planned (see [Planned / WIP](#-planned--wip)).
 
 ---
 
@@ -109,593 +54,212 @@ cargo add serde --features derive
 
 ---
 
-## 🎓 Tutorial: Building Your First Robot Node
-
-Let's build a simple robot system step by step. We'll create a sensor node that publishes data and a controller node that subscribes to it.
-
-### Step 1: Create a Sensor Node
+## 🚀 Quick Start
 
 ```rust
-use agentic_robotics_core::Node;
-use serde::{Serialize, Deserialize};
-use tokio::time::{sleep, Duration};
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-struct SensorData {
-    temperature: f64,
-    pressure: f64,
-    timestamp: u64,
-}
+use agentic_robotics_core::{Publisher, Subscriber, RobotState};
 
 #[tokio::main]
-async fn main() -> anyhow::Result<()> {
-    // Create a node - this is your robot's identity on the network
-    let mut node = Node::new("sensor_node")?;
+async fn main() -> agentic_robotics_core::Result<()> {
+    // Optional: install the tracing subscriber and log the version.
+    agentic_robotics_core::init()?;
 
-    // Create a publisher - this broadcasts sensor data
-    let publisher = node.publish::<SensorData>("/sensors/environment")?;
+    // Create a typed publisher for a topic (CDR serialization by default).
+    let publisher = Publisher::<RobotState>::new("robot/state");
 
-    println!("🤖 Sensor node started!");
+    // Publish a message (async).
+    let state = RobotState::default();
+    publisher.publish(&state).await?;
 
-    // Simulate sensor readings at 10 Hz
-    for i in 0.. {
-        let data = SensorData {
-            temperature: 20.0 + (i as f64 * 0.1).sin() * 5.0,  // Simulated
-            pressure: 1013.0 + (i as f64 * 0.2).cos() * 10.0,
-            timestamp: i,
-        };
-
-        publisher.publish(&data).await?;
-        println!("📡 Published: temp={:.1}°C, pressure={:.1}hPa",
-                 data.temperature, data.pressure);
-
-        sleep(Duration::from_millis(100)).await;  // 10 Hz
-    }
+    // Inspect publisher stats: (messages_sent, bytes_sent).
+    let (count, bytes) = publisher.stats();
+    println!("sent {count} messages, {bytes} bytes");
 
     Ok(())
 }
 ```
-
-**What's happening here?**
-
-1. **Node creation** - `Node::new()` registers your robot component on the network
-2. **Publisher** - `publish::<T>()` creates a typed channel that can broadcast messages
-3. **Message type** - `SensorData` is your custom message (any Rust struct with Serialize)
-4. **Publishing** - `publish().await` sends the message to all subscribers
-
-### Step 2: Create a Controller Node
-
-```rust
-use agentic_robotics_core::Node;
-use serde::{Serialize, Deserialize};
-
-#[derive(Serialize, Deserialize, Debug)]
-struct SensorData {
-    temperature: f64,
-    pressure: f64,
-    timestamp: u64,
-}
-
-#[tokio::main]
-async fn main() -> anyhow::Result<()> {
-    let mut node = Node::new("controller_node")?;
-
-    // Create a subscriber - this receives sensor data
-    let subscriber = node.subscribe::<SensorData>("/sensors/environment")?;
-
-    println!("🤖 Controller node started, waiting for sensor data...");
-
-    // Process incoming sensor data
-    while let Some(data) = subscriber.recv().await {
-        println!("📥 Received: temp={:.1}°C, pressure={:.1}hPa at t={}",
-                 data.temperature, data.pressure, data.timestamp);
-
-        // Make control decisions based on sensor data
-        if data.temperature > 25.0 {
-            println!("🌡️  High temperature detected! Activating cooling...");
-        }
-
-        if data.pressure < 1000.0 {
-            println!("🌪️  Low pressure warning!");
-        }
-    }
-
-    Ok(())
-}
-```
-
-**What's happening here?**
-
-1. **Subscriber** - `subscribe::<T>()` creates a receiver for a specific topic
-2. **Receiving** - `recv().await` blocks until a message arrives
-3. **Type safety** - The message is automatically deserialized to `SensorData`
-4. **Control logic** - You can make decisions based on sensor readings
-
-### Step 3: Running Multiple Nodes
-
-Open two terminals:
-
-```bash
-# Terminal 1: Run sensor node
-cargo run --bin sensor_node
-
-# Terminal 2: Run controller node
-cargo run --bin controller_node
-```
-
-**You'll see:**
-- Sensor node publishing data at 10 Hz
-- Controller node receiving and processing that data
-- **Automatic discovery** - nodes find each other via Zenoh
-- **Type-safe communication** - compile-time guarantees
 
 ---
 
-## 🎯 Real-World Use Cases
+## 🧩 Core API
 
-### Use Case 1: Autonomous Vehicle Sensor Fusion
+### Publisher
+
+`Publisher<T: Message>` serializes and (eventually) sends messages on a topic.
 
 ```rust
-use agentic_robotics_core::Node;
-use serde::{Serialize, Deserialize};
+use agentic_robotics_core::Publisher;
+use agentic_robotics_core::serialization::Format;
+use agentic_robotics_core::RobotState;
 
-#[derive(Serialize, Deserialize, Clone)]
-struct LidarScan {
-    points: Vec<[f32; 3]>,  // 3D points
-    timestamp: u64,
-}
+// Default constructor uses CDR serialization.
+let pub_cdr = Publisher::<RobotState>::new("robot/state");
 
-#[derive(Serialize, Deserialize, Clone)]
-struct CameraImage {
-    width: u32,
-    height: u32,
-    data: Vec<u8>,
-}
+// Or choose a serialization format explicitly.
+let pub_json = Publisher::<RobotState>::with_format("robot/state", Format::Json);
 
-#[derive(Serialize, Deserialize)]
-struct FusedData {
-    obstacles: Vec<Obstacle>,
-    drivable_area: Vec<[f32; 2]>,
+// Topic name accessor.
+assert_eq!(pub_cdr.topic(), "robot/state");
+```
+
+| Method | Signature | Notes |
+|--------|-----------|-------|
+| `Publisher::<T>::new(topic)` | `(impl Into<String>) -> Publisher<T>` | CDR format |
+| `Publisher::<T>::with_format(topic, format)` | `(impl Into<String>, Format) -> Publisher<T>` | explicit format |
+| `publish(&msg)` | `async (&T) -> Result<()>` | serializes + updates stats |
+| `topic()` | `() -> &str` | topic name |
+| `stats()` | `() -> (u64, u64)` | `(messages_sent, bytes_sent)` |
+
+### Subscriber
+
+`Subscriber<T: Message>` receives messages from an in-process channel. It is
+`Clone`.
+
+```rust
+use agentic_robotics_core::{Subscriber, RobotState};
+
+let sub = Subscriber::<RobotState>::new("robot/state");
+
+// Non-blocking receive: Ok(None) when nothing is available.
+if let Some(msg) = sub.try_recv()? {
+    println!("got {:?}", msg);
 }
+```
+
+| Method | Signature | Notes |
+|--------|-----------|-------|
+| `Subscriber::<T>::new(topic)` | `(impl Into<String>) -> Subscriber<T>` | unbounded channel |
+| `recv()` | `(&self) -> Result<T>` | **blocking** receive |
+| `recv_async()` | `async (&self) -> Result<T>` | async receive (via `spawn_blocking`) |
+| `try_recv()` | `(&self) -> Result<Option<T>>` | non-blocking; `Ok(None)` if empty |
+| `topic()` | `() -> &str` | topic name |
+
+> Note: `recv()` returns `Result<T>` and **blocks** the current thread. For
+> async contexts use `recv_async().await`. `try_recv()` returns
+> `Result<Option<T>>` (`Ok(None)` means no message is currently queued).
+
+### Services (RPC)
+
+`Queryable<Req, Res>` hosts a handler; `Service<Req, Res>` is the client.
+
+```rust
+use agentic_robotics_core::{Queryable, Service, RobotState};
 
 #[tokio::main]
-async fn main() -> anyhow::Result<()> {
-    let mut node = Node::new("sensor_fusion")?;
-
-    // Subscribe to multiple sensors
-    let lidar_sub = node.subscribe::<LidarScan>("/lidar/scan")?;
-    let camera_sub = node.subscribe::<CameraImage>("/camera/image")?;
-
-    // Publish fused data
-    let fused_pub = node.publish::<FusedData>("/perception/fused")?;
-
-    // Real-time fusion at 30 Hz
-    tokio::spawn(async move {
-        loop {
-            // Try to get latest data (non-blocking)
-            if let Some(lidar) = lidar_sub.try_recv() {
-                if let Some(image) = camera_sub.try_recv() {
-                    // Fuse lidar + camera data
-                    let fused = fuse_sensors(&lidar, &image);
-                    fused_pub.publish(&fused).await.ok();
-                }
-            }
-            tokio::time::sleep(Duration::from_millis(33)).await;  // 30 Hz
-        }
+async fn main() -> agentic_robotics_core::Result<()> {
+    // Server side: register a handler.
+    let queryable = Queryable::new("compute", |req: RobotState| {
+        Ok(RobotState { timestamp: req.timestamp + 1, ..req })
     });
 
+    let response = queryable.handle(RobotState::default()).await?;
+    let (handled, errors) = queryable.stats(); // (requests_handled, errors)
+
+    // Client side: Service::call currently returns an error (see WIP).
+    let client = Service::<RobotState, RobotState>::new("compute");
+    assert_eq!(client.name(), "compute");
+    let _ = response;
+    let _ = (handled, errors);
     Ok(())
 }
 ```
 
-**Performance:** With agentic-robotics, you can fuse **100Hz lidar + 30Hz camera** with < 1ms latency. In ROS2, you'd struggle with 10Hz.
+| Type | Method | Notes |
+|------|--------|-------|
+| `Queryable<Req, Res>` | `new(name, handler)` | handler: `Fn(Req) -> Result<Res>` |
+| `Queryable<Req, Res>` | `handle(req).await -> Result<Res>` | runs handler, updates stats |
+| `Queryable<Req, Res>` | `name() -> &str`, `stats() -> (u64, u64)` | `(requests_handled, errors)` |
+| `Service<Req, Res>` | `new(name)`, `name() -> &str` | client |
+| `Service<Req, Res>` | `call(req).await -> Result<Res>` | **not implemented yet** (returns `Err`) |
 
-### Use Case 2: Industrial Robot Control
+### Messages
+
+Implement the `Message` trait (it is auto-derivable for any
+`Serialize + Deserialize + Send + Sync + 'static` type via the trait's
+requirements). Built-in messages:
 
 ```rust
-use agentic_robotics_core::Node;
-use serde::{Serialize, Deserialize};
+use agentic_robotics_core::{RobotState, PointCloud};
+use agentic_robotics_core::message::{Pose, Point3D, Message};
 
-#[derive(Serialize, Deserialize, Clone)]
-struct JointState {
-    positions: [f64; 6],  // 6-DOF robot arm
-    velocities: [f64; 6],
-    efforts: [f64; 6],
-}
+let state = RobotState::default();          // position/velocity: [f64; 3], timestamp: i64
+assert_eq!(RobotState::type_name(), "ros3_msgs/RobotState");
 
-#[derive(Serialize, Deserialize)]
-struct JointCommand {
-    positions: [f64; 6],
-    velocities: [f64; 6],
-}
-
-#[tokio::main]
-async fn main() -> anyhow::Result<()> {
-    let mut node = Node::new("robot_controller")?;
-
-    let state_sub = node.subscribe::<JointState>("/joint_states")?;
-    let cmd_pub = node.publish::<JointCommand>("/joint_commands")?;
-
-    // High-frequency control loop (1 kHz!)
-    loop {
-        if let Some(state) = state_sub.try_recv() {
-            // Compute control law (PID, impedance, etc.)
-            let command = compute_control(&state);
-            cmd_pub.publish(&command).await?;
-        }
-
-        tokio::time::sleep(Duration::from_micros(1000)).await;  // 1 kHz
-    }
-}
+let cloud = PointCloud::default();          // points: Vec<Point3D>, intensities: Vec<f32>
+let pose = Pose::default();                 // position: [f64; 3], orientation: [f64; 4]
+let _ = (cloud, pose);
 ```
 
-**Performance:** 1kHz control loops are trivial with agentic-robotics. ROS2 struggles past 100Hz.
+`serde_json::Value` also implements `Message` for generic JSON messages.
 
-### Use Case 3: Multi-Robot Coordination
+### Serialization
 
 ```rust
-use agentic_robotics_core::Node;
-use serde::{Serialize, Deserialize};
+use agentic_robotics_core::serialization::{
+    Format, Serializer, serialize_cdr, deserialize_cdr, serialize_json, deserialize_json,
+};
+use agentic_robotics_core::RobotState;
 
-#[derive(Serialize, Deserialize, Clone)]
-struct RobotPose {
-    id: String,
-    x: f64,
-    y: f64,
-    theta: f64,
-}
+let state = RobotState::default();
 
-#[derive(Serialize, Deserialize)]
-struct TeamCommand {
-    formation: String,  // "line", "circle", "wedge"
-    target: (f64, f64),
-}
+// CDR (DDS-compatible binary).
+let bytes = serialize_cdr(&state).unwrap();
+let recovered: RobotState = deserialize_cdr(&bytes).unwrap();
+
+// JSON (human-readable, debugging).
+let json = serialize_json(&state).unwrap();
+let from_json: RobotState = deserialize_json(&json).unwrap();
+
+// A Serializer bundles a Format.
+let ser = Serializer::new(Format::Cdr);
+let _ = (recovered, from_json, ser);
+```
+
+Available formats: `Format::Cdr`, `Format::Json`, `Format::Rkyv`.
+
+> `serialize_rkyv` exists but currently returns an error
+> (`"rkyv serialization not fully implemented"`). Use `Cdr` or `Json`.
+
+### Errors
+
+All fallible operations return `agentic_robotics_core::Result<T>`, an alias for
+`std::result::Result<T, agentic_robotics_core::Error>`. `Error` variants:
+`Zenoh`, `Serialization`, `Connection`, `Timeout`, `Configuration`, `Io`,
+`Other`.
+
+### Zenoh middleware
+
+```rust
+use agentic_robotics_core::Zenoh;
+use agentic_robotics_core::middleware::ZenohConfig;
 
 #[tokio::main]
-async fn main() -> anyhow::Result<()> {
-    let robot_id = "robot_1";
-    let mut node = Node::new(&format!("robot_{}", robot_id))?;
-
-    // Publish own pose
-    let pose_pub = node.publish::<RobotPose>("/team/poses")?;
-
-    // Subscribe to all team poses
-    let poses_sub = node.subscribe::<RobotPose>("/team/poses")?;
-
-    // Subscribe to team commands
-    let cmd_sub = node.subscribe::<TeamCommand>("/team/command")?;
-
-    // Coordinate with team
-    tokio::spawn(async move {
-        let mut team_poses = Vec::new();
-
-        loop {
-            // Collect team poses
-            while let Some(pose) = poses_sub.try_recv() {
-                if pose.id != robot_id {
-                    team_poses.push(pose);
-                }
-            }
-
-            // Execute team command
-            if let Some(cmd) = cmd_sub.try_recv() {
-                let my_target = compute_formation_position(
-                    &cmd.formation,
-                    robot_id,
-                    &team_poses
-                );
-                println!("Moving to formation position: {:?}", my_target);
-            }
-
-            tokio::time::sleep(Duration::from_millis(100)).await;
-        }
-    });
-
+async fn main() -> agentic_robotics_core::Result<()> {
+    let zenoh = Zenoh::open().await?;            // default config
+    let _custom = Zenoh::new(ZenohConfig::default()).await?;
+    println!("mode = {}", zenoh.config().mode);
     Ok(())
 }
 ```
 
-**Performance:** Coordinate **100+ robots** with millisecond latency. ROS2 starts having issues past 10 robots.
+> The `Zenoh` type is a placeholder wrapper today (it stores config but does not
+> yet open a real Zenoh session). See [Planned / WIP](#-planned--wip).
 
 ---
 
-## 🔧 Advanced Features
-
-### 1. Custom Message Types (Any Rust Struct!)
-
-```rust
-use serde::{Serialize, Deserialize};
-
-// Simple message
-#[derive(Serialize, Deserialize)]
-struct Position {
-    x: f64,
-    y: f64,
-    z: f64,
-}
-
-// Complex message with nested types
-#[derive(Serialize, Deserialize)]
-struct RobotState {
-    pose: Pose,
-    velocity: Twist,
-    sensors: SensorArray,
-    metadata: HashMap<String, String>,
-}
-
-// Just add Serialize + Deserialize - that's it!
-```
-
-### 2. Multiple Serialization Formats
-
-```rust
-use agentic_robotics_core::serialization::*;
-
-// CDR (ROS2-compatible, fast)
-let bytes = serialize_cdr(&robot_state)?;
-let recovered: RobotState = deserialize_cdr(&bytes)?;
-
-// JSON (human-readable, debugging)
-let json = serialize_json(&robot_state)?;
-println!("State: {}", json);
-
-// rkyv (zero-copy, ultra-fast)
-let archived = serialize_rkyv(&robot_state)?;
-```
-
-### 3. Topic Discovery and Introspection
-
-```rust
-// List all active topics
-let topics = node.list_topics()?;
-for topic in topics {
-    println!("Topic: {} (type: {})", topic.name, topic.type_name);
-}
-
-// Get topic statistics
-let stats = node.topic_stats("/sensor/data")?;
-println!("Messages/sec: {}", stats.rate);
-println!("Bandwidth: {} KB/s", stats.bandwidth / 1024);
-```
-
-### 4. Quality of Service (QoS) Configuration
-
-```rust
-use agentic_robotics_core::{QoS, Reliability, Durability};
-
-// Reliable delivery (guaranteed, ordered)
-let qos = QoS {
-    reliability: Reliability::Reliable,
-    durability: Durability::Transient,  // Late joiners get history
-    history_depth: 10,
-};
-
-let pub_important = node.publish_with_qos::<Command>("/critical_commands", qos)?;
-
-// Best-effort (fast, lossy OK)
-let qos_fast = QoS {
-    reliability: Reliability::BestEffort,
-    durability: Durability::Volatile,
-    history_depth: 1,
-};
-
-let pub_sensor = node.publish_with_qos::<SensorData>("/sensors/raw", qos_fast)?;
-```
-
-### 5. Non-Blocking Reception
-
-```rust
-// Blocking (waits for message)
-let msg = subscriber.recv().await;  // Waits indefinitely
-
-// Non-blocking (returns immediately)
-if let Some(msg) = subscriber.try_recv() {
-    // Process message
-} else {
-    // No message available, do something else
-}
-
-// Timeout
-use tokio::time::timeout;
-
-match timeout(Duration::from_millis(100), subscriber.recv()).await {
-    Ok(Some(msg)) => println!("Got message: {:?}", msg),
-    Ok(None) => println!("Channel closed"),
-    Err(_) => println!("Timeout - no message in 100ms"),
-}
-```
-
----
-
-## 🤖 AI Integration: Model Context Protocol (MCP)
-
-Want to control your robots with AI assistants like Claude? Check out **[agentic-robotics-mcp](https://crates.io/crates/agentic-robotics-mcp)** - our MCP server implementation that lets AI assistants interact with your robots through natural language.
-
-```rust
-use agentic_robotics_mcp::{McpServer, tool, text_response};
-
-// Create an MCP server for your robot
-let mut server = McpServer::new("robot-controller", "1.0.0");
-
-// Register robot control tools
-server.register_tool(
-    "move_robot",
-    "Move the robot to a target position",
-    tool(|params| {
-        // Extract position from params
-        let x = params["x"].as_f64().unwrap();
-        let y = params["y"].as_f64().unwrap();
-
-        // Control your robot
-        move_to_position(x, y).await?;
-
-        Ok(text_response(format!("Moved to ({}, {})", x, y)))
-    })
-);
-
-// Run STDIO transport (for Claude Desktop)
-let transport = StdioTransport::new(server);
-transport.run().await?;
-```
-
-**Use cases:**
-- 🗣️ **Voice-controlled robots** - "Claude, move the robot to the charging station"
-- 📊 **Data analysis** - "What's the robot's battery level trend this week?"
-- 🐛 **Debugging** - "Why did the robot stop at position (5, 3)?"
-- 📝 **Task planning** - "Create a patrol route for the security robot"
-
-**Learn more:**
-- [MCP Crate Documentation](https://docs.rs/agentic-robotics-mcp)
-- [MCP Quick Start Guide](../agentic-robotics-mcp/README.md)
-- [Model Context Protocol](https://modelcontextprotocol.io)
-
----
-
-## 🌉 Bridging with ROS2
-
-You can run agentic-robotics and ROS2 nodes **side-by-side**:
-
-### Option 1: Use DDS Backend (Native ROS2 Compatibility)
-
-```rust
-use agentic_robotics_core::{Node, Middleware};
-
-// Use DDS/RTPS (ROS2's protocol)
-let mut node = Node::with_middleware("robot", Middleware::Dds)?;
-
-// Now fully compatible with ROS2 nodes!
-let pub = node.publish::<String>("/status")?;
-```
-
-From ROS2:
-```bash
-ros2 topic echo /status
-```
-
-### Option 2: Use Zenoh with ROS2 Bridge
-
-```bash
-# Terminal 1: Your agentic-robotics node
-cargo run --release
-
-# Terminal 2: Zenoh-ROS2 bridge
-zenoh-bridge-ros2
-
-# Terminal 3: ROS2 nodes work normally
-ros2 topic list
-ros2 topic echo /sensor/data
-```
-
-### Migration from ROS2: Side-by-Side Comparison
-
-| ROS2 (C++) | Agentic Robotics (Rust) |
-|------------|-------------------------|
-| `rclcpp::Node::make_shared("node")` | `Node::new("node")?` |
-| `create_publisher<T>(topic, qos)` | `publish::<T>(topic)?` |
-| `create_subscription<T>(topic, qos, callback)` | `subscribe::<T>(topic)?` |
-| `publisher->publish(msg)` | `pub.publish(&msg).await?` |
-| `rclcpp::spin(node)` | `loop { sub.recv().await }` |
-
----
-
-## 🐛 Troubleshooting
-
-### Problem: "No such file or directory" when creating a node
-
-**Solution:** Make sure Zenoh is configured correctly. By default, nodes discover each other automatically on localhost.
-
-```rust
-// Explicit configuration (optional)
-let config = NodeConfig {
-    discovery: Discovery::Multicast,  // or Discovery::Unicast(peers)
-    ..Default::default()
-};
-let node = Node::with_config("robot", config)?;
-```
-
-### Problem: Messages not being received
-
-**Check:**
-1. Topic names match **exactly** (including leading `/`)
-2. Message types match on publisher and subscriber
-3. Both nodes are running
-4. Firewall isn't blocking UDP multicast (port 7447)
-
-```rust
-// Debug: Print when messages are published
-pub.publish(&msg).await?;
-println!("✅ Published to /sensor/data");
-
-// Debug: Check if subscriber is connected
-if subscriber.is_connected() {
-    println!("📡 Subscriber connected");
-} else {
-    println!("❌ No publisher found for /sensor/data");
-}
-```
-
-### Problem: High latency or low throughput
-
-**Solutions:**
-1. Use `try_recv()` instead of `recv().await` in hot loops
-2. Pre-allocate message buffers
-3. Use `BestEffort` QoS for sensor data
-4. Consider message batching for high-frequency data
-
-```rust
-// BAD: Allocates every time
-loop {
-    let msg = SensorData { data: vec![0; 1000] };
-    pub.publish(&msg).await?;
-}
-
-// GOOD: Reuse allocation
-let mut msg = SensorData { data: vec![0; 1000] };
-loop {
-    update_sensor_data(&mut msg.data);
-    pub.publish(&msg).await?;
-}
-```
-
----
-
-## 📊 Performance Tuning
-
-### 1. Use Release Builds
-
-```bash
-cargo build --release  # 10-100x faster than debug!
-```
-
-### 2. Profile Your Code
-
-```bash
-cargo install flamegraph
-cargo flamegraph --bin my_robot
-```
-
-### 3. Optimize Critical Paths
-
-```rust
-// Use try_recv() in control loops (non-blocking)
-loop {
-    if let Some(sensor) = sensor_sub.try_recv() {
-        let control = compute_control(&sensor);  // Expensive
-        cmd_pub.publish(&control).await?;
-    }
-    tokio::time::sleep(Duration::from_micros(1000)).await;
-}
-
-// Use channels for CPU-bound work
-let (tx, mut rx) = tokio::sync::mpsc::channel(100);
-tokio::spawn(async move {
-    while let Some(data) = rx.recv().await {
-        // Process in background
-        let result = expensive_computation(data);
-        result_pub.publish(&result).await.ok();
-    }
-});
-```
+## 🚧 Planned / WIP
+
+The following are intended but **not implemented in the current code**:
+
+- **Live network transport.** `Publisher::publish` currently serializes and
+  updates stats only; `Subscriber` is an in-process `crossbeam` channel. Sending
+  over Zenoh/DDS is planned.
+- **Real Zenoh session.** `Zenoh` is a placeholder around `ZenohConfig`.
+- **Service client calls.** `Service::call` returns
+  `Err("Service call not implemented")`.
+- **rkyv zero-copy serialization.** `serialize_rkyv` returns an error today.
+- **A node abstraction, QoS configuration, topic discovery, and ROS2 bridging.**
+  There is no `Node` type, QoS API, or DDS bridge in this crate yet.
 
 ---
 
@@ -704,44 +268,18 @@ tokio::spawn(async move {
 ```rust
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use agentic_robotics_core::{Publisher, RobotState};
 
     #[tokio::test]
-    async fn test_pub_sub() {
-        let mut node = Node::new("test_node").unwrap();
-        let pub = node.publish::<String>("/test").unwrap();
-        let sub = node.subscribe::<String>("/test").unwrap();
-
-        // Publish
-        pub.publish(&"Hello".to_string()).await.unwrap();
-
-        // Receive
-        let msg = sub.recv().await.unwrap();
-        assert_eq!(msg, "Hello");
+    async fn test_publish() {
+        let publisher = Publisher::<RobotState>::new("robot/state");
+        publisher.publish(&RobotState::default()).await.unwrap();
+        let (count, bytes) = publisher.stats();
+        assert_eq!(count, 1);
+        assert!(bytes > 0);
     }
 }
 ```
-
----
-
-## 📚 Examples
-
-Complete working examples in the [repository](https://github.com/FlexNetOS/vibecast/tree/main/examples):
-
-- **01-hello-robot.ts** - Basic pub/sub (10s)
-- **02-autonomous-navigator.ts** - A* pathfinding with obstacle avoidance (30s)
-- **03-multi-robot-coordinator.ts** - Multi-robot task allocation (30s)
-- **04-swarm-intelligence.ts** - 15-robot emergent behavior (60s)
-- **05-robotic-arm-manipulation.ts** - 6-DOF inverse kinematics (40s)
-- **06-vision-tracking.ts** - Kalman filtering and object tracking (30s)
-- **07-behavior-tree.ts** - Hierarchical reactive control (30s)
-- **08-adaptive-learning.ts** - Experience-based learning (25s)
-
----
-
-## 🤝 Contributing
-
-We welcome contributions! See [CONTRIBUTING.md](../../CONTRIBUTING.md).
 
 ---
 
@@ -760,24 +298,4 @@ at your option.
 
 - **Homepage**: [ruv.io](https://ruv.io)
 - **Documentation**: [docs.rs/agentic-robotics-core](https://docs.rs/agentic-robotics-core)
-- **Repository**: [github.com/FlexNetOS/vibecast](https://github.com/FlexNetOS/vibecast)
-- **Performance Report**: [PERFORMANCE_REPORT.md](../../PERFORMANCE_REPORT.md)
-- **Optimization Guide**: [OPTIMIZATIONS.md](../../OPTIMIZATIONS.md)
-- **Examples**: [examples/](../../examples)
-
-**Ecosystem Crates:**
-- **[agentic-robotics-mcp](https://crates.io/crates/agentic-robotics-mcp)** - AI assistant integration via Model Context Protocol
-- **[agentic-robotics-rt](https://crates.io/crates/agentic-robotics-rt)** - Runtime and execution environment
-- **[agentic-robotics-node](https://crates.io/crates/agentic-robotics-node)** - Node.js bindings for TypeScript/JavaScript
-
----
-
-<div align="center">
-
-**Built with ❤️ for the robotics community**
-
-*Making robots faster, safer, and more capable - one nanosecond at a time.*
-
-[Get Started](#-installation) · [Read Tutorial](#-tutorial-building-your-first-robot-node) · [View Examples](../../examples) · [Join Community](https://github.com/FlexNetOS/vibecast/discussions)
-
-</div>
+- **Repository**: [github.com/ruvnet/vibecast](https://github.com/ruvnet/vibecast)
