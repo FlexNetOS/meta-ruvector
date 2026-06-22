@@ -3,8 +3,8 @@ use std::path::PathBuf;
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use codex_env::{
-    doctor_codex_surface, install_codex_prompts, mirror_codex_surface, DoctorOptions,
-    MirrorOptions, PromptInstallOptions,
+    doctor_codex_surface, install_codex_env, install_codex_prompts, mirror_codex_surface,
+    CodexInstallOptions, DoctorOptions, MirrorOptions, PromptInstallOptions,
 };
 
 #[derive(Parser)]
@@ -25,6 +25,13 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
+    /// Refresh .codex, install prompt commands into CODEX_HOME, then run doctor.
+    Install {
+        /// Codex home directory. Defaults to CODEX_HOME or ~/.codex.
+        #[arg(long)]
+        codex_home: Option<PathBuf>,
+    },
+
     /// Generate .codex hooks/config plus .agents skills from .claude.
     Mirror {
         /// Validate the generated surface without writing files.
@@ -60,6 +67,27 @@ fn main() -> Result<()> {
     let repo_root = cli.repo.unwrap_or(std::env::current_dir()?);
 
     match cli.command {
+        Commands::Install { codex_home } => {
+            let codex_home = codex_home.unwrap_or_else(default_codex_home);
+            let report = install_codex_env(CodexInstallOptions {
+                repo_root,
+                lua_policy: cli.lua_policy,
+                codex_home,
+            })?;
+            println!(
+                "codex-env install ok: mirrored {} files ({} changed), installed {} prompts ({} changed), doctor verified config {}/{}, {} agents, {} hook handler(s), {} prompts in {}",
+                report.mirror.total_files,
+                report.mirror.changed_files,
+                report.prompts.total_files,
+                report.prompts.changed_files,
+                report.doctor.config_model,
+                report.doctor.config_reasoning_effort,
+                report.doctor.agent_files,
+                report.doctor.hook_handlers,
+                report.doctor.installed_prompt_files,
+                report.doctor.codex_home.join("prompts").display()
+            );
+        }
         Commands::Mirror { check } => {
             let report = mirror_codex_surface(MirrorOptions {
                 repo_root,

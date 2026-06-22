@@ -148,8 +148,10 @@ This directory is generated from the tracked `.claude` surface by the Rust
 ## Refresh
 
 ```bash
-cargo run -p codex-env -- mirror
+cargo run -p codex-env -- install
 cargo run -p codex-env -- mirror --check
+cargo run -p codex-env -- install-prompts --check
+cargo run -p codex-env -- doctor
 ```
 
 ## Mirrored Surfaces
@@ -172,15 +174,16 @@ return `{ config_footer = "...", skill_prelude = "..." }`.
 ## Install Prompt Commands
 
 Codex loads custom prompts from `$CODEX_HOME/prompts`, not directly from a
-repository. After refreshing this mirror, install the generated prompt commands
-with:
+repository. Refresh the mirror and install the generated prompt commands with:
 
 ```bash
 .codex/helpers/install-prompts.sh
 ```
 
-Restart Codex after installing. The Claude command mirrors then appear as Codex
-prompt commands such as `/prompts:sparc-code`, `/prompts:sparc:code`, and
+That helper runs `cargo run -p codex-env -- install`, which mirrors `.claude`,
+installs `$CODEX_HOME/prompts`, and runs doctor validation in one pass. Restart
+Codex after installing. The Claude command mirrors then appear as Codex prompt
+commands such as `/prompts:sparc-code`, `/prompts:sparc:code`, and
 `/prompts:claude-flow-swarm`.
 "#,
     )
