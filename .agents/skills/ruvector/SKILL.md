@@ -1,4 +1,8 @@
-```markdown
+---
+name: ruvector
+description: Use for ruvector repository development patterns, npm release workflows, package synchronization, CI guardrails, and supply-chain hardening.
+---
+
 # ruvector Development Patterns
 
 > Auto-generated skill from repository analysis
@@ -124,4 +128,3 @@ This skill teaches the core development conventions and workflows for the `ruvec
 | /release-npm      | Bump npm package versions and trigger a release                |
 | /sync-npm-package | Sync README and package.json with the published npm package    |
 | /add-ci-guard     | Add or update CI workflows and supply chain security policies  |
-```

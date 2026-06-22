@@ -36,7 +36,7 @@ This is idempotent. It:
 1. Verifies Node 20+ is on PATH (GitNexus engine requirement).
 2. Runs `npx -y gitnexus@${GITNEXUS_VERSION:-latest} analyze --skip-agents-md`
    to (re)index. `--skip-agents-md` is **required** — without it GitNexus
-   rewrites CLAUDE.md and clobbers the hand-curated rules.
+   rewrites AGENTS.md and clobbers the hand-curated rules.
 3. Runs `npx -y gitnexus@${GITNEXUS_VERSION:-latest} setup` to register
    the MCP server with whatever editor configs exist on disk
    (`~/.cursor/mcp.json`, `~/.config/opencode/config.json`, etc.).
@@ -74,7 +74,7 @@ If MCP integration is wired up, an agent can verify by calling the
    there (verified in upstream `dist/cli/ai-context.js` lines 177-241).
    The repo's top-level `.gitignore` keeps them untracked. Don't try to
    commit anything under that path — it'll be overwritten on the next
-   `analyze`. Hand-curated SKILLs go elsewhere (`.claude/skills/<other>`).
+   `analyze`. Hand-curated SKILLs go elsewhere (`.agents/skills/<other>`).
 2. **Indexing scope is `.gitignore` + `.gitnexusignore`, NOT Cargo
    workspace membership.** A crate that's `exclude`d from the workspace
    in `Cargo.toml` will still be walked unless it's also gitignored or
@@ -86,6 +86,6 @@ If MCP integration is wired up, an agent can verify by calling the
 ## Cross-repo
 
 The matching skill in **weftos** is at
-`.claude/skills/gitnexus-usage/SKILL.md`. WeftOS additionally ships a
+`.agents/skills/gitnexus-usage/SKILL.md`. WeftOS additionally ships a
 `.gitnexusignore` to exclude `gui/src-tauri/` (the Tauri shell that's
 out of the cargo workspace).
