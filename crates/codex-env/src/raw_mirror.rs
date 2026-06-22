@@ -1,10 +1,12 @@
 use std::collections::{BTreeMap, BTreeSet};
+use std::fmt::Write as _;
 use std::fs;
 use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
 use serde::Serialize;
 use serde_json::json;
+use sha2::{Digest, Sha256};
 use walkdir::WalkDir;
 
 use super::{
@@ -30,6 +32,8 @@ struct MirrorSymbolEntry {
     kind: String,
     executable: bool,
     bytes: usize,
+    source_sha256: String,
+    mirror_sha256: String,
     symbols: BTreeMap<String, serde_json::Value>,
 }
 
@@ -90,6 +94,8 @@ pub(super) fn mirror_symbol_inventory_json(
             kind,
             executable: is_executable(&source)?,
             bytes: bytes.len(),
+            source_sha256: sha256_hex(&bytes),
+            mirror_sha256: sha256_hex(&bytes),
             symbols: extract_symbols(relative_source, &bytes),
         });
     }
@@ -213,6 +219,15 @@ fn extract_symbols(relative_source: &Path, bytes: &[u8]) -> BTreeMap<String, ser
     }
 
     symbols
+}
+
+fn sha256_hex(bytes: &[u8]) -> String {
+    let digest = Sha256::digest(bytes);
+    let mut output = String::with_capacity(digest.len() * 2);
+    for byte in digest {
+        write!(&mut output, "{byte:02x}").expect("writing sha256 to string cannot fail");
+    }
+    output
 }
 
 fn frontmatter_symbols(markdown: &str) -> BTreeMap<String, String> {

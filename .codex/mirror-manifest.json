@@ -1,5 +1,5 @@
 {
-  "fileCount": 560,
+  "fileCount": 561,
   "files": [
     ".codex/mirror/.claude/agentic-flow-fast.sh",
     ".codex/mirror/.claude/agents/analysis/analyze-code-quality.md",
@@ -560,7 +560,8 @@
     ".agents/skills/source-command-workflows-workflow-create/SKILL.md",
     ".agents/skills/source-command-workflows-workflow-execute/SKILL.md",
     ".agents/skills/source-command-workflows-workflow-export/SKILL.md",
-    ".codex/mirror-symbols.json"
+    ".codex/mirror-symbols.json",
+    ".codex/mirror-manifest.json"
   ],
   "generatedBy": "codex-env",
   "source": ".claude"

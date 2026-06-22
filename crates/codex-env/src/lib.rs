@@ -107,9 +107,10 @@ pub fn mirror_codex_surface(options: MirrorOptions) -> Result<MirrorReport> {
         executable: false,
     });
 
-    let manifest = manifest_json(&repo_root, &claude_dir, &planned)?;
+    let manifest_path = codex_dir.join("mirror-manifest.json");
+    let manifest = manifest_json(&repo_root, &claude_dir, &planned, &manifest_path)?;
     planned.push(PlannedFile {
-        path: codex_dir.join("mirror-manifest.json"),
+        path: manifest_path,
         bytes: manifest.into_bytes(),
         executable: false,
     });
@@ -124,8 +125,7 @@ pub fn mirror_codex_surface(options: MirrorOptions) -> Result<MirrorReport> {
     }
 
     for file in &planned {
-        let exists_with_same_content =
-            fs::read(&file.path).map_or(false, |bytes| bytes == file.bytes);
+        let exists_with_same_content = fs::read(&file.path).is_ok_and(|bytes| bytes == file.bytes);
         if exists_with_same_content {
             verified_files += 1;
         } else {
@@ -223,8 +223,13 @@ fn lua_error(error: mlua::Error) -> anyhow::Error {
     anyhow!("{error}")
 }
 
-fn manifest_json(repo_root: &Path, claude_dir: &Path, planned: &[PlannedFile]) -> Result<String> {
-    let files: Vec<_> = planned
+fn manifest_json(
+    repo_root: &Path,
+    claude_dir: &Path,
+    planned: &[PlannedFile],
+    manifest_path: &Path,
+) -> Result<String> {
+    let mut files: Vec<_> = planned
         .iter()
         .map(|file| {
             strip_repo_prefix(repo_root, &file.path)
@@ -232,6 +237,11 @@ fn manifest_json(repo_root: &Path, claude_dir: &Path, planned: &[PlannedFile]) -
                 .to_string()
         })
         .collect();
+    files.push(
+        strip_repo_prefix(repo_root, manifest_path)
+            .display()
+            .to_string(),
+    );
     let manifest = json!({
         "generatedBy": "codex-env",
         "source": strip_repo_prefix(repo_root, claude_dir),

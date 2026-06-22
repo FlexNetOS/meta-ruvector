@@ -49,13 +49,26 @@ fn mirror_generates_codex_and_skill_files() {
         serde_json::from_slice(&fs::read(root.join(".codex/mirror-symbols.json")).unwrap())
             .unwrap();
     assert_eq!(inventory["sourceFileCount"], 4);
-    assert!(inventory["entries"]
+    let command_entry = inventory["entries"]
         .as_array()
         .unwrap()
         .iter()
-        .any(|entry| {
+        .find(|entry| {
             entry["source"] == ".claude/commands/sparc/code.md" && entry["kind"] == "command"
-        }));
+        })
+        .unwrap();
+    assert_eq!(command_entry["sourceSha256"], command_entry["mirrorSha256"]);
+    assert_eq!(command_entry["sourceSha256"].as_str().unwrap().len(), 64);
+
+    let manifest: serde_json::Value =
+        serde_json::from_slice(&fs::read(root.join(".codex/mirror-manifest.json")).unwrap())
+            .unwrap();
+    assert_eq!(manifest["fileCount"], report.total_files);
+    assert!(manifest["files"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|file| file == ".codex/mirror-manifest.json"));
 
     let check = mirror_codex_surface(MirrorOptions {
         repo_root: root.to_path_buf(),
