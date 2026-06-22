@@ -1,0 +1,83 @@
+{
+  "generatedBy": "codex-env",
+  "schemaVersion": 1,
+  "teams": [
+    {
+      "agents": [
+        "claude-core-planner",
+        "claude-core-researcher",
+        "claude-core-coder",
+        "claude-core-tester",
+        "claude-core-reviewer"
+      ],
+      "consolidationOwner": "parent",
+      "description": "Plan, research, implement, test, and review broad repo work.",
+      "name": "core",
+      "parallel": true,
+      "strategy": "parallel-evidence-then-parent-implementation"
+    },
+    {
+      "agents": [
+        "reviewer",
+        "claude-core-reviewer",
+        "claude-testing-production-validator",
+        "claude-v3-security-auditor"
+      ],
+      "consolidationOwner": "parent",
+      "description": "Find correctness, production, security, and regression risks before shipping.",
+      "name": "review",
+      "parallel": true,
+      "strategy": "parallel-review-then-parent-remediation"
+    },
+    {
+      "agents": [
+        "explorer",
+        "claude-core-coder",
+        "claude-core-tester",
+        "claude-v3-performance-engineer"
+      ],
+      "consolidationOwner": "parent",
+      "description": "Trace Rust code paths, implement Rust changes, test, and optimize.",
+      "name": "rust",
+      "parallel": true,
+      "strategy": "parallel-rust-research-then-parent-patch"
+    },
+    {
+      "agents": [
+        "claude-v3-security-architect",
+        "claude-v3-security-auditor",
+        "claude-v3-pii-detector",
+        "claude-v3-aidefence-guardian"
+      ],
+      "consolidationOwner": "parent",
+      "description": "Review architecture, audit implementation, inspect PII, and harden defenses.",
+      "name": "security",
+      "parallel": true,
+      "strategy": "parallel-security-analysis-then-parent-remediation"
+    },
+    {
+      "agents": [
+        "claude-github-pr-manager",
+        "claude-github-code-review-swarm",
+        "claude-github-workflow-automation"
+      ],
+      "consolidationOwner": "parent",
+      "description": "Prepare PRs, review GitHub feedback, and keep repository automation aligned.",
+      "name": "github",
+      "parallel": true,
+      "strategy": "parallel-github-coordination-then-parent-publish"
+    },
+    {
+      "agents": [
+        "claude-swarm-hierarchical-coordinator",
+        "claude-hive-mind-queen-coordinator",
+        "claude-v3-v3-queen-coordinator"
+      ],
+      "consolidationOwner": "parent",
+      "description": "Coordinate larger multi-agent efforts with hierarchical and hive-mind controllers.",
+      "name": "swarm",
+      "parallel": true,
+      "strategy": "parallel-swarm-coordination-then-parent-decision"
+    }
+  ]
+}

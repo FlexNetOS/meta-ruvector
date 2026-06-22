@@ -97,6 +97,15 @@ fn mirror_generates_codex_and_skill_files() {
         "---\nname: coder\ndescription: Writes code\npriority: high\n---\n\n# Coder\nImplement carefully.\n",
     )
     .unwrap();
+    for agent in ["planner", "researcher", "tester", "reviewer"] {
+        fs::write(
+            root.join(".claude/agents/core").join(format!("{agent}.md")),
+            format!(
+                "---\nname: {agent}\ndescription: Core {agent}\n---\n\n# {agent}\nWork carefully.\n"
+            ),
+        )
+        .unwrap();
+    }
     fs::write(
         root.join(".claude/agents/core/verbose.md"),
         format!(
@@ -233,6 +242,21 @@ fn mirror_generates_codex_and_skill_files() {
     assert!(root.join(".codex/prompts/codex-agent-team.md").exists());
     assert!(root.join(".codex/prompts/codex-auto-loop.md").exists());
     assert!(root.join(".codex/prompts/codex-gap-hunt.md").exists());
+    let teams: serde_json::Value =
+        serde_json::from_slice(&fs::read(root.join(".codex/agent-teams.json")).unwrap()).unwrap();
+    assert_eq!(teams["schemaVersion"], 1);
+    assert_eq!(teams["teams"].as_array().unwrap().len(), 6);
+    let core_team = teams["teams"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|team| team["name"] == "core")
+        .unwrap();
+    assert!(core_team["agents"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|agent| agent == "claude-core-coder"));
     assert!(root.join(".codex/helpers/install-prompts.sh").exists());
     let install_helper =
         fs::read_to_string(root.join(".codex/helpers/install-prompts.sh")).unwrap();
@@ -248,7 +272,7 @@ fn mirror_generates_codex_and_skill_files() {
     let inventory: serde_json::Value =
         serde_json::from_slice(&fs::read(root.join(".codex/mirror-symbols.json")).unwrap())
             .unwrap();
-    assert_eq!(inventory["sourceFileCount"], 7);
+    assert_eq!(inventory["sourceFileCount"], 11);
     let command_entry = inventory["entries"]
         .as_array()
         .unwrap()
@@ -300,6 +324,8 @@ fn mirror_generates_codex_and_skill_files() {
     assert_eq!(doctor.codex_home_settings.model_context_window, 4_000_000);
     assert!(doctor.codex_home_settings.include_skill_instructions);
     assert_eq!(doctor.config_agent_entries, doctor.agent_files);
+    assert_eq!(doctor.agent_teams, 6);
+    assert!(doctor.agent_team_members >= 12);
     assert_eq!(doctor.prompt_files, 5);
     assert_eq!(doctor.prompt_alias_files, 1);
     assert_eq!(doctor.installed_prompt_files, 5);

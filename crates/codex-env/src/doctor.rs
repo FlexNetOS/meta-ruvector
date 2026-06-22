@@ -4,7 +4,7 @@ use std::path::{Component, Path, PathBuf};
 use std::process::{Command, Stdio};
 
 use anyhow::{anyhow, bail, Context, Result};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use walkdir::WalkDir;
 
 use super::{
@@ -31,7 +31,28 @@ const REQUIRED_WORKFLOW_PROMPTS: &[&str] = &[
     "codex-gap-hunt.md",
 ];
 
+const REQUIRED_AGENT_TEAMS: &[&str] = &["core", "review", "rust", "security", "github", "swarm"];
+
+type ConfiguredAgents = BTreeMap<String, PathBuf>;
 type AgentCounts = (usize, BTreeMap<String, usize>, BTreeMap<String, usize>);
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct AgentTeamsManifest {
+    schema_version: u64,
+    teams: Vec<AgentTeam>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct AgentTeam {
+    name: String,
+    description: String,
+    strategy: String,
+    parallel: bool,
+    consolidation_owner: String,
+    agents: Vec<String>,
+}
 
 #[derive(Debug, Clone)]
 pub struct DoctorOptions {
@@ -55,6 +76,8 @@ pub struct DoctorReport {
     pub agent_files: usize,
     pub agent_models: BTreeMap<String, usize>,
     pub agent_efforts: BTreeMap<String, usize>,
+    pub agent_teams: usize,
+    pub agent_team_members: usize,
     pub hook_events: Vec<String>,
     pub hook_handlers: usize,
     pub prompt_files: usize,
@@ -96,6 +119,7 @@ pub fn doctor_codex_surface(options: DoctorOptions) -> Result<DoctorReport> {
     let config_agent_entries = configured_agents.len();
     let (agent_files, agent_models, agent_efforts) =
         validate_agents(&codex_dir, &configured_agents)?;
+    let (agent_teams, agent_team_members) = validate_agent_teams(&codex_dir, &configured_agents)?;
     let (hook_events, hook_handlers) = validate_hooks(&codex_dir)?;
     let (prompt_files, prompt_alias_files, installed_prompt_files, workflow_prompts) =
         validate_prompts(&repo_root, &codex_dir, &codex_home)?;
@@ -117,6 +141,8 @@ pub fn doctor_codex_surface(options: DoctorOptions) -> Result<DoctorReport> {
         agent_files,
         agent_models,
         agent_efforts,
+        agent_teams,
+        agent_team_members,
         hook_events,
         hook_handlers,
         prompt_files,
@@ -129,7 +155,7 @@ pub fn doctor_codex_surface(options: DoctorOptions) -> Result<DoctorReport> {
 
 fn validate_config(
     codex_dir: &Path,
-) -> Result<(String, String, String, String, bool, BTreeSet<PathBuf>)> {
+) -> Result<(String, String, String, String, bool, ConfiguredAgents)> {
     let path = codex_dir.join("config.toml");
     let config = read_toml(&path)?;
     let model = required_toml_string(&config, "model", &path)?;
@@ -178,7 +204,7 @@ fn validate_config(
     ))
 }
 
-fn validate_agents(codex_dir: &Path, configured_agents: &BTreeSet<PathBuf>) -> Result<AgentCounts> {
+fn validate_agents(codex_dir: &Path, configured_agents: &ConfiguredAgents) -> Result<AgentCounts> {
     let root = codex_dir.join("agents");
     let mut agent_files = 0;
     let mut models = BTreeMap::new();
@@ -216,13 +242,14 @@ fn validate_agents(codex_dir: &Path, configured_agents: &BTreeSet<PathBuf>) -> R
             bail!("{} has no custom agents routed to {model}", root.display());
         }
     }
-    if discovered_agents != *configured_agents {
+    let configured_agent_files = configured_agents.values().cloned().collect::<BTreeSet<_>>();
+    if discovered_agents != configured_agent_files {
         let missing_from_config: Vec<_> = discovered_agents
-            .difference(configured_agents)
+            .difference(&configured_agent_files)
             .take(5)
             .map(|path| path.display().to_string())
             .collect();
-        let missing_from_disk: Vec<_> = configured_agents
+        let missing_from_disk: Vec<_> = configured_agent_files
             .difference(&discovered_agents)
             .take(5)
             .map(|path| path.display().to_string())
@@ -230,9 +257,9 @@ fn validate_agents(codex_dir: &Path, configured_agents: &BTreeSet<PathBuf>) -> R
         bail!(
             "{} custom agent config is out of sync: {} file(s) missing from config [{}], {} config entry/entries missing from disk [{}]",
             root.display(),
-            discovered_agents.difference(configured_agents).count(),
+            discovered_agents.difference(&configured_agent_files).count(),
             missing_from_config.join(", "),
-            configured_agents.difference(&discovered_agents).count(),
+            configured_agent_files.difference(&discovered_agents).count(),
             missing_from_disk.join(", ")
         );
     }
@@ -243,12 +270,12 @@ fn configured_agent_files(
     config: &toml::Value,
     codex_dir: &Path,
     config_path: &Path,
-) -> Result<BTreeSet<PathBuf>> {
+) -> Result<ConfiguredAgents> {
     let agents = config
         .get("agents")
         .and_then(toml::Value::as_table)
         .ok_or_else(|| anyhow!("{} is missing required agents table", config_path.display()))?;
-    let mut configured = BTreeSet::new();
+    let mut configured = BTreeMap::new();
     for (name, value) in agents {
         let Some(table) = value.as_table() else {
             continue;
@@ -274,12 +301,143 @@ fn configured_agent_files(
                 config_file.display()
             );
         }
-        configured.insert(strip_repo_prefix(codex_dir, &codex_dir.join(config_file)));
+        configured.insert(
+            name.clone(),
+            strip_repo_prefix(codex_dir, &codex_dir.join(config_file)),
+        );
     }
     if configured.is_empty() {
         bail!("{} has no configured custom agents", config_path.display());
     }
     Ok(configured)
+}
+
+fn validate_agent_teams(
+    codex_dir: &Path,
+    configured_agents: &ConfiguredAgents,
+) -> Result<(usize, usize)> {
+    let path = codex_dir.join("agent-teams.json");
+    let manifest: AgentTeamsManifest = serde_json::from_slice(
+        &fs::read(&path).with_context(|| format!("failed to read {}", path.display()))?,
+    )
+    .with_context(|| format!("failed to parse {}", path.display()))?;
+    if manifest.schema_version != 1 {
+        bail!(
+            "{} must use agent team schemaVersion 1, found {}",
+            path.display(),
+            manifest.schema_version
+        );
+    }
+
+    let mut seen_teams = BTreeSet::new();
+    let mut referenced_members = 0;
+    let mut referenced_models = BTreeSet::new();
+    let mut mixed_model_teams = 0;
+
+    for team in &manifest.teams {
+        if team.name.trim().is_empty() {
+            bail!(
+                "{} contains an agent team with an empty name",
+                path.display()
+            );
+        }
+        if !seen_teams.insert(team.name.as_str()) {
+            bail!(
+                "{} contains duplicate agent team {}",
+                path.display(),
+                team.name
+            );
+        }
+        for (field, value) in [
+            ("description", team.description.as_str()),
+            ("strategy", team.strategy.as_str()),
+            ("consolidationOwner", team.consolidation_owner.as_str()),
+        ] {
+            if value.trim().is_empty() {
+                bail!(
+                    "{} agent team {} has an empty {field}",
+                    path.display(),
+                    team.name
+                );
+            }
+        }
+        if !team.parallel {
+            bail!(
+                "{} agent team {} must be marked parallel",
+                path.display(),
+                team.name
+            );
+        }
+        if team.consolidation_owner != "parent" {
+            bail!(
+                "{} agent team {} must consolidate through parent, found {}",
+                path.display(),
+                team.name,
+                team.consolidation_owner
+            );
+        }
+        if team.agents.len() < 2 {
+            bail!(
+                "{} agent team {} must reference at least two agents",
+                path.display(),
+                team.name
+            );
+        }
+
+        let mut team_agents = BTreeSet::new();
+        let mut team_models = BTreeSet::new();
+        for agent in &team.agents {
+            if !team_agents.insert(agent.as_str()) {
+                bail!(
+                    "{} agent team {} contains duplicate agent {}",
+                    path.display(),
+                    team.name,
+                    agent
+                );
+            }
+            let Some(config_file) = configured_agents.get(agent) else {
+                bail!(
+                    "{} agent team {} references unknown configured agent {}",
+                    path.display(),
+                    team.name,
+                    agent
+                );
+            };
+            let agent_toml = read_toml(&codex_dir.join(config_file))?;
+            let model = required_toml_string(&agent_toml, "model", &codex_dir.join(config_file))?;
+            team_models.insert(model.clone());
+            referenced_models.insert(model);
+            referenced_members += 1;
+        }
+        if team_models.len() > 1 {
+            mixed_model_teams += 1;
+        }
+    }
+
+    for required in REQUIRED_AGENT_TEAMS {
+        if !seen_teams.contains(required) {
+            bail!(
+                "{} is missing required agent team {required}",
+                path.display()
+            );
+        }
+    }
+    for model in ["gpt-5.5", "gpt-5.4-mini"] {
+        if !referenced_models.contains(model) {
+            bail!(
+                "{} agent teams do not reference any custom agents routed to {model}",
+                path.display()
+            );
+        }
+    }
+    if mixed_model_teams == 0 {
+        bail!(
+            "{} agent teams must include at least one mixed-model parallel team",
+            path.display()
+        );
+    }
+
+    Ok((manifest.teams.len(), referenced_members))
 }
 
 fn validate_hooks(codex_dir: &Path) -> Result<(Vec<String>, usize)> {
