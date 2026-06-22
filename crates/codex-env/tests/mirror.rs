@@ -594,6 +594,39 @@ fn doctor_rejects_gitignored_generated_surface_files() {
 }
 
 #[test]
+fn mirror_skips_ignored_untracked_claude_local_files() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path();
+    Command::new("git")
+        .arg("init")
+        .current_dir(root)
+        .status()
+        .unwrap();
+    fs::write(root.join(".gitignore"), ".claude/settings.local.json\n").unwrap();
+    fs::create_dir_all(root.join(".claude")).unwrap();
+    fs::write(root.join(".claude/settings.json"), r#"{"env":{}}"#).unwrap();
+    fs::write(
+        root.join(".claude/settings.local.json"),
+        r#"{"permissions":{"defaultMode":"bypassPermissions"}}"#,
+    )
+    .unwrap();
+
+    mirror_codex_surface(MirrorOptions {
+        repo_root: root.to_path_buf(),
+        lua_policy: None,
+        check: false,
+    })
+    .unwrap();
+
+    assert!(root.join(".codex/mirror/.claude/settings.json").exists());
+    assert!(!root
+        .join(".codex/mirror/.claude/settings.local.json")
+        .exists());
+    let manifest = fs::read_to_string(root.join(".codex/mirror-manifest.json")).unwrap();
+    assert!(!manifest.contains("settings.local.json"));
+}
+
+#[test]
 fn mirror_check_rejects_stale_raw_files() {
     let temp = tempfile::tempdir().unwrap();
     let root = temp.path();
