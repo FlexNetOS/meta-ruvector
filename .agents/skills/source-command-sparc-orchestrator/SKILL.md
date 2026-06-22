@@ -3,7 +3,7 @@ name: source-command-sparc-orchestrator
 description: 'SPARC Orchestrator Mode'
 ---
 
-# /sparc/orchestrator
+# /sparc:orchestrator
 
 Source: `.claude/commands/sparc/orchestrator.md`
 

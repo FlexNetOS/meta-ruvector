@@ -3,7 +3,7 @@ name: source-command-hooks-post-edit
 description: 'hook post-edit'
 ---
 
-# /hooks/post-edit
+# /hooks:post-edit
 
 Source: `.claude/commands/hooks/post-edit.md`
 

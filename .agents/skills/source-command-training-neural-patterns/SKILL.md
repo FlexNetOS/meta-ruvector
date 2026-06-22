@@ -3,7 +3,7 @@ name: source-command-training-neural-patterns
 description: 'Neural Pattern Training'
 ---
 
-# /training/neural-patterns
+# /training:neural-patterns
 
 Source: `.claude/commands/training/neural-patterns.md`
 

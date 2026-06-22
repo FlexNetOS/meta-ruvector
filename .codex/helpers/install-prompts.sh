@@ -9,5 +9,5 @@ cargo run -p codex-env -- --repo "${repo_root}" install-prompts --codex-home "${
 cat <<'MSG'
 Installed Codex prompt mirrors.
 Restart Codex, then invoke Claude command mirrors as /prompts:<name>.
-Examples: /prompts:sparc-code, /prompts:claude-flow-swarm
+Examples: /prompts:sparc-code, /prompts:sparc:code, /prompts:claude-flow-swarm
 MSG

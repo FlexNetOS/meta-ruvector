@@ -3,7 +3,7 @@ name: source-command-workflows-research
 description: 'Research Workflow Coordination'
 ---
 
-# /workflows/research
+# /workflows:research
 
 Source: `.claude/commands/workflows/research.md`
 

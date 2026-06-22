@@ -3,7 +3,7 @@ name: source-command-sparc-refinement-optimization-mode
 description: '🧹 Optimizer'
 ---
 
-# /sparc/refinement-optimization-mode
+# /sparc:refinement-optimization-mode
 
 Source: `.claude/commands/sparc/refinement-optimization-mode.md`
 

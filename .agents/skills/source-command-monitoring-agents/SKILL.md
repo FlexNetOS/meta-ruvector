@@ -3,7 +3,7 @@ name: source-command-monitoring-agents
 description: 'List Active Patterns'
 ---
 
-# /monitoring/agents
+# /monitoring:agents
 
 Source: `.claude/commands/monitoring/agents.md`
 

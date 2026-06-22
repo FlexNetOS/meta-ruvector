@@ -3,7 +3,7 @@ name: source-command-github-code-review
 description: 'code-review'
 ---
 
-# /github/code-review
+# /github:code-review
 
 Source: `.claude/commands/github/code-review.md`
 

@@ -3,7 +3,7 @@ name: source-command-github-swarm-pr
 description: 'Swarm PR - Managing Swarms through Pull Requests'
 ---
 
-# /github/swarm-pr
+# /github:swarm-pr
 
 Source: `.claude/commands/github/swarm-pr.md`
 

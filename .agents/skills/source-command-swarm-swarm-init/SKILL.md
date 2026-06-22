@@ -3,7 +3,7 @@ name: source-command-swarm-swarm-init
 description: 'swarm-init'
 ---
 
-# /swarm/swarm-init
+# /swarm:swarm-init
 
 Source: `.claude/commands/swarm/swarm-init.md`
 

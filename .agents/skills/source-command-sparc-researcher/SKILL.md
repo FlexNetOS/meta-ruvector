@@ -3,7 +3,7 @@ name: source-command-sparc-researcher
 description: 'SPARC Researcher Mode'
 ---
 
-# /sparc/researcher
+# /sparc:researcher
 
 Source: `.claude/commands/sparc/researcher.md`
 

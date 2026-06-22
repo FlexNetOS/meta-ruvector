@@ -3,7 +3,7 @@ name: source-command-sparc-reviewer
 description: 'SPARC Reviewer Mode'
 ---
 
-# /sparc/reviewer
+# /sparc:reviewer
 
 Source: `.claude/commands/sparc/reviewer.md`
 

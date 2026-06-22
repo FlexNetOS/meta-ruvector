@@ -3,7 +3,7 @@ name: source-command-sparc-security-review
 description: '🛡️ Security Reviewer'
 ---
 
-# /sparc/security-review
+# /sparc:security-review
 
 Source: `.claude/commands/sparc/security-review.md`
 

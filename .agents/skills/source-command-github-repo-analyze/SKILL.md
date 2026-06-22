@@ -3,7 +3,7 @@ name: source-command-github-repo-analyze
 description: 'repo-analyze'
 ---
 
-# /github/repo-analyze
+# /github:repo-analyze
 
 Source: `.claude/commands/github/repo-analyze.md`
 

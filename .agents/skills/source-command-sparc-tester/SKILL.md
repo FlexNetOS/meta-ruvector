@@ -3,7 +3,7 @@ name: source-command-sparc-tester
 description: 'SPARC Tester Mode'
 ---
 
-# /sparc/tester
+# /sparc:tester
 
 Source: `.claude/commands/sparc/tester.md`
 

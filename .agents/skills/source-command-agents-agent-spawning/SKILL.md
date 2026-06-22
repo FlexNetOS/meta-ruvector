@@ -3,7 +3,7 @@ name: source-command-agents-agent-spawning
 description: 'agent-spawning'
 ---
 
-# /agents/agent-spawning
+# /agents:agent-spawning
 
 Source: `.claude/commands/agents/agent-spawning.md`
 

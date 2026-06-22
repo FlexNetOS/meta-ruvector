@@ -3,7 +3,7 @@ name: source-command-hooks-session-end
 description: 'hook session-end'
 ---
 
-# /hooks/session-end
+# /hooks:session-end
 
 Source: `.claude/commands/hooks/session-end.md`
 

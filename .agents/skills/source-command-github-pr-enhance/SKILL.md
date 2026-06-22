@@ -3,7 +3,7 @@ name: source-command-github-pr-enhance
 description: 'pr-enhance'
 ---
 
-# /github/pr-enhance
+# /github:pr-enhance
 
 Source: `.claude/commands/github/pr-enhance.md`
 

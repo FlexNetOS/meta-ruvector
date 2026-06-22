@@ -3,7 +3,7 @@ name: source-command-sparc-swarm-coordinator
 description: 'SPARC Swarm Coordinator Mode'
 ---
 
-# /sparc/swarm-coordinator
+# /sparc:swarm-coordinator
 
 Source: `.claude/commands/sparc/swarm-coordinator.md`
 

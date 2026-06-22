@@ -3,7 +3,7 @@ name: source-command-automation-session-memory
 description: 'Cross-Session Memory'
 ---
 
-# /automation/session-memory
+# /automation:session-memory
 
 Source: `.claude/commands/automation/session-memory.md`
 

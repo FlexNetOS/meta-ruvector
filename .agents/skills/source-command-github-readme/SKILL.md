@@ -3,7 +3,7 @@ name: source-command-github-readme
 description: 'Github Commands'
 ---
 
-# /github/README
+# /github:readme
 
 Source: `.claude/commands/github/README.md`
 

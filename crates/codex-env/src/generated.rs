@@ -160,7 +160,8 @@ cargo run -p codex-env -- mirror --check
 - `.claude/hooks/` -> `.codex/hooks/`
 - `.claude/skills/` -> `.agents/skills/`
 - `.claude/commands/**/*.md` -> `.agents/skills/source-command-*`
-- `.claude/commands/**/*.md` -> `.codex/prompts/*.md` for `/prompts:*`
+- `.claude/commands/**/*.md` -> `.codex/prompts/*.md` for `/prompts:*`,
+  including Claude namespace aliases such as `/prompts:sparc:code`
 - Codex-native workflow upgrades -> `.agents/skills/codex-*` and
   `.codex/prompts/codex-*`
 
@@ -179,7 +180,7 @@ with:
 ```
 
 Restart Codex after installing. The Claude command mirrors then appear as Codex
-prompt commands such as `/prompts:sparc-code` and
+prompt commands such as `/prompts:sparc-code`, `/prompts:sparc:code`, and
 `/prompts:claude-flow-swarm`.
 "#,
     )
@@ -569,6 +570,7 @@ pub(super) fn command_skill_plan(
         let relative = entry.path().strip_prefix(commands_dir)?;
         let stem = relative.with_extension("");
         let name = format!("source-command-{}", super::slugify(&stem.to_string_lossy()));
+        let command_name = claude_command_name(&stem);
         let source = fs::read_to_string(entry.path())?;
         let source_body = strip_leading_frontmatter(&source);
         let description = first_heading(&source)
@@ -584,7 +586,7 @@ pub(super) fn command_skill_plan(
         }
         body.push_str(&format!(
             "# /{}\n\nSource: `.claude/commands/{}`\n\n",
-            stem.display(),
+            command_name,
             relative.display()
         ));
         body.push_str(source_body.trim_start());
@@ -599,4 +601,17 @@ pub(super) fn command_skill_plan(
     }
     files.sort_by(|a, b| a.path.cmp(&b.path));
     Ok(files)
+}
+
+fn claude_command_name(stem: &Path) -> String {
+    stem.components()
+        .filter_map(|component| match component {
+            std::path::Component::Normal(value) => {
+                let segment = super::slugify(&value.to_string_lossy());
+                (!segment.is_empty()).then_some(segment)
+            }
+            _ => None,
+        })
+        .collect::<Vec<_>>()
+        .join(":")
 }

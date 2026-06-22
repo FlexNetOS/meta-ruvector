@@ -3,7 +3,7 @@ name: source-command-github-issue-tracker
 description: 'GitHub Issue Tracker'
 ---
 
-# /github/issue-tracker
+# /github:issue-tracker
 
 Source: `.claude/commands/github/issue-tracker.md`
 

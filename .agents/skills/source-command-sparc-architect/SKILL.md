@@ -3,7 +3,7 @@ name: source-command-sparc-architect
 description: 'SPARC Architect Mode'
 ---
 
-# /sparc/architect
+# /sparc:architect
 
 Source: `.claude/commands/sparc/architect.md`
 

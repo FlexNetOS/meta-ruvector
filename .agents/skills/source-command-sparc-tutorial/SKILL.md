@@ -3,7 +3,7 @@ name: source-command-sparc-tutorial
 description: '📘 SPARC Tutorial'
 ---
 
-# /sparc/tutorial
+# /sparc:tutorial
 
 Source: `.claude/commands/sparc/tutorial.md`
 

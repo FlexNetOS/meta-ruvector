@@ -3,7 +3,7 @@ name: source-command-sparc-optimizer
 description: 'SPARC Optimizer Mode'
 ---
 
-# /sparc/optimizer
+# /sparc:optimizer
 
 Source: `.claude/commands/sparc/optimizer.md`
 

@@ -3,7 +3,7 @@ name: source-command-analysis-performance-report
 description: 'performance-report'
 ---
 
-# /analysis/performance-report
+# /analysis:performance-report
 
 Source: `.claude/commands/analysis/performance-report.md`
 

@@ -3,7 +3,7 @@ name: source-command-hive-mind-hive-mind-wizard
 description: 'hive-mind-wizard'
 ---
 
-# /hive-mind/hive-mind-wizard
+# /hive-mind:hive-mind-wizard
 
 Source: `.claude/commands/hive-mind/hive-mind-wizard.md`
 

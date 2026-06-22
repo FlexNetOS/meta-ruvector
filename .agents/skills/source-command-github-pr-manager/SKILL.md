@@ -3,7 +3,7 @@ name: source-command-github-pr-manager
 description: 'GitHub PR Manager'
 ---
 
-# /github/pr-manager
+# /github:pr-manager
 
 Source: `.claude/commands/github/pr-manager.md`
 

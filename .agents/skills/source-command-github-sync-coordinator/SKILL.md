@@ -3,7 +3,7 @@ name: source-command-github-sync-coordinator
 description: 'GitHub Sync Coordinator'
 ---
 
-# /github/sync-coordinator
+# /github:sync-coordinator
 
 Source: `.claude/commands/github/sync-coordinator.md`
 

@@ -3,7 +3,7 @@ name: source-command-automation-auto-agent
 description: 'auto agent'
 ---
 
-# /automation/auto-agent
+# /automation:auto-agent
 
 Source: `.claude/commands/automation/auto-agent.md`
 

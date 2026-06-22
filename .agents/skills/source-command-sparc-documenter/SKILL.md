@@ -3,7 +3,7 @@ name: source-command-sparc-documenter
 description: 'SPARC Documenter Mode'
 ---
 
-# /sparc/documenter
+# /sparc:documenter
 
 Source: `.claude/commands/sparc/documenter.md`
 

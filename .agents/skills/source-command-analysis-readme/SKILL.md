@@ -3,7 +3,7 @@ name: source-command-analysis-readme
 description: 'Analysis Commands'
 ---
 
-# /analysis/README
+# /analysis:readme
 
 Source: `.claude/commands/analysis/README.md`
 

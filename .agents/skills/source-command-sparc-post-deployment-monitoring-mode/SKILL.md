@@ -3,7 +3,7 @@ name: source-command-sparc-post-deployment-monitoring-mode
 description: '📈 Deployment Monitor'
 ---
 
-# /sparc/post-deployment-monitoring-mode
+# /sparc:post-deployment-monitoring-mode
 
 Source: `.claude/commands/sparc/post-deployment-monitoring-mode.md`
 

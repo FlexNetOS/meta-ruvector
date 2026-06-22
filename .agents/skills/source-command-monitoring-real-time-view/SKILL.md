@@ -3,7 +3,7 @@ name: source-command-monitoring-real-time-view
 description: 'real-time-view'
 ---
 
-# /monitoring/real-time-view
+# /monitoring:real-time-view
 
 Source: `.claude/commands/monitoring/real-time-view.md`
 

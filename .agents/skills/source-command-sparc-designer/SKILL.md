@@ -3,7 +3,7 @@ name: source-command-sparc-designer
 description: 'SPARC Designer Mode'
 ---
 
-# /sparc/designer
+# /sparc:designer
 
 Source: `.claude/commands/sparc/designer.md`
 

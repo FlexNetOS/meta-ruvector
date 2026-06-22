@@ -3,7 +3,7 @@ name: source-command-optimization-parallel-execute
 description: 'parallel-execute'
 ---
 
-# /optimization/parallel-execute
+# /optimization:parallel-execute
 
 Source: `.claude/commands/optimization/parallel-execute.md`
 

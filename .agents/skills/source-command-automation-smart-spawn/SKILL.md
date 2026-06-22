@@ -3,7 +3,7 @@ name: source-command-automation-smart-spawn
 description: 'smart-spawn'
 ---
 
-# /automation/smart-spawn
+# /automation:smart-spawn
 
 Source: `.claude/commands/automation/smart-spawn.md`
 

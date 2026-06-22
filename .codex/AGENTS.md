@@ -18,7 +18,8 @@ cargo run -p codex-env -- mirror --check
 - `.claude/hooks/` -> `.codex/hooks/`
 - `.claude/skills/` -> `.agents/skills/`
 - `.claude/commands/**/*.md` -> `.agents/skills/source-command-*`
-- `.claude/commands/**/*.md` -> `.codex/prompts/*.md` for `/prompts:*`
+- `.claude/commands/**/*.md` -> `.codex/prompts/*.md` for `/prompts:*`,
+  including Claude namespace aliases such as `/prompts:sparc:code`
 - Codex-native workflow upgrades -> `.agents/skills/codex-*` and
   `.codex/prompts/codex-*`
 
@@ -37,5 +38,5 @@ with:
 ```
 
 Restart Codex after installing. The Claude command mirrors then appear as Codex
-prompt commands such as `/prompts:sparc-code` and
+prompt commands such as `/prompts:sparc-code`, `/prompts:sparc:code`, and
 `/prompts:claude-flow-swarm`.

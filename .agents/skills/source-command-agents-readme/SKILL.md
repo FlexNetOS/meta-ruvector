@@ -3,7 +3,7 @@ name: source-command-agents-readme
 description: 'Agents Commands'
 ---
 
-# /agents/README
+# /agents:readme
 
 Source: `.claude/commands/agents/README.md`
 

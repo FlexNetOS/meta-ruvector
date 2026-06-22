@@ -3,7 +3,7 @@ name: source-command-sparc-supabase-admin
 description: '🔐 Supabase Admin'
 ---
 
-# /sparc/supabase-admin
+# /sparc:supabase-admin
 
 Source: `.claude/commands/sparc/supabase-admin.md`
 

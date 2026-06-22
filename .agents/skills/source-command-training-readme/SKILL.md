@@ -3,7 +3,7 @@ name: source-command-training-readme
 description: 'Training Commands'
 ---
 
-# /training/README
+# /training:readme
 
 Source: `.claude/commands/training/README.md`
 

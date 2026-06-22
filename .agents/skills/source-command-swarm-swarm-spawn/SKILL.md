@@ -3,7 +3,7 @@ name: source-command-swarm-swarm-spawn
 description: 'swarm-spawn'
 ---
 
-# /swarm/swarm-spawn
+# /swarm:swarm-spawn
 
 Source: `.claude/commands/swarm/swarm-spawn.md`
 

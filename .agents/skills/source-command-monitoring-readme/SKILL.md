@@ -3,7 +3,7 @@ name: source-command-monitoring-readme
 description: 'Monitoring Commands'
 ---
 
-# /monitoring/README
+# /monitoring:readme
 
 Source: `.claude/commands/monitoring/README.md`
 

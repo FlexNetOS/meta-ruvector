@@ -3,7 +3,7 @@ name: source-command-training-pattern-learn
 description: 'pattern-learn'
 ---
 
-# /training/pattern-learn
+# /training:pattern-learn
 
 Source: `.claude/commands/training/pattern-learn.md`
 

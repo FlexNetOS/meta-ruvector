@@ -3,7 +3,7 @@ name: source-command-swarm-swarm-modes
 description: 'swarm-modes'
 ---
 
-# /swarm/swarm-modes
+# /swarm:swarm-modes
 
 Source: `.claude/commands/swarm/swarm-modes.md`
 

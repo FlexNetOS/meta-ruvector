@@ -3,7 +3,7 @@ name: source-command-workflows-development
 description: 'Development Workflow Coordination'
 ---
 
-# /workflows/development
+# /workflows:development
 
 Source: `.claude/commands/workflows/development.md`
 

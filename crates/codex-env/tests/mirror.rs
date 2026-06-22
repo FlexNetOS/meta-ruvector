@@ -224,9 +224,12 @@ fn mirror_generates_codex_and_skill_files() {
     let prompt = fs::read_to_string(root.join(".codex/prompts/sparc-code.md")).unwrap();
     assert!(prompt.contains("description: 'Write code through SPARC'"));
     assert!(prompt.contains("argument-hint: [ARGUMENTS]"));
+    assert!(prompt.contains("Claude Code command `/sparc:code`"));
     assert!(prompt.contains("Source: `.claude/commands/sparc/code.md`"));
     assert!(prompt.contains("Arguments supplied to this prompt: $ARGUMENTS"));
     assert!(prompt.contains("Body with $ARGUMENTS and shell \"$$FOO\"."));
+    let alias_prompt = fs::read_to_string(root.join(".codex/prompts/sparc:code.md")).unwrap();
+    assert_eq!(alias_prompt, prompt);
     assert!(root.join(".codex/prompts/codex-agent-team.md").exists());
     assert!(root.join(".codex/prompts/codex-auto-loop.md").exists());
     assert!(root.join(".codex/prompts/codex-gap-hunt.md").exists());
@@ -290,8 +293,8 @@ fn mirror_generates_codex_and_skill_files() {
     assert_eq!(doctor.config_approval_policy, "on-request");
     assert_eq!(doctor.config_approvals_reviewer, "auto_review");
     assert!(doctor.config_goals_enabled);
-    assert_eq!(doctor.prompt_files, 4);
-    assert_eq!(doctor.installed_prompt_files, 4);
+    assert_eq!(doctor.prompt_files, 5);
+    assert_eq!(doctor.installed_prompt_files, 5);
     assert!(doctor.agent_models.contains_key("gpt-5.5"));
     assert!(doctor.agent_models.contains_key("gpt-5.4-mini"));
     assert!(doctor.hook_events.contains(&"Stop".to_owned()));

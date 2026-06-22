@@ -3,7 +3,7 @@ name: source-command-hooks-readme
 description: 'Hooks Commands'
 ---
 
-# /hooks/README
+# /hooks:readme
 
 Source: `.claude/commands/hooks/README.md`
 

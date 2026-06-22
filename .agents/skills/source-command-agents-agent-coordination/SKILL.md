@@ -3,7 +3,7 @@ name: source-command-agents-agent-coordination
 description: 'agent-coordination'
 ---
 
-# /agents/agent-coordination
+# /agents:agent-coordination
 
 Source: `.claude/commands/agents/agent-coordination.md`
 

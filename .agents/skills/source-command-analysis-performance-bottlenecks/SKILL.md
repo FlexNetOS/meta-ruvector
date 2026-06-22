@@ -3,7 +3,7 @@ name: source-command-analysis-performance-bottlenecks
 description: 'Performance Bottleneck Analysis'
 ---
 
-# /analysis/performance-bottlenecks
+# /analysis:performance-bottlenecks
 
 Source: `.claude/commands/analysis/performance-bottlenecks.md`
 

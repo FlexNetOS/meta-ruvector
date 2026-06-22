@@ -3,7 +3,7 @@ name: source-command-github-issue-triage
 description: 'issue-triage'
 ---
 
-# /github/issue-triage
+# /github:issue-triage
 
 Source: `.claude/commands/github/issue-triage.md`
 

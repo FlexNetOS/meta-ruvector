@@ -3,7 +3,7 @@ name: source-command-analysis-command-compliance-report
 description: 'Analysis Commands Compliance Report'
 ---
 
-# /analysis/COMMAND_COMPLIANCE_REPORT
+# /analysis:command-compliance-report
 
 Source: `.claude/commands/analysis/COMMAND_COMPLIANCE_REPORT.md`
 

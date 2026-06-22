@@ -3,7 +3,7 @@ name: source-command-sparc-debug
 description: '🪲 Debugger'
 ---
 
-# /sparc/debug
+# /sparc:debug
 
 Source: `.claude/commands/sparc/debug.md`
 

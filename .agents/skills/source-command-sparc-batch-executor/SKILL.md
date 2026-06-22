@@ -3,7 +3,7 @@ name: source-command-sparc-batch-executor
 description: 'SPARC Batch Executor Mode'
 ---
 
-# /sparc/batch-executor
+# /sparc:batch-executor
 
 Source: `.claude/commands/sparc/batch-executor.md`
 

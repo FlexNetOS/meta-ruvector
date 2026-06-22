@@ -3,7 +3,7 @@ name: source-command-analysis-bottleneck-detect
 description: 'bottleneck detect'
 ---
 
-# /analysis/bottleneck-detect
+# /analysis:bottleneck-detect
 
 Source: `.claude/commands/analysis/bottleneck-detect.md`
 

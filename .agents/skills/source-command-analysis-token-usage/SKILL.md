@@ -3,7 +3,7 @@ name: source-command-analysis-token-usage
 description: 'token-usage'
 ---
 
-# /analysis/token-usage
+# /analysis:token-usage
 
 Source: `.claude/commands/analysis/token-usage.md`
 

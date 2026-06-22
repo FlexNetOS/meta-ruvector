@@ -3,7 +3,7 @@ name: source-command-analysis-token-efficiency
 description: 'Token Usage Optimization'
 ---
 
-# /analysis/token-efficiency
+# /analysis:token-efficiency
 
 Source: `.claude/commands/analysis/token-efficiency.md`
 

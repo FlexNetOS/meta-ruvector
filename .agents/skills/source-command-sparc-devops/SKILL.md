@@ -3,7 +3,7 @@ name: source-command-sparc-devops
 description: '🚀 DevOps'
 ---
 
-# /sparc/devops
+# /sparc:devops
 
 Source: `.claude/commands/sparc/devops.md`
 

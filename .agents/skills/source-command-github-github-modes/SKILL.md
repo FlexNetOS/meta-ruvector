@@ -3,7 +3,7 @@ name: source-command-github-github-modes
 description: 'GitHub Integration Modes'
 ---
 
-# /github/github-modes
+# /github:github-modes
 
 Source: `.claude/commands/github/github-modes.md`
 

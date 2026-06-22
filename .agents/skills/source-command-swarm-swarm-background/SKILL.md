@@ -3,7 +3,7 @@ name: source-command-swarm-swarm-background
 description: 'swarm-background'
 ---
 
-# /swarm/swarm-background
+# /swarm:swarm-background
 
 Source: `.claude/commands/swarm/swarm-background.md`
 

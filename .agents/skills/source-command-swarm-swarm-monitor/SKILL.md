@@ -3,7 +3,7 @@ name: source-command-swarm-swarm-monitor
 description: 'swarm-monitor'
 ---
 
-# /swarm/swarm-monitor
+# /swarm:swarm-monitor
 
 Source: `.claude/commands/swarm/swarm-monitor.md`
 

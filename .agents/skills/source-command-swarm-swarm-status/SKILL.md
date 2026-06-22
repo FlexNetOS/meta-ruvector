@@ -3,7 +3,7 @@ name: source-command-swarm-swarm-status
 description: 'swarm-status'
 ---
 
-# /swarm/swarm-status
+# /swarm:swarm-status
 
 Source: `.claude/commands/swarm/swarm-status.md`
 

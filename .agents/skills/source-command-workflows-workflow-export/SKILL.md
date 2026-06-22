@@ -3,7 +3,7 @@ name: source-command-workflows-workflow-export
 description: 'workflow-export'
 ---
 
-# /workflows/workflow-export
+# /workflows:workflow-export
 
 Source: `.claude/commands/workflows/workflow-export.md`
 
