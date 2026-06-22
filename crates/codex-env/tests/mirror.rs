@@ -154,6 +154,19 @@ fn mirror_generates_codex_and_skill_files() {
     assert!(config.contains("model_context_window = 4000000"));
     assert!(config.contains("[features]\nmulti_agent = true\ngoals = true"));
     assert!(config.contains("[skills]\ninclude_instructions = true"));
+    for server in [
+        "github",
+        "context7",
+        "exa",
+        "memory",
+        "playwright",
+        "sequential-thinking",
+        "claude-flow",
+    ] {
+        assert!(config.contains(&format!("[mcp_servers.{server}]")));
+    }
+    assert!(config.contains("CLAUDE_FLOW_MODE = \"v3\""));
+    assert!(config.contains("CLAUDE_FLOW_TOPOLOGY = \"hierarchical-mesh\""));
     assert!(config.contains("[agents]\nmax_threads = 15\nmax_depth = 3"));
     assert!(config.contains("[agents.claude-browser-browser-agent]"));
     assert!(config.contains("config_file = \"agents/claude/claude-browser-browser-agent.toml\""));
@@ -334,6 +347,10 @@ fn mirror_generates_codex_and_skill_files() {
     assert!(doctor.config_goals_enabled);
     assert_eq!(doctor.codex_home_settings.model_context_window, 4_000_000);
     assert!(doctor.codex_home_settings.include_skill_instructions);
+    assert_eq!(doctor.config_mcp_servers.len(), 7);
+    assert!(doctor
+        .config_mcp_servers
+        .contains(&"claude-flow".to_owned()));
     assert_eq!(doctor.config_agent_entries, doctor.agent_files);
     assert_eq!(doctor.agent_teams, 6);
     assert!(doctor.agent_team_members >= 12);

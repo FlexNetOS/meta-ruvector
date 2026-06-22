@@ -33,8 +33,37 @@ const REQUIRED_WORKFLOW_PROMPTS: &[&str] = &[
 
 const REQUIRED_AGENT_TEAMS: &[&str] = &["core", "review", "rust", "security", "github", "swarm"];
 
+const REQUIRED_MCP_SERVERS: &[&str] = &[
+    "github",
+    "context7",
+    "exa",
+    "memory",
+    "playwright",
+    "sequential-thinking",
+    "claude-flow",
+];
+
+const REQUIRED_CLAUDE_FLOW_ENV: &[(&str, &str)] = &[
+    ("CLAUDE_FLOW_MODE", "v3"),
+    ("CLAUDE_FLOW_HOOKS_ENABLED", "true"),
+    ("CLAUDE_FLOW_TOPOLOGY", "hierarchical-mesh"),
+    ("CLAUDE_FLOW_MAX_AGENTS", "15"),
+    ("CLAUDE_FLOW_MEMORY_BACKEND", "hybrid"),
+];
+
 type ConfiguredAgents = BTreeMap<String, PathBuf>;
 type AgentCounts = (usize, BTreeMap<String, usize>, BTreeMap<String, usize>);
+
+#[derive(Debug, Clone)]
+struct ConfigValidationReport {
+    model: String,
+    reasoning_effort: String,
+    approval_policy: String,
+    approvals_reviewer: String,
+    goals_enabled: bool,
+    mcp_servers: Vec<String>,
+    configured_agents: ConfiguredAgents,
+}
 
 #[derive(Debug, Clone)]
 struct HookValidationReport {
@@ -79,6 +108,7 @@ pub struct DoctorReport {
     pub config_approval_policy: String,
     pub config_approvals_reviewer: String,
     pub config_goals_enabled: bool,
+    pub config_mcp_servers: Vec<String>,
     pub config_agent_entries: usize,
     pub agent_files: usize,
     pub agent_models: BTreeMap<String, usize>,
@@ -116,18 +146,12 @@ pub fn doctor_codex_surface(options: DoctorOptions) -> Result<DoctorReport> {
         check: true,
     })?;
 
-    let (
-        config_model,
-        config_reasoning_effort,
-        config_approval_policy,
-        config_approvals_reviewer,
-        config_goals_enabled,
-        configured_agents,
-    ) = validate_config(&codex_dir)?;
-    let config_agent_entries = configured_agents.len();
+    let config_report = validate_config(&codex_dir)?;
+    let config_agent_entries = config_report.configured_agents.len();
     let (agent_files, agent_models, agent_efforts) =
-        validate_agents(&codex_dir, &configured_agents)?;
-    let (agent_teams, agent_team_members) = validate_agent_teams(&codex_dir, &configured_agents)?;
+        validate_agents(&codex_dir, &config_report.configured_agents)?;
+    let (agent_teams, agent_team_members) =
+        validate_agent_teams(&codex_dir, &config_report.configured_agents)?;
     let hook_report = validate_hooks(&codex_dir)?;
     let (prompt_files, prompt_alias_files, installed_prompt_files, workflow_prompts) =
         validate_prompts(&repo_root, &codex_dir, &codex_home)?;
@@ -140,11 +164,12 @@ pub fn doctor_codex_surface(options: DoctorOptions) -> Result<DoctorReport> {
         codex_dir,
         codex_home,
         codex_home_settings,
-        config_model,
-        config_reasoning_effort,
-        config_approval_policy,
-        config_approvals_reviewer,
-        config_goals_enabled,
+        config_model: config_report.model,
+        config_reasoning_effort: config_report.reasoning_effort,
+        config_approval_policy: config_report.approval_policy,
+        config_approvals_reviewer: config_report.approvals_reviewer,
+        config_goals_enabled: config_report.goals_enabled,
+        config_mcp_servers: config_report.mcp_servers,
         config_agent_entries,
         agent_files,
         agent_models,
@@ -162,9 +187,7 @@ pub fn doctor_codex_surface(options: DoctorOptions) -> Result<DoctorReport> {
     })
 }
 
-fn validate_config(
-    codex_dir: &Path,
-) -> Result<(String, String, String, String, bool, ConfiguredAgents)> {
+fn validate_config(codex_dir: &Path) -> Result<ConfigValidationReport> {
     let path = codex_dir.join("config.toml");
     let config = read_toml(&path)?;
     let model = required_toml_string(&config, "model", &path)?;
@@ -202,15 +225,106 @@ fn validate_config(
             path.display()
         );
     }
+    let mcp_servers = validate_mcp_servers(&config, &path)?;
     let configured_agents = configured_agent_files(&config, codex_dir, &path)?;
-    Ok((
+    Ok(ConfigValidationReport {
         model,
-        effort,
+        reasoning_effort: effort,
         approval_policy,
         approvals_reviewer,
         goals_enabled,
+        mcp_servers,
         configured_agents,
-    ))
+    })
+}
+
+fn validate_mcp_servers(config: &toml::Value, config_path: &Path) -> Result<Vec<String>> {
+    let servers = config
+        .get("mcp_servers")
+        .and_then(toml::Value::as_table)
+        .ok_or_else(|| {
+            anyhow!(
+                "{} is missing required mcp_servers table",
+                config_path.display()
+            )
+        })?;
+
+    for required in REQUIRED_MCP_SERVERS {
+        let Some(server) = servers.get(*required).and_then(toml::Value::as_table) else {
+            bail!(
+                "{} is missing required MCP server {required}",
+                config_path.display()
+            );
+        };
+        if *required == "exa" {
+            let url = server
+                .get("url")
+                .and_then(toml::Value::as_str)
+                .ok_or_else(|| {
+                    anyhow!(
+                        "{} MCP server {required} must define a url",
+                        config_path.display()
+                    )
+                })?;
+            if !url.starts_with("https://") {
+                bail!(
+                    "{} MCP server {required} must use an https URL, found {url}",
+                    config_path.display()
+                );
+            }
+        } else {
+            let command = server
+                .get("command")
+                .and_then(toml::Value::as_str)
+                .ok_or_else(|| {
+                    anyhow!(
+                        "{} MCP server {required} must define a command",
+                        config_path.display()
+                    )
+                })?;
+            if command.trim().is_empty() {
+                bail!(
+                    "{} MCP server {required} has an empty command",
+                    config_path.display()
+                );
+            }
+        }
+    }
+
+    let claude_flow = servers
+        .get("claude-flow")
+        .and_then(toml::Value::as_table)
+        .ok_or_else(|| {
+            anyhow!(
+                "{} is missing claude-flow MCP config",
+                config_path.display()
+            )
+        })?;
+    let env = claude_flow
+        .get("env")
+        .and_then(toml::Value::as_table)
+        .ok_or_else(|| {
+            anyhow!(
+                "{} MCP server claude-flow is missing required env table",
+                config_path.display()
+            )
+        })?;
+    for (key, expected) in REQUIRED_CLAUDE_FLOW_ENV {
+        let value = env.get(*key).and_then(toml::Value::as_str).ok_or_else(|| {
+            anyhow!(
+                "{} MCP server claude-flow env is missing {key}",
+                config_path.display()
+            )
+        })?;
+        if value != *expected {
+            bail!(
+                "{} MCP server claude-flow env {key} must be {expected}, found {value}",
+                config_path.display()
+            );
+        }
+    }
+
+    Ok(servers.keys().cloned().collect())
 }
 
 fn validate_agents(codex_dir: &Path, configured_agents: &ConfiguredAgents) -> Result<AgentCounts> {
@@ -768,4 +882,91 @@ fn required_toml_bool(value: &toml::Value, keys: &[&str], path: &Path) -> Result
             keys.join(".")
         )
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use std::path::Path;
+
+    use super::validate_mcp_servers;
+
+    fn valid_mcp_config() -> toml::Value {
+        toml::from_str(
+            r#"
+[mcp_servers.github]
+command = "npx"
+args = ["-y", "@modelcontextprotocol/server-github"]
+
+[mcp_servers.context7]
+command = "npx"
+args = ["-y", "@upstash/context7-mcp@latest"]
+
+[mcp_servers.exa]
+url = "https://mcp.exa.ai/mcp"
+
+[mcp_servers.memory]
+command = "npx"
+args = ["-y", "@modelcontextprotocol/server-memory"]
+
+[mcp_servers.playwright]
+command = "npx"
+args = ["-y", "@playwright/mcp@latest", "--extension"]
+
+[mcp_servers.sequential-thinking]
+command = "npx"
+args = ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+
+[mcp_servers.claude-flow]
+command = "npx"
+args = ["@claude-flow/cli@latest", "mcp", "start"]
+
+[mcp_servers.claude-flow.env]
+CLAUDE_FLOW_MODE = "v3"
+CLAUDE_FLOW_HOOKS_ENABLED = "true"
+CLAUDE_FLOW_TOPOLOGY = "hierarchical-mesh"
+CLAUDE_FLOW_MAX_AGENTS = "15"
+CLAUDE_FLOW_MEMORY_BACKEND = "hybrid"
+"#,
+        )
+        .unwrap()
+    }
+
+    #[test]
+    fn validate_mcp_servers_rejects_missing_required_server() {
+        let mut config = valid_mcp_config();
+        config
+            .get_mut("mcp_servers")
+            .unwrap()
+            .as_table_mut()
+            .unwrap()
+            .remove("github");
+
+        let error = validate_mcp_servers(&config, Path::new(".codex/config.toml")).unwrap_err();
+        assert!(error
+            .to_string()
+            .contains("missing required MCP server github"));
+    }
+
+    #[test]
+    fn validate_mcp_servers_rejects_claude_flow_env_drift() {
+        let mut config = valid_mcp_config();
+        config
+            .get_mut("mcp_servers")
+            .unwrap()
+            .get_mut("claude-flow")
+            .unwrap()
+            .get_mut("env")
+            .unwrap()
+            .as_table_mut()
+            .unwrap()
+            .insert(
+                "CLAUDE_FLOW_MODE".to_owned(),
+                toml::Value::String("v2".to_owned()),
+            );
+
+        let error = validate_mcp_servers(&config, Path::new(".codex/config.toml")).unwrap_err();
+        assert!(error
+            .to_string()
+            .contains("claude-flow env CLAUDE_FLOW_MODE must be v3"));
+    }
 }

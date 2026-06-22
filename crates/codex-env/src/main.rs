@@ -75,7 +75,7 @@ fn main() -> Result<()> {
                 codex_home,
             })?;
             println!(
-                "codex-env install ok: mirrored {} files ({} changed), installed {} prompts ({} changed), home settings {} at {}, doctor verified config {}/{}, {} agents ({} config entries), {} team(s), {} team member reference(s), {} hook handler(s), {} shim-backed hook handler(s), {} prompts ({} aliases) in {}",
+                "codex-env install ok: mirrored {} files ({} changed), installed {} prompts ({} changed), home settings {} at {}, doctor verified config {}/{}, {} MCP server(s), {} agents ({} config entries), {} team(s), {} team member reference(s), {} hook handler(s), {} shim-backed hook handler(s), {} prompts ({} aliases) in {}",
                 report.mirror.total_files,
                 report.mirror.changed_files,
                 report.prompts.total_files,
@@ -88,6 +88,7 @@ fn main() -> Result<()> {
                 report.home_settings.config_path.display(),
                 report.doctor.config_model,
                 report.doctor.config_reasoning_effort,
+                report.doctor.config_mcp_servers.len(),
                 report.doctor.agent_files,
                 report.doctor.config_agent_entries,
                 report.doctor.agent_teams,
@@ -139,7 +140,7 @@ fn main() -> Result<()> {
                 println!("{}", serde_json::to_string_pretty(&report)?);
             } else {
                 println!(
-                    "codex-env doctor ok: config {}/{}, approvals {}/{}, goals {}, home context {}, skills {}, {} agents ({} config entries; {}), {} team(s), {} team member reference(s), {} hook event(s), {} hook handler(s), {} shim-backed hook handler(s), {} prompts ({} aliases) installed into {}",
+                    "codex-env doctor ok: config {}/{}, approvals {}/{}, goals {}, home context {}, skills {}, {} MCP server(s), {} agents ({} config entries; {}), {} team(s), {} team member reference(s), {} hook event(s), {} hook handler(s), {} shim-backed hook handler(s), {} prompts ({} aliases) installed into {}",
                     report.config_model,
                     report.config_reasoning_effort,
                     report.config_approval_policy,
@@ -147,6 +148,7 @@ fn main() -> Result<()> {
                     report.config_goals_enabled,
                     report.codex_home_settings.model_context_window,
                     report.codex_home_settings.include_skill_instructions,
+                    report.config_mcp_servers.len(),
                     report.agent_files,
                     report.config_agent_entries,
                     format_counts(&report.agent_models),
