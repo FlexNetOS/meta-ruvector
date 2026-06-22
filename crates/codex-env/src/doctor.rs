@@ -1,6 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::process::{Command, Stdio};
 
 use anyhow::{anyhow, bail, Context, Result};
 use serde::Serialize;
@@ -54,6 +55,7 @@ pub struct DoctorReport {
     pub prompt_files: usize,
     pub installed_prompt_files: usize,
     pub workflow_prompts: Vec<String>,
+    pub git_ignored_generated_files: Vec<PathBuf>,
 }
 
 pub fn doctor_codex_surface(options: DoctorOptions) -> Result<DoctorReport> {
@@ -66,7 +68,7 @@ pub fn doctor_codex_surface(options: DoctorOptions) -> Result<DoctorReport> {
     let codex_dir = repo_root.join(".codex");
     let codex_home = options.codex_home;
 
-    mirror_codex_surface(MirrorOptions {
+    let mirror_report = mirror_codex_surface(MirrorOptions {
         repo_root: repo_root.clone(),
         lua_policy: options.lua_policy,
         check: true,
@@ -82,6 +84,8 @@ pub fn doctor_codex_surface(options: DoctorOptions) -> Result<DoctorReport> {
     let (hook_events, hook_handlers) = validate_hooks(&codex_dir)?;
     let (prompt_files, installed_prompt_files, workflow_prompts) =
         validate_prompts(&repo_root, &codex_dir, &codex_home)?;
+    let git_ignored_generated_files =
+        validate_generated_files_visible_to_git(&repo_root, &mirror_report.generated)?;
 
     Ok(DoctorReport {
         repo_root,
@@ -97,6 +101,7 @@ pub fn doctor_codex_surface(options: DoctorOptions) -> Result<DoctorReport> {
         prompt_files,
         installed_prompt_files,
         workflow_prompts,
+        git_ignored_generated_files,
     })
 }
 
@@ -293,6 +298,62 @@ fn validate_prompts(
             .map(|value| (*value).to_owned())
             .collect(),
     ))
+}
+
+fn validate_generated_files_visible_to_git(
+    repo_root: &Path,
+    generated_files: &[PathBuf],
+) -> Result<Vec<PathBuf>> {
+    if !is_git_worktree(repo_root)? {
+        return Ok(Vec::new());
+    }
+
+    let mut ignored = Vec::new();
+    for relative in generated_files {
+        let status = Command::new("git")
+            .arg("check-ignore")
+            .arg("-q")
+            .arg("--")
+            .arg(relative)
+            .current_dir(repo_root)
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .status()
+            .with_context(|| "failed to run git check-ignore")?;
+        match status.code() {
+            Some(0) => ignored.push(relative.clone()),
+            Some(1) => {}
+            Some(code) => {
+                bail!(
+                    "git check-ignore failed with status {code} for {}",
+                    relative.display()
+                );
+            }
+            None => bail!("git check-ignore was terminated for {}", relative.display()),
+        }
+    }
+
+    if !ignored.is_empty() {
+        bail!(
+            "Codex generated surface has {} gitignored file(s); first: {}",
+            ignored.len(),
+            ignored[0].display()
+        );
+    }
+
+    Ok(ignored)
+}
+
+fn is_git_worktree(repo_root: &Path) -> Result<bool> {
+    let status = Command::new("git")
+        .arg("rev-parse")
+        .arg("--is-inside-work-tree")
+        .current_dir(repo_root)
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
+        .with_context(|| "failed to run git rev-parse")?;
+    Ok(status.success())
 }
 
 fn prompt_files(root: &Path) -> Result<Vec<PathBuf>> {
