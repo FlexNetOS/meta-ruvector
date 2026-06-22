@@ -9,6 +9,7 @@ use serde_json::json;
 
 mod agent_roles;
 mod command_prompts;
+mod doctor;
 mod generated;
 mod raw_mirror;
 
@@ -16,6 +17,7 @@ use agent_roles::{
     claude_agent_role_plan, clean_claude_agent_roles, stale_claude_agent_role_files,
 };
 use command_prompts::{clean_codex_prompts, command_prompt_plan, stale_codex_prompt_files};
+pub use doctor::{doctor_codex_surface, DoctorOptions, DoctorReport};
 use generated::{
     codex_agent_profiles, codex_agents_md, codex_config, codex_hooks_json,
     codex_native_workflow_prompts, codex_native_workflow_skills, command_skill_plan,

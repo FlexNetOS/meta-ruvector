@@ -1,0 +1,344 @@
+use std::collections::{BTreeMap, BTreeSet};
+use std::fs;
+use std::path::{Path, PathBuf};
+
+use anyhow::{anyhow, bail, Context, Result};
+use serde::Serialize;
+use walkdir::WalkDir;
+
+use super::{
+    install_codex_prompts, mirror_codex_surface, strip_repo_prefix, MirrorOptions,
+    PromptInstallOptions,
+};
+
+const SUPPORTED_HOOK_EVENTS: &[&str] = &[
+    "SessionStart",
+    "PreToolUse",
+    "PermissionRequest",
+    "PostToolUse",
+    "PreCompact",
+    "PostCompact",
+    "UserPromptSubmit",
+    "SubagentStart",
+    "SubagentStop",
+    "Stop",
+];
+
+const REQUIRED_WORKFLOW_PROMPTS: &[&str] = &[
+    "codex-agent-team.md",
+    "codex-auto-loop.md",
+    "codex-gap-hunt.md",
+];
+
+#[derive(Debug, Clone)]
+pub struct DoctorOptions {
+    pub repo_root: PathBuf,
+    pub lua_policy: Option<PathBuf>,
+    pub codex_home: PathBuf,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct DoctorReport {
+    pub repo_root: PathBuf,
+    pub codex_dir: PathBuf,
+    pub codex_home: PathBuf,
+    pub config_model: String,
+    pub config_reasoning_effort: String,
+    pub agent_files: usize,
+    pub agent_models: BTreeMap<String, usize>,
+    pub agent_efforts: BTreeMap<String, usize>,
+    pub hook_events: Vec<String>,
+    pub hook_handlers: usize,
+    pub prompt_files: usize,
+    pub installed_prompt_files: usize,
+    pub workflow_prompts: Vec<String>,
+}
+
+pub fn doctor_codex_surface(options: DoctorOptions) -> Result<DoctorReport> {
+    let repo_root = options.repo_root.canonicalize().with_context(|| {
+        format!(
+            "failed to canonicalize repo root {}",
+            options.repo_root.display()
+        )
+    })?;
+    let codex_dir = repo_root.join(".codex");
+    let codex_home = options.codex_home;
+
+    mirror_codex_surface(MirrorOptions {
+        repo_root: repo_root.clone(),
+        lua_policy: options.lua_policy,
+        check: true,
+    })?;
+    install_codex_prompts(PromptInstallOptions {
+        repo_root: repo_root.clone(),
+        codex_home: codex_home.clone(),
+        check: true,
+    })?;
+
+    let (config_model, config_reasoning_effort) = validate_config(&codex_dir)?;
+    let (agent_files, agent_models, agent_efforts) = validate_agents(&codex_dir)?;
+    let (hook_events, hook_handlers) = validate_hooks(&codex_dir)?;
+    let (prompt_files, installed_prompt_files, workflow_prompts) =
+        validate_prompts(&repo_root, &codex_dir, &codex_home)?;
+
+    Ok(DoctorReport {
+        repo_root,
+        codex_dir,
+        codex_home,
+        config_model,
+        config_reasoning_effort,
+        agent_files,
+        agent_models,
+        agent_efforts,
+        hook_events,
+        hook_handlers,
+        prompt_files,
+        installed_prompt_files,
+        workflow_prompts,
+    })
+}
+
+fn validate_config(codex_dir: &Path) -> Result<(String, String)> {
+    let path = codex_dir.join("config.toml");
+    let config = read_toml(&path)?;
+    let model = required_toml_string(&config, "model", &path)?;
+    let effort = required_toml_string(&config, "model_reasoning_effort", &path)?;
+    if model != "gpt-5.5" {
+        bail!(
+            "{} must default Codex to gpt-5.5, found {model}",
+            path.display()
+        );
+    }
+    if effort != "high" {
+        bail!(
+            "{} must default Codex reasoning effort to high, found {effort}",
+            path.display()
+        );
+    }
+    Ok((model, effort))
+}
+
+fn validate_agents(
+    codex_dir: &Path,
+) -> Result<(usize, BTreeMap<String, usize>, BTreeMap<String, usize>)> {
+    let root = codex_dir.join("agents");
+    let mut agent_files = 0;
+    let mut models = BTreeMap::new();
+    let mut efforts = BTreeMap::new();
+    for entry in WalkDir::new(&root).into_iter() {
+        let entry = entry?;
+        let path = entry.path();
+        if !entry.file_type().is_file()
+            || path.extension().and_then(|value| value.to_str()) != Some("toml")
+        {
+            continue;
+        }
+
+        let toml = read_toml(path)?;
+        for key in ["name", "description", "developer_instructions"] {
+            let value = required_toml_string(&toml, key, path)?;
+            if value.trim().is_empty() {
+                bail!("{} has empty required key {key}", path.display());
+            }
+        }
+        let model = required_toml_string(&toml, "model", path)?;
+        let effort = required_toml_string(&toml, "model_reasoning_effort", path)?;
+        *models.entry(model).or_insert(0) += 1;
+        *efforts.entry(effort).or_insert(0) += 1;
+        agent_files += 1;
+    }
+
+    if agent_files == 0 {
+        bail!("{} has no custom agent TOML files", root.display());
+    }
+    for model in ["gpt-5.5", "gpt-5.4-mini"] {
+        if !models.contains_key(model) {
+            bail!("{} has no custom agents routed to {model}", root.display());
+        }
+    }
+    Ok((agent_files, models, efforts))
+}
+
+fn validate_hooks(codex_dir: &Path) -> Result<(Vec<String>, usize)> {
+    let path = codex_dir.join("hooks.json");
+    let hooks_root: serde_json::Value = serde_json::from_slice(
+        &fs::read(&path).with_context(|| format!("failed to read {}", path.display()))?,
+    )
+    .with_context(|| format!("failed to parse {}", path.display()))?;
+    let hooks = hooks_root
+        .get("hooks")
+        .and_then(serde_json::Value::as_object)
+        .ok_or_else(|| anyhow!("{} must contain an object at hooks", path.display()))?;
+    let supported: BTreeSet<_> = SUPPORTED_HOOK_EVENTS.iter().copied().collect();
+    let mut events = Vec::new();
+    let mut handlers = 0;
+
+    for (event, groups) in hooks {
+        if !supported.contains(event.as_str()) {
+            bail!(
+                "{} contains unsupported Codex hook event {event}",
+                path.display()
+            );
+        }
+        let groups = groups
+            .as_array()
+            .ok_or_else(|| anyhow!("{} hook event {event} must be an array", path.display()))?;
+        if groups.is_empty() {
+            continue;
+        }
+        events.push(event.clone());
+        for group in groups {
+            let entries = group
+                .get("hooks")
+                .and_then(serde_json::Value::as_array)
+                .ok_or_else(|| {
+                    anyhow!("{} hook event {event} has no hooks array", path.display())
+                })?;
+            for entry in entries {
+                validate_hook_entry(&path, event, entry)?;
+                handlers += 1;
+            }
+        }
+    }
+
+    if handlers == 0 {
+        bail!("{} has no active Codex hook handlers", path.display());
+    }
+    events.sort();
+    Ok((events, handlers))
+}
+
+fn validate_hook_entry(path: &Path, event: &str, entry: &serde_json::Value) -> Result<()> {
+    if entry.get("type").and_then(serde_json::Value::as_str) != Some("command") {
+        bail!(
+            "{} hook event {event} contains a non-command hook",
+            path.display()
+        );
+    }
+    if entry.get("async").and_then(serde_json::Value::as_bool) == Some(true) {
+        bail!(
+            "{} hook event {event} still contains async=true",
+            path.display()
+        );
+    }
+    if let Some(timeout) = entry.get("timeout").and_then(serde_json::Value::as_u64) {
+        if timeout == 0 || timeout > 600 {
+            bail!(
+                "{} hook event {event} has invalid timeout {timeout}; Codex expects seconds",
+                path.display()
+            );
+        }
+    }
+    let command = entry
+        .get("command")
+        .and_then(serde_json::Value::as_str)
+        .ok_or_else(|| anyhow!("{} hook event {event} has no command", path.display()))?;
+    if command.contains(".claude/helpers") && !command.contains(".codex/helpers/run-claude-hook.sh")
+    {
+        bail!(
+            "{} hook event {event} calls .claude/helpers without the Codex helper shim",
+            path.display()
+        );
+    }
+    Ok(())
+}
+
+fn validate_prompts(
+    repo_root: &Path,
+    codex_dir: &Path,
+    codex_home: &Path,
+) -> Result<(usize, usize, Vec<String>)> {
+    let source_dir = codex_dir.join("prompts");
+    let target_dir = codex_home.join("prompts");
+    let source_prompts = prompt_files(&source_dir)?;
+    let target_prompts = prompt_files(&target_dir)?;
+    if source_prompts.is_empty() {
+        bail!("{} has no Codex prompt files", source_dir.display());
+    }
+    for required in REQUIRED_WORKFLOW_PROMPTS {
+        if !source_prompts.contains(&source_dir.join(required)) {
+            bail!(
+                "{} is missing required workflow prompt {required}",
+                source_dir.display()
+            );
+        }
+    }
+
+    let mut installed_prompt_files = 0;
+    for source in &source_prompts {
+        let relative = source.strip_prefix(&source_dir)?;
+        let target = target_dir.join(relative);
+        let source_bytes = fs::read(source)?;
+        let target_bytes = fs::read(&target).with_context(|| {
+            format!(
+                "installed Codex prompt {} is missing for source {}",
+                target.display(),
+                strip_repo_prefix(repo_root, source).display()
+            )
+        })?;
+        if source_bytes != target_bytes {
+            bail!(
+                "installed Codex prompt {} differs from source {}",
+                target.display(),
+                strip_repo_prefix(repo_root, source).display()
+            );
+        }
+        installed_prompt_files += 1;
+    }
+
+    let expected_targets: BTreeSet<PathBuf> = source_prompts
+        .iter()
+        .map(|path| target_dir.join(path.file_name().unwrap_or_default()))
+        .collect();
+    let stale_targets: Vec<_> = target_prompts
+        .iter()
+        .filter(|path| !expected_targets.contains(*path))
+        .collect();
+    if !stale_targets.is_empty() {
+        bail!(
+            "{} has {} stale installed prompt file(s), first: {}",
+            target_dir.display(),
+            stale_targets.len(),
+            stale_targets[0].display()
+        );
+    }
+
+    Ok((
+        source_prompts.len(),
+        installed_prompt_files,
+        REQUIRED_WORKFLOW_PROMPTS
+            .iter()
+            .map(|value| (*value).to_owned())
+            .collect(),
+    ))
+}
+
+fn prompt_files(root: &Path) -> Result<Vec<PathBuf>> {
+    let mut files = Vec::new();
+    if !root.exists() {
+        return Ok(files);
+    }
+    for entry in fs::read_dir(root)? {
+        let entry = entry?;
+        let path = entry.path();
+        if path.is_file() && path.extension().and_then(|value| value.to_str()) == Some("md") {
+            files.push(path);
+        }
+    }
+    files.sort();
+    Ok(files)
+}
+
+fn read_toml(path: &Path) -> Result<toml::Value> {
+    let text =
+        fs::read_to_string(path).with_context(|| format!("failed to read {}", path.display()))?;
+    toml::from_str(&text).with_context(|| format!("failed to parse {}", path.display()))
+}
+
+fn required_toml_string(value: &toml::Value, key: &str, path: &Path) -> Result<String> {
+    value
+        .get(key)
+        .and_then(toml::Value::as_str)
+        .map(ToOwned::to_owned)
+        .ok_or_else(|| anyhow!("{} is missing required string key {key}", path.display()))
+}
