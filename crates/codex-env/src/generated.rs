@@ -6,6 +6,7 @@ use anyhow::{Context, Result};
 use serde_json::json;
 use walkdir::WalkDir;
 
+use super::agent_roles::CodexAgentRole;
 use super::{
     escape_toml_string, first_heading, is_executable, is_ignored_path, normalize_generated_bytes,
     normalize_generated_text, strip_leading_frontmatter, yaml_scalar, PlannedFile,
@@ -30,7 +31,11 @@ pub(super) fn read_claude_env(claude_dir: &Path) -> Result<BTreeMap<String, Stri
     Ok(env)
 }
 
-pub(super) fn codex_config(env: &BTreeMap<String, String>, footer: Option<&str>) -> String {
+pub(super) fn codex_config(
+    env: &BTreeMap<String, String>,
+    agent_roles: &[CodexAgentRole],
+    footer: Option<&str>,
+) -> String {
     let mut toml = String::from(
         r#"#:schema https://developers.openai.com/codex/config-schema.json
 
@@ -95,7 +100,20 @@ config_file = "agents/reviewer.toml"
 [agents.docs_researcher]
 description = "Documentation specialist that verifies APIs, framework behavior, and release-note claims against primary documentation."
 config_file = "agents/docs-researcher.toml"
+"#,
+    );
 
+    for role in agent_roles {
+        toml.push_str(&format!(
+            "\n[agents.{}]\ndescription = \"{}\"\nconfig_file = \"{}\"\n",
+            role.role_name,
+            escape_toml_string(&role.description),
+            escape_toml_string(&role.config_file.display().to_string())
+        ));
+    }
+
+    toml.push_str(
+        r#"
 [shell_environment_policy]
 inherit = "core"
 

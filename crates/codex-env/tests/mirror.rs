@@ -7,6 +7,8 @@ fn mirror_generates_codex_and_skill_files() {
     let temp = tempfile::tempdir().unwrap();
     let root = temp.path();
     fs::create_dir_all(root.join(".claude/hooks")).unwrap();
+    fs::create_dir_all(root.join(".claude/agents/core")).unwrap();
+    fs::create_dir_all(root.join(".claude/agents/browser")).unwrap();
     fs::create_dir_all(root.join(".claude/skills/demo")).unwrap();
     fs::create_dir_all(root.join(".claude/commands/sparc")).unwrap();
     fs::write(
@@ -17,6 +19,24 @@ fn mirror_generates_codex_and_skill_files() {
     fs::write(
         root.join(".claude/hooks/rust-check.sh"),
         "#!/bin/sh\necho exact   \n",
+    )
+    .unwrap();
+    fs::write(
+        root.join(".claude/agents/core/coder.md"),
+        "---\nname: coder\ndescription: Writes code\npriority: high\n---\n\n# Coder\nImplement carefully.\n",
+    )
+    .unwrap();
+    fs::write(
+        root.join(".claude/agents/core/verbose.md"),
+        format!(
+            "---\ndescription: {}\n---\n\n# Verbose\nKeep the full source body.\n",
+            "This description is intentionally long ".repeat(16)
+        ),
+    )
+    .unwrap();
+    fs::write(
+        root.join(".claude/agents/browser/browser-agent.yaml"),
+        "name: browser-agent\ndescription: Automates browsers\nrouting:\n  model: sonnet\n",
     )
     .unwrap();
     fs::write(root.join(".claude/skills/demo/SKILL.md"), "# Demo\n").unwrap();
@@ -35,9 +55,46 @@ fn mirror_generates_codex_and_skill_files() {
 
     assert!(report.changed_files > 0);
     let config = fs::read_to_string(root.join(".codex/config.toml")).unwrap();
+    toml::from_str::<toml::Value>(&config).unwrap();
     assert!(config.contains("model_context_window = 4000000"));
     assert!(config.contains("[skills]\ninclude_instructions = true"));
     assert!(config.contains("[agents]\nmax_threads = 15\nmax_depth = 3"));
+    assert!(config.contains("[agents.claude-browser-browser-agent]"));
+    assert!(config.contains("config_file = \"agents/claude/claude-browser-browser-agent.toml\""));
+    assert!(config.contains("[agents.claude-core-coder]"));
+    assert!(config.contains("config_file = \"agents/claude/claude-core-coder.toml\""));
+    let coder_role =
+        fs::read_to_string(root.join(".codex/agents/claude/claude-core-coder.toml")).unwrap();
+    toml::from_str::<toml::Value>(&coder_role).unwrap();
+    assert!(coder_role.contains("name = \"claude-core-coder\""));
+    assert!(coder_role.contains("description = \"Writes code\""));
+    assert!(coder_role.contains("developer_instructions = "));
+    assert!(coder_role.contains("Source: `.claude/agents/core/coder.md`"));
+    assert!(coder_role.contains("Implement carefully."));
+    let verbose_role =
+        fs::read_to_string(root.join(".codex/agents/claude/claude-core-verbose.toml")).unwrap();
+    let verbose_role: toml::Value = toml::from_str(&verbose_role).unwrap();
+    assert!(
+        verbose_role["description"]
+            .as_str()
+            .unwrap()
+            .chars()
+            .count()
+            <= 240
+    );
+    assert!(verbose_role["description"]
+        .as_str()
+        .unwrap()
+        .ends_with("..."));
+    assert!(verbose_role["developer_instructions"]
+        .as_str()
+        .unwrap()
+        .contains("Keep the full source body."));
+    let browser_role =
+        fs::read_to_string(root.join(".codex/agents/claude/claude-browser-browser-agent.toml"))
+            .unwrap();
+    toml::from_str::<toml::Value>(&browser_role).unwrap();
+    assert!(browser_role.contains("description = \"Automates browsers\""));
     assert!(root.join(".codex/hooks/rust-check.sh").exists());
     assert_eq!(
         fs::read(root.join(".codex/mirror/.claude/hooks/rust-check.sh")).unwrap(),
@@ -51,7 +108,7 @@ fn mirror_generates_codex_and_skill_files() {
     let inventory: serde_json::Value =
         serde_json::from_slice(&fs::read(root.join(".codex/mirror-symbols.json")).unwrap())
             .unwrap();
-    assert_eq!(inventory["sourceFileCount"], 4);
+    assert_eq!(inventory["sourceFileCount"], 7);
     let command_entry = inventory["entries"]
         .as_array()
         .unwrap()
@@ -97,6 +154,39 @@ fn mirror_check_rejects_stale_raw_files() {
     .unwrap();
     fs::create_dir_all(root.join(".codex/mirror/.claude/stale")).unwrap();
     fs::write(root.join(".codex/mirror/.claude/stale/file.md"), "old").unwrap();
+
+    let error = mirror_codex_surface(MirrorOptions {
+        repo_root: root.to_path_buf(),
+        lua_policy: None,
+        check: true,
+    })
+    .unwrap_err();
+    assert!(error.to_string().contains("stale file"));
+}
+
+#[test]
+fn mirror_check_rejects_stale_claude_agent_roles() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path();
+    fs::create_dir_all(root.join(".claude/agents/core")).unwrap();
+    fs::write(root.join(".claude/settings.json"), r#"{"env":{}}"#).unwrap();
+    fs::write(
+        root.join(".claude/agents/core/coder.md"),
+        "---\ndescription: Writes code\n---\n\n# Coder\n",
+    )
+    .unwrap();
+
+    mirror_codex_surface(MirrorOptions {
+        repo_root: root.to_path_buf(),
+        lua_policy: None,
+        check: false,
+    })
+    .unwrap();
+    fs::write(
+        root.join(".codex/agents/claude/claude-stale-agent.toml"),
+        "name = \"claude-stale-agent\"\ndescription = \"stale\"\ndeveloper_instructions = \"stale\"\n",
+    )
+    .unwrap();
 
     let error = mirror_codex_surface(MirrorOptions {
         repo_root: root.to_path_buf(),

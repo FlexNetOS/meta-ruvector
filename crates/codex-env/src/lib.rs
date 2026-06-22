@@ -7,9 +7,13 @@ use mlua::{Lua, Value};
 use serde::Serialize;
 use serde_json::json;
 
+mod agent_roles;
 mod generated;
 mod raw_mirror;
 
+use agent_roles::{
+    claude_agent_role_plan, clean_claude_agent_roles, stale_claude_agent_role_files,
+};
 use generated::{
     codex_agent_profiles, codex_agents_md, codex_config, codex_hooks_json, command_skill_plan,
     copy_tree_plan, read_claude_env,
@@ -61,6 +65,7 @@ pub fn mirror_codex_surface(options: MirrorOptions) -> Result<MirrorReport> {
     let codex_dir = repo_root.join(".codex");
     let policy = load_lua_policy(options.lua_policy.as_deref(), &repo_root, &claude_dir)?;
     let claude_files = claude_source_files(&repo_root, &claude_dir)?;
+    let agent_role_plan = claude_agent_role_plan(&claude_dir.join("agents"), &codex_dir)?;
     let mut planned = Vec::new();
 
     planned.extend(raw_claude_mirror_plan(
@@ -72,6 +77,7 @@ pub fn mirror_codex_surface(options: MirrorOptions) -> Result<MirrorReport> {
         path: codex_dir.join("config.toml"),
         bytes: codex_config(
             &read_claude_env(&claude_dir)?,
+            &agent_role_plan.roles,
             policy.config_footer.as_deref(),
         )
         .into_bytes(),
@@ -83,6 +89,7 @@ pub fn mirror_codex_surface(options: MirrorOptions) -> Result<MirrorReport> {
         executable: false,
     });
     planned.extend(codex_agent_profiles(&codex_dir));
+    planned.extend(agent_role_plan.files);
     planned.push(PlannedFile {
         path: codex_dir.join("hooks.json"),
         bytes: codex_hooks_json(&claude_dir)?.into_bytes(),
@@ -119,9 +126,11 @@ pub fn mirror_codex_surface(options: MirrorOptions) -> Result<MirrorReport> {
     let mut verified_files = 0;
     let mut generated = Vec::new();
     let stale_raw_mirror_files = stale_raw_mirror_files(&repo_root, &codex_dir, &claude_files)?;
+    let stale_agent_role_files = stale_claude_agent_role_files(&repo_root, &codex_dir, &planned)?;
 
     if !options.check {
         clean_raw_mirror(&codex_dir)?;
+        clean_claude_agent_roles(&codex_dir)?;
     }
 
     for file in &planned {
@@ -142,6 +151,19 @@ pub fn mirror_codex_surface(options: MirrorOptions) -> Result<MirrorReport> {
             "Codex raw mirror has {} stale file(s): {}",
             stale_raw_mirror_files.len(),
             stale_raw_mirror_files
+                .iter()
+                .take(5)
+                .map(|path| path.display().to_string())
+                .collect::<Vec<_>>()
+                .join(", ")
+        ));
+    }
+
+    if options.check && !stale_agent_role_files.is_empty() {
+        return Err(anyhow!(
+            "Codex Claude agent roles have {} stale file(s): {}",
+            stale_agent_role_files.len(),
+            stale_agent_role_files
                 .iter()
                 .take(5)
                 .map(|path| path.display().to_string())
