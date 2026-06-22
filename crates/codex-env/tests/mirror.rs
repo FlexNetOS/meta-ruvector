@@ -296,6 +296,7 @@ fn mirror_generates_codex_and_skill_files() {
     assert_eq!(doctor.config_approval_policy, "on-request");
     assert_eq!(doctor.config_approvals_reviewer, "auto_review");
     assert!(doctor.config_goals_enabled);
+    assert_eq!(doctor.config_agent_entries, doctor.agent_files);
     assert_eq!(doctor.prompt_files, 5);
     assert_eq!(doctor.prompt_alias_files, 1);
     assert_eq!(doctor.installed_prompt_files, 5);
@@ -348,6 +349,10 @@ fn install_refreshes_mirror_prompts_and_doctor_in_one_step() {
     assert_eq!(report.prompts.total_files, 4);
     assert_eq!(report.doctor.prompt_files, 4);
     assert_eq!(report.doctor.prompt_alias_files, 0);
+    assert_eq!(
+        report.doctor.config_agent_entries,
+        report.doctor.agent_files
+    );
     assert_eq!(report.doctor.installed_prompt_files, 4);
     assert!(root.join(".codex/config.toml").exists());
     assert!(codex_home.join("prompts/demo.md").exists());
@@ -359,6 +364,59 @@ fn install_refreshes_mirror_prompts_and_doctor_in_one_step() {
     })
     .unwrap();
     assert_eq!(checked.installed_prompt_files, 4);
+}
+
+#[test]
+fn doctor_rejects_undeclared_custom_agent_files() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path().join("repo");
+    let codex_home = temp.path().join("codex-home");
+    fs::create_dir_all(root.join(".claude/commands")).unwrap();
+    fs::write(
+        root.join(".claude/settings.json"),
+        r#"{
+          "hooks": {
+            "Stop": [
+              {
+                "hooks": [
+                  {
+                    "type": "command",
+                    "command": "echo stop",
+                    "timeout": 5
+                  }
+                ]
+              }
+            ]
+          },
+          "env": {}
+        }"#,
+    )
+    .unwrap();
+    fs::write(
+        root.join(".claude/commands/demo.md"),
+        "---\ndescription: Demo prompt\n---\n\n# Demo\nUse $ARGUMENTS.\n",
+    )
+    .unwrap();
+
+    install_codex_env(CodexInstallOptions {
+        repo_root: root.clone(),
+        lua_policy: None,
+        codex_home: codex_home.clone(),
+    })
+    .unwrap();
+    fs::write(
+        root.join(".codex/agents/rogue.toml"),
+        "name = \"rogue\"\ndescription = \"not in config\"\nmodel = \"gpt-5.5\"\nmodel_reasoning_effort = \"high\"\ndeveloper_instructions = \"missing config entry\"\n",
+    )
+    .unwrap();
+
+    let error = doctor_codex_surface(DoctorOptions {
+        repo_root: root,
+        lua_policy: None,
+        codex_home,
+    })
+    .unwrap_err();
+    assert!(error.to_string().contains("missing from config"));
 }
 
 #[test]

@@ -1,6 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::{Component, Path, PathBuf};
 use std::process::{Command, Stdio};
 
 use anyhow::{anyhow, bail, Context, Result};
@@ -50,6 +50,7 @@ pub struct DoctorReport {
     pub config_approval_policy: String,
     pub config_approvals_reviewer: String,
     pub config_goals_enabled: bool,
+    pub config_agent_entries: usize,
     pub agent_files: usize,
     pub agent_models: BTreeMap<String, usize>,
     pub agent_efforts: BTreeMap<String, usize>,
@@ -89,8 +90,11 @@ pub fn doctor_codex_surface(options: DoctorOptions) -> Result<DoctorReport> {
         config_approval_policy,
         config_approvals_reviewer,
         config_goals_enabled,
+        configured_agents,
     ) = validate_config(&codex_dir)?;
-    let (agent_files, agent_models, agent_efforts) = validate_agents(&codex_dir)?;
+    let config_agent_entries = configured_agents.len();
+    let (agent_files, agent_models, agent_efforts) =
+        validate_agents(&codex_dir, &configured_agents)?;
     let (hook_events, hook_handlers) = validate_hooks(&codex_dir)?;
     let (prompt_files, prompt_alias_files, installed_prompt_files, workflow_prompts) =
         validate_prompts(&repo_root, &codex_dir, &codex_home)?;
@@ -106,6 +110,7 @@ pub fn doctor_codex_surface(options: DoctorOptions) -> Result<DoctorReport> {
         config_approval_policy,
         config_approvals_reviewer,
         config_goals_enabled,
+        config_agent_entries,
         agent_files,
         agent_models,
         agent_efforts,
@@ -119,7 +124,9 @@ pub fn doctor_codex_surface(options: DoctorOptions) -> Result<DoctorReport> {
     })
 }
 
-fn validate_config(codex_dir: &Path) -> Result<(String, String, String, String, bool)> {
+fn validate_config(
+    codex_dir: &Path,
+) -> Result<(String, String, String, String, bool, BTreeSet<PathBuf>)> {
     let path = codex_dir.join("config.toml");
     let config = read_toml(&path)?;
     let model = required_toml_string(&config, "model", &path)?;
@@ -157,20 +164,23 @@ fn validate_config(codex_dir: &Path) -> Result<(String, String, String, String, 
             path.display()
         );
     }
+    let configured_agents = configured_agent_files(&config, codex_dir, &path)?;
     Ok((
         model,
         effort,
         approval_policy,
         approvals_reviewer,
         goals_enabled,
+        configured_agents,
     ))
 }
 
-fn validate_agents(codex_dir: &Path) -> Result<AgentCounts> {
+fn validate_agents(codex_dir: &Path, configured_agents: &BTreeSet<PathBuf>) -> Result<AgentCounts> {
     let root = codex_dir.join("agents");
     let mut agent_files = 0;
     let mut models = BTreeMap::new();
     let mut efforts = BTreeMap::new();
+    let mut discovered_agents = BTreeSet::new();
     for entry in WalkDir::new(&root).into_iter() {
         let entry = entry?;
         let path = entry.path();
@@ -191,6 +201,7 @@ fn validate_agents(codex_dir: &Path) -> Result<AgentCounts> {
         let effort = required_toml_string(&toml, "model_reasoning_effort", path)?;
         *models.entry(model).or_insert(0) += 1;
         *efforts.entry(effort).or_insert(0) += 1;
+        discovered_agents.insert(strip_repo_prefix(codex_dir, path));
         agent_files += 1;
     }
 
@@ -202,7 +213,70 @@ fn validate_agents(codex_dir: &Path) -> Result<AgentCounts> {
             bail!("{} has no custom agents routed to {model}", root.display());
         }
     }
+    if discovered_agents != *configured_agents {
+        let missing_from_config: Vec<_> = discovered_agents
+            .difference(configured_agents)
+            .take(5)
+            .map(|path| path.display().to_string())
+            .collect();
+        let missing_from_disk: Vec<_> = configured_agents
+            .difference(&discovered_agents)
+            .take(5)
+            .map(|path| path.display().to_string())
+            .collect();
+        bail!(
+            "{} custom agent config is out of sync: {} file(s) missing from config [{}], {} config entry/entries missing from disk [{}]",
+            root.display(),
+            discovered_agents.difference(configured_agents).count(),
+            missing_from_config.join(", "),
+            configured_agents.difference(&discovered_agents).count(),
+            missing_from_disk.join(", ")
+        );
+    }
     Ok((agent_files, models, efforts))
+}
+
+fn configured_agent_files(
+    config: &toml::Value,
+    codex_dir: &Path,
+    config_path: &Path,
+) -> Result<BTreeSet<PathBuf>> {
+    let agents = config
+        .get("agents")
+        .and_then(toml::Value::as_table)
+        .ok_or_else(|| anyhow!("{} is missing required agents table", config_path.display()))?;
+    let mut configured = BTreeSet::new();
+    for (name, value) in agents {
+        let Some(table) = value.as_table() else {
+            continue;
+        };
+        let Some(config_file) = table.get("config_file").and_then(toml::Value::as_str) else {
+            continue;
+        };
+        if config_file.trim().is_empty() {
+            bail!(
+                "{} agent {name} has an empty config_file",
+                config_path.display()
+            );
+        }
+        let config_file = PathBuf::from(config_file);
+        if config_file.is_absolute()
+            || config_file
+                .components()
+                .any(|component| matches!(component, Component::ParentDir))
+        {
+            bail!(
+                "{} agent {name} has unsafe config_file {}",
+                config_path.display(),
+                config_file.display()
+            );
+        }
+        configured.insert(strip_repo_prefix(codex_dir, &codex_dir.join(config_file)));
+    }
+    if configured.is_empty() {
+        bail!("{} has no configured custom agents", config_path.display());
+    }
+    Ok(configured)
 }
 
 fn validate_hooks(codex_dir: &Path) -> Result<(Vec<String>, usize)> {

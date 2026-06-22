@@ -75,7 +75,7 @@ fn main() -> Result<()> {
                 codex_home,
             })?;
             println!(
-                "codex-env install ok: mirrored {} files ({} changed), installed {} prompts ({} changed), doctor verified config {}/{}, {} agents, {} hook handler(s), {} prompts ({} aliases) in {}",
+                "codex-env install ok: mirrored {} files ({} changed), installed {} prompts ({} changed), doctor verified config {}/{}, {} agents ({} config entries), {} hook handler(s), {} prompts ({} aliases) in {}",
                 report.mirror.total_files,
                 report.mirror.changed_files,
                 report.prompts.total_files,
@@ -83,6 +83,7 @@ fn main() -> Result<()> {
                 report.doctor.config_model,
                 report.doctor.config_reasoning_effort,
                 report.doctor.agent_files,
+                report.doctor.config_agent_entries,
                 report.doctor.hook_handlers,
                 report.doctor.installed_prompt_files,
                 report.doctor.prompt_alias_files,
@@ -129,13 +130,14 @@ fn main() -> Result<()> {
                 println!("{}", serde_json::to_string_pretty(&report)?);
             } else {
                 println!(
-                    "codex-env doctor ok: config {}/{}, approvals {}/{}, goals {}, {} agents ({}), {} hook event(s), {} hook handler(s), {} prompts ({} aliases) installed into {}",
+                    "codex-env doctor ok: config {}/{}, approvals {}/{}, goals {}, {} agents ({} config entries; {}), {} hook event(s), {} hook handler(s), {} prompts ({} aliases) installed into {}",
                     report.config_model,
                     report.config_reasoning_effort,
                     report.config_approval_policy,
                     report.config_approvals_reviewer,
                     report.config_goals_enabled,
                     report.agent_files,
+                    report.config_agent_entries,
                     format_counts(&report.agent_models),
                     report.hook_events.len(),
                     report.hook_handlers,
