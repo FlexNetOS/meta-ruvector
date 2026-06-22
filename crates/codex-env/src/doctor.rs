@@ -30,6 +30,8 @@ const REQUIRED_WORKFLOW_PROMPTS: &[&str] = &[
     "codex-gap-hunt.md",
 ];
 
+type AgentCounts = (usize, BTreeMap<String, usize>, BTreeMap<String, usize>);
+
 #[derive(Debug, Clone)]
 pub struct DoctorOptions {
     pub repo_root: PathBuf,
@@ -118,9 +120,7 @@ fn validate_config(codex_dir: &Path) -> Result<(String, String)> {
     Ok((model, effort))
 }
 
-fn validate_agents(
-    codex_dir: &Path,
-) -> Result<(usize, BTreeMap<String, usize>, BTreeMap<String, usize>)> {
+fn validate_agents(codex_dir: &Path) -> Result<AgentCounts> {
     let root = codex_dir.join("agents");
     let mut agent_files = 0;
     let mut models = BTreeMap::new();
@@ -251,7 +251,6 @@ fn validate_prompts(
     let source_dir = codex_dir.join("prompts");
     let target_dir = codex_home.join("prompts");
     let source_prompts = prompt_files(&source_dir)?;
-    let target_prompts = prompt_files(&target_dir)?;
     if source_prompts.is_empty() {
         bail!("{} has no Codex prompt files", source_dir.display());
     }
@@ -284,23 +283,6 @@ fn validate_prompts(
             );
         }
         installed_prompt_files += 1;
-    }
-
-    let expected_targets: BTreeSet<PathBuf> = source_prompts
-        .iter()
-        .map(|path| target_dir.join(path.file_name().unwrap_or_default()))
-        .collect();
-    let stale_targets: Vec<_> = target_prompts
-        .iter()
-        .filter(|path| !expected_targets.contains(*path))
-        .collect();
-    if !stale_targets.is_empty() {
-        bail!(
-            "{} has {} stale installed prompt file(s), first: {}",
-            target_dir.display(),
-            stale_targets.len(),
-            stale_targets[0].display()
-        );
     }
 
     Ok((
