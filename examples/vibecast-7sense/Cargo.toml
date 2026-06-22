@@ -11,6 +11,8 @@ members = [
     "crates/sevensense-api",
     "crates/sevensense-benches",
     "tests",
+    # Crate-membership audit: was orphaned (built by no workspace).
+    "scripts",
 ]
 
 [workspace.package]

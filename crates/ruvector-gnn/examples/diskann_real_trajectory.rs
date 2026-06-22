@@ -322,9 +322,9 @@ fn train_nodeclass_trajectory(
             }
             let m = logits.iter().cloned().fold(f32::MIN, f32::max);
             let mut z = 0.0f32;
-            for c in 0..n_cls {
-                logits[c] = (logits[c] - m).exp();
-                z += logits[c];
+            for logit in logits.iter_mut().take(n_cls) {
+                *logit = (*logit - m).exp();
+                z += *logit;
             }
             let y = labels[i];
             loss_acc += -(logits[y] / z).max(1e-12).ln();

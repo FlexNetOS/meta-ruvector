@@ -20,7 +20,48 @@ exclude = ["external/ruqu", "external/rvdna", "examples/OSpipe", "examples/rvf",
     # ruos-thermal: Pi 5 thermal supervisor skeleton (ADR-174). Standalone
     # for now; joins workspace once daemon mode + Unix socket protocol
     # land in iters 92-97.
-    "crates/ruos-thermal"]
+    "crates/ruos-thermal",
+    # agentic-robotics-*: a self-contained DDS/ROS2 robotics-middleware cluster
+    # (upstream ruvnet/vibecast) — 6 crates that only depend on each other, with
+    # zero linkage to ruvector proper. They inherit workspace.package fields
+    # (homepage/documentation/description/keywords/categories) and require
+    # zenoh/rustdds/cdr — none of which exist in this workspace. Kept out of the
+    # default build so the main workspace stays lean; full integration (own
+    # nested workspace + DDS deps) is tracked as a follow-up.
+    "crates/agentic-robotics-core",
+    "crates/agentic-robotics-rt",
+    "crates/agentic-robotics-node",
+    "crates/agentic-robotics-mcp",
+    "crates/agentic-robotics-embedded",
+    "crates/agentic-robotics-benchmarks",
+    # Vendored [patch.crates-io] override source for hnsw_rs — a patch source is
+    # not a workspace member by design (two copies exist for different patch
+    # tables); excluded explicitly so it is accounted for, not silently orphaned.
+    "patches/hnsw_rs",
+    "scripts/patches/hnsw_rs",
+    # Standalone docker integration-test harness (ruvector-attention-integration-test);
+    # run inside its container, not part of the host `cargo build --workspace`.
+    "tests/docker-integration",
+    # spiking-network: WIP scaffold — its manifest declares a `spiking_bench`
+    # bench and three `[[example]]` targets whose source files do not exist, so
+    # it cannot build as a workspace member. Excluded (not silently orphaned)
+    # until the crate is completed; then move it back to `members`.
+    "examples/spiking-network",
+    # ruvector-attention-cli / ruvector-sparse-inference-wasm: stale against
+    # current ruvector-attention / sparse-model APIs (calls removed methods like
+    # ScaledDotProductAttention::compute, SparseModel::{encode,forward_embedding,
+    # sparsity_statistics}). They do not compile, so they are excluded rather
+    # than added as broken members; re-align to the current APIs, then re-add.
+    "crates/ruvector-attention-cli",
+    "crates/ruvector-sparse-inference-wasm",
+    # ruvector-agent-memory / ruvector-hnsw-repair / ruvector-maxsim: compile
+    # cleanly but still fail the `clippy --all-targets -- -D warnings` CI gate
+    # (e.g. too_many_arguments, ptr_arg, unnecessary_sort_by — not auto-fixable
+    # without API changes). Excluded so the workspace clippy gate stays green;
+    # promote to `members` after a lint pass.
+    "crates/ruvector-agent-memory",
+    "crates/ruvector-hnsw-repair",
+    "crates/ruvector-maxsim"]
 members = [
     "crates/ruvector-temporal-coherence",
     "crates/ruvector-acorn",
@@ -250,6 +291,13 @@ members = [
     "crates/photonlayer-ruvector",
     "crates/photonlayer-cli",
     "crates/photonlayer-wasm",
+    # Crate-membership audit (meta-integration): these were orphaned — present
+    # with [package] but members of no workspace, so `cargo build --workspace`
+    # never built them. Promoted here because they compile AND pass the
+    # `clippy --workspace --all-targets -- -D warnings` CI gate. Other recovered
+    # orphans that compile but still carry clippy debt are in `exclude` below.
+    "crates/ruvector-temporal-tensor-wasm",
+    "crates/ruvector-bet4-ivf-bench",
 ]
 resolver = "2"
 

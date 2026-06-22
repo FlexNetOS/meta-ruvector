@@ -1,12 +1,26 @@
-//! ML-DSA-65 signature verification for RVF packages.
+//! Boot signature verification for RVF packages.
 //!
-//! This module implements the critical signature verification per SEC-001:
-//! **On signature failure, PANIC IMMEDIATELY. No fallback boot path.**
+//! # ⚠️ Phase A: PLACEHOLDER / MOCK — NOT a real signature check
 //!
-//! # ML-DSA-65 (NIST FIPS 204)
+//! **This module does NOT perform real cryptographic signature verification.**
+//! [`SignatureVerifier::verify`] currently runs a Phase-A *mock*
+//! ([`SignatureVerifier::verify_ml_dsa_65`]) that accepts test signatures
+//! (a `"TEST"` prefix + matching SHA-256 manifest hash, or an all-zeros
+//! signature against an all-zeros test key). It provides **no security
+//! guarantee** against forged or tampered manifests.
+//!
+//! Real **ML-DSA-65 (NIST FIPS 204)** post-quantum verification is **TBD**
+//! (planned for Phase B; the sizing constants below match that future
+//! algorithm but the verification logic is not implemented yet).
+//!
+//! This module does implement the SEC-001 *control-flow* policy:
+//! **on signature failure, PANIC IMMEDIATELY — there is no fallback boot
+//! path.** That policy is real; the cryptographic check it gates is not.
+//!
+//! # ML-DSA-65 (NIST FIPS 204) — planned (Phase B)
 //!
 //! ML-DSA-65 is a post-quantum digital signature algorithm standardized
-//! by NIST in FIPS 204. It provides:
+//! by NIST in FIPS 204. The constants below are sized for it:
 //! - 128-bit security level against classical attacks
 //! - Category 2 security against quantum attacks
 //! - Signature size: 3309 bytes
@@ -67,7 +81,9 @@ impl VerifyResult {
 
 /// Signature verifier for RVF packages.
 ///
-/// Implements ML-DSA-65 signature verification per NIST FIPS 204.
+/// ⚠️ **Phase A: placeholder check only.** This does NOT implement real
+/// ML-DSA-65 / FIPS 204 verification — see the module-level docs. The
+/// real post-quantum verifier is TBD (Phase B).
 pub struct SignatureVerifier {
     /// Boot public key (embedded at build time or loaded from secure storage).
     public_key: [u8; PUBLIC_KEY_SIZE],
