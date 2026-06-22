@@ -11,6 +11,7 @@ fn mirror_generates_codex_and_skill_files() {
     let temp = tempfile::tempdir().unwrap();
     let root = temp.path();
     fs::create_dir_all(root.join(".claude/hooks")).unwrap();
+    fs::create_dir_all(root.join(".claude/helpers")).unwrap();
     fs::create_dir_all(root.join(".claude/agents/core")).unwrap();
     fs::create_dir_all(root.join(".claude/agents/browser")).unwrap();
     fs::create_dir_all(root.join(".claude/skills/demo")).unwrap();
@@ -90,6 +91,16 @@ fn mirror_generates_codex_and_skill_files() {
     fs::write(
         root.join(".claude/hooks/rust-check.sh"),
         "#!/bin/sh\necho exact   \n",
+    )
+    .unwrap();
+    fs::write(
+        root.join(".claude/helpers/hook-handler.cjs"),
+        "#!/usr/bin/env node\nconsole.log('[OK] hook handler')\n",
+    )
+    .unwrap();
+    fs::write(
+        root.join(".claude/helpers/auto-memory-hook.mjs"),
+        "#!/usr/bin/env node\nconsole.log('[OK] auto memory')\n",
     )
     .unwrap();
     fs::write(
@@ -272,7 +283,7 @@ fn mirror_generates_codex_and_skill_files() {
     let inventory: serde_json::Value =
         serde_json::from_slice(&fs::read(root.join(".codex/mirror-symbols.json")).unwrap())
             .unwrap();
-    assert_eq!(inventory["sourceFileCount"], 11);
+    assert_eq!(inventory["sourceFileCount"], 13);
     let command_entry = inventory["entries"]
         .as_array()
         .unwrap()
@@ -332,6 +343,7 @@ fn mirror_generates_codex_and_skill_files() {
     assert!(doctor.agent_models.contains_key("gpt-5.5"));
     assert!(doctor.agent_models.contains_key("gpt-5.4-mini"));
     assert!(doctor.hook_events.contains(&"Stop".to_owned()));
+    assert_eq!(doctor.hook_shim_handlers, 3);
 }
 
 #[test]
@@ -511,6 +523,64 @@ fn doctor_rejects_undeclared_custom_agent_files() {
     })
     .unwrap_err();
     assert!(error.to_string().contains("missing from config"));
+}
+
+#[test]
+fn doctor_rejects_hook_shim_with_missing_claude_helper() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path().join("repo");
+    let codex_home = temp.path().join("codex-home");
+    fs::create_dir_all(root.join(".claude/commands")).unwrap();
+    fs::write(
+        root.join(".claude/settings.json"),
+        r#"{
+          "hooks": {
+            "PreToolUse": [
+              {
+                "matcher": "Bash",
+                "hooks": [
+                  {
+                    "type": "command",
+                    "command": "node \"${CLAUDE_PROJECT_DIR:-.}/.claude/helpers/hook-handler.cjs\" pre-bash",
+                    "timeout": 5000
+                  }
+                ]
+              }
+            ]
+          },
+          "env": {}
+        }"#,
+    )
+    .unwrap();
+    fs::write(
+        root.join(".claude/commands/demo.md"),
+        "---\ndescription: Demo prompt\n---\n\n# Demo\nUse $ARGUMENTS.\n",
+    )
+    .unwrap();
+
+    mirror_codex_surface(MirrorOptions {
+        repo_root: root.clone(),
+        lua_policy: None,
+        check: false,
+    })
+    .unwrap();
+    install_codex_prompts(PromptInstallOptions {
+        repo_root: root.clone(),
+        codex_home: codex_home.clone(),
+        check: false,
+    })
+    .unwrap();
+    ensure_codex_home_settings(&codex_home).unwrap();
+
+    let error = doctor_codex_surface(DoctorOptions {
+        repo_root: root,
+        lua_policy: None,
+        codex_home,
+    })
+    .unwrap_err();
+    assert!(error
+        .to_string()
+        .contains("references missing Claude helper"));
 }
 
 #[test]
