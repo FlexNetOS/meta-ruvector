@@ -55,7 +55,7 @@ description = "PR reviewer focused on correctness, security, and missing tests."
 config_file = "agents/reviewer.toml"
 
 [agents.docs_researcher]
-description = "Documentation specialist that verifies APIs, framework behavior, and release notes."
+description = "Documentation specialist that verifies APIs, framework behavior, and release-note claims against primary documentation."
 config_file = "agents/docs-researcher.toml"
 
 [shell_environment_policy]

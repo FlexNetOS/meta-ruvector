@@ -12,6 +12,8 @@ cargo run -p codex-env -- mirror --check
 
 ## Mirrored Surfaces
 
+- `.claude/**` -> `.codex/mirror/.claude/**` byte-for-byte
+- `.claude/**` -> `.codex/mirror-symbols.json` deterministic file/symbol inventory
 - `.claude/settings.json` -> `.codex/hooks.json` and shell environment defaults
 - `.claude/hooks/` -> `.codex/hooks/`
 - `.claude/skills/` -> `.agents/skills/`
