@@ -1,28 +1,22 @@
-# ECC for Codex CLI
+# Codex Mirror Surface
 
-This supplements the root `AGENTS.md` with a repo-local ECC baseline.
+This directory is generated from the tracked `.claude` surface by the Rust
+`codex-env` harness.
 
-## Repo Skill
+## Refresh
 
-- Repo-generated Codex skill: `.agents/skills/ruvector/SKILL.md`
-- Claude-facing companion skill: `.claude/skills/ruvector/SKILL.md`
-- Keep user-specific credentials and private MCPs in `~/.codex/config.toml`, not in this repo.
+```bash
+cargo run -p codex-env -- mirror
+cargo run -p codex-env -- mirror --check
+```
 
-## MCP Baseline
+## Mirrored Surfaces
 
-Treat `.codex/config.toml` as the default ECC-safe baseline for work in this repository.
-The generated baseline enables GitHub, Context7, Exa, Memory, Playwright, and Sequential Thinking.
+- `.claude/settings.json` -> `.codex/hooks.json` and shell environment defaults
+- `.claude/hooks/` -> `.codex/hooks/`
+- `.claude/skills/` -> `.agents/skills/`
+- `.claude/commands/**/*.md` -> `.agents/skills/source-command-*`
 
-## Multi-Agent Support
-
-- Explorer: read-only evidence gathering
-- Reviewer: correctness, security, and regression review
-- Docs researcher: API and release-note verification
-
-## Workflow Files
-
-- `.claude/commands/npm-package-version-bump-and-release.md`
-- `.claude/commands/sync-readme-and-package-json-to-published-npm.md`
-- `.claude/commands/ci-guard-and-supply-chain-hardening.md`
-
-Use these workflow files as reusable task scaffolds when the detected repository workflows recur.
+Use `--lua-policy <path>` when a repo-local transformation is needed. The Lua
+script receives a `mirror` table with `repo_root` and `claude_dir`, and may
+return `{ config_footer = "...", skill_prelude = "..." }`.
