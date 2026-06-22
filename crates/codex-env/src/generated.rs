@@ -235,6 +235,7 @@ sandbox_mode = "workspace-write"
 web_search = "live"
 model = "gpt-5.5"
 model_reasoning_effort = "high"
+model_catalog_json = "model-catalog.json"
 model_context_window = 4000000
 
 [mcp_servers.github]
@@ -325,6 +326,124 @@ inherit = "core"
     }
 
     toml
+}
+
+pub(super) fn codex_model_catalog_json() -> String {
+    serde_json::to_string_pretty(&json!({
+        "models": [
+            {
+                "slug": "gpt-5.5",
+                "display_name": "GPT-5.5",
+                "description": "Frontier model for complex coding, research, and real-world work.",
+                "default_reasoning_level": "medium",
+                "supported_reasoning_levels": [
+                    {
+                        "effort": "low",
+                        "description": "Fast responses with lighter reasoning"
+                    },
+                    {
+                        "effort": "medium",
+                        "description": "Balances speed and reasoning depth for everyday tasks"
+                    },
+                    {
+                        "effort": "high",
+                        "description": "Greater reasoning depth for complex problems"
+                    },
+                    {
+                        "effort": "xhigh",
+                        "description": "Extra high reasoning depth for complex problems"
+                    }
+                ],
+                "shell_type": "shell_command",
+                "visibility": "list",
+                "supported_in_api": true,
+                "priority": 0,
+                "additional_speed_tiers": ["fast"],
+                "service_tiers": [
+                    {
+                        "id": "priority",
+                        "name": "Fast",
+                        "description": "1.5x speed, increased usage"
+                    }
+                ],
+                "default_service_tier": null,
+                "availability_nux": {
+                    "message": "GPT-5.5 is configured for the local Codex harness."
+                },
+                "upgrade": null,
+                "base_instructions": "",
+                "supports_reasoning_summaries": true,
+                "default_reasoning_summary": "none",
+                "support_verbosity": true,
+                "default_verbosity": "low",
+                "apply_patch_tool_type": "freeform",
+                "web_search_tool_type": "text_and_image",
+                "truncation_policy": {
+                    "mode": "tokens",
+                    "limit": 10000
+                },
+                "supports_parallel_tool_calls": true,
+                "supports_image_detail_original": true,
+                "context_window": 4000000,
+                "max_context_window": 4000000,
+                "auto_compact_token_limit": null,
+                "effective_context_window_percent": 95,
+                "experimental_supported_tools": [],
+                "input_modalities": ["text", "image"],
+                "supports_search_tool": true
+            },
+            {
+                "slug": "gpt-5.4-mini",
+                "display_name": "GPT-5.4 mini",
+                "description": "Fast model for focused subagent work.",
+                "default_reasoning_level": "medium",
+                "supported_reasoning_levels": [
+                    {
+                        "effort": "low",
+                        "description": "Fast responses with lighter reasoning"
+                    },
+                    {
+                        "effort": "medium",
+                        "description": "Balances speed and reasoning depth for everyday tasks"
+                    },
+                    {
+                        "effort": "high",
+                        "description": "Greater reasoning depth for complex problems"
+                    }
+                ],
+                "shell_type": "shell_command",
+                "visibility": "list",
+                "supported_in_api": true,
+                "priority": 1,
+                "additional_speed_tiers": [],
+                "service_tiers": [],
+                "default_service_tier": null,
+                "availability_nux": null,
+                "upgrade": null,
+                "base_instructions": "",
+                "supports_reasoning_summaries": true,
+                "default_reasoning_summary": "none",
+                "support_verbosity": true,
+                "default_verbosity": "low",
+                "apply_patch_tool_type": "freeform",
+                "web_search_tool_type": "text_and_image",
+                "truncation_policy": {
+                    "mode": "tokens",
+                    "limit": 10000
+                },
+                "supports_parallel_tool_calls": true,
+                "supports_image_detail_original": true,
+                "context_window": 1000000,
+                "max_context_window": 1000000,
+                "auto_compact_token_limit": null,
+                "effective_context_window_percent": 95,
+                "experimental_supported_tools": [],
+                "input_modalities": ["text", "image"],
+                "supports_search_tool": true
+            }
+        ]
+    }))
+    .expect("static Codex model catalog JSON should serialize")
 }
 
 pub(super) fn codex_agents_md() -> String {

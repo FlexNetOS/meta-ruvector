@@ -6,6 +6,7 @@ use anyhow::{anyhow, Context, Result};
 use mlua::{Lua, Value};
 use serde::Serialize;
 use serde_json::json;
+use serde_json::Value as JsonValue;
 use toml_edit::{value, DocumentMut, Item, Table};
 
 mod agent_roles;
@@ -85,6 +86,7 @@ pub struct CodexHomeSettingsReport {
     pub changed: bool,
     pub model: String,
     pub model_reasoning_effort: String,
+    pub model_catalog_json: String,
     pub approval_policy: String,
     pub approvals_reviewer: String,
     pub model_context_window: i64,
@@ -98,6 +100,7 @@ pub const REQUIRED_CODEX_REASONING_EFFORT: &str = "high";
 pub const REQUIRED_CODEX_APPROVAL_POLICY: &str = "on-request";
 pub const REQUIRED_CODEX_APPROVALS_REVIEWER: &str = "auto_review";
 pub const REQUIRED_CODEX_CONTEXT_WINDOW: i64 = 4_000_000;
+pub const REQUIRED_CODEX_MODEL_CATALOG: &str = "model-catalog.json";
 
 #[derive(Debug, Default)]
 struct LuaPolicy {
@@ -140,6 +143,11 @@ pub fn mirror_codex_surface(options: MirrorOptions) -> Result<MirrorReport> {
             policy.config_footer.as_deref(),
         )
         .into_bytes(),
+        executable: false,
+    });
+    planned.push(PlannedFile {
+        path: codex_dir.join(REQUIRED_CODEX_MODEL_CATALOG),
+        bytes: generated::codex_model_catalog_json().into_bytes(),
         executable: false,
     });
     planned.push(PlannedFile {
@@ -362,6 +370,13 @@ pub fn install_codex_env(options: CodexInstallOptions) -> Result<CodexInstallRep
 }
 
 pub fn ensure_codex_home_settings(codex_home: &Path) -> Result<CodexHomeSettingsReport> {
+    let catalog_path = codex_home.join(REQUIRED_CODEX_MODEL_CATALOG);
+    write_file(&PlannedFile {
+        path: catalog_path.clone(),
+        bytes: generated::codex_model_catalog_json().into_bytes(),
+        executable: false,
+    })?;
+
     let config_path = codex_home.join("config.toml");
     let original = if config_path.exists() {
         fs::read_to_string(&config_path)
@@ -378,6 +393,11 @@ pub fn ensure_codex_home_settings(codex_home: &Path) -> Result<CodexHomeSettings
         &mut document,
         "model_reasoning_effort",
         REQUIRED_CODEX_REASONING_EFFORT,
+    );
+    set_root_string(
+        &mut document,
+        "model_catalog_json",
+        catalog_path.to_string_lossy().as_ref(),
     );
     set_root_string(
         &mut document,
@@ -428,6 +448,7 @@ fn validate_codex_home_settings_at(
     let model = required_home_string(&parsed, "model", &config_path)?;
     let model_reasoning_effort =
         required_home_string(&parsed, "model_reasoning_effort", &config_path)?;
+    let model_catalog_json = required_home_string(&parsed, "model_catalog_json", &config_path)?;
     let approval_policy = required_home_string(&parsed, "approval_policy", &config_path)?;
     let approvals_reviewer = required_home_string(&parsed, "approvals_reviewer", &config_path)?;
     let model_context_window =
@@ -450,6 +471,15 @@ fn validate_codex_home_settings_at(
             config_path.display()
         ));
     }
+    let expected_catalog = codex_home.join(REQUIRED_CODEX_MODEL_CATALOG);
+    if model_catalog_json != expected_catalog.to_string_lossy() {
+        return Err(anyhow!(
+            "{} must set model_catalog_json to {}, found {model_catalog_json}",
+            config_path.display(),
+            expected_catalog.display()
+        ));
+    }
+    validate_model_catalog(&expected_catalog)?;
     if approval_policy != REQUIRED_CODEX_APPROVAL_POLICY {
         return Err(anyhow!(
             "{} must set approval_policy to {REQUIRED_CODEX_APPROVAL_POLICY}, found {approval_policy}",
@@ -492,6 +522,7 @@ fn validate_codex_home_settings_at(
         changed,
         model,
         model_reasoning_effort,
+        model_catalog_json,
         approval_policy,
         approvals_reviewer,
         model_context_window,
@@ -499,6 +530,46 @@ fn validate_codex_home_settings_at(
         goals_enabled,
         include_skill_instructions,
     })
+}
+
+fn validate_model_catalog(path: &Path) -> Result<()> {
+    let catalog =
+        fs::read_to_string(path).with_context(|| format!("failed to read {}", path.display()))?;
+    let parsed = serde_json::from_str::<JsonValue>(&catalog)
+        .with_context(|| format!("failed to parse {}", path.display()))?;
+    let models = parsed
+        .get("models")
+        .and_then(JsonValue::as_array)
+        .ok_or_else(|| anyhow!("{} must contain a models array", path.display()))?;
+    let Some(model) = models
+        .iter()
+        .find(|model| model.get("slug").and_then(JsonValue::as_str) == Some(REQUIRED_CODEX_MODEL))
+    else {
+        return Err(anyhow!(
+            "{} must contain model {}",
+            path.display(),
+            REQUIRED_CODEX_MODEL
+        ));
+    };
+    let context_window = model
+        .get("context_window")
+        .and_then(JsonValue::as_i64)
+        .ok_or_else(|| anyhow!("{} model must set context_window", path.display()))?;
+    let max_context_window = model
+        .get("max_context_window")
+        .and_then(JsonValue::as_i64)
+        .ok_or_else(|| anyhow!("{} model must set max_context_window", path.display()))?;
+    if context_window < REQUIRED_CODEX_CONTEXT_WINDOW
+        || max_context_window < REQUIRED_CODEX_CONTEXT_WINDOW
+    {
+        return Err(anyhow!(
+            "{} model {} must set context_window and max_context_window >= {}, found {context_window}/{max_context_window}",
+            path.display(),
+            REQUIRED_CODEX_MODEL,
+            REQUIRED_CODEX_CONTEXT_WINDOW
+        ));
+    }
+    Ok(())
 }
 
 fn set_root_string(document: &mut DocumentMut, key: &str, expected: &str) {

@@ -151,7 +151,12 @@ fn mirror_generates_codex_and_skill_files() {
     assert!(config.contains("approvals_reviewer = \"auto_review\""));
     assert!(config.contains("model = \"gpt-5.5\""));
     assert!(config.contains("model_reasoning_effort = \"high\""));
+    assert!(config.contains("model_catalog_json = \"model-catalog.json\""));
     assert!(config.contains("model_context_window = 4000000"));
+    let catalog = fs::read_to_string(root.join(".codex/model-catalog.json")).unwrap();
+    assert!(catalog.contains("\"slug\": \"gpt-5.5\""));
+    assert!(catalog.contains("\"context_window\": 4000000"));
+    assert!(catalog.contains("\"max_context_window\": 4000000"));
     assert!(config.contains("[features]\nmulti_agent = true\ngoals = true"));
     assert!(config.contains("[skills]\ninclude_instructions = true"));
     for server in [
@@ -342,6 +347,7 @@ fn mirror_generates_codex_and_skill_files() {
     .unwrap();
     assert_eq!(doctor.config_model, "gpt-5.5");
     assert_eq!(doctor.config_reasoning_effort, "high");
+    assert_eq!(doctor.config_model_catalog_json, "model-catalog.json");
     assert_eq!(doctor.config_approval_policy, "on-request");
     assert_eq!(doctor.config_approvals_reviewer, "auto_review");
     assert!(doctor.config_goals_enabled);
@@ -409,6 +415,10 @@ fn install_refreshes_mirror_prompts_and_doctor_in_one_step() {
     assert_eq!(report.doctor.prompt_alias_files, 0);
     assert!(report.home_settings.changed);
     assert_eq!(report.home_settings.approvals_reviewer, "auto_review");
+    assert_eq!(
+        report.home_settings.model_catalog_json,
+        codex_home.join("model-catalog.json").to_string_lossy()
+    );
     assert_eq!(report.home_settings.model_context_window, 4_000_000);
     assert!(report.home_settings.goals_enabled);
     assert!(report.home_settings.include_skill_instructions);
@@ -418,6 +428,8 @@ fn install_refreshes_mirror_prompts_and_doctor_in_one_step() {
     );
     assert_eq!(report.doctor.installed_prompt_files, 4);
     assert!(root.join(".codex/config.toml").exists());
+    assert!(root.join(".codex/model-catalog.json").exists());
+    assert!(codex_home.join("model-catalog.json").exists());
     assert!(codex_home.join("prompts/demo.md").exists());
 
     let checked = doctor_codex_surface(DoctorOptions {
@@ -472,6 +484,10 @@ args = ["serve"]
     assert!(report.home_settings.changed);
     assert_eq!(report.home_settings.model, "gpt-5.5");
     assert_eq!(report.home_settings.model_reasoning_effort, "high");
+    assert_eq!(
+        report.home_settings.model_catalog_json,
+        codex_home.join("model-catalog.json").to_string_lossy()
+    );
     assert_eq!(report.home_settings.approval_policy, "on-request");
     assert_eq!(report.home_settings.approvals_reviewer, "auto_review");
     assert_eq!(report.home_settings.model_context_window, 4_000_000);
@@ -484,6 +500,10 @@ args = ["serve"]
     assert!(config.contains("command = \"/home/drdave/.local/bin/icm\""));
     assert!(config.contains("memories = true"));
     assert!(config.contains("model_context_window = 4000000"));
+    assert!(config.contains(&format!(
+        "model_catalog_json = \"{}\"",
+        codex_home.join("model-catalog.json").display()
+    )));
     assert!(config.contains("approvals_reviewer = \"auto_review\""));
     assert!(config.contains("goals = true"));
     assert!(config.contains("[skills]\ninclude_instructions = true"));

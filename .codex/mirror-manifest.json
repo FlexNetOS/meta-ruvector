@@ -1,5 +1,5 @@
 {
-  "fileCount": 948,
+  "fileCount": 949,
   "files": [
     ".codex/mirror/.claude/agentic-flow-fast.sh",
     ".codex/mirror/.claude/agents/analysis/analyze-code-quality.md",
@@ -377,6 +377,7 @@
     ".codex/mirror/.claude/statusline-command.sh",
     ".codex/mirror/.claude/statusline.mjs",
     ".codex/config.toml",
+    ".codex/model-catalog.json",
     ".codex/AGENTS.md",
     ".codex/agent-teams.json",
     ".codex/agents/explorer.toml",

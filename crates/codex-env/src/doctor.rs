@@ -5,11 +5,13 @@ use std::process::{Command, Stdio};
 
 use anyhow::{anyhow, bail, Context, Result};
 use serde::{Deserialize, Serialize};
+use serde_json::Value as JsonValue;
 use walkdir::WalkDir;
 
 use super::{
     install_codex_prompts, is_executable, mirror_codex_surface, strip_repo_prefix,
     validate_codex_home_settings, CodexHomeSettingsReport, MirrorOptions, PromptInstallOptions,
+    REQUIRED_CODEX_CONTEXT_WINDOW, REQUIRED_CODEX_MODEL, REQUIRED_CODEX_MODEL_CATALOG,
 };
 
 const SUPPORTED_HOOK_EVENTS: &[&str] = &[
@@ -58,6 +60,7 @@ type AgentCounts = (usize, BTreeMap<String, usize>, BTreeMap<String, usize>);
 struct ConfigValidationReport {
     model: String,
     reasoning_effort: String,
+    model_catalog_json: String,
     approval_policy: String,
     approvals_reviewer: String,
     goals_enabled: bool,
@@ -105,6 +108,7 @@ pub struct DoctorReport {
     pub codex_home_settings: CodexHomeSettingsReport,
     pub config_model: String,
     pub config_reasoning_effort: String,
+    pub config_model_catalog_json: String,
     pub config_approval_policy: String,
     pub config_approvals_reviewer: String,
     pub config_goals_enabled: bool,
@@ -166,6 +170,7 @@ pub fn doctor_codex_surface(options: DoctorOptions) -> Result<DoctorReport> {
         codex_home_settings,
         config_model: config_report.model,
         config_reasoning_effort: config_report.reasoning_effort,
+        config_model_catalog_json: config_report.model_catalog_json,
         config_approval_policy: config_report.approval_policy,
         config_approvals_reviewer: config_report.approvals_reviewer,
         config_goals_enabled: config_report.goals_enabled,
@@ -192,6 +197,7 @@ fn validate_config(codex_dir: &Path) -> Result<ConfigValidationReport> {
     let config = read_toml(&path)?;
     let model = required_toml_string(&config, "model", &path)?;
     let effort = required_toml_string(&config, "model_reasoning_effort", &path)?;
+    let model_catalog_json = required_toml_string(&config, "model_catalog_json", &path)?;
     let approval_policy = required_toml_string(&config, "approval_policy", &path)?;
     let approvals_reviewer = required_toml_string(&config, "approvals_reviewer", &path)?;
     let goals_enabled = required_toml_bool(&config, &["features", "goals"], &path)?;
@@ -207,6 +213,13 @@ fn validate_config(codex_dir: &Path) -> Result<ConfigValidationReport> {
             path.display()
         );
     }
+    if model_catalog_json != REQUIRED_CODEX_MODEL_CATALOG {
+        bail!(
+            "{} must set model_catalog_json to {REQUIRED_CODEX_MODEL_CATALOG}, found {model_catalog_json}",
+            path.display()
+        );
+    }
+    validate_repo_model_catalog(codex_dir)?;
     if approval_policy != "on-request" {
         bail!(
             "{} must set Codex approval_policy to on-request, found {approval_policy}",
@@ -230,6 +243,7 @@ fn validate_config(codex_dir: &Path) -> Result<ConfigValidationReport> {
     Ok(ConfigValidationReport {
         model,
         reasoning_effort: effort,
+        model_catalog_json,
         approval_policy,
         approvals_reviewer,
         goals_enabled,
@@ -325,6 +339,47 @@ fn validate_mcp_servers(config: &toml::Value, config_path: &Path) -> Result<Vec<
     }
 
     Ok(servers.keys().cloned().collect())
+}
+
+fn validate_repo_model_catalog(codex_dir: &Path) -> Result<()> {
+    let path = codex_dir.join(REQUIRED_CODEX_MODEL_CATALOG);
+    let catalog = serde_json::from_slice::<JsonValue>(
+        &fs::read(&path).with_context(|| format!("failed to read {}", path.display()))?,
+    )
+    .with_context(|| format!("failed to parse {}", path.display()))?;
+    let models = catalog
+        .get("models")
+        .and_then(JsonValue::as_array)
+        .ok_or_else(|| anyhow!("{} must contain a models array", path.display()))?;
+    let Some(model) = models
+        .iter()
+        .find(|model| model.get("slug").and_then(JsonValue::as_str) == Some(REQUIRED_CODEX_MODEL))
+    else {
+        bail!(
+            "{} must contain model {}",
+            path.display(),
+            REQUIRED_CODEX_MODEL
+        );
+    };
+    let context_window = model
+        .get("context_window")
+        .and_then(JsonValue::as_i64)
+        .ok_or_else(|| anyhow!("{} model must set context_window", path.display()))?;
+    let max_context_window = model
+        .get("max_context_window")
+        .and_then(JsonValue::as_i64)
+        .ok_or_else(|| anyhow!("{} model must set max_context_window", path.display()))?;
+    if context_window < REQUIRED_CODEX_CONTEXT_WINDOW
+        || max_context_window < REQUIRED_CODEX_CONTEXT_WINDOW
+    {
+        bail!(
+            "{} model {} must set context_window and max_context_window >= {}, found {context_window}/{max_context_window}",
+            path.display(),
+            REQUIRED_CODEX_MODEL,
+            REQUIRED_CODEX_CONTEXT_WINDOW
+        );
+    }
+    Ok(())
 }
 
 fn validate_agents(codex_dir: &Path, configured_agents: &ConfiguredAgents) -> Result<AgentCounts> {
@@ -886,9 +941,10 @@ fn required_toml_bool(value: &toml::Value, keys: &[&str], path: &Path) -> Result
 
 #[cfg(test)]
 mod tests {
+    use std::fs;
     use std::path::Path;
 
-    use super::validate_mcp_servers;
+    use super::{validate_mcp_servers, validate_repo_model_catalog};
 
     fn valid_mcp_config() -> toml::Value {
         toml::from_str(
@@ -968,5 +1024,32 @@ CLAUDE_FLOW_MEMORY_BACKEND = "hybrid"
         assert!(error
             .to_string()
             .contains("claude-flow env CLAUDE_FLOW_MODE must be v3"));
+    }
+
+    #[test]
+    fn validate_repo_model_catalog_rejects_fallback_context_window() {
+        let temp = tempfile::tempdir().unwrap();
+        let codex_dir = temp.path();
+        fs::write(
+            codex_dir.join("model-catalog.json"),
+            r#"{
+              "models": [
+                {
+                  "slug": "gpt-5.5",
+                  "context_window": 272000,
+                  "max_context_window": 272000
+                }
+              ]
+            }"#,
+        )
+        .unwrap();
+
+        let error = validate_repo_model_catalog(codex_dir).unwrap_err();
+        assert!(
+            error
+                .to_string()
+                .contains("must set context_window and max_context_window >= 4000000"),
+            "unexpected error: {error:?}"
+        );
     }
 }
