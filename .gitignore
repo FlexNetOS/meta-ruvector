@@ -99,6 +99,7 @@ coordination/orchestration/*
 *.db
 *.db-journal
 *.db-wal
+*.db-shm
 *.sqlite
 *.sqlite-journal
 *.sqlite-wal
@@ -191,3 +192,17 @@ crates/ruvector-hailo/Cargo.lock
 crates/ruvector-hailo-cluster/Cargo.lock
 crates/hailort-sys/Cargo.lock
 crates/ruvector-mmwave/Cargo.lock
+
+# Local cargo-installed tool cache produced by development harnesses.
+/.crates.toml
+/.crates2.json
+/bin/cargo-pgrx
+/bin/wasm-pack
+/bin/wasm-pack.stamp
+
+# Runtime handoff claim locks are per-session coordination state.
+/.handoff/locks/*.lock
+
+# These nested JS projects use package-lock.json as their committed lockfile.
+/npm/bun.lock
+/ui/ruvocal/bun.lock
