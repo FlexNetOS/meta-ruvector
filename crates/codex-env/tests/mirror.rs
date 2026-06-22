@@ -1,4 +1,5 @@
 use std::fs;
+use std::process::Command;
 
 use codex_env::{
     doctor_codex_surface, install_codex_prompts, mirror_codex_surface, DoctorOptions,
@@ -328,6 +329,71 @@ fn install_prompts_copies_generated_prompt_commands() {
     })
     .unwrap();
     assert_eq!(check.changed_files, 0);
+}
+
+#[test]
+fn doctor_rejects_gitignored_generated_surface_files() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path();
+    Command::new("git")
+        .arg("init")
+        .current_dir(root)
+        .status()
+        .unwrap();
+    fs::write(
+        root.join(".gitignore"),
+        ".codex/mirror/.claude/hooks/rust-check.sh\n",
+    )
+    .unwrap();
+    fs::create_dir_all(root.join(".claude/hooks")).unwrap();
+    fs::create_dir_all(root.join(".claude/commands")).unwrap();
+    fs::write(
+        root.join(".claude/settings.json"),
+        r#"{
+          "hooks": {
+            "PreToolUse": [
+              {
+                "matcher": "Bash",
+                "hooks": [{"type": "command", "command": "echo pre", "timeout": 5}]
+              }
+            ]
+          },
+          "env": {}
+        }"#,
+    )
+    .unwrap();
+    fs::write(
+        root.join(".claude/hooks/rust-check.sh"),
+        "#!/bin/sh\necho ok\n",
+    )
+    .unwrap();
+    fs::write(
+        root.join(".claude/commands/demo.md"),
+        "---\ndescription: Demo prompt\n---\n\n# Demo\n",
+    )
+    .unwrap();
+
+    mirror_codex_surface(MirrorOptions {
+        repo_root: root.to_path_buf(),
+        lua_policy: None,
+        check: false,
+    })
+    .unwrap();
+    let codex_home = root.join("codex-home");
+    install_codex_prompts(PromptInstallOptions {
+        repo_root: root.to_path_buf(),
+        codex_home: codex_home.clone(),
+        check: false,
+    })
+    .unwrap();
+
+    let error = doctor_codex_surface(DoctorOptions {
+        repo_root: root.to_path_buf(),
+        lua_policy: None,
+        codex_home,
+    })
+    .unwrap_err();
+    assert!(error.to_string().contains("gitignored file"));
 }
 
 #[test]
