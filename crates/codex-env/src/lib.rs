@@ -372,10 +372,11 @@ fn manifest_json(
 }
 
 fn codex_prompt_helpers(codex_dir: &Path) -> Vec<PlannedFile> {
-    vec![PlannedFile {
-        path: codex_dir.join("helpers/install-prompts.sh"),
-        bytes: normalize_generated_text(
-            r#"#!/usr/bin/env bash
+    vec![
+        PlannedFile {
+            path: codex_dir.join("helpers/install-prompts.sh"),
+            bytes: normalize_generated_text(
+                r#"#!/usr/bin/env bash
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -389,10 +390,41 @@ Restart Codex, then invoke Claude command mirrors as /prompts:<name>.
 Examples: /prompts:sparc-code, /prompts:claude-flow-swarm
 MSG
 "#,
-        )
-        .into_bytes(),
-        executable: true,
-    }]
+            )
+            .into_bytes(),
+            executable: true,
+        },
+        PlannedFile {
+            path: codex_dir.join("helpers/run-claude-hook.sh"),
+            bytes: normalize_generated_text(
+                r#"#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ $# -lt 1 ]]; then
+  echo "usage: run-claude-hook.sh <helper-file> [args...]" >&2
+  exit 64
+fi
+
+repo_root="$(git rev-parse --show-toplevel)"
+helper="$1"
+shift
+
+case "${helper}" in
+  hook-handler.cjs|auto-memory-hook.mjs) ;;
+  *)
+    echo "unsupported Claude helper: ${helper}" >&2
+    exit 64
+    ;;
+esac
+
+export CLAUDE_PROJECT_DIR="${repo_root}"
+exec node "${repo_root}/.claude/helpers/${helper}" "$@"
+"#,
+            )
+            .into_bytes(),
+            executable: true,
+        },
+    ]
 }
 
 fn write_file(file: &PlannedFile) -> Result<()> {

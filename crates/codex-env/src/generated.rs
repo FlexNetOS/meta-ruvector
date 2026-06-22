@@ -3,7 +3,7 @@ use std::fs;
 use std::path::Path;
 
 use anyhow::{Context, Result};
-use serde_json::json;
+use serde_json::{json, Map};
 use walkdir::WalkDir;
 
 use super::agent_roles::CodexAgentRole;
@@ -183,32 +183,42 @@ pub(super) fn codex_agent_profiles(codex_dir: &Path) -> Vec<PlannedFile> {
     [
         (
             "explorer.toml",
+            "explorer",
+            "Read-only codebase explorer for gathering evidence before changes are proposed.",
             "gpt-5.4",
             "medium",
             "Stay in exploration mode.\nTrace the real execution path, cite files and symbols, and avoid proposing fixes unless the parent agent asks for them.\nPrefer targeted search and file reads over broad scans.\n",
         ),
         (
             "reviewer.toml",
+            "reviewer",
+            "PR reviewer focused on correctness, security, and missing tests.",
             "gpt-5.4",
             "high",
             "Review like an owner.\nPrioritize correctness, security, behavioral regressions, and missing tests.\nLead with concrete findings and avoid style-only feedback unless it hides a real bug.\n",
         ),
         (
             "docs-researcher.toml",
+            "docs-researcher",
+            "Documentation specialist that verifies APIs, framework behavior, and release-note claims against primary documentation.",
             "gpt-5.4",
             "medium",
             "Verify APIs, framework behavior, and release-note claims against primary documentation before changes land.\nCite the exact docs or file paths that support each claim.\nDo not invent undocumented behavior.\n",
         ),
     ]
     .into_iter()
-    .map(|(file, model, effort, instructions)| PlannedFile {
+    .map(
+        |(file, name, description, model, effort, instructions)| PlannedFile {
         path: codex_dir.join("agents").join(file),
         bytes: format!(
-            "model = \"{model}\"\nmodel_reasoning_effort = \"{effort}\"\nsandbox_mode = \"read-only\"\n\ndeveloper_instructions = \"\"\"\n{instructions}\"\"\""
+            "name = \"{}\"\ndescription = \"{}\"\nmodel = \"{model}\"\nmodel_reasoning_effort = \"{effort}\"\nsandbox_mode = \"read-only\"\n\ndeveloper_instructions = \"\"\"\n{instructions}\"\"\"",
+            escape_toml_string(name),
+            escape_toml_string(description),
         )
         .into_bytes(),
         executable: false,
-    })
+    },
+    )
     .collect()
 }
 
@@ -219,19 +229,140 @@ pub(super) fn codex_hooks_json(claude_dir: &Path) -> Result<String> {
             .with_context(|| format!("failed to read {}", settings_path.display()))?,
     )?;
 
-    let hooks = settings.get("hooks").cloned().unwrap_or_else(|| json!({}));
-    let status_line = settings.get("statusLine").cloned();
-    let permissions = settings.get("permissions").cloned();
-    let env = settings.get("env").cloned();
+    let hooks = normalize_codex_hooks(settings.get("hooks"));
     let output = json!({
-        "generatedBy": "codex-env",
-        "source": ".claude/settings.json",
         "hooks": hooks,
-        "statusLine": status_line,
-        "permissions": permissions,
-        "env": env
     });
     Ok(format!("{}\n", serde_json::to_string_pretty(&output)?))
+}
+
+fn normalize_codex_hooks(source: Option<&serde_json::Value>) -> serde_json::Value {
+    let Some(source) = source.and_then(serde_json::Value::as_object) else {
+        return json!({});
+    };
+
+    let mut normalized = Map::new();
+    for (source_event, groups) in source {
+        let Some(codex_event) = codex_hook_event(source_event) else {
+            continue;
+        };
+        let Some(groups) = groups.as_array() else {
+            continue;
+        };
+
+        let target_groups = normalized
+            .entry(codex_event.to_owned())
+            .or_insert_with(|| json!([]))
+            .as_array_mut()
+            .expect("hook event value is initialized as array");
+
+        for group in groups {
+            let Some(group_object) = group.as_object() else {
+                continue;
+            };
+            let Some(source_hooks) = group_object
+                .get("hooks")
+                .and_then(serde_json::Value::as_array)
+            else {
+                continue;
+            };
+
+            let hooks = source_hooks
+                .iter()
+                .filter_map(normalize_codex_hook_handler)
+                .collect::<Vec<_>>();
+            if hooks.is_empty() {
+                continue;
+            }
+
+            let mut target_group = Map::new();
+            if let Some(matcher) = group_object
+                .get("matcher")
+                .and_then(serde_json::Value::as_str)
+            {
+                target_group.insert("matcher".to_owned(), json!(matcher));
+            }
+            target_group.insert("hooks".to_owned(), json!(hooks));
+            target_groups.push(serde_json::Value::Object(target_group));
+        }
+    }
+
+    serde_json::Value::Object(normalized)
+}
+
+fn codex_hook_event(source_event: &str) -> Option<&'static str> {
+    match source_event {
+        "SessionStart" => Some("SessionStart"),
+        "PreToolUse" => Some("PreToolUse"),
+        "PermissionRequest" => Some("PermissionRequest"),
+        "PostToolUse" => Some("PostToolUse"),
+        "PreCompact" => Some("PreCompact"),
+        "PostCompact" => Some("PostCompact"),
+        "UserPromptSubmit" => Some("UserPromptSubmit"),
+        "SubagentStart" => Some("SubagentStart"),
+        "SubagentStop" => Some("SubagentStop"),
+        "Stop" | "SessionEnd" => Some("Stop"),
+        _ => None,
+    }
+}
+
+fn normalize_codex_hook_handler(handler: &serde_json::Value) -> Option<serde_json::Value> {
+    let handler = handler.as_object()?;
+    if handler.get("async").and_then(serde_json::Value::as_bool) == Some(true) {
+        return None;
+    }
+    if handler.get("type").and_then(serde_json::Value::as_str) != Some("command") {
+        return None;
+    }
+
+    let command = handler.get("command").and_then(serde_json::Value::as_str)?;
+    let mut normalized = Map::new();
+    normalized.insert("type".to_owned(), json!("command"));
+    normalized.insert("command".to_owned(), json!(codex_hook_command(command)));
+    if let Some(timeout) = handler.get("timeout").and_then(serde_json::Value::as_u64) {
+        normalized.insert(
+            "timeout".to_owned(),
+            json!(codex_hook_timeout_seconds(timeout)),
+        );
+    }
+    if let Some(status) = handler
+        .get("statusMessage")
+        .and_then(serde_json::Value::as_str)
+    {
+        normalized.insert("statusMessage".to_owned(), json!(status));
+    }
+    Some(serde_json::Value::Object(normalized))
+}
+
+fn codex_hook_command(command: &str) -> String {
+    let hook_handler = r#"node "${CLAUDE_PROJECT_DIR:-.}/.claude/helpers/hook-handler.cjs" "#;
+    if let Some(args) = command.strip_prefix(hook_handler) {
+        return format!(
+            r#""$(git rev-parse --show-toplevel)/.codex/helpers/run-claude-hook.sh" hook-handler.cjs {}"#,
+            args.trim()
+        );
+    }
+
+    let auto_memory = r#"node "${CLAUDE_PROJECT_DIR:-.}/.claude/helpers/auto-memory-hook.mjs" "#;
+    if let Some(args) = command.strip_prefix(auto_memory) {
+        return format!(
+            r#""$(git rev-parse --show-toplevel)/.codex/helpers/run-claude-hook.sh" auto-memory-hook.mjs {}"#,
+            args.trim()
+        );
+    }
+
+    command.replace(
+        "${CLAUDE_PROJECT_DIR:-.}",
+        "$(git rev-parse --show-toplevel)",
+    )
+}
+
+fn codex_hook_timeout_seconds(timeout: u64) -> u64 {
+    if timeout > 600 {
+        timeout.div_ceil(1000)
+    } else {
+        timeout
+    }
 }
 
 pub(super) fn copy_tree_plan(source: &Path, target: &Path) -> Result<Vec<PlannedFile>> {

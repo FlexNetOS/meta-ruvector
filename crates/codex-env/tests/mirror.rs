@@ -13,7 +13,74 @@ fn mirror_generates_codex_and_skill_files() {
     fs::create_dir_all(root.join(".claude/commands/sparc")).unwrap();
     fs::write(
         root.join(".claude/settings.json"),
-        r#"{"hooks":{"Stop":[{"hooks":[{"type":"command","command":"echo done"}]}]},"env":{"BRAIN_URL":"https://pi.ruv.io"}}"#,
+        r#"{
+          "hooks": {
+            "PreToolUse": [
+              {
+                "matcher": "Bash",
+                "hooks": [
+                  {
+                    "type": "command",
+                    "command": "node \"${CLAUDE_PROJECT_DIR:-.}/.claude/helpers/hook-handler.cjs\" pre-bash",
+                    "timeout": 5000
+                  }
+                ]
+              }
+            ],
+            "PostToolUse": [
+              {
+                "matcher": "Bash",
+                "hooks": [
+                  {
+                    "type": "command",
+                    "command": "echo done",
+                    "timeout": 5
+                  },
+                  {
+                    "type": "command",
+                    "command": "echo async",
+                    "timeout": 10000,
+                    "async": true
+                  }
+                ]
+              }
+            ],
+            "SessionEnd": [
+              {
+                "hooks": [
+                  {
+                    "type": "command",
+                    "command": "node \"${CLAUDE_PROJECT_DIR:-.}/.claude/helpers/hook-handler.cjs\" session-end",
+                    "timeout": 10000
+                  }
+                ]
+              }
+            ],
+            "Stop": [
+              {
+                "hooks": [
+                  {
+                    "type": "command",
+                    "command": "node \"${CLAUDE_PROJECT_DIR:-.}/.claude/helpers/auto-memory-hook.mjs\" sync",
+                    "timeout": 10000
+                  }
+                ]
+              }
+            ],
+            "Notification": [
+              {
+                "hooks": [
+                  {
+                    "type": "command",
+                    "command": "echo notify",
+                    "timeout": 3000
+                  }
+                ]
+              }
+            ]
+          },
+          "env": {"BRAIN_URL":"https://pi.ruv.io"}
+        }"#,
     )
     .unwrap();
     fs::write(
@@ -63,6 +130,13 @@ fn mirror_generates_codex_and_skill_files() {
     assert!(config.contains("config_file = \"agents/claude/claude-browser-browser-agent.toml\""));
     assert!(config.contains("[agents.claude-core-coder]"));
     assert!(config.contains("config_file = \"agents/claude/claude-core-coder.toml\""));
+    let explorer = fs::read_to_string(root.join(".codex/agents/explorer.toml")).unwrap();
+    let explorer: toml::Value = toml::from_str(&explorer).unwrap();
+    assert_eq!(explorer["name"].as_str().unwrap(), "explorer");
+    assert_eq!(
+        explorer["description"].as_str().unwrap(),
+        "Read-only codebase explorer for gathering evidence before changes are proposed."
+    );
     let coder_role =
         fs::read_to_string(root.join(".codex/agents/claude/claude-core-coder.toml")).unwrap();
     toml::from_str::<toml::Value>(&coder_role).unwrap();
@@ -96,6 +170,32 @@ fn mirror_generates_codex_and_skill_files() {
     toml::from_str::<toml::Value>(&browser_role).unwrap();
     assert!(browser_role.contains("description = \"Automates browsers\""));
     assert!(root.join(".codex/hooks/rust-check.sh").exists());
+    assert!(root.join(".codex/helpers/run-claude-hook.sh").exists());
+    let hooks: serde_json::Value =
+        serde_json::from_slice(&fs::read(root.join(".codex/hooks.json")).unwrap()).unwrap();
+    assert!(hooks["hooks"]["Notification"].is_null());
+    let pre_tool = &hooks["hooks"]["PreToolUse"][0]["hooks"][0];
+    assert_eq!(pre_tool["timeout"], 5);
+    assert!(pre_tool["command"]
+        .as_str()
+        .unwrap()
+        .contains(".codex/helpers/run-claude-hook.sh\" hook-handler.cjs pre-bash"));
+    let post_tool_hooks = hooks["hooks"]["PostToolUse"][0]["hooks"]
+        .as_array()
+        .unwrap();
+    assert_eq!(post_tool_hooks.len(), 1);
+    assert_eq!(post_tool_hooks[0]["command"], "echo done");
+    assert_eq!(post_tool_hooks[0]["timeout"], 5);
+    let stop_hooks = hooks["hooks"]["Stop"].as_array().unwrap();
+    assert_eq!(stop_hooks.len(), 2);
+    assert!(stop_hooks.iter().any(|group| group["hooks"][0]["command"]
+        .as_str()
+        .unwrap()
+        .contains("hook-handler.cjs session-end")));
+    assert!(stop_hooks.iter().any(|group| group["hooks"][0]["command"]
+        .as_str()
+        .unwrap()
+        .contains("auto-memory-hook.mjs sync")));
     assert_eq!(
         fs::read(root.join(".codex/mirror/.claude/hooks/rust-check.sh")).unwrap(),
         fs::read(root.join(".claude/hooks/rust-check.sh")).unwrap()

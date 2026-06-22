@@ -1,5 +1,5 @@
 {
-  "fileCount": 816,
+  "fileCount": 817,
   "files": [
     ".codex/mirror/.claude/agentic-flow-fast.sh",
     ".codex/mirror/.claude/agents/analysis/analyze-code-quality.md",
@@ -636,6 +636,7 @@
     ".codex/prompts/workflows-workflow-execute.md",
     ".codex/prompts/workflows-workflow-export.md",
     ".codex/helpers/install-prompts.sh",
+    ".codex/helpers/run-claude-hook.sh",
     ".codex/hooks.json",
     ".codex/hooks/bench-runner.sh",
     ".codex/hooks/crate-context.sh",
