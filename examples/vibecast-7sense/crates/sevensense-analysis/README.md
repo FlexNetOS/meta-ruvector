@@ -6,27 +6,32 @@
 
 > Advanced acoustic analysis algorithms for bioacoustic pattern discovery.
 
-**sevensense-analysis** provides sophisticated analysis tools for understanding bird vocalizations at scale. From clustering calls into groups, detecting recurring motifs, to modeling temporal patterns with Markov chains, it transforms raw embeddings into actionable ecological insights.
+**sevensense-analysis** provides analysis services for understanding bird vocalizations at scale. From clustering calls into groups, detecting recurring motifs, to modeling temporal patterns, it transforms raw embeddings into actionable ecological insights.
+
+The crate follows Domain-Driven Design (DDD): domain entities and value objects, application services that orchestrate them, and infrastructure implementations. The public surface is built around four application services:
+
+- `ClusteringService` — HDBSCAN / K-means clustering of embeddings into call types
+- `MotifDetectionService` — recurring-pattern discovery over cluster-id sequences
+- `SequenceAnalysisService` — transition metrics and entropy over cluster sequences
+- `AnomalyDetectionService` — k-NN distance-based outlier detection
 
 ## Features
 
-- **HDBSCAN Clustering**: Density-based clustering for call-type discovery
-- **Markov Models**: Temporal sequence analysis and prediction
-- **Motif Detection**: Find recurring vocal patterns
-- **Statistical Analysis**: Entropy, diversity indices, anomaly scores
-- **Temporal Patterns**: Diel rhythms, seasonal trends
-- **Multi-scale Analysis**: From milliseconds to months
+- **HDBSCAN & K-means Clustering**: Group similar vocalizations via `ClusteringService`
+- **Motif Detection**: Find recurring patterns in cluster-id sequences via `MotifDetectionService`
+- **Sequence Analysis**: Transition metrics and entropy via `SequenceAnalysisService`
+- **Anomaly Detection**: k-NN distance-based outlier detection via `AnomalyDetectionService`
+- **Clustering Metrics**: Silhouette score and V-measure via the `metrics` module
 
 ## Use Cases
 
-| Use Case | Description | Key Functions |
-|----------|-------------|---------------|
-| Call-Type Clustering | Group similar vocalizations | `hdbscan_cluster()` |
-| Sequence Analysis | Model call sequences | `MarkovChain::analyze()` |
-| Motif Discovery | Find repeated patterns | `detect_motifs()` |
-| Diversity Metrics | Shannon/Simpson indices | `diversity_index()` |
-| Periodicity | Detect rhythmic patterns | `detect_periodicity()` |
-| Anomaly Detection | Find unusual calls | `anomaly_score()` |
+| Use Case | Description | Key API |
+|----------|-------------|---------|
+| Call-Type Clustering | Group similar vocalizations | `ClusteringService::run_hdbscan()` |
+| K-means Clustering | Cluster into a fixed number of groups | `ClusteringService::run_kmeans()` |
+| Motif Discovery | Find repeated cluster-id patterns | `MotifDetectionService::detect_motifs()` |
+| Sequence Analysis | Transition metrics & entropy | `SequenceAnalysisService::analyze_sequence()` |
+| Anomaly Detection | Find unusual calls | `AnomalyDetectionService::detect_anomalies()` |
 
 ## Installation
 
@@ -39,149 +44,70 @@ sevensense-analysis = "0.1"
 
 ## Quick Start
 
-```rust
-use sevensense_analysis::{HdbscanClusterer, HdbscanConfig};
+`ClusteringService` operates on `EmbeddingWithId` values, which are simply
+`(EmbeddingId, Vec<f32>)` tuples, and returns `Vec<Cluster>`.
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Cluster embeddings by call type
-    let config = HdbscanConfig {
-        min_cluster_size: 5,
-        min_samples: 3,
-        ..Default::default()
-    };
+```rust,ignore
+use sevensense_analysis::{ClusteringService, ClusteringConfig, EmbeddingId};
 
-    let clusterer = HdbscanClusterer::new(config);
-    let labels = clusterer.fit(&embeddings)?;
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Configure HDBSCAN: min_cluster_size = 5, min_samples = 3
+    let service = ClusteringService::new(ClusteringConfig::hdbscan(5, 3));
 
-    // Count clusters (excluding noise = -1)
-    let n_clusters = labels.iter().filter(|&&l| l >= 0).max().unwrap_or(&-1) + 1;
-    println!("Found {} call types", n_clusters);
+    // Embeddings are (EmbeddingId, Vec<f32>) tuples
+    let embeddings: Vec<(EmbeddingId, Vec<f32>)> = load_embeddings();
+
+    let clusters = service.run_hdbscan(&embeddings).await?;
+    println!("Found {} call types", clusters.len());
 
     Ok(())
 }
 ```
 
+`ClusteringConfig` also exposes `::kmeans(k)`, `::default()`, and a `.with_seed(seed)`
+builder method. The default service can be created with `ClusteringService::default_service()`.
+
 ---
 
 <details>
-<summary><b>Tutorial: HDBSCAN Clustering</b></summary>
+<summary><b>Tutorial: HDBSCAN & K-means Clustering</b></summary>
 
-### Basic Clustering
+### HDBSCAN Clustering
 
-```rust
-use sevensense_analysis::{HdbscanClusterer, HdbscanConfig};
+```rust,ignore
+use sevensense_analysis::{ClusteringService, ClusteringConfig};
 
-let config = HdbscanConfig {
-    min_cluster_size: 5,      // Minimum points per cluster
-    min_samples: 3,           // Core point threshold
-    epsilon: 0.0,             // 0 = automatic selection
-    metric: DistanceMetric::Euclidean,
-};
+// HDBSCAN with min_cluster_size = 5, min_samples = 3
+let service = ClusteringService::new(ClusteringConfig::hdbscan(5, 3));
 
-let clusterer = HdbscanClusterer::new(config);
-let result = clusterer.fit(&embeddings)?;
+let clusters = service.run_hdbscan(&embeddings).await?;
 
-println!("Labels: {:?}", result.labels);
-println!("Probabilities: {:?}", result.probabilities);
-println!("Outlier scores: {:?}", result.outlier_scores);
-```
-
-### Cluster Analysis
-
-```rust
-use sevensense_analysis::{cluster_statistics, ClusterStats};
-
-let stats = cluster_statistics(&embeddings, &labels)?;
-
-for (cluster_id, stat) in stats.iter() {
-    println!("Cluster {}:", cluster_id);
-    println!("  Size: {}", stat.size);
-    println!("  Centroid: {:?}", &stat.centroid[..5]);  // First 5 dims
-    println!("  Intra-cluster distance: {:.3}", stat.intra_distance);
-    println!("  Silhouette score: {:.3}", stat.silhouette);
+for cluster in &clusters {
+    println!("Cluster {:?}: {} members", cluster.id, cluster.member_ids.len());
 }
 ```
 
-### Cluster Assignment for New Data
+### K-means Clustering
 
-```rust
-// Assign new embeddings to existing clusters
-let new_embeddings = load_new_data()?;
-let assignments = clusterer.predict(&new_embeddings)?;
+```rust,ignore
+use sevensense_analysis::{ClusteringService, ClusteringConfig};
 
-for (embedding, cluster) in new_embeddings.iter().zip(assignments.iter()) {
-    if *cluster >= 0 {
-        println!("Assigned to cluster {}", cluster);
-    } else {
-        println!("Classified as noise/outlier");
-    }
-}
+// Configure for K-means, then ask for k = 8 clusters at call time
+let service = ClusteringService::new(ClusteringConfig::kmeans(8));
+
+let clusters = service.run_kmeans(&embeddings, 8).await?;
+println!("Created {} clusters", clusters.len());
 ```
 
-</details>
+### Reproducible Runs
 
-<details>
-<summary><b>Tutorial: Markov Chain Analysis</b></summary>
+```rust,ignore
+use sevensense_analysis::{ClusteringService, ClusteringConfig};
 
-### Building a Markov Model
-
-```rust
-use sevensense_analysis::{MarkovChain, MarkovConfig};
-
-// Sequences of cluster labels (call types)
-let sequences: Vec<Vec<i32>> = vec![
-    vec![0, 1, 2, 0, 1],  // Sequence 1
-    vec![0, 1, 0, 2, 1],  // Sequence 2
-    vec![1, 2, 0, 1, 2],  // Sequence 3
-];
-
-let config = MarkovConfig {
-    order: 1,              // First-order Markov chain
-    smoothing: 0.01,       // Laplace smoothing
-};
-
-let chain = MarkovChain::fit(&sequences, config)?;
-
-// Get transition probabilities
-let probs = chain.transition_matrix();
-println!("P(1|0) = {:.3}", probs[(0, 1)]);  // Probability of 1 given 0
-```
-
-### Sequence Prediction
-
-```rust
-// Predict next state
-let current_state = 0;
-let next_probs = chain.predict_next(current_state)?;
-
-println!("Next state probabilities from state {}:", current_state);
-for (state, prob) in next_probs.iter().enumerate() {
-    println!("  State {}: {:.3}", state, prob);
-}
-
-// Generate synthetic sequence
-let generated = chain.generate(10, Some(0))?;  // 10 states, starting from 0
-println!("Generated sequence: {:?}", generated);
-```
-
-### Sequence Analysis
-
-```rust
-use sevensense_analysis::MarkovAnalysis;
-
-let analysis = MarkovAnalysis::new(&chain);
-
-// Stationary distribution
-let stationary = analysis.stationary_distribution()?;
-println!("Stationary distribution: {:?}", stationary);
-
-// Entropy rate
-let entropy = analysis.entropy_rate()?;
-println!("Entropy rate: {:.3} bits", entropy);
-
-// Expected hitting times
-let hitting_times = analysis.mean_hitting_times()?;
-println!("Mean hitting time 0→2: {:.2} steps", hitting_times[(0, 2)]);
+// Seed the configuration for reproducible clustering
+let config = ClusteringConfig::hdbscan(5, 3).with_seed(42);
+let service = ClusteringService::new(config);
 ```
 
 </details>
@@ -189,209 +115,122 @@ println!("Mean hitting time 0→2: {:.2} steps", hitting_times[(0, 2)]);
 <details>
 <summary><b>Tutorial: Motif Detection</b></summary>
 
-### Finding Repeated Patterns
+`MotifDetectionService` discovers recurring patterns in sequences of `ClusterId`
+values (e.g. the cluster ids assigned to a temporally ordered set of segments).
 
-```rust
-use sevensense_analysis::{MotifDetector, MotifConfig};
+```rust,ignore
+use sevensense_analysis::{MotifDetectionService, MotifConfig, ClusterId};
 
-let config = MotifConfig {
-    min_length: 3,           // Minimum motif length
-    max_length: 10,          // Maximum motif length
-    similarity_threshold: 0.85,
-    min_occurrences: 2,
-};
+let service = MotifDetectionService::new(MotifConfig::default());
+// or: MotifDetectionService::default_service()
 
-let detector = MotifDetector::new(config);
-let motifs = detector.detect(&embeddings)?;
+// Sequences of cluster ids (call types) per recording
+let sequences: Vec<Vec<ClusterId>> = load_cluster_sequences();
+
+// Detect motifs with a minimum length of 3
+let motifs = service.detect_motifs(&sequences, 3).await?;
 
 for motif in &motifs {
-    println!("Motif found:");
-    println!("  Length: {} segments", motif.length);
-    println!("  Occurrences: {}", motif.occurrences.len());
-    println!("  Positions: {:?}", motif.positions());
-    println!("  Average similarity: {:.3}", motif.avg_similarity);
-}
-```
-
-### Motif Visualization
-
-```rust
-use sevensense_analysis::motif_to_sequence;
-
-for motif in motifs.iter().take(5) {
-    // Get the representative sequence
-    let sequence = motif_to_sequence(&embeddings, motif)?;
-
-    println!("Motif #{} (len={})", motif.id, motif.length);
-    println!("  Representative: {:?}", sequence);
-
-    // Show all occurrences
-    for (i, occ) in motif.occurrences.iter().enumerate() {
-        println!("  Occurrence {}: positions {}-{}",
-            i, occ.start, occ.end);
-    }
-}
-```
-
-### Cross-Recording Motifs
-
-```rust
-// Find motifs that appear across multiple recordings
-let recordings: Vec<(RecordingId, Vec<Embedding>)> = load_recordings()?;
-
-let cross_motifs = detector.detect_cross_recording(&recordings)?;
-
-for motif in cross_motifs {
-    println!("Cross-recording motif:");
-    println!("  Appears in {} recordings", motif.recording_ids.len());
-    println!("  Total occurrences: {}", motif.total_occurrences);
+    println!("Motif with {} occurrences", motif.occurrences);
 }
 ```
 
 </details>
 
 <details>
-<summary><b>Tutorial: Statistical Analysis</b></summary>
+<summary><b>Tutorial: Sequence Analysis</b></summary>
 
-### Diversity Indices
+`SequenceAnalysisService` builds a `SequenceAnalysis` from an ordered set of
+segments and their cluster assignments, and can compute entropy and
+`SequenceMetrics`.
 
-```rust
-use sevensense_analysis::{shannon_index, simpson_index, species_richness};
+```rust,ignore
+use std::collections::HashMap;
+use sevensense_analysis::{SequenceAnalysisService, SegmentId, ClusterId, RecordingId};
 
-// Count species occurrences
-let species_counts = count_species(&labels)?;
+let service = SequenceAnalysisService::new();
+// (also available via `SequenceAnalysisService::default()`)
 
-let shannon = shannon_index(&species_counts);
-let simpson = simpson_index(&species_counts);
-let richness = species_richness(&species_counts);
+let segment_ids: Vec<SegmentId> = load_ordered_segments();
+let assignments: HashMap<SegmentId, ClusterId> = load_assignments();
+let recording_id: RecordingId = current_recording();
 
-println!("Shannon Index (H'): {:.3}", shannon);
-println!("Simpson Index (D): {:.3}", simpson);
-println!("Species Richness: {}", richness);
+let analysis = service.analyze_sequence(&segment_ids, &assignments, recording_id).await?;
+
+// Entropy over a list of (from, to, weight) transitions
+let entropy = service.compute_entropy(&transitions);
+println!("Sequence entropy: {:.3}", entropy);
+
+// Aggregate metrics over a cluster sequence
+let metrics = service.compute_metrics(&cluster_sequence).await?;
 ```
 
-### Entropy Analysis
+</details>
 
-```rust
-use sevensense_analysis::{sequence_entropy, normalized_entropy};
+<details>
+<summary><b>Tutorial: Anomaly Detection</b></summary>
 
-// Entropy of call sequences
-let sequence: Vec<i32> = vec![0, 1, 2, 0, 1, 0, 2, 1, 0];
+`AnomalyDetectionService` flags embeddings that lie far from existing clusters
+using a distance threshold and a k-nearest-neighbors count.
 
-let entropy = sequence_entropy(&sequence);
-let norm_entropy = normalized_entropy(&sequence);
+```rust,ignore
+use sevensense_analysis::AnomalyDetectionService;
 
-println!("Sequence entropy: {:.3} bits", entropy);
-println!("Normalized entropy: {:.3}", norm_entropy);  // 0-1 scale
-```
+// threshold = 0.8, k_neighbors = 5
+let service = AnomalyDetectionService::new(0.8, 5);
+// or: AnomalyDetectionService::default_service()
 
-### Periodicity Detection
+let anomalies = service.detect_anomalies(&embeddings, &clusters).await?;
 
-```rust
-use sevensense_analysis::{detect_periodicity, PeriodicityConfig};
-
-let config = PeriodicityConfig {
-    min_period: 2,
-    max_period: 100,
-    confidence_threshold: 0.7,
-};
-
-let timestamps: Vec<f64> = get_call_timestamps()?;
-let periods = detect_periodicity(&timestamps, config)?;
-
-for (period, confidence) in periods {
-    println!("Period: {:.1}s (confidence: {:.2})", period, confidence);
+for anomaly in &anomalies {
+    // Classify the anomaly given the size of its nearest cluster
+    let kind = service.classify_anomaly(&anomaly, cluster_member_count);
+    println!("Anomaly {:?}: {:?}", anomaly, kind);
 }
 ```
 
 </details>
 
 <details>
-<summary><b>Tutorial: Temporal Analysis</b></summary>
+<summary><b>Tutorial: Clustering Metrics</b></summary>
 
-### Diel Activity Patterns
+The `metrics` module exposes scoring helpers re-exported at the crate root.
 
-```rust
-use sevensense_analysis::{DielAnalyzer, TimeOfDay};
+```rust,ignore
+use sevensense_analysis::{ClusteringMetrics, SilhouetteScore, VMeasure, SequenceEntropy};
 
-let analyzer = DielAnalyzer::new();
-
-// Analyze activity by time of day
-let pattern = analyzer.analyze(&timestamps)?;
-
-println!("Dawn chorus: {} calls", pattern.count(TimeOfDay::Dawn));
-println!("Morning: {} calls", pattern.count(TimeOfDay::Morning));
-println!("Midday: {} calls", pattern.count(TimeOfDay::Midday));
-println!("Evening: {} calls", pattern.count(TimeOfDay::Evening));
-println!("Night: {} calls", pattern.count(TimeOfDay::Night));
-
-// Peak activity time
-let peak = pattern.peak_hour();
-println!("Peak activity: {:02}:00", peak);
-```
-
-### Seasonal Trends
-
-```rust
-use sevensense_analysis::{SeasonalAnalyzer, Season};
-
-let analyzer = SeasonalAnalyzer::new();
-let trend = analyzer.analyze(&dated_records)?;
-
-println!("Spring activity: {:.1}%", trend.percentage(Season::Spring));
-println!("Breeding season peak: {:?}", trend.breeding_peak());
-println!("Migration periods: {:?}", trend.migration_windows());
-```
-
-### Time Series Analysis
-
-```rust
-use sevensense_analysis::{TimeSeries, Aggregation};
-
-let series = TimeSeries::from_events(&events)?;
-
-// Aggregate by hour
-let hourly = series.aggregate(Aggregation::Hourly)?;
-
-// Detect anomalies
-let anomalies = series.detect_anomalies(3.0)?;  // 3-sigma threshold
-
-for anomaly in anomalies {
-    println!("Anomaly at {}: {} calls (expected: {})",
-        anomaly.timestamp, anomaly.actual, anomaly.expected);
-}
+// `ClusteringService::cluster_with_metrics` returns clusters alongside
+// `ClusteringMetrics` (silhouette score, V-measure, etc.).
+let (clusters, metrics) = service.cluster_with_metrics(&embeddings).await?;
 ```
 
 </details>
 
 ---
 
-## Configuration
+## Public API
 
-### HdbscanConfig Parameters
+Re-exported at the crate root (`sevensense_analysis::`):
 
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| `min_cluster_size` | 5 | Minimum cluster size |
-| `min_samples` | 3 | Core point threshold |
-| `epsilon` | 0.0 | Distance threshold (0=auto) |
-| `metric` | Euclidean | Distance metric |
+| Category | Items |
+|----------|-------|
+| Services | `ClusteringService`, `MotifDetectionService`, `SequenceAnalysisService`, `AnomalyDetectionService` |
+| Entities | `Anomaly`, `AnomalyType`, `Cluster`, `ClusterId`, `EmbeddingId`, `Motif`, `MotifOccurrence`, `Prototype`, `RecordingId`, `SegmentId`, `SequenceAnalysis` |
+| Value Objects | `ClusteringConfig`, `ClusteringMethod`, `ClusteringParameters`, `MotifConfig`, `SequenceMetrics`, `TransitionMatrix` |
+| Events | `AnalysisEvent`, `ClusterAssigned`, `ClustersDiscovered`, `MotifDetected`, `SequenceAnalyzed` |
+| Repositories | `ClusterRepository`, `MotifRepository`, `SequenceRepository` |
+| Metrics | `ClusteringMetrics`, `SequenceEntropy`, `SilhouetteScore`, `VMeasure` |
 
-### MarkovConfig Parameters
+A `prelude` module is provided for convenient bulk imports.
 
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| `order` | 1 | Markov chain order |
-| `smoothing` | 0.01 | Laplace smoothing factor |
+### `ClusteringConfig` constructors
 
-## Algorithms
-
-| Algorithm | Complexity | Use Case |
-|-----------|------------|----------|
-| HDBSCAN | O(n log n) | Clustering with noise |
-| Markov Chain | O(n × s²) | Sequence modeling |
-| Motif Discovery | O(n² × m) | Pattern finding |
-| FFT Periodicity | O(n log n) | Rhythm detection |
+| Constructor | Description |
+|-------------|-------------|
+| `ClusteringConfig::hdbscan(min_cluster_size, min_samples)` | HDBSCAN configuration |
+| `ClusteringConfig::kmeans(k)` | K-means configuration |
+| `ClusteringConfig::default()` | HDBSCAN defaults |
+| `.with_seed(seed)` | Set a random seed (builder) |
 
 ## Links
 

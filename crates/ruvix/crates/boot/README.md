@@ -4,14 +4,17 @@ RVF boot loading for the RuVix Cognition Kernel (ADR-087).
 
 ## Overview
 
-This crate provides the RVF (RuVector Format) boot loading infrastructure. The kernel boot follows a strict five-stage process with cryptographic verification at every step.
+This crate provides the RVF (RuVector Format) boot loading infrastructure. The kernel boot follows a strict five-stage process.
+
+> ⚠️ **Phase A status:** signature verification is a **placeholder/mock**, not
+> real cryptography. See [Security Properties](#security-properties-sec-001).
 
 ## Boot Sequence (ADR-087 Section 9.1)
 
 | Stage | Name | Description |
 |-------|------|-------------|
 | **0** | Hardware Init | Platform-specific initialization (mocked in Phase A) |
-| **1** | RVF Verify | Parse manifest + ML-DSA-65 signature verification |
+| **1** | RVF Verify | Parse manifest + placeholder signature check (Phase A mock; real ML-DSA-65 TBD) |
 | **2** | Object Create | Create root task, regions, queues, witness log |
 | **3** | Component Mount | Mount components + distribute capabilities |
 | **4** | First Attestation | Boot attestation to witness log |
@@ -24,7 +27,16 @@ Init        Verify      Create      Components
 
 ## Security Properties (SEC-001)
 
-Critical security fixes implemented:
+> ⚠️ **Phase A: signature verification is a placeholder/mock — NOT a real
+> security property.** `SignatureVerifier::verify` runs a Phase-A mock that
+> accepts test signatures (a `"TEST"` prefix + matching SHA-256 manifest
+> hash, or an all-zeros signature against the all-zeros test key). It does
+> **not** verify a real cryptographic signature and gives **no protection**
+> against forged or tampered manifests. Real **ML-DSA-65 (NIST FIPS 204)**
+> post-quantum verification is **TBD (Phase B)**.
+
+The control-flow policy below *is* implemented today (the panic-on-failure
+path is real; the cryptographic check it gates is a Phase-A mock):
 
 - **Signature failure**: PANIC IMMEDIATELY, no fallback boot path
 - **Root task capability drop**: After Stage 3, root task drops to minimum set
@@ -79,16 +91,25 @@ let manifest = RvfManifest {
 
 ### SignatureVerifier
 
-ML-DSA-65 signature verification (NIST FIPS 204):
+⚠️ **Phase A: placeholder signature check (Phase A mock; real ML-DSA-65 TBD).**
+`verify` does NOT perform real cryptographic verification — see
+[Security Properties](#security-properties-sec-001). The `VerifyResult` enum
+has the variants `Valid`, `Invalid`, `WrongLength`, `WrongKeyLength`, and
+`HashMismatch`:
 
 ```rust
 use ruvix_boot::{SignatureVerifier, VerifyResult};
 
+// `SignatureVerifier::new` panics if the public key has the wrong length;
+// use `SignatureVerifier::try_new` to handle that case.
 let verifier = SignatureVerifier::new(&public_key);
 match verifier.verify(&manifest_bytes, &signature) {
-    VerifyResult::Valid => { /* continue boot */ },
-    VerifyResult::Invalid => panic!("Boot signature invalid!"),
-    VerifyResult::Error(e) => panic!("Signature verification error: {:?}", e),
+    VerifyResult::Valid => { /* continue boot */ }
+    // Any non-Valid result is a verification failure:
+    VerifyResult::Invalid
+    | VerifyResult::WrongLength
+    | VerifyResult::WrongKeyLength
+    | VerifyResult::HashMismatch => panic!("Boot signature invalid!"),
 }
 ```
 

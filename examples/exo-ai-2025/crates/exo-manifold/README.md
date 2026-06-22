@@ -1,21 +1,36 @@
 # exo-manifold
 
-Continuous embedding space with SIREN networks for smooth manifold
-deformation in cognitive AI. Provides the geometric foundation that
-lets EXO-AI substrates represent and transform concepts as points on
-learned manifolds.
+Simplified manifold storage using vector-similarity search for the EXO-AI
+cognitive substrate. Patterns are stored with their embeddings and retrieved
+by similarity.
+
+> ⚠️ **Stub notice:** the `burn` neural-network dependency was **removed** (to
+> avoid a `bincode` version conflict), so this crate currently implements a
+> *simplified, Vec-based* manifold. **SIREN is a stub placeholder** — the
+> `SirenLayer` type is an empty unit struct and `LearnedManifold` only stores
+> dimensions, not a trained network. The "Planned / WIP" features below are
+> **not yet implemented**.
 
 ## Features
 
-- **SIREN coordinate network** -- uses sinusoidal representation
-  networks (SIREN) to learn implicit neural representations of
-  continuous coordinate spaces with high-frequency detail.
-- **Manifold deformation** -- smoothly warps the embedding manifold to
-  adapt cognitive geometry in response to new information, preserving
-  local neighbourhood structure.
-- **Transfer prior store with domain-pair indexing** -- caches learned
-  deformation priors indexed by (source, target) domain pairs so that
-  cross-domain transfers start from an informed initialisation.
+- **Vector-similarity retrieval** -- stores patterns with their embeddings and
+  retrieves the nearest ones via [`ManifoldEngine::retrieve`].
+- **Pattern storage (`deform`)** -- [`ManifoldEngine::deform`] records a pattern
+  with a salience weight for later retrieval.
+- **Strategic forgetting (`forget`)** -- [`ManifoldEngine::forget`] prunes
+  low-salience patterns below a threshold.
+- **SIMD distance helpers** -- `cosine_similarity_simd`,
+  `euclidean_distance_simd`, and `batch_distances` in the `simd_ops` module.
+
+### Planned / WIP (not yet implemented)
+
+- **SIREN coordinate network** -- sinusoidal representation networks for
+  implicit neural coordinate spaces. *Stub only* (`SirenLayer` is empty); the
+  `burn`-backed implementation was removed.
+- **Smooth manifold deformation** -- warping a learned manifold while
+  preserving neighbourhood structure. Current `deform` only stores patterns.
+- **Transfer prior store with domain-pair indexing** -- the `transfer_store`
+  module exists; treat domain-pair-indexed deformation priors as WIP.
 
 ## Quick Start
 
@@ -31,39 +46,40 @@ Basic usage:
 ```rust
 use exo_manifold::ManifoldEngine;
 use exo_core::{ManifoldConfig, Pattern};
-use burn::backend::NdArray;
 
-// Create engine with default SIREN parameters
+// Create the engine from a config (no backend generic, no device argument)
 let config = ManifoldConfig::default();
-let device = Default::default();
-let mut engine = ManifoldEngine::<NdArray>::new(config, device);
+let mut engine = ManifoldEngine::new(config);
 
-// Deform manifold with a high-salience pattern
+// Store a high-salience pattern (simplified deformation)
 let pattern = Pattern { /* ... */ };
 engine.deform(pattern, 0.9)?;
 
-// Retrieve similar patterns via gradient descent
+// Retrieve the k most similar stored patterns
 let query = vec![/* embedding */];
 let results = engine.retrieve(&query, 10)?;
 
-// Strategic forgetting of low-salience regions
+// Strategic forgetting: prune patterns below the salience threshold
 engine.forget(0.5, 0.1)?;
 ```
 
 ## Crate Layout
 
-| Module      | Purpose                                      |
-|-------------|----------------------------------------------|
-| `network`   | SIREN network definition and forward pass     |
-| `retrieval` | Gradient descent retrieval algorithm           |
-| `deform`    | Manifold deformation and curvature regulation |
-| `forgetting`| Gaussian smoothing and weight pruning          |
-| `transfer`  | Prior store with domain-pair indexing          |
+| Module          | Purpose                                                  |
+|-----------------|----------------------------------------------------------|
+| `network`       | `LearnedManifold` storage struct (SIREN is a stub)       |
+| `retrieval`     | `GradientDescentRetriever` similarity retrieval          |
+| `deformation`   | `ManifoldDeformer` (simplified pattern storage)          |
+| `forgetting`    | `StrategicForgetting` salience-based pruning             |
+| `simd_ops`      | SIMD distance helpers (cosine, euclidean, batch)         |
+| `transfer_store`| Transfer prior store with domain-pair indexing (WIP)     |
 
 ## Requirements
 
-- Rust 1.78+
-- Depends on `exo-core`, `burn`, `burn-ndarray`
+- Rust 2021 edition
+- Depends on `exo-core`, `ruvector-domain-expansion`, `ndarray`,
+  `parking_lot`, `serde` (the `burn` / `burn-ndarray` neural-network
+  dependencies were **removed**)
 
 ## Links
 

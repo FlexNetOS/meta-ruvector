@@ -6,33 +6,23 @@
 
 **WebAssembly bindings for Tiny Dancer neural routing.**
 
-`ruvector-tiny-dancer-wasm` brings production-grade AI agent routing to the browser with WebAssembly. Run FastGRNN neural inference for intelligent request routing directly in client-side applications. Part of the [Ruvector](https://github.com/ruvnet/ruvector) ecosystem.
+`ruvector-tiny-dancer-wasm` brings embedding-based AI agent/model routing to the browser with WebAssembly. It runs FastGRNN neural inference to score candidate embeddings directly in client-side applications. Part of the [Ruvector](https://github.com/ruvnet/ruvector) ecosystem.
 
 ## Why Tiny Dancer WASM?
 
 - **Browser Native**: Run neural routing in any browser
-- **Low Latency**: Sub-millisecond inference times
-- **Small Bundle**: Optimized WASM binary (~100KB gzipped)
 - **Offline Capable**: No server required for inference
-- **Privacy First**: Route decisions stay client-side
+- **Privacy First**: Routing decisions stay client-side
 
-## Features
+## What It Does
 
-### Core Capabilities
+Tiny Dancer is an **embedding router**. You provide a query embedding and a list of
+candidate embeddings, and `route()` returns routing decisions (which candidate, with
+what confidence, and whether to use the lightweight model).
 
-- **Neural Inference**: FastGRNN model execution
-- **Feature Engineering**: Request feature extraction
-- **Multi-Agent Routing**: Score and rank agent candidates
-- **Model Loading**: Load pre-trained models
-- **Batch Inference**: Process multiple requests
-
-### Advanced Features
-
-- **Web Workers**: Background inference threads
-- **Streaming**: Process streaming requests
-- **Model Caching**: IndexedDB model persistence
-- **Quantization**: INT8 models for smaller size
-- **SIMD**: Hardware acceleration when available
+> **Honesty note:** this binding does **not** take raw text. There is no built-in
+> tokenizer or feature-extraction-from-strings. You bring your own embeddings as
+> `Float32Array`s. The router scores embeddings; it does not embed text for you.
 
 ## Installation
 
@@ -47,187 +37,157 @@ yarn add @ruvector/tiny-dancer-wasm
 ### Basic Usage
 
 ```typescript
-import init, { TinyDancer, RouteRequest } from '@ruvector/tiny-dancer-wasm';
+import init, { Router, RouterConfig, Candidate, RoutingRequest } from '@ruvector/tiny-dancer-wasm';
 
-// Initialize WASM module
+// Initialize the WASM module
 await init();
 
-// Create router instance
-const router = new TinyDancer();
+// Build configuration (defaults are filled in by the constructor;
+// override fields via property setters)
+const config = new RouterConfig();
+config.model_path = './models/fastgrnn.safetensors';
+config.confidence_threshold = 0.85;
+config.max_uncertainty = 0.15;
 
-// Load pre-trained model
-await router.loadModel('/models/router-v1.bin');
+// Create the router
+const router = new Router(config);
 
-// Create routing request
-const request: RouteRequest = {
-  query: "What is the weather like today?",
-  context: {
-    userId: "user-123",
-    sessionLength: 5,
-    previousAgent: "general",
-  },
-  agents: ["weather", "general", "calendar", "search"],
-};
+// Build candidates:
+// new Candidate(id, embedding, metadataJson, createdAt, accessCount, successRate)
+const candidates = [
+  new Candidate('1', new Float32Array([/* ... */]), '{}', 0, 0, 0.0),
+  new Candidate('2', new Float32Array([/* ... */]), '{}', 0, 0, 0.0),
+];
 
-// Get routing decision
-const result = await router.route(request);
-console.log(`Route to: ${result.agent} (confidence: ${result.confidence})`);
+// Build the request: new RoutingRequest(queryEmbedding, candidates)
+const request = new RoutingRequest(new Float32Array([0.1, 0.2 /* ... */]), candidates);
+
+// Route (synchronous)
+const response = router.route(request);
+
+// decisions are returned as a JSON string
+const decisions = JSON.parse(response.decisions_json);
+console.log(`Route to: ${decisions[0].candidate_id} (confidence: ${decisions[0].confidence})`);
+console.log(`Inference time: ${response.inference_time_us} µs`);
+console.log(`Candidates processed: ${response.candidates_processed}`);
 ```
 
-### With Web Workers
+### Circuit Breaker Status
 
 ```typescript
-import { TinyDancerWorker } from '@ruvector/tiny-dancer-wasm/worker';
-
-// Create worker-based router (non-blocking)
-const router = new TinyDancerWorker();
-
-// Initialize in background
-await router.init();
-await router.loadModel('/models/router-v1.bin');
-
-// Route without blocking main thread
-const result = await router.route(request);
+// true = circuit closed (healthy); false = open; null/undefined = disabled
+const isHealthy = router.circuit_breaker_status();
 ```
 
-### Feature Engineering
+### Request Metadata
 
 ```typescript
-import { FeatureExtractor } from '@ruvector/tiny-dancer-wasm';
-
-const extractor = new FeatureExtractor();
-
-// Extract features from request
-const features = extractor.extract({
-  query: "Book a flight to Paris",
-  tokens: 6,
-  language: "en",
-  sentiment: 0.7,
-  entities: ["Paris"],
-});
-
-console.log(`Feature vector: ${features.length} dimensions`);
+const request = new RoutingRequest(queryEmbedding, candidates);
+request.metadata = '{"sessionId":"abc"}'; // optional JSON string
 ```
 
 ## API Reference
 
-### TinyDancer Class
+### `Router`
 
 ```typescript
-class TinyDancer {
-  constructor();
-
-  // Model management
-  loadModel(url: string): Promise<void>;
-  loadModelFromBuffer(buffer: Uint8Array): void;
-
-  // Routing
-  route(request: RouteRequest): Promise<RouteResult>;
-  routeBatch(requests: RouteRequest[]): Promise<RouteResult[]>;
-
-  // Scoring
-  scoreAgents(request: RouteRequest): Promise<AgentScore[]>;
-
-  // Info
-  getModelInfo(): ModelInfo;
-  isReady(): boolean;
+class Router {
+  constructor(config: RouterConfig);
+  route(request: RoutingRequest): RoutingResponse;
+  circuit_breaker_status(): boolean | undefined;
 }
 ```
 
-### Types
+### `RouterConfig`
 
 ```typescript
-interface RouteRequest {
-  query: string;
-  context?: Record<string, any>;
-  agents: string[];
-  constraints?: RouteConstraints;
-}
-
-interface RouteResult {
-  agent: string;
-  confidence: number;
-  scores: Record<string, number>;
-  latencyMs: number;
-}
-
-interface AgentScore {
-  agent: string;
-  score: number;
-  features: number[];
-}
-
-interface RouteConstraints {
-  excludeAgents?: string[];
-  minConfidence?: number;
-  timeout?: number;
+class RouterConfig {
+  constructor(); // sets defaults (modelPath = ./models/fastgrnn.safetensors, etc.)
+  set model_path(path: string);
+  set confidence_threshold(threshold: number);
+  set max_uncertainty(uncertainty: number);
 }
 ```
 
-## Bundle Optimization
+> Defaults: `confidence_threshold = 0.85`, `max_uncertainty = 0.15`,
+> circuit breaker enabled (threshold 5), quantization enabled.
 
-### Tree Shaking
+### `Candidate`
 
 ```typescript
-// Import only what you need
-import { TinyDancer } from '@ruvector/tiny-dancer-wasm/core';
-import { FeatureExtractor } from '@ruvector/tiny-dancer-wasm/features';
+class Candidate {
+  // positional constructor
+  constructor(
+    id: string,
+    embedding: Float32Array,
+    metadata: string,     // JSON string
+    createdAt: bigint,    // i64
+    accessCount: bigint,  // u64
+    successRate: number,
+  );
+}
 ```
 
-### CDN Usage
+### `RoutingRequest`
+
+```typescript
+class RoutingRequest {
+  constructor(queryEmbedding: Float32Array, candidates: Candidate[]);
+  set metadata(metadata: string); // optional JSON string
+}
+```
+
+### `RoutingResponse`
+
+```typescript
+class RoutingResponse {
+  get decisions_json(): string;     // JSON-encoded array of decisions
+  get inference_time_us(): bigint;
+  get candidates_processed(): number;
+  get feature_time_us(): bigint;
+}
+```
+
+### Module-level
+
+- `init()` -- wasm-bindgen start hook (installs the panic hook)
+- `version()` -- crate version string
+
+## CDN Usage
 
 ```html
 <script type="module">
-  import init, { TinyDancer } from 'https://unpkg.com/@ruvector/tiny-dancer-wasm';
+  import init, { Router, RouterConfig } from 'https://unpkg.com/@ruvector/tiny-dancer-wasm';
 
   await init();
-  const router = new TinyDancer();
+  const router = new Router(new RouterConfig());
 </script>
 ```
 
-## Performance
+## Building from Source
 
-### Benchmarks (Chrome 120, M1 Mac)
+```bash
+git clone https://github.com/ruvnet/ruvector.git
+cd ruvector/crates/ruvector-tiny-dancer-wasm
 
-```
-Operation           Latency (p50)
-────────────────────────────────
-Model load          ~50ms
-Single inference    ~0.5ms
-Batch (10)          ~2ms
-Feature extraction  ~0.1ms
-```
-
-### Bundle Size
-
-```
-Format              Size
-────────────────────────
-WASM binary         ~100KB gzipped
-JS glue             ~5KB gzipped
-Total               ~105KB gzipped
+# Build for web (ES modules)
+wasm-pack build --target web --out-dir pkg
 ```
 
 ## Browser Support
 
-| Browser | Version | SIMD |
-|---------|---------|------|
-| Chrome | 89+ | ✅ |
-| Firefox | 89+ | ✅ |
-| Safari | 15+ | ✅ |
-| Edge | 89+ | ✅ |
+| Browser | Version |
+|---------|---------|
+| Chrome | 89+ |
+| Firefox | 89+ |
+| Safari | 15+ |
+| Edge | 89+ |
 
 ## Related Packages
 
 - **[ruvector-tiny-dancer-core](../ruvector-tiny-dancer-core/)** - Core Rust implementation
 - **[ruvector-tiny-dancer-node](../ruvector-tiny-dancer-node/)** - Node.js bindings
 - **[ruvector-core](../ruvector-core/)** - Core vector database
-
-## Documentation
-
-- **[Main README](../../README.md)** - Complete project overview
-- **[API Documentation](https://docs.rs/ruvector-tiny-dancer-wasm)** - Full API reference
-- **[GitHub Repository](https://github.com/ruvnet/ruvector)** - Source code
 
 ## License
 
@@ -238,8 +198,6 @@ Total               ~105KB gzipped
 <div align="center">
 
 **Part of [Ruvector](https://github.com/ruvnet/ruvector) - Built by [rUv](https://ruv.io)**
-
-[![Star on GitHub](https://img.shields.io/github/stars/ruvnet/ruvector?style=social)](https://github.com/ruvnet/ruvector)
 
 [Documentation](https://docs.rs/ruvector-tiny-dancer-wasm) | [npm](https://www.npmjs.com/package/@ruvector/tiny-dancer) | [GitHub](https://github.com/ruvnet/ruvector)
 
