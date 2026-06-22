@@ -3,7 +3,7 @@ name: source-command-swarm-readme
 description: 'Swarm Commands'
 ---
 
-# /swarm/README
+# /swarm:readme
 
 Source: `.claude/commands/swarm/README.md`
 

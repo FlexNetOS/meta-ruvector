@@ -3,7 +3,7 @@ name: source-command-github-repo-architect
 description: 'GitHub Repository Architect'
 ---
 
-# /github/repo-architect
+# /github:repo-architect
 
 Source: `.claude/commands/github/repo-architect.md`
 

@@ -3,7 +3,7 @@ name: source-command-swarm-swarm-analysis
 description: 'swarm-analysis'
 ---
 
-# /swarm/swarm-analysis
+# /swarm:swarm-analysis
 
 Source: `.claude/commands/swarm/swarm-analysis.md`
 

@@ -3,7 +3,7 @@ name: source-command-hive-mind-hive-mind-consensus
 description: 'hive-mind-consensus'
 ---
 
-# /hive-mind/hive-mind-consensus
+# /hive-mind:hive-mind-consensus
 
 Source: `.claude/commands/hive-mind/hive-mind-consensus.md`
 

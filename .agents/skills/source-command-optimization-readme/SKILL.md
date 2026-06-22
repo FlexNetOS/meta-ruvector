@@ -3,7 +3,7 @@ name: source-command-optimization-readme
 description: 'Optimization Commands'
 ---
 
-# /optimization/README
+# /optimization:readme
 
 Source: `.claude/commands/optimization/README.md`
 

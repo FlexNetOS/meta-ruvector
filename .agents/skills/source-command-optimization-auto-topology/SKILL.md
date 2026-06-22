@@ -3,7 +3,7 @@ name: source-command-optimization-auto-topology
 description: 'Automatic Topology Selection'
 ---
 
-# /optimization/auto-topology
+# /optimization:auto-topology
 
 Source: `.claude/commands/optimization/auto-topology.md`
 

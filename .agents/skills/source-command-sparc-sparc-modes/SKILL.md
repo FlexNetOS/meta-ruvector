@@ -3,7 +3,7 @@ name: source-command-sparc-sparc-modes
 description: 'SPARC Modes Overview'
 ---
 
-# /sparc/sparc-modes
+# /sparc:sparc-modes
 
 Source: `.claude/commands/sparc/sparc-modes.md`
 

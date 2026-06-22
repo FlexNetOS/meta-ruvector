@@ -3,7 +3,7 @@ name: source-command-hive-mind-hive-mind-spawn
 description: 'hive-mind-spawn'
 ---
 
-# /hive-mind/hive-mind-spawn
+# /hive-mind:hive-mind-spawn
 
 Source: `.claude/commands/hive-mind/hive-mind-spawn.md`
 

@@ -3,7 +3,7 @@ name: source-command-monitoring-agent-metrics
 description: 'agent-metrics'
 ---
 
-# /monitoring/agent-metrics
+# /monitoring:agent-metrics
 
 Source: `.claude/commands/monitoring/agent-metrics.md`
 

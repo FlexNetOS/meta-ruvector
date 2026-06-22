@@ -3,7 +3,7 @@ name: source-command-sparc-coder
 description: 'SPARC Coder Mode'
 ---
 
-# /sparc/coder
+# /sparc:coder
 
 Source: `.claude/commands/sparc/coder.md`
 

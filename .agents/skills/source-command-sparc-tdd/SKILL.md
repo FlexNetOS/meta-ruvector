@@ -3,7 +3,7 @@ name: source-command-sparc-tdd
 description: 'SPARC TDD Mode'
 ---
 
-# /sparc/tdd
+# /sparc:tdd
 
 Source: `.claude/commands/sparc/tdd.md`
 

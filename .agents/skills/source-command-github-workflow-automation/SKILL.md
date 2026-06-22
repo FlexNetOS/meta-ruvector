@@ -3,7 +3,7 @@ name: source-command-github-workflow-automation
 description: 'Workflow Automation - GitHub Actions Integration'
 ---
 
-# /github/workflow-automation
+# /github:workflow-automation
 
 Source: `.claude/commands/github/workflow-automation.md`
 

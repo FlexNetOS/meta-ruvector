@@ -3,7 +3,7 @@ name: source-command-sparc-ask
 description: '❓Ask'
 ---
 
-# /sparc/ask
+# /sparc:ask
 
 Source: `.claude/commands/sparc/ask.md`
 

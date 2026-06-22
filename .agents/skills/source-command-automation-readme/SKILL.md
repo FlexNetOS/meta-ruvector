@@ -3,7 +3,7 @@ name: source-command-automation-readme
 description: 'Automation Commands'
 ---
 
-# /automation/README
+# /automation:readme
 
 Source: `.claude/commands/automation/README.md`
 

@@ -3,7 +3,7 @@ name: source-command-github-code-review-swarm
 description: 'Code Review Swarm - Automated Code Review with AI Agents'
 ---
 
-# /github/code-review-swarm
+# /github:code-review-swarm
 
 Source: `.claude/commands/github/code-review-swarm.md`
 

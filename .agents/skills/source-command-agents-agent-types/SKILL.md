@@ -3,7 +3,7 @@ name: source-command-agents-agent-types
 description: 'agent-types'
 ---
 
-# /agents/agent-types
+# /agents:agent-types
 
 Source: `.claude/commands/agents/agent-types.md`
 

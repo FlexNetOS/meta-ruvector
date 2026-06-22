@@ -3,7 +3,7 @@ name: source-command-automation-self-healing
 description: 'Self-Healing Workflows'
 ---
 
-# /automation/self-healing
+# /automation:self-healing
 
 Source: `.claude/commands/automation/self-healing.md`
 

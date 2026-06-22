@@ -3,7 +3,7 @@ name: source-command-hooks-post-task
 description: 'hook post-task'
 ---
 
-# /hooks/post-task
+# /hooks:post-task
 
 Source: `.claude/commands/hooks/post-task.md`
 

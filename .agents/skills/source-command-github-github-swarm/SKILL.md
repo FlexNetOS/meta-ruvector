@@ -3,7 +3,7 @@ name: source-command-github-github-swarm
 description: 'github swarm'
 ---
 
-# /github/github-swarm
+# /github:github-swarm
 
 Source: `.claude/commands/github/github-swarm.md`
 

@@ -3,7 +3,7 @@ name: source-command-sparc-analyzer
 description: 'SPARC Analyzer Mode'
 ---
 
-# /sparc/analyzer
+# /sparc:analyzer
 
 Source: `.claude/commands/sparc/analyzer.md`
 

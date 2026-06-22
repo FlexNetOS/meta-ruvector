@@ -3,7 +3,7 @@ name: source-command-automation-smart-agents
 description: 'Smart Agent Auto-Spawning'
 ---
 
-# /automation/smart-agents
+# /automation:smart-agents
 
 Source: `.claude/commands/automation/smart-agents.md`
 

@@ -3,7 +3,7 @@ name: source-command-hooks-pre-task
 description: 'hook pre-task'
 ---
 
-# /hooks/pre-task
+# /hooks:pre-task
 
 Source: `.claude/commands/hooks/pre-task.md`
 

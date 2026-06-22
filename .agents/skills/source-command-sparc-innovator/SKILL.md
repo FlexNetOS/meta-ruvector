@@ -3,7 +3,7 @@ name: source-command-sparc-innovator
 description: 'SPARC Innovator Mode'
 ---
 
-# /sparc/innovator
+# /sparc:innovator
 
 Source: `.claude/commands/sparc/innovator.md`
 

@@ -3,7 +3,7 @@ name: source-command-agents-agent-capabilities
 description: 'agent-capabilities'
 ---
 
-# /agents/agent-capabilities
+# /agents:agent-capabilities
 
 Source: `.claude/commands/agents/agent-capabilities.md`
 

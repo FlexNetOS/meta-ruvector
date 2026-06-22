@@ -3,7 +3,7 @@ name: source-command-sparc-integration
 description: '🔗 System Integrator'
 ---
 
-# /sparc/integration
+# /sparc:integration
 
 Source: `.claude/commands/sparc/integration.md`
 

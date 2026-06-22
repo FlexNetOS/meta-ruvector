@@ -3,7 +3,7 @@ name: source-command-training-specialization
 description: 'Agent Specialization Training'
 ---
 
-# /training/specialization
+# /training:specialization
 
 Source: `.claude/commands/training/specialization.md`
 

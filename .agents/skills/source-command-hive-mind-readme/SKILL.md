@@ -3,7 +3,7 @@ name: source-command-hive-mind-readme
 description: 'Hive-mind Commands'
 ---
 
-# /hive-mind/README
+# /hive-mind:readme
 
 Source: `.claude/commands/hive-mind/README.md`
 

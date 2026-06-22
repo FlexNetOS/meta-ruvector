@@ -3,7 +3,7 @@ name: source-command-sparc-docs-writer
 description: '📚 Documentation Writer'
 ---
 
-# /sparc/docs-writer
+# /sparc:docs-writer
 
 Source: `.claude/commands/sparc/docs-writer.md`
 

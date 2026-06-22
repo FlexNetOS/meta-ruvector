@@ -3,7 +3,7 @@ name: source-command-sparc-code
 description: '🧠 Auto-Coder'
 ---
 
-# /sparc/code
+# /sparc:code
 
 Source: `.claude/commands/sparc/code.md`
 

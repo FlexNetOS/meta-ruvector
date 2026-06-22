@@ -3,7 +3,7 @@ name: source-command-workflows-workflow-execute
 description: 'workflow-execute'
 ---
 
-# /workflows/workflow-execute
+# /workflows:workflow-execute
 
 Source: `.claude/commands/workflows/workflow-execute.md`
 

@@ -3,7 +3,7 @@ name: source-command-sparc-mcp
 description: '♾️ MCP Integration'
 ---
 
-# /sparc/mcp
+# /sparc:mcp
 
 Source: `.claude/commands/sparc/mcp.md`
 

@@ -3,7 +3,7 @@ name: source-command-hooks-pre-edit
 description: 'hook pre-edit'
 ---
 
-# /hooks/pre-edit
+# /hooks:pre-edit
 
 Source: `.claude/commands/hooks/pre-edit.md`
 

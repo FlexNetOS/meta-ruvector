@@ -3,7 +3,7 @@ name: source-command-hive-mind-hive-mind-memory
 description: 'hive-mind-memory'
 ---
 
-# /hive-mind/hive-mind-memory
+# /hive-mind:hive-mind-memory
 
 Source: `.claude/commands/hive-mind/hive-mind-memory.md`
 

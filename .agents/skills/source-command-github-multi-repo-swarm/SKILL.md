@@ -3,7 +3,7 @@ name: source-command-github-multi-repo-swarm
 description: 'Multi-Repo Swarm - Cross-Repository Swarm Orchestration'
 ---
 
-# /github/multi-repo-swarm
+# /github:multi-repo-swarm
 
 Source: `.claude/commands/github/multi-repo-swarm.md`
 

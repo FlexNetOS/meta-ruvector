@@ -3,7 +3,7 @@ name: source-command-sparc-workflow-manager
 description: 'SPARC Workflow Manager Mode'
 ---
 
-# /sparc/workflow-manager
+# /sparc:workflow-manager
 
 Source: `.claude/commands/sparc/workflow-manager.md`
 

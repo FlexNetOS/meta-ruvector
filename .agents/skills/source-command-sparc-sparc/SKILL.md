@@ -3,7 +3,7 @@ name: source-command-sparc-sparc
 description: '⚡️ SPARC Orchestrator'
 ---
 
-# /sparc/sparc
+# /sparc:sparc
 
 Source: `.claude/commands/sparc/sparc.md`
 

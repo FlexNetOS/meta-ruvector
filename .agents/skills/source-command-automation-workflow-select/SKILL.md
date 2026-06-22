@@ -3,7 +3,7 @@ name: source-command-automation-workflow-select
 description: 'workflow-select'
 ---
 
-# /automation/workflow-select
+# /automation:workflow-select
 
 Source: `.claude/commands/automation/workflow-select.md`
 

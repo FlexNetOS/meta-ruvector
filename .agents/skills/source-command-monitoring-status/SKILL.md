@@ -3,7 +3,7 @@ name: source-command-monitoring-status
 description: 'Check Coordination Status'
 ---
 
-# /monitoring/status
+# /monitoring:status
 
 Source: `.claude/commands/monitoring/status.md`
 

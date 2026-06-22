@@ -3,7 +3,7 @@ name: source-command-training-neural-train
 description: 'neural-train'
 ---
 
-# /training/neural-train
+# /training:neural-train
 
 Source: `.claude/commands/training/neural-train.md`
 

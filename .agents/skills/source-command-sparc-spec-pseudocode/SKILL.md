@@ -3,7 +3,7 @@ name: source-command-sparc-spec-pseudocode
 description: '📋 Specification Writer'
 ---
 
-# /sparc/spec-pseudocode
+# /sparc:spec-pseudocode
 
 Source: `.claude/commands/sparc/spec-pseudocode.md`
 

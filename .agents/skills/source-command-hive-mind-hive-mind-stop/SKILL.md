@@ -3,7 +3,7 @@ name: source-command-hive-mind-hive-mind-stop
 description: 'hive-mind-stop'
 ---
 
-# /hive-mind/hive-mind-stop
+# /hive-mind:hive-mind-stop
 
 Source: `.claude/commands/hive-mind/hive-mind-stop.md`
 

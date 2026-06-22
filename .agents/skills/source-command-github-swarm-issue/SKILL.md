@@ -3,7 +3,7 @@ name: source-command-github-swarm-issue
 description: 'Swarm Issue - Issue-Based Swarm Coordination'
 ---
 
-# /github/swarm-issue
+# /github:swarm-issue
 
 Source: `.claude/commands/github/swarm-issue.md`
 

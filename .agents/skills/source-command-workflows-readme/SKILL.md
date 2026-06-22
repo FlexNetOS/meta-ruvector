@@ -3,7 +3,7 @@ name: source-command-workflows-readme
 description: 'Workflows Commands'
 ---
 
-# /workflows/README
+# /workflows:readme
 
 Source: `.claude/commands/workflows/README.md`
 

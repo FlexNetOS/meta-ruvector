@@ -3,7 +3,7 @@ name: source-command-github-release-swarm
 description: 'Release Swarm - Intelligent Release Automation'
 ---
 
-# /github/release-swarm
+# /github:release-swarm
 
 Source: `.claude/commands/github/release-swarm.md`
 

@@ -3,7 +3,7 @@ name: source-command-sparc-debugger
 description: 'SPARC Debugger Mode'
 ---
 
-# /sparc/debugger
+# /sparc:debugger
 
 Source: `.claude/commands/sparc/debugger.md`
 

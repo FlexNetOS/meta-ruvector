@@ -3,7 +3,7 @@ name: source-command-hive-mind-hive-mind-sessions
 description: 'hive-mind-sessions'
 ---
 
-# /hive-mind/hive-mind-sessions
+# /hive-mind:hive-mind-sessions
 
 Source: `.claude/commands/hive-mind/hive-mind-sessions.md`
 

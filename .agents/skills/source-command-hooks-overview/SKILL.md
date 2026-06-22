@@ -3,7 +3,7 @@ name: source-command-hooks-overview
 description: 'Claude Code Hooks for claude-flow'
 ---
 
-# /hooks/overview
+# /hooks:overview
 
 Source: `.claude/commands/hooks/overview.md`
 

@@ -3,7 +3,7 @@ name: source-command-swarm-swarm-strategies
 description: 'swarm-strategies'
 ---
 
-# /swarm/swarm-strategies
+# /swarm:swarm-strategies
 
 Source: `.claude/commands/swarm/swarm-strategies.md`
 

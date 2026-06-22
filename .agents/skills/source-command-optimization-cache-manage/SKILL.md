@@ -3,7 +3,7 @@ name: source-command-optimization-cache-manage
 description: 'cache-manage'
 ---
 
-# /optimization/cache-manage
+# /optimization:cache-manage
 
 Source: `.claude/commands/optimization/cache-manage.md`
 

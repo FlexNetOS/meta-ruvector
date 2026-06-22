@@ -63,6 +63,20 @@ pub struct PromptInstallReport {
     pub verified_files: usize,
 }
 
+#[derive(Debug, Clone)]
+pub struct CodexInstallOptions {
+    pub repo_root: PathBuf,
+    pub lua_policy: Option<PathBuf>,
+    pub codex_home: PathBuf,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct CodexInstallReport {
+    pub mirror: MirrorReport,
+    pub prompts: PromptInstallReport,
+    pub doctor: DoctorReport,
+}
+
 #[derive(Debug, Default)]
 struct LuaPolicy {
     config_footer: Option<String>,
@@ -294,6 +308,30 @@ pub fn install_codex_prompts(options: PromptInstallOptions) -> Result<PromptInst
     })
 }
 
+pub fn install_codex_env(options: CodexInstallOptions) -> Result<CodexInstallReport> {
+    let mirror = mirror_codex_surface(MirrorOptions {
+        repo_root: options.repo_root.clone(),
+        lua_policy: options.lua_policy.clone(),
+        check: false,
+    })?;
+    let prompts = install_codex_prompts(PromptInstallOptions {
+        repo_root: options.repo_root.clone(),
+        codex_home: options.codex_home.clone(),
+        check: false,
+    })?;
+    let doctor = doctor_codex_surface(DoctorOptions {
+        repo_root: options.repo_root,
+        lua_policy: options.lua_policy,
+        codex_home: options.codex_home,
+    })?;
+
+    Ok(CodexInstallReport {
+        mirror,
+        prompts,
+        doctor,
+    })
+}
+
 fn locate_claude_dir(repo_root: &Path) -> Result<PathBuf> {
     let direct = repo_root.join(".claude");
     if direct.is_dir() {
@@ -389,12 +427,12 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 codex_home="${CODEX_HOME:-${HOME}/.codex}"
 
-cargo run -p codex-env -- --repo "${repo_root}" install-prompts --codex-home "${codex_home}"
+cargo run -p codex-env -- --repo "${repo_root}" install --codex-home "${codex_home}"
 
 cat <<'MSG'
-Installed Codex prompt mirrors.
+Installed Codex mirror surface and prompt commands.
 Restart Codex, then invoke Claude command mirrors as /prompts:<name>.
-Examples: /prompts:sparc-code, /prompts:claude-flow-swarm
+Examples: /prompts:sparc-code, /prompts:sparc:code, /prompts:claude-flow-swarm
 MSG
 "#,
             )

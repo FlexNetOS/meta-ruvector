@@ -3,7 +3,7 @@ name: source-command-github-release-manager
 description: 'GitHub Release Manager'
 ---
 
-# /github/release-manager
+# /github:release-manager
 
 Source: `.claude/commands/github/release-manager.md`
 
