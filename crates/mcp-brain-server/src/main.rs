@@ -36,7 +36,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         // spawn_blocking avoids starving HTTP handlers during the CPU-intensive bootstrap.
         {
             let state = train_state.clone();
-            match tokio::task::spawn_blocking(move || routes::run_enhanced_training_cycle(&state, true)).await {
+            match tokio::task::spawn_blocking(move || {
+                routes::run_enhanced_training_cycle(&state, true)
+            })
+            .await
+            {
                 Ok(result) => {
                     tracing::info!(
                         "Initial cognitive bootstrap: props={}, inferences={}, voice={}, curiosity={}, strange_loop={:.4}",
@@ -126,7 +130,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 // retrain every 24h.
                 if new_memories > 0 || new_votes > 0 || tick_count % 15 == 0 {
                     let state = train_state.clone();
-                    match tokio::task::spawn_blocking(move || routes::run_enhanced_training_cycle(&state, false)).await {
+                    match tokio::task::spawn_blocking(move || {
+                        routes::run_enhanced_training_cycle(&state, false)
+                    })
+                    .await
+                    {
                         Ok(result) => {
                             tracing::info!(
                                 "Cognitive cycle #{} ({}): props={}, inferences={}, voice={}, auto_votes={}, \

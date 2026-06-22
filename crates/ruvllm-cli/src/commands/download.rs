@@ -305,7 +305,11 @@ fn resolve_gguf_filename(
         .get("siblings")?
         .as_array()?
         .iter()
-        .filter_map(|s| s.get("rfilename").and_then(|v| v.as_str()).map(String::from))
+        .filter_map(|s| {
+            s.get("rfilename")
+                .and_then(|v| v.as_str())
+                .map(String::from)
+        })
         .filter(|f| f.to_lowercase().ends_with(".gguf"))
         .collect();
 

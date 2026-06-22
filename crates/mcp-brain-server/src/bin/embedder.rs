@@ -68,7 +68,10 @@ async fn embed(State(state): State<AppState>, Json(req): Json<EmbedRequest>) -> 
     // Offload to a blocking thread so the lock + embedding work doesn't starve
     // the tokio runtime (especially for large text arrays).
     let result = tokio::task::spawn_blocking(move || {
-        let engine = state.engine.lock().map_err(|e| format!("mutex poisoned: {e}"))?;
+        let engine = state
+            .engine
+            .lock()
+            .map_err(|e| format!("mutex poisoned: {e}"))?;
         let vectors: Vec<Vec<f32>> = req.texts.iter().map(|t| engine.embed(t)).collect();
         Ok::<_, String>(EmbedResponse {
             engine: engine.engine_name().to_owned(),
@@ -89,7 +92,12 @@ async fn embed(State(state): State<AppState>, Json(req): Json<EmbedRequest>) -> 
         Err(e) => {
             return (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                Json(serde_json::to_value(ErrorResponse { error: format!("{e}") }).unwrap()),
+                Json(
+                    serde_json::to_value(ErrorResponse {
+                        error: format!("{e}"),
+                    })
+                    .unwrap(),
+                ),
             );
         }
     };
