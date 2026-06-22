@@ -157,6 +157,8 @@ cargo run -p codex-env -- mirror --check
 - `.claude/skills/` -> `.agents/skills/`
 - `.claude/commands/**/*.md` -> `.agents/skills/source-command-*`
 - `.claude/commands/**/*.md` -> `.codex/prompts/*.md` for `/prompts:*`
+- Codex-native workflow upgrades -> `.agents/skills/codex-*` and
+  `.codex/prompts/codex-*`
 
 Use `--lua-policy <path>` when a repo-local transformation is needed. The Lua
 script receives a `mirror` table with `repo_root` and `claude_dir`, and may
@@ -177,6 +179,155 @@ prompt commands such as `/prompts:sparc-code` and
 `/prompts:claude-flow-swarm`.
 "#,
     )
+}
+
+pub(super) fn codex_native_workflow_prompts(codex_dir: &Path) -> Vec<PlannedFile> {
+    [
+        (
+            "codex-agent-team.md",
+            "Spawn a Codex-native subagent team from repo custom agents",
+            "[TEAM=core|review|rust|security|github|swarm] [GOAL]",
+            r#"Use Codex-native subagents for this goal: $ARGUMENTS
+
+Select the smallest effective team. Spawn the agents in parallel, wait for all results, then consolidate:
+
+- core: claude-core-planner, claude-core-researcher, claude-core-coder, claude-core-tester, claude-core-reviewer
+- review: reviewer, claude-core-reviewer, claude-testing-production-validator, claude-v3-security-auditor
+- rust: explorer, claude-core-coder, claude-core-tester, claude-v3-performance-engineer
+- security: claude-v3-security-architect, claude-v3-security-auditor, claude-v3-pii-detector, claude-v3-aidefence-guardian
+- github: claude-github-pr-manager, claude-github-code-review-swarm, claude-github-workflow-automation
+- swarm: claude-swarm-hierarchical-coordinator, claude-hive-mind-queen-coordinator, claude-v3-v3-queen-coordinator
+
+Give each subagent a bounded brief with concrete evidence to return. Do not let subagents modify the same file concurrently. After all results return, decide the implementation path, make the edits in the parent thread, verify, commit, push, and update the PR when publishing applies.
+"#,
+        ),
+        (
+            "codex-auto-loop.md",
+            "Run the full Codex autonomous implementation loop",
+            "[GOAL]",
+            r#"Run the Codex autonomous loop for this goal: $ARGUMENTS
+
+1. Recall project memory and read the closest AGENTS.md instructions.
+2. Inspect current git, branch, PR, and generated-surface state before trusting prior context.
+3. Identify requirements and evidence that would prove completion.
+4. For broad work, spawn a focused Codex subagent team in parallel and wait for results.
+5. Implement the smallest complete upgrade that makes the requested end state more true.
+6. Regenerate deterministic surfaces with codex-env when source or generator changes require it.
+7. Run targeted tests plus mirror/install checks, then broader gates proportional to risk.
+8. Commit, push, and open or update the PR. Store ICM memory for significant completed work.
+9. Continue with the next gap unless the whole objective is proven complete.
+"#,
+        ),
+        (
+            "codex-gap-hunt.md",
+            "Run a deep Codex parity gap hunt before upgrading",
+            "[SURFACE=hooks|agents|skills|prompts|all] [GOAL]",
+            r#"Run a deep current-state gap hunt for this Codex surface: $ARGUMENTS
+
+Compare the actual repo state against Codex-native behavior, not Claude assumptions:
+
+- commands and prompts: .claude/commands, .agents/skills/source-command-*, .codex/prompts, CODEX_HOME/prompts
+- agents and teams: .claude/agents, .codex/agents, custom-agent schema, explicit subagent workflows
+- hooks and helpers: .claude/settings.json, .codex/hooks.json, .codex/hooks, .codex/helpers, supported Codex hook events
+- settings and MCP: .codex/config.toml, active MCP servers, features, model and sandbox defaults
+- auto loop: AGENTS.md, ICM recall/store, verification gates, commit/push/PR workflow
+
+Return missed items ranked by user impact. Implement only upgrades that move Codex closer to the requested final state, then verify with authoritative command output.
+"#,
+        ),
+    ]
+    .into_iter()
+    .map(|(file, description, argument_hint, body)| {
+        let mut prompt = String::new();
+        prompt.push_str("---\n");
+        prompt.push_str(&format!("description: {}\n", yaml_scalar(description)));
+        prompt.push_str(&format!("argument-hint: {argument_hint}\n"));
+        prompt.push_str("---\n\n");
+        prompt.push_str(body.trim_start());
+        if !prompt.ends_with('\n') {
+            prompt.push('\n');
+        }
+        PlannedFile {
+            path: codex_dir.join("prompts").join(file),
+            bytes: normalize_generated_text(&prompt).into_bytes(),
+            executable: false,
+        }
+    })
+    .collect()
+}
+
+pub(super) fn codex_native_workflow_skills(skills_dir: &Path) -> Vec<PlannedFile> {
+    [
+        (
+            "codex-agent-team",
+            "Use when a task should spawn a Codex-native team of project custom agents for parallel research, implementation planning, review, security, GitHub, or swarm coordination.",
+            r#"# Codex Agent Team
+
+Use Codex subagents explicitly. Pick the smallest effective team, spawn agents in parallel, wait for all results, then consolidate in the parent thread.
+
+Recommended teams:
+- core: claude-core-planner, claude-core-researcher, claude-core-coder, claude-core-tester, claude-core-reviewer
+- review: reviewer, claude-core-reviewer, claude-testing-production-validator, claude-v3-security-auditor
+- rust: explorer, claude-core-coder, claude-core-tester, claude-v3-performance-engineer
+- security: claude-v3-security-architect, claude-v3-security-auditor, claude-v3-pii-detector, claude-v3-aidefence-guardian
+- github: claude-github-pr-manager, claude-github-code-review-swarm, claude-github-workflow-automation
+- swarm: claude-swarm-hierarchical-coordinator, claude-hive-mind-queen-coordinator, claude-v3-v3-queen-coordinator
+
+Give each subagent a bounded brief and a required evidence format. Keep write ownership in the parent thread unless a subagent has an isolated file scope.
+"#,
+        ),
+        (
+            "codex-auto-loop",
+            "Use when the user wants autonomous end-to-end Codex execution with memory recall, gap analysis, implementation, verification, commit, push, and PR updates.",
+            r#"# Codex Auto Loop
+
+Run this loop until the requested end state is true or a real blocker is proven:
+
+1. Recall ICM memory and inspect the current repo/branch/PR state.
+2. Derive concrete requirements and completion evidence.
+3. Spawn focused Codex subagents for broad or uncertain work.
+4. Implement upgrades in the parent thread using repo patterns.
+5. Regenerate deterministic Codex surfaces with codex-env when needed.
+6. Run targeted gates, mirror checks, install checks, and risk-appropriate broader gates.
+7. Commit, push, update or open the PR, and store ICM memory for significant work.
+8. Continue to the next gap while the active objective remains incomplete.
+"#,
+        ),
+        (
+            "codex-gap-hunt",
+            "Use when auditing Codex parity gaps across hooks, helpers, prompts, skills, custom agents, subagents, settings, MCP, and auto-loop workflows.",
+            r#"# Codex Gap Hunt
+
+Audit from current evidence, not memory. Compare source and generated surfaces:
+
+- .claude/commands -> .agents/skills/source-command-* and .codex/prompts -> CODEX_HOME/prompts
+- .claude/agents -> .codex/agents custom-agent TOML schema and explicit subagent workflows
+- .claude/settings.json -> .codex/config.toml and .codex/hooks.json using supported Codex hook events
+- .claude/hooks and helpers -> .codex/hooks and .codex/helpers
+- AGENTS.md, ICM, verification, commit/push/PR workflow
+
+Rank gaps by user impact, then implement upgrades only. Verify with commands that prove the touched surface works.
+"#,
+        ),
+    ]
+    .into_iter()
+    .map(|(slug, description, body)| {
+        let mut skill = String::new();
+        skill.push_str("---\n");
+        skill.push_str(&format!("name: {slug}\n"));
+        skill.push_str(&format!("description: {}\n", yaml_scalar(description)));
+        skill.push_str("---\n\n");
+        skill.push_str(body.trim_start());
+        if !skill.ends_with('\n') {
+            skill.push('\n');
+        }
+        PlannedFile {
+            path: skills_dir.join(slug).join("SKILL.md"),
+            bytes: normalize_generated_text(&skill).into_bytes(),
+            executable: false,
+        }
+    })
+    .collect()
 }
 
 pub(super) fn codex_agent_profiles(codex_dir: &Path) -> Vec<PlannedFile> {

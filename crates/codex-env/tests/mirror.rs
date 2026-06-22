@@ -210,7 +210,17 @@ fn mirror_generates_codex_and_skill_files() {
     assert!(prompt.contains("Source: `.claude/commands/sparc/code.md`"));
     assert!(prompt.contains("Arguments supplied to this prompt: $ARGUMENTS"));
     assert!(prompt.contains("Body with $ARGUMENTS and shell \"$$FOO\"."));
+    assert!(root.join(".codex/prompts/codex-agent-team.md").exists());
+    assert!(root.join(".codex/prompts/codex-auto-loop.md").exists());
+    assert!(root.join(".codex/prompts/codex-gap-hunt.md").exists());
     assert!(root.join(".codex/helpers/install-prompts.sh").exists());
+    assert!(root
+        .join(".agents/skills/codex-agent-team/SKILL.md")
+        .exists());
+    assert!(root
+        .join(".agents/skills/codex-auto-loop/SKILL.md")
+        .exists());
+    assert!(root.join(".agents/skills/codex-gap-hunt/SKILL.md").exists());
 
     let inventory: serde_json::Value =
         serde_json::from_slice(&fs::read(root.join(".codex/mirror-symbols.json")).unwrap())
@@ -272,9 +282,10 @@ fn install_prompts_copies_generated_prompt_commands() {
         check: false,
     })
     .unwrap();
-    assert_eq!(report.total_files, 1);
-    assert_eq!(report.changed_files, 1);
+    assert_eq!(report.total_files, 4);
+    assert_eq!(report.changed_files, 4);
     assert!(codex_home.join("prompts/demo.md").exists());
+    assert!(codex_home.join("prompts/codex-auto-loop.md").exists());
 
     let check = install_codex_prompts(PromptInstallOptions {
         repo_root: root,

@@ -19,6 +19,8 @@ cargo run -p codex-env -- mirror --check
 - `.claude/skills/` -> `.agents/skills/`
 - `.claude/commands/**/*.md` -> `.agents/skills/source-command-*`
 - `.claude/commands/**/*.md` -> `.codex/prompts/*.md` for `/prompts:*`
+- Codex-native workflow upgrades -> `.agents/skills/codex-*` and
+  `.codex/prompts/codex-*`
 
 Use `--lua-policy <path>` when a repo-local transformation is needed. The Lua
 script receives a `mirror` table with `repo_root` and `claude_dir`, and may

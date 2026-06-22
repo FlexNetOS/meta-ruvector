@@ -1,5 +1,5 @@
 {
-  "fileCount": 817,
+  "fileCount": 823,
   "files": [
     ".codex/mirror/.claude/agentic-flow-fast.sh",
     ".codex/mirror/.claude/agents/analysis/analyze-code-quality.md",
@@ -635,6 +635,9 @@
     ".codex/prompts/workflows-workflow-create.md",
     ".codex/prompts/workflows-workflow-execute.md",
     ".codex/prompts/workflows-workflow-export.md",
+    ".codex/prompts/codex-agent-team.md",
+    ".codex/prompts/codex-auto-loop.md",
+    ".codex/prompts/codex-gap-hunt.md",
     ".codex/helpers/install-prompts.sh",
     ".codex/helpers/run-claude-hook.sh",
     ".codex/hooks.json",
@@ -816,6 +819,9 @@
     ".agents/skills/source-command-workflows-workflow-create/SKILL.md",
     ".agents/skills/source-command-workflows-workflow-execute/SKILL.md",
     ".agents/skills/source-command-workflows-workflow-export/SKILL.md",
+    ".agents/skills/codex-agent-team/SKILL.md",
+    ".agents/skills/codex-auto-loop/SKILL.md",
+    ".agents/skills/codex-gap-hunt/SKILL.md",
     ".codex/mirror-symbols.json",
     ".codex/mirror-manifest.json"
   ],

@@ -17,7 +17,8 @@ use agent_roles::{
 };
 use command_prompts::{clean_codex_prompts, command_prompt_plan, stale_codex_prompt_files};
 use generated::{
-    codex_agent_profiles, codex_agents_md, codex_config, codex_hooks_json, command_skill_plan,
+    codex_agent_profiles, codex_agents_md, codex_config, codex_hooks_json,
+    codex_native_workflow_prompts, codex_native_workflow_skills, command_skill_plan,
     copy_tree_plan, read_claude_env,
 };
 use raw_mirror::{
@@ -111,6 +112,7 @@ pub fn mirror_codex_surface(options: MirrorOptions) -> Result<MirrorReport> {
     planned.extend(codex_agent_profiles(&codex_dir));
     planned.extend(agent_role_plan.files);
     planned.extend(prompt_plan.files);
+    planned.extend(codex_native_workflow_prompts(&codex_dir));
     planned.extend(codex_prompt_helpers(&codex_dir));
     planned.push(PlannedFile {
         path: codex_dir.join("hooks.json"),
@@ -130,6 +132,9 @@ pub fn mirror_codex_surface(options: MirrorOptions) -> Result<MirrorReport> {
         &repo_root.join(".agents/skills"),
         policy.skill_prelude.as_deref(),
     )?);
+    planned.extend(codex_native_workflow_skills(
+        &repo_root.join(".agents/skills"),
+    ));
     planned.push(PlannedFile {
         path: codex_dir.join("mirror-symbols.json"),
         bytes: mirror_symbol_inventory_json(&repo_root, &codex_dir, &claude_files)?.into_bytes(),
