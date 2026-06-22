@@ -26,6 +26,9 @@ members = [
     "tests",
     "benches",
     "examples/cognitive_demo",
+    # Crate-membership audit: was orphaned (built by no workspace); path-deps
+    # only to ruvix members.
+    "examples/rvf-demos/swarm-consensus",
 ]
 resolver = "2"
 
