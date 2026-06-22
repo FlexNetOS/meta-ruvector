@@ -13,9 +13,9 @@ This is the **client-side MCP server** that runs locally alongside Claude Code. 
 └──────────────┘                └──────────────┘               └─────────────────┘
 ```
 
-## MCP Tools (20)
+## MCP Tools (22)
 
-### Core (10)
+### Core (11)
 
 | Tool | Description |
 |------|-------------|
@@ -31,7 +31,7 @@ This is the **client-side MCP server** that runs locally alongside Claude Code. 
 | `brain_status` | System health and diagnostics |
 | `brain_sync` | Sync local MicroLoRA weights with federated consensus |
 
-### Brainpedia (5)
+### Brainpedia (6)
 
 | Tool | Description |
 |------|-------------|

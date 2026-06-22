@@ -1,6 +1,9 @@
 # exo-wasm
 
-WASM bindings for EXO-AI 2025 Cognitive Substrate, enabling browser-based deployment of advanced AI substrate operations.
+WASM bindings for the EXO-AI 2025 Cognitive Substrate, enabling browser- and
+Node.js-based vector storage and similarity search. The current implementation is
+backed by `ruvector-core` (an in-memory `VectorDB`), exposed through the
+`ExoSubstrate` and `Pattern` classes.
 
 [![Crates.io](https://img.shields.io/crates/v/exo-wasm.svg)](https://crates.io/crates/exo-wasm)
 [![Documentation](https://docs.rs/exo-wasm/badge.svg)](https://docs.rs/exo-wasm)
@@ -8,11 +11,27 @@ WASM bindings for EXO-AI 2025 Cognitive Substrate, enabling browser-based deploy
 
 ## Features
 
-- **Pattern Storage**: Store and retrieve cognitive patterns with embeddings
-- **Similarity Search**: High-performance vector search with multiple distance metrics
-- **Temporal Memory**: Track patterns with timestamps and causal relationships
-- **Causal Queries**: Query patterns within causal cones
-- **Browser-First**: Optimized for browser deployment with zero-copy transfers
+- **Pattern Storage**: Store, retrieve, and delete cognitive patterns with
+  embeddings (`store`, `get`, `delete`, `len`, `isEmpty`)
+- **Similarity Search**: Vector search with multiple distance metrics —
+  euclidean, cosine, dotproduct, manhattan (`query`)
+- **Optional HNSW index**: Enable via the `use_hnsw` config flag
+- **Browser-First**: Compiles to WASM for browser and Node.js targets;
+  `detectSIMD()` reports SIMD128 availability
+
+## Planned / Not Yet Implemented
+
+The `Pattern` type carries a `timestamp` and `antecedents` (causal antecedent
+IDs), and the substrate config accepts `enable_temporal` / `enable_causal` flags,
+but the corresponding query surfaces are **not yet implemented** in this crate:
+
+- **Temporal Memory**: There is no temporal-window query API; timestamps are
+  stored but not queryable as a temporal index.
+- **Causal Queries**: There is no causal-cone query API; antecedents are stored
+  on patterns but cannot yet be queried.
+
+The `enable_temporal` / `enable_causal` flags are accepted and reflected in
+`stats()`, but currently have no behavioural effect.
 
 ## Installation
 
@@ -102,8 +121,10 @@ new ExoSubstrate(config)
 - `dimensions` (number): Vector dimensions (required)
 - `distance_metric` (string): "euclidean", "cosine", "dotproduct", or "manhattan" (default: "cosine")
 - `use_hnsw` (boolean): Enable HNSW index (default: true)
-- `enable_temporal` (boolean): Enable temporal tracking (default: true)
-- `enable_causal` (boolean): Enable causal tracking (default: true)
+- `enable_temporal` (boolean): Accepted and reflected in `stats()`, but no
+  temporal query API yet (default: true) — see Planned above
+- `enable_causal` (boolean): Accepted and reflected in `stats()`, but no causal
+  query API yet (default: true) — see Planned above
 
 #### Methods
 

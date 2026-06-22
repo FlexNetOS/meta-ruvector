@@ -1,5 +1,8 @@
-//! WASM bindings for `ruvector-graph-transformer`: proof-gated graph attention
-//! in the browser.
+//! Self-contained WASM graph-transformer implementation: proof-gated graph
+//! attention in the browser.
+//!
+//! The transformer logic is embedded in this crate (`mod transformer`); this
+//! is **not** a binding over a separate `ruvector-graph-transformer` crate.
 //!
 //! # Quick Start (JavaScript)
 //!

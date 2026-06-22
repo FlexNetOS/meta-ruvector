@@ -4,43 +4,39 @@
 [![Rust](https://img.shields.io/badge/rust-1.77%2B-orange.svg)](https://www.rust-lang.org)
 [![Platform](https://img.shields.io/badge/platform-Node.js-green.svg)](https://nodejs.org)
 
-**High-performance Node.js bindings for router-core vector database and neural routing engine.**
+**High-performance Node.js bindings for the `ruvector-router-core` vector database.**
 
 > NAPI-RS powered bindings bringing Rust-level performance to JavaScript/TypeScript with zero-copy buffer sharing and async/await support.
 
 ## Overview
 
-`router-ffi` provides seamless Node.js integration for the `router-core` vector database through NAPI-RS, enabling JavaScript and TypeScript applications to leverage Rust's blazing-fast performance for vector similarity search, neural routing, and embedding operations.
+`router-ffi` provides seamless Node.js integration for the `ruvector-router-core` vector database through NAPI-RS, enabling JavaScript and TypeScript applications to leverage Rust's performance for vector similarity search. It is a thin binding layer: the `VectorDB` class wraps `ruvector_router_core::VectorDB`, exposing insert/search/delete and async variants over a zero-copy `Float32Array` boundary.
 
 ### Why router-ffi?
 
 - **🚀 Native Performance**: Direct Rust execution with minimal overhead
 - **⚡ Zero-Copy**: Float32Array buffers shared directly with Rust
-- **🔄 Async/Await**: Non-blocking operations using Tokio runtime
+- **🔄 Async/Await**: Non-blocking `insertAsync` / `searchAsync` via Tokio
 - **🎯 Type Safe**: Complete TypeScript definitions auto-generated from Rust
 - **🌐 Cross-Platform**: Linux, macOS, Windows (x64 and ARM64)
-- **🧠 Neural Routing**: Advanced inference and routing capabilities
-- **💾 Memory Efficient**: HNSW indexing with 4-32x compression
 
 ## Features
 
 ### Core Capabilities
 
-- **Vector Operations**: Insert, search, delete with sub-millisecond latency
-- **Distance Metrics**: Euclidean, Cosine, Dot Product, Manhattan
-- **HNSW Indexing**: Sub-millisecond search with 95%+ recall
-- **Async API**: Full async/await support for all operations
-- **Batch Operations**: Efficient bulk insert and search
-- **Metadata Support**: Store and filter by JSON metadata
-- **Persistent Storage**: Disk-based storage with memory-mapped I/O
+- **Vector Operations**: `insert`, `search`, `delete`, `count`, `getAllIds`
+- **Distance Metrics**: Euclidean, Cosine, Dot Product, Manhattan (`DistanceMetric`)
+- **HNSW Indexing**: Approximate nearest-neighbor index, configurable via `DbOptions` (`hnswM`, `hnswEfConstruction`, `hnswEfSearch`)
+- **Async API**: `insertAsync` and `searchAsync` run on a blocking thread pool
+- **Persistent Storage**: REDB-backed disk storage (`storagePath`); a unique temp DB is used when no path is given
+- **Thread Safety**: `Arc`-based sharing of the underlying database across Node.js worker threads
+- **Error Handling**: Rust errors surfaced as JavaScript exceptions
 
-### Advanced Features
-
-- **Neural Routing**: Intelligent request routing and load balancing
-- **SIMD Optimizations**: Hardware-accelerated distance calculations
-- **Product Quantization**: 4-32x memory compression
-- **Thread Safety**: Arc-based concurrency for multi-threaded Node.js
-- **Error Handling**: Proper JavaScript error propagation from Rust
+> **Not implemented here.** This crate does **not** provide neural routing,
+> product quantization, metadata storage/filtering, or batch insert. The
+> `insert` API stores an empty metadata map and the binding exposes only the
+> methods listed above. Those features are not part of `ruvector-router-core`'s
+> binding surface.
 
 ## Installation
 
@@ -382,14 +378,16 @@ Search (k=100)     ~2,000/sec      0.5ms
 ### Performance Comparison
 
 ```
-Library            Search Latency   Memory (1M vectors)   Language
--------------------------------------------------------------------
-router-ffi         0.2ms           ~600MB                Rust → Node.js
-Pinecone           ~2ms            Cloud only            Hosted
-Qdrant             ~1ms            ~1.5GB                Rust
-ChromaDB           ~50ms           ~3GB                  Python
-FAISS              ~0.5ms          ~1GB                  C++ → Python
+Library            Search Latency   Language
+-----------------------------------------------
+router-ffi         ~0.2ms          Rust → Node.js
+Pinecone           ~2ms            Hosted
+Qdrant             ~1ms            Rust
+ChromaDB           ~50ms           Python
+FAISS              ~0.5ms          C++ → Python
 ```
+
+> Benchmark figures are indicative; run your own with your data and hardware.
 
 ### Optimization Tips
 
@@ -401,6 +399,9 @@ FAISS              ~0.5ms          ~1GB                  C++ → Python
    - Higher `efSearch` = better accuracy, slower search
 4. **Choose Distance Metric**: `Cosine` with pre-normalized vectors is fastest
 5. **Use Float32Array**: Direct buffer sharing avoids copies
+
+> Note: there is no batch-insert method on this binding — "batch" throughput
+> means issuing many `insertAsync` calls concurrently (e.g. via `Promise.all`).
 
 ## Use Cases
 
@@ -520,8 +521,7 @@ const worker = new Worker('./worker.js');
 
 - **Zero-Copy Buffers**: Float32Array data is shared directly between JavaScript and Rust
 - **Arc Reference Counting**: Automatic cleanup when JavaScript objects are garbage collected
-- **Memory-Mapped I/O**: Efficient disk-based storage with OS-level caching
-- **Product Quantization**: 4-32x compression for large datasets
+- **REDB Storage**: Embedded disk-based storage with OS-level caching
 
 ### Best Practices
 
@@ -618,14 +618,12 @@ db.insert('doc2', new Float32Array(768)); // Error!
 
 1. Increase `hnswEfSearch` for better recall
 2. Use `searchAsync` instead of `search`
-3. Check if HNSW index is built (insert >100 vectors)
-4. Consider using Product Quantization for large datasets
+3. Check if HNSW index is built (insert enough vectors)
 
 **High memory usage**
 
 1. Reduce `maxElements` if you don't need it
-2. Enable quantization (requires router-core configuration)
-3. Use smaller `hnswM` value (trades accuracy for memory)
+2. Use smaller `hnswM` value (trades accuracy for memory)
 
 ## Advanced Topics
 

@@ -16,11 +16,17 @@ mutation, insertion, deletion, or reorder of writes produces a different root.
 
 ## Gates
 
+All three gates implement the `WriteGate` trait (`admit`, `verify_receipt`,
+`chain_root`, `len`, `is_empty`, `variant`).
+
 | gate | per-write cost | property |
 |---|---|---|
 | `NullGate` | ~0 | baseline (no integrity) — throughput ceiling |
-| `HashChainGate` | O(1), ~700 ns | sequential SHA-256 chain; full re-derivation via `verify_integrity()` |
-| `MerkleGate` | O(log n) | Merkle Mountain Range; supports inclusion proofs |
+| `HashChainGate` | O(1), ~700 ns | sequential SHA-256 chain |
+| `MerkleGate` | O(log n) | Merkle Mountain Range |
+
+`HashChainGate` additionally provides an inherent `verify_integrity()` method
+that re-derives the whole chain from genesis (see below).
 
 ## Usage
 
@@ -28,11 +34,27 @@ mutation, insertion, deletion, or reorder of writes produces a different root.
 use ruvector_proof_gate::{HashChainGate, WriteGate, WritePayload};
 
 let mut gate = HashChainGate::new();
-let receipt = gate.admit(&WritePayload::new(id, vector).with_agent(agent_id))?;
+
+// WritePayload::new takes (id: u64, vector: Vec<f32>).
+let payload = WritePayload::new(0, vec![0.1, 0.2, 0.3]);
+let receipt = gate.admit(&payload).unwrap();
+
 // store `receipt` with the index entry; later:
-assert!(gate.verify_receipt(&receipt));   // ~6 ns
-assert!(gate.verify_integrity());          // full cryptographic re-derivation of the chain
+assert!(gate.verify_receipt(&receipt));   // ~6 ns, available on every gate
 let root = gate.chain_root();              // publish/anchor this commitment
+```
+
+Optional payload metadata is set with builder methods on `WritePayload`:
+`with_metadata(Vec<u8>)`, `with_agent([u8; 16])`, `with_timestamp(u64)`.
+
+`HashChainGate` (only) offers a full re-derivation check:
+
+```rust
+use ruvector_proof_gate::{HashChainGate, WriteGate, WritePayload};
+
+let mut gate = HashChainGate::new();
+gate.admit(&WritePayload::new(0, vec![0.1, 0.2, 0.3])).unwrap();
+assert!(gate.verify_integrity());          // re-derives the chain from genesis
 ```
 
 ## Performance
@@ -45,8 +67,8 @@ already performs.
 
 - Any mutation / insertion / deletion / reorder changes the root.
 - Forged commitments, out-of-range receipts, and foreign-chain receipts are rejected (no panic).
-- `verify_integrity()` re-derives every commitment from genesis + stored payload hashes — it catches
-  a tamper that mutates a commitment, a payload hash, the order, or desyncs lengths.
+- `HashChainGate::verify_integrity()` re-derives every commitment from genesis + stored payload
+  hashes — it catches a tamper that mutates a commitment, a payload hash, the order, or desyncs lengths.
 
 ## Features
 

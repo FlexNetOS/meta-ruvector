@@ -7,32 +7,34 @@
 
 **Prometheus-compatible metrics collection for Ruvector vector databases.**
 
-`ruvector-metrics` provides comprehensive observability with counters, gauges, histograms, and exporters for monitoring Ruvector performance and health. Part of the [Ruvector](https://github.com/ruvnet/ruvector) ecosystem.
+`ruvector-metrics` provides Prometheus-backed observability with counters, gauges, and histograms for monitoring Ruvector performance and health. Part of the [Ruvector](https://github.com/ruvnet/ruvector) ecosystem.
 
 ## Why Ruvector Metrics?
 
-- **Prometheus Native**: Direct Prometheus integration
-- **Zero Overhead**: Lazy initialization, minimal impact
-- **Comprehensive**: Operation latencies, throughput, memory
-- **Customizable**: Add custom metrics for your use case
-- **Standard Format**: OpenMetrics-compatible output
+- **Prometheus Native**: Built on the `prometheus` crate with a global registry
+- **Zero Overhead**: `lazy_static` metric handles, minimal impact
+- **Operation Coverage**: Search / insert / delete counts, latencies, vector counts
+- **Standard Format**: Prometheus text exposition via `gather_metrics()`
+- **Health Checks**: Liveness / readiness helpers in the `health` module
 
 ## Features
 
 ### Core Metrics
 
-- **Operation Counters**: Insert, search, delete counts
-- **Latency Histograms**: p50, p95, p99 latencies
-- **Throughput Gauges**: Queries per second
-- **Memory Metrics**: Heap usage, vector memory
-- **Index Metrics**: HNSW stats, quantization info
+- **Operation Counters**: Search, insert, delete counts (labelled by collection + status)
+- **Latency Histograms**: Search and insert latency in seconds
+- **Vector / Collection Gauges**: `set_vectors_count`, `set_collections_count`
+- **Memory Gauge**: `set_memory_usage`
+- **Health**: `HealthChecker`, `HealthResponse`, `ReadinessResponse`
 
-### Advanced Features
+### Planned / Not Yet Implemented
 
-- **Custom Labels**: Add context to metrics
-- **Metric Groups**: Enable/disable metric categories
-- **JSON Export**: Alternative to Prometheus format
-- **Time Series**: Historical metric tracking
+These are **not** present in the current code:
+
+- **Custom labels / metric groups** beyond the built-in collection/status labels
+- **JSON export** (only Prometheus text format via `gather_metrics()`)
+- **Built-in metrics HTTP server** (expose `gather_metrics()` from your own server)
+- **HNSW / quantization index metrics**
 
 ## Installation
 
@@ -45,137 +47,95 @@ ruvector-metrics = "0.1.1"
 
 ## Quick Start
 
-### Initialize Metrics
-
-```rust
-use ruvector_metrics::{Metrics, MetricsConfig};
-
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Initialize metrics with default config
-    let metrics = Metrics::new(MetricsConfig::default())?;
-
-    // Or with custom config
-    let config = MetricsConfig {
-        namespace: "ruvector".to_string(),
-        enable_histograms: true,
-        histogram_buckets: vec![0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0],
-        ..Default::default()
-    };
-    let metrics = Metrics::new(config)?;
-
-    Ok(())
-}
-```
+Metrics are global. There is no config object or handle to construct — record via the
+`MetricsRecorder` unit struct's associated functions, then export with `gather_metrics()`.
 
 ### Record Metrics
 
 ```rust
-use ruvector_metrics::Metrics;
+use ruvector_metrics::MetricsRecorder;
 
-// Record operation
-metrics.record_insert(1);
-metrics.record_search(latency_ms);
-metrics.record_delete(1);
+// Record a search: collection, latency in seconds, success
+MetricsRecorder::record_search("documents", 0.0012, true);
 
-// Record batch operations
-metrics.record_batch_insert(count, latency_ms);
-metrics.record_batch_search(count, latency_ms);
+// Record an insert: collection, latency in seconds, count, success
+MetricsRecorder::record_insert("documents", 0.0030, 100, true);
+
+// Record a delete: collection, success
+MetricsRecorder::record_delete("documents", true);
 
 // Update gauges
-metrics.set_vector_count(10000);
-metrics.set_memory_usage(1024 * 1024 * 500); // 500MB
+MetricsRecorder::set_vectors_count("documents", 10_000);
+MetricsRecorder::set_collections_count(3);
+MetricsRecorder::set_memory_usage(1024 * 1024 * 500); // 500 MB
+
+// Record a batch in one call: collection, searches, inserts, deletes
+MetricsRecorder::record_batch("documents", 100, 50, 10);
 ```
 
 ### Export Metrics
 
 ```rust
-use ruvector_metrics::Metrics;
+use ruvector_metrics::gather_metrics;
 
-// Get Prometheus format
-let prometheus_output = metrics.export_prometheus()?;
-println!("{}", prometheus_output);
-
-// Get JSON format
-let json_output = metrics.export_json()?;
-println!("{}", json_output);
+// Prometheus text-exposition format for the global registry
+let output: String = gather_metrics();
+println!("{output}");
 ```
 
-### HTTP Endpoint
-
-```rust
-use ruvector_metrics::{Metrics, MetricsServer};
-
-// Start metrics server on /metrics endpoint
-let server = MetricsServer::new(metrics, 9090)?;
-server.start().await?;
-
-// Access at http://localhost:9090/metrics
-```
+Expose this from your own HTTP handler (e.g. a `/metrics` route) — this crate does not
+ship a metrics server.
 
 ## Available Metrics
 
-```
+```text
 # Counters
-ruvector_inserts_total            # Total insert operations
-ruvector_searches_total           # Total search operations
-ruvector_deletes_total            # Total delete operations
-ruvector_errors_total             # Total errors by type
+ruvector_search_requests_total      # Total search requests   (labels: collection, status)
+ruvector_insert_requests_total      # Total insert requests   (labels: collection, status)
+ruvector_delete_requests_total      # Total delete requests   (labels: collection, status)
+ruvector_vectors_inserted_total     # Total vectors inserted  (label: collection)
+ruvector_uptime_seconds             # Uptime counter
 
 # Histograms
-ruvector_insert_latency_seconds   # Insert latency
-ruvector_search_latency_seconds   # Search latency
-ruvector_delete_latency_seconds   # Delete latency
+ruvector_search_latency_seconds     # Search latency  (label: collection)
+ruvector_insert_latency_seconds     # Insert latency  (label: collection)
 
 # Gauges
-ruvector_vector_count             # Current vector count
-ruvector_memory_bytes             # Memory usage
-ruvector_index_size_bytes         # Index size
-ruvector_collection_count         # Number of collections
-
-# Index metrics
-ruvector_hnsw_levels              # HNSW graph levels
-ruvector_hnsw_nodes               # HNSW node count
-ruvector_hnsw_ef_construction     # EF construction parameter
+ruvector_vectors_total              # Current vector count    (label: collection)
+ruvector_collections_total          # Number of collections
+ruvector_memory_usage_bytes         # Memory usage in bytes
 ```
 
 ## API Overview
 
-### Core Types
+### Recorder
 
 ```rust
-// Metrics configuration
-pub struct MetricsConfig {
-    pub namespace: String,
-    pub enable_histograms: bool,
-    pub enable_process_metrics: bool,
-    pub histogram_buckets: Vec<f64>,
-    pub labels: HashMap<String, String>,
-}
+// Unit struct — all functions are associated (no instance/config needed)
+pub struct MetricsRecorder;
 
-// Metrics handle
-pub struct Metrics { /* ... */ }
+impl MetricsRecorder {
+    pub fn record_search(collection: &str, latency_secs: f64, success: bool);
+    pub fn record_insert(collection: &str, latency_secs: f64, count: usize, success: bool);
+    pub fn record_delete(collection: &str, success: bool);
+    pub fn set_vectors_count(collection: &str, count: usize);
+    pub fn set_collections_count(count: usize);
+    pub fn set_memory_usage(bytes: usize);
+    pub fn record_batch(collection: &str, searches: usize, inserts: usize, deletes: usize);
+}
 ```
 
-### Metrics Operations
+### Export & Health
 
 ```rust
-impl Metrics {
-    pub fn new(config: MetricsConfig) -> Result<Self>;
+// Prometheus text-format dump of the global registry
+pub fn gather_metrics() -> String;
 
-    // Record operations
-    pub fn record_insert(&self, count: u64);
-    pub fn record_search(&self, latency_ms: f64);
-    pub fn record_delete(&self, count: u64);
-    pub fn record_error(&self, error_type: &str);
-
-    // Update gauges
-    pub fn set_vector_count(&self, count: u64);
-    pub fn set_memory_usage(&self, bytes: u64);
-
-    // Export
-    pub fn export_prometheus(&self) -> Result<String>;
-    pub fn export_json(&self) -> Result<String>;
-}
+// Health module exports
+pub use ruvector_metrics::{
+    HealthChecker, HealthResponse, HealthStatus,
+    ReadinessResponse, CollectionHealth,
+};
 ```
 
 ## Grafana Dashboard
@@ -183,17 +143,18 @@ impl Metrics {
 Example Grafana queries:
 
 ```promql
-# Request rate
-rate(ruvector_searches_total[5m])
+# Search request rate
+rate(ruvector_search_requests_total[5m])
 
-# p99 latency
+# p99 search latency
 histogram_quantile(0.99, rate(ruvector_search_latency_seconds_bucket[5m]))
 
-# Memory usage
-ruvector_memory_bytes / 1024 / 1024  # MB
+# Memory usage (MB)
+ruvector_memory_usage_bytes / 1024 / 1024
 
-# Error rate
-rate(ruvector_errors_total[5m]) / rate(ruvector_searches_total[5m])
+# Search error rate
+rate(ruvector_search_requests_total{status="error"}[5m])
+  / rate(ruvector_search_requests_total[5m])
 ```
 
 ## Related Crates

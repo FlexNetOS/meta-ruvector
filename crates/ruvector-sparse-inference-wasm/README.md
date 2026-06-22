@@ -4,12 +4,14 @@ WebAssembly bindings for PowerInfer-style sparse inference engine.
 
 ## Overview
 
-This crate provides WASM bindings for the RuVector sparse inference engine, enabling efficient neural network inference in web browsers and Node.js environments with:
+This crate provides WASM bindings for the RuVector sparse inference engine, enabling efficient neural network embedding inference in web browsers and Node.js environments with:
 
-- **Sparse Activation**: PowerInfer-style neuron prediction for 2-3x speedup
+- **Sparse Activation**: PowerInfer-style neuron prediction
 - **GGUF Support**: Load quantized models in GGUF format
 - **Streaming Loading**: Fetch large models incrementally
-- **Multiple Backends**: Embedding models and LLM text generation
+
+The crate exposes two structs — `SparseInferenceEngine` and `EmbeddingModel` —
+plus the free functions `measure_inference_time` and `version`.
 
 ## Building
 
@@ -46,7 +48,7 @@ cd pkg && npm link
 
 ## Usage
 
-### Basic Inference Engine
+### `SparseInferenceEngine`
 
 ```typescript
 import init, { SparseInferenceEngine } from 'ruvector-sparse-inference-wasm';
@@ -55,14 +57,14 @@ import init, { SparseInferenceEngine } from 'ruvector-sparse-inference-wasm';
 await init();
 
 // Load model
-const modelBytes = await fetch('/models/llama-2-7b.gguf').then(r => r.arrayBuffer());
+const modelBytes = await fetch('/models/model.gguf').then(r => r.arrayBuffer());
 const config = {
   sparsity: {
     enabled: true,
     threshold: 0.1  // 10% neuron activation
   },
-  temperature: 0.7,
-  top_k: 40
+  temperature: 1.0,
+  top_k: 50
 };
 
 const engine = new SparseInferenceEngine(
@@ -70,17 +72,28 @@ const engine = new SparseInferenceEngine(
   JSON.stringify(config)
 );
 
-// Run inference
+// Run embedding inference (forward_embedding under the hood)
 const input = new Float32Array(4096);  // Your input embedding
 const output = engine.infer(input);
 
-console.log('Sparsity stats:', engine.sparsity_stats());
-console.log('Model metadata:', engine.metadata());
+console.log('Sparsity stats:', engine.sparsity_stats()); // JSON string
+console.log('Model metadata:', engine.metadata());       // JSON string
 ```
+
+`SparseInferenceEngine` methods:
+
+| Method | Signature | Description |
+|--------|-----------|-------------|
+| constructor | `new SparseInferenceEngine(modelBytes: Uint8Array, configJson: string)` | Parse a GGUF model + config |
+| `SparseInferenceEngine.load_streaming` | `(url: string, configJson: string) => Promise<SparseInferenceEngine>` | Fetch model bytes from a URL, then construct |
+| `infer` | `(input: Float32Array) => Float32Array` | Run forward embedding |
+| `metadata` | `() => string` | Model metadata as JSON |
+| `sparsity_stats` | `() => string` | Sparsity statistics as JSON |
+| `calibrate` | `(samples: Float32Array, sampleDim: number) => void` | Calibrate predictors from sample data |
 
 ### Streaming Model Loading
 
-For large models (>1GB), use streaming:
+For large models, use streaming:
 
 ```typescript
 const engine = await SparseInferenceEngine.load_streaming(
@@ -89,7 +102,7 @@ const engine = await SparseInferenceEngine.load_streaming(
 );
 ```
 
-### Embedding Models
+### `EmbeddingModel`
 
 For sentence transformers and embedding generation:
 
@@ -100,79 +113,39 @@ const modelBytes = await fetch('/models/all-MiniLM-L6-v2.gguf').then(r => r.arra
 const embedder = new EmbeddingModel(new Uint8Array(modelBytes));
 
 // Encode single sequence (requires tokenization first)
-const inputIds = new Uint32Array([101, 2023, 2003, ...]);  // Tokenized input
+const inputIds = new Uint32Array([101, 2023, 2003 /* ... */]);  // Tokenized input
 const embedding = embedder.encode(inputIds);
 
 console.log('Embedding dimension:', embedder.dimension());
 
 // Batch encoding
-const batchIds = new Uint32Array([...all tokenized sequences...]);
+const batchIds = new Uint32Array([/* all tokenized sequences */]);
 const lengths = new Uint32Array([10, 15, 12]);  // Length of each sequence
 const embeddings = embedder.encode_batch(batchIds, lengths);
 ```
 
-### LLM Text Generation
+`EmbeddingModel` methods:
 
-For autoregressive language models:
-
-```typescript
-import { LLMModel } from 'ruvector-sparse-inference-wasm';
-
-const modelBytes = await fetch('/models/llama-2-7b-chat.gguf').then(r => r.arrayBuffer());
-const config = {
-  sparsity: { enabled: true, threshold: 0.1 },
-  temperature: 0.7,
-  top_k: 40
-};
-
-const llm = new LLMModel(new Uint8Array(modelBytes), JSON.stringify(config));
-
-// Generate tokens one at a time
-const prompt = new Uint32Array([1, 4321, 1234, ...]); // Tokenized prompt
-let generatedTokens = [];
-
-for (let i = 0; i < 100; i++) {
-  const nextToken = llm.next_token(prompt);
-  generatedTokens.push(nextToken);
-
-  // Append to prompt for next iteration
-  prompt = new Uint32Array([...prompt, nextToken]);
-}
-
-// Or generate multiple tokens at once
-const tokens = llm.generate(prompt, 100);
-
-console.log('Generation stats:', llm.stats());
-
-// Reset for new conversation
-llm.reset_cache();
-```
+| Method | Signature | Description |
+|--------|-----------|-------------|
+| constructor | `new EmbeddingModel(modelBytes: Uint8Array)` | Wraps a `SparseInferenceEngine` with a default embedding config |
+| `encode` | `(inputIds: Uint32Array) => Float32Array` | Encode one token sequence |
+| `encode_batch` | `(inputIds: Uint32Array, lengths: Uint32Array) => Float32Array` | Encode multiple sequences (concatenated) |
+| `dimension` | `() => number` | Embedding dimension (model `hidden_size`) |
 
 ### Calibration
 
 Improve predictor accuracy with sample data:
 
 ```typescript
-// Collect representative samples
+// Collect representative samples (each `sampleDim` long, flattened)
 const samples = new Float32Array([
-  ...embedding1,  // 512 dims
-  ...embedding2,  // 512 dims
-  ...embedding3,  // 512 dims
+  /* embedding1 (512 dims) */
+  /* embedding2 (512 dims) */
+  /* embedding3 (512 dims) */
 ]);
 
 engine.calibrate(samples, 512);  // 512 = dimension of each sample
-```
-
-### Dynamic Sparsity Control
-
-Adjust sparsity threshold at runtime:
-
-```typescript
-// More sparse = faster, less accurate
-engine.set_sparsity(0.2);  // 20% activation
-
-// Less sparse = slower, more accurate
-engine.set_sparsity(0.05);  // 5% activation
 ```
 
 ### Performance Measurement
@@ -186,18 +159,26 @@ const avgTime = measure_inference_time(engine, input, 100);  // 100 iterations
 console.log(`Average inference time: ${avgTime.toFixed(2)}ms`);
 ```
 
-## Configuration Options
+### Version
+
+```typescript
+import { version } from 'ruvector-sparse-inference-wasm';
+console.log(version());
+```
+
+## Configuration
+
+The config JSON is deserialized into the core `InferenceConfig`. The shape used
+in the examples above:
 
 ```typescript
 interface InferenceConfig {
   sparsity: {
-    enabled: boolean;      // Enable sparse inference
-    threshold: number;     // Activation threshold (0.0-1.0)
+    enabled: boolean;   // Enable sparse inference
+    threshold: number;  // Activation threshold
   };
-  temperature: number;     // Sampling temperature (0.0-2.0)
-  top_k: number;          // Top-k sampling (1-100)
-  top_p?: number;         // Nucleus sampling (0.0-1.0)
-  max_tokens?: number;    // Max generation length
+  temperature: number;  // Sampling temperature
+  top_k: number;        // Top-k
 }
 ```
 
@@ -213,15 +194,6 @@ For older browsers, build without SIMD:
 ```bash
 wasm-pack build --target web -- --no-default-features
 ```
-
-## Performance Tips
-
-1. **Enable SIMD**: Ensure `wasm32-simd` is enabled for 2-4x speedup
-2. **Quantization**: Use 4-bit or 8-bit quantized GGUF models
-3. **Sparsity**: Tune threshold based on accuracy/speed tradeoff
-4. **Calibration**: Run calibration with representative data
-5. **Batch Processing**: Use batch encoding for multiple inputs
-6. **Worker Threads**: Run inference in Web Workers to avoid blocking UI
 
 ## Example: Web Worker Integration
 
@@ -255,23 +227,13 @@ worker.onmessage = (e) => {
   if (e.data.type === 'ready') {
     worker.postMessage({
       type: 'infer',
-      input: new Float32Array([...])
+      input: new Float32Array(4096)
     });
   } else if (e.data.type === 'result') {
     console.log('Inference result:', e.data.output);
   }
 };
 ```
-
-## Benchmarks
-
-On Apple M1 Pro (browser):
-
-| Model | Size | Sparsity | Speed | Memory |
-|-------|------|----------|-------|--------|
-| Llama-2-7B | 3.8GB | 10% | 45 tok/s | 1.2GB |
-| MiniLM-L6 | 90MB | 15% | 120 emb/s | 180MB |
-| Mistral-7B | 4.1GB | 12% | 38 tok/s | 1.4GB |
 
 ## Error Handling
 
@@ -303,16 +265,6 @@ wasm-pack test --headless --firefox
 
 ```bash
 cargo doc --open --target wasm32-unknown-unknown
-```
-
-### Size Optimization
-
-```bash
-# Optimize for size
-wasm-pack build --target web --release -- -Z build-std=std,panic_abort -Z build-std-features=panic_immediate_abort
-
-# Further compression with wasm-opt
-wasm-opt -Oz -o optimized.wasm pkg/ruvector_sparse_inference_wasm_bg.wasm
 ```
 
 ## License

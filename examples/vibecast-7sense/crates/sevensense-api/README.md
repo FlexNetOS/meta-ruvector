@@ -6,7 +6,7 @@
 
 > HTTP API layer for the 7sense bioacoustic intelligence platform.
 
-**sevensense-api** provides a comprehensive HTTP interface to all 7sense functionality. It offers GraphQL for flexible queries, REST endpoints with OpenAPI documentation, WebSocket streaming for real-time analysis, and Server-Sent Events for monitoring. Built on Axum for high performance and reliability.
+**sevensense-api** provides a comprehensive HTTP interface to all 7sense functionality. It offers GraphQL for flexible queries, REST endpoints with OpenAPI documentation, and WebSocket streaming for real-time analysis. Built on Axum for high performance and reliability.
 
 ## Features
 
@@ -54,9 +54,9 @@ cargo run -p sevensense-api --release -- --config config.toml
 ### API Endpoints
 
 Once running, access:
-- **GraphQL Playground**: http://localhost:3000/graphql
-- **Swagger UI**: http://localhost:3000/docs/swagger-ui
-- **Health Check**: http://localhost:3000/health
+- **GraphQL Playground**: http://localhost:8080/graphql
+- **Swagger UI**: http://localhost:8080/docs/swagger-ui
+- **Health Check**: http://localhost:8080/health
 
 ---
 
@@ -159,11 +159,11 @@ subscription OnNewDetection {
 
 ```bash
 # From file upload
-curl -X POST http://localhost:3000/api/identify \
+curl -X POST http://localhost:8080/api/identify \
   -F "audio=@bird_call.wav"
 
 # From URL
-curl -X POST http://localhost:3000/api/identify \
+curl -X POST http://localhost:8080/api/identify \
   -H "Content-Type: application/json" \
   -d '{"audioUrl": "https://example.com/bird.wav"}'
 ```
@@ -187,7 +187,7 @@ Response:
 ### Similarity Search
 
 ```bash
-curl -X POST http://localhost:3000/api/search \
+curl -X POST http://localhost:8080/api/search \
   -H "Content-Type: application/json" \
   -d '{
     "embedding": [0.123, -0.456, ...],
@@ -199,7 +199,7 @@ curl -X POST http://localhost:3000/api/search \
 ### Batch Processing
 
 ```bash
-curl -X POST http://localhost:3000/api/batch \
+curl -X POST http://localhost:8080/api/batch \
   -H "Content-Type: application/json" \
   -d '{
     "audioUrls": [
@@ -218,13 +218,13 @@ curl -X POST http://localhost:3000/api/batch \
 
 ```bash
 # Liveness probe
-curl http://localhost:3000/health/live
+curl http://localhost:8080/health/live
 
 # Readiness probe
-curl http://localhost:3000/health/ready
+curl http://localhost:8080/health/ready
 
 # Detailed status
-curl http://localhost:3000/health/status
+curl http://localhost:8080/health/status
 ```
 
 </details>
@@ -235,7 +235,7 @@ curl http://localhost:3000/health/status
 ### Connecting to Stream
 
 ```javascript
-const ws = new WebSocket('ws://localhost:3000/ws/stream');
+const ws = new WebSocket('ws://localhost:8080/ws/stream');
 
 ws.onopen = () => {
   console.log('Connected to stream');
@@ -279,7 +279,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         chunk_duration_ms: 500,
     };
 
-    let client = StreamClient::connect("ws://localhost:3000/ws/stream", config).await?;
+    let client = StreamClient::connect("ws://localhost:8080/ws/stream", config).await?;
 
     // Send audio chunks
     for chunk in audio_chunks {
@@ -316,7 +316,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ```bash
 # Login to get tokens
-curl -X POST http://localhost:3000/auth/login \
+curl -X POST http://localhost:8080/auth/login \
   -H "Content-Type: application/json" \
   -d '{"username": "user", "password": "pass"}'
 
@@ -328,11 +328,11 @@ curl -X POST http://localhost:3000/auth/login \
 }
 
 # Use access token
-curl http://localhost:3000/api/search \
+curl http://localhost:8080/api/search \
   -H "Authorization: Bearer eyJ..."
 
 # Refresh token
-curl -X POST http://localhost:3000/auth/refresh \
+curl -X POST http://localhost:8080/auth/refresh \
   -H "Content-Type: application/json" \
   -d '{"refreshToken": "eyJ..."}'
 ```
@@ -341,12 +341,12 @@ curl -X POST http://localhost:3000/auth/refresh \
 
 ```bash
 # Create API key
-curl -X POST http://localhost:3000/auth/api-keys \
+curl -X POST http://localhost:8080/auth/api-keys \
   -H "Authorization: Bearer eyJ..." \
   -d '{"name": "My App", "scopes": ["read", "write"]}'
 
 # Use API key
-curl http://localhost:3000/api/search \
+curl http://localhost:8080/api/search \
   -H "X-API-Key: sk_live_..."
 ```
 
@@ -370,7 +370,7 @@ curl http://localhost:3000/api/search \
 # config.toml
 [server]
 host = "0.0.0.0"
-port = 3000
+port = 8080
 workers = 4
 
 [auth]
@@ -401,7 +401,7 @@ format = "json"
 ```bash
 # Server
 export SEVENSENSE_HOST=0.0.0.0
-export SEVENSENSE_PORT=3000
+export SEVENSENSE_PORT=8080
 
 # Authentication
 export SEVENSENSE_JWT_SECRET=your-secret
@@ -423,7 +423,7 @@ use sevensense_api::{Server, ServerConfig};
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config = ServerConfig::builder()
         .host("0.0.0.0")
-        .port(3000)
+        .port(8080)
         .workers(4)
         .enable_graphql(true)
         .enable_swagger(true)
