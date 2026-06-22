@@ -297,6 +297,7 @@ fn mirror_generates_codex_and_skill_files() {
     assert_eq!(doctor.config_approvals_reviewer, "auto_review");
     assert!(doctor.config_goals_enabled);
     assert_eq!(doctor.prompt_files, 5);
+    assert_eq!(doctor.prompt_alias_files, 1);
     assert_eq!(doctor.installed_prompt_files, 5);
     assert!(doctor.agent_models.contains_key("gpt-5.5"));
     assert!(doctor.agent_models.contains_key("gpt-5.4-mini"));
@@ -346,6 +347,7 @@ fn install_refreshes_mirror_prompts_and_doctor_in_one_step() {
     assert!(report.mirror.changed_files > 0);
     assert_eq!(report.prompts.total_files, 4);
     assert_eq!(report.doctor.prompt_files, 4);
+    assert_eq!(report.doctor.prompt_alias_files, 0);
     assert_eq!(report.doctor.installed_prompt_files, 4);
     assert!(root.join(".codex/config.toml").exists());
     assert!(codex_home.join("prompts/demo.md").exists());

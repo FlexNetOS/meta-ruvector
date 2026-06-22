@@ -56,6 +56,7 @@ pub struct DoctorReport {
     pub hook_events: Vec<String>,
     pub hook_handlers: usize,
     pub prompt_files: usize,
+    pub prompt_alias_files: usize,
     pub installed_prompt_files: usize,
     pub workflow_prompts: Vec<String>,
     pub git_ignored_generated_files: Vec<PathBuf>,
@@ -91,7 +92,7 @@ pub fn doctor_codex_surface(options: DoctorOptions) -> Result<DoctorReport> {
     ) = validate_config(&codex_dir)?;
     let (agent_files, agent_models, agent_efforts) = validate_agents(&codex_dir)?;
     let (hook_events, hook_handlers) = validate_hooks(&codex_dir)?;
-    let (prompt_files, installed_prompt_files, workflow_prompts) =
+    let (prompt_files, prompt_alias_files, installed_prompt_files, workflow_prompts) =
         validate_prompts(&repo_root, &codex_dir, &codex_home)?;
     let git_ignored_generated_files =
         validate_generated_files_visible_to_git(&repo_root, &mirror_report.generated)?;
@@ -111,6 +112,7 @@ pub fn doctor_codex_surface(options: DoctorOptions) -> Result<DoctorReport> {
         hook_events,
         hook_handlers,
         prompt_files,
+        prompt_alias_files,
         installed_prompt_files,
         workflow_prompts,
         git_ignored_generated_files,
@@ -291,7 +293,7 @@ fn validate_prompts(
     repo_root: &Path,
     codex_dir: &Path,
     codex_home: &Path,
-) -> Result<(usize, usize, Vec<String>)> {
+) -> Result<(usize, usize, usize, Vec<String>)> {
     let source_dir = codex_dir.join("prompts");
     let target_dir = codex_home.join("prompts");
     let source_prompts = prompt_files(&source_dir)?;
@@ -331,6 +333,14 @@ fn validate_prompts(
 
     Ok((
         source_prompts.len(),
+        source_prompts
+            .iter()
+            .filter(|path| {
+                path.file_name()
+                    .and_then(|value| value.to_str())
+                    .is_some_and(|file_name| file_name.contains(':'))
+            })
+            .count(),
         installed_prompt_files,
         REQUIRED_WORKFLOW_PROMPTS
             .iter()
