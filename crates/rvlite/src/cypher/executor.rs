@@ -475,11 +475,15 @@ impl<'a> Executor<'a> {
         let row_contexts: Vec<HashMap<String, ContextValue>> = if context.matched_rows.is_empty() {
             vec![context.variables.clone()]
         } else {
-            context.matched_rows.iter().map(|vars| {
-                let mut merged = context.variables.clone();
-                merged.extend(vars.iter().map(|(k, v)| (k.clone(), v.clone())));
-                merged
-            }).collect()
+            context
+                .matched_rows
+                .iter()
+                .map(|vars| {
+                    let mut merged = context.variables.clone();
+                    merged.extend(vars.iter().map(|(k, v)| (k.clone(), v.clone())));
+                    merged
+                })
+                .collect()
         };
 
         for row_vars in &row_contexts {
@@ -522,11 +526,15 @@ impl<'a> Executor<'a> {
         let row_contexts: Vec<HashMap<String, ContextValue>> = if context.matched_rows.is_empty() {
             vec![context.variables.clone()]
         } else {
-            context.matched_rows.iter().map(|vars| {
-                let mut merged = context.variables.clone();
-                merged.extend(vars.iter().map(|(k, v)| (k.clone(), v.clone())));
-                merged
-            }).collect()
+            context
+                .matched_rows
+                .iter()
+                .map(|vars| {
+                    let mut merged = context.variables.clone();
+                    merged.extend(vars.iter().map(|(k, v)| (k.clone(), v.clone())));
+                    merged
+                })
+                .collect()
         };
 
         // Collect unique node/edge IDs across all matched rows to avoid

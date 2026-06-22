@@ -199,6 +199,7 @@ members = [
     "crates/ruvix/benches",
     "crates/ruvix/examples/cognitive_demo",
     # rvAgent — AI Agent Framework (DeepAgents Rust conversion)
+    "crates/codex-env",
     "crates/rvAgent/rvagent-core",
     "crates/rvAgent/rvagent-backends",
     "crates/rvAgent/rvagent-middleware",

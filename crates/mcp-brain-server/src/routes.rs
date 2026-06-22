@@ -3117,7 +3117,10 @@ async fn train_endpoint(
         .await
         .map_err(|e| {
             tracing::error!("Training cycle panicked: {e}");
-            (StatusCode::INTERNAL_SERVER_ERROR, format!("training cycle failed: {e}"))
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("training cycle failed: {e}"),
+            )
         })?;
     tracing::info!(
         "Training cycle (explicit): sona_patterns={}, pareto={}→{}, memories={}",
@@ -3149,7 +3152,10 @@ async fn reclassify(
             .await
             .map_err(|e| {
                 tracing::error!("Reclassify training cycle panicked: {e}");
-                (StatusCode::INTERNAL_SERVER_ERROR, format!("training cycle failed: {e}"))
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    format!("training cycle failed: {e}"),
+                )
             })?
     };
     *state.pipeline_metrics.last_training.write() = Some(chrono::Utc::now());
@@ -3180,7 +3186,10 @@ async fn reclassify(
     .await
     .map_err(|e| {
         tracing::error!("Reclassify clustering panicked: {e}");
-        (StatusCode::INTERNAL_SERVER_ERROR, format!("clustering failed: {e}"))
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("clustering failed: {e}"),
+        )
     })?;
 
     tracing::info!(

@@ -1,6 +1,6 @@
 ---
 name: gitnexus-usage
-description: 'Use the GitNexus code-graph MCP server to query, impact-analyze, and refactor across the ruvector workspace (~150 crates). Reach for this skill BEFORE doing wide refactors, large grep sweeps, or "where is X called from" questions — the graph is faster and more accurate than reading files. Lives at .gitnexus/ (gitignored). MCP tools: query, context, impact, detect_changes, rename, cypher.'
+description: Use the GitNexus code-graph MCP server to query, impact-analyze, and refactor across the ruvector workspace (~150 crates). Reach for this skill BEFORE doing wide refactors, large grep sweeps, or "where is X called from" questions — the graph is faster and more accurate than reading files. Lives at .gitnexus/ (gitignored). MCP tools: query, context, impact, detect_changes, rename, cypher.
 ---
 
 # GitNexus Usage — RuVector
@@ -47,7 +47,7 @@ This is idempotent. It:
 |---|---|---|
 | `.gitnexus/` | LadybugDB graph DB, embedding cache | **Gitignored.** Regenerable by re-running `analyze`. |
 | `~/.gitnexus/registry.json` | Per-machine registry of all indexed repos | Per-machine, never committed. |
-| `.Codex/skills/gitnexus/` | 6 helper SKILLs auto-installed by `analyze` | **Gitignored** — gitnexus 1.x always writes here, even with `--skip-agents-md`, so we keep them out of source control. |
+| `.claude/skills/gitnexus/` | 6 helper SKILLs auto-installed by `analyze` | **Gitignored** — gitnexus 1.x always writes here, even with `--skip-agents-md`, so we keep them out of source control. |
 
 Re-index manually if HEAD has moved a lot:
 
@@ -69,12 +69,12 @@ If MCP integration is wired up, an agent can verify by calling the
 
 ## Known gotchas
 
-1. **`.Codex/skills/gitnexus/` is auto-clobbered.** Even with
+1. **`.claude/skills/gitnexus/` is auto-clobbered.** Even with
    `--skip-agents-md`, gitnexus 1.x always re-installs 6 SKILL files
    there (verified in upstream `dist/cli/ai-context.js` lines 177-241).
    The repo's top-level `.gitignore` keeps them untracked. Don't try to
    commit anything under that path — it'll be overwritten on the next
-   `analyze`. Hand-curated SKILLs go elsewhere (`.Codex/skills/<other>`).
+   `analyze`. Hand-curated SKILLs go elsewhere (`.agents/skills/<other>`).
 2. **Indexing scope is `.gitignore` + `.gitnexusignore`, NOT Cargo
    workspace membership.** A crate that's `exclude`d from the workspace
    in `Cargo.toml` will still be walked unless it's also gitignored or
@@ -86,6 +86,6 @@ If MCP integration is wired up, an agent can verify by calling the
 ## Cross-repo
 
 The matching skill in **weftos** is at
-`.Codex/skills/gitnexus-usage/SKILL.md`. WeftOS additionally ships a
+`.agents/skills/gitnexus-usage/SKILL.md`. WeftOS additionally ships a
 `.gitnexusignore` to exclude `gui/src-tauri/` (the Tauri shell that's
 out of the cargo workspace).
