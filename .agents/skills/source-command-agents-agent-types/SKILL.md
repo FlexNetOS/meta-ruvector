@@ -1,6 +1,6 @@
 ---
 name: source-command-agents-agent-types
-description: "agent-types"
+description: 'agent-types'
 ---
 
 # /agents/agent-types

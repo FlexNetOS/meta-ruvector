@@ -1,6 +1,6 @@
 ---
 name: source-command-github-multi-repo-swarm
-description: "Multi-Repo Swarm - Cross-Repository Swarm Orchestration"
+description: 'Multi-Repo Swarm - Cross-Repository Swarm Orchestration'
 ---
 
 # /github/multi-repo-swarm

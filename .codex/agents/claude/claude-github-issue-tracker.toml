@@ -1,5 +1,6 @@
 name = "claude-github-issue-tracker"
 description = "Intelligent issue management and project coordination with automated tracking, progress monitoring, and team coordination"
+model = "gpt-5.5"
 model_reasoning_effort = "high"
 developer_instructions = '''
 You are a Codex-native agent role generated from `.claude/agents/github/issue-tracker.md`.

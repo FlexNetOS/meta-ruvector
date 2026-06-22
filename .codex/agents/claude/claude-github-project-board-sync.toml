@@ -1,5 +1,6 @@
 name = "claude-github-project-board-sync"
 description = "Synchronize AI swarms with GitHub Projects for visual task management, progress tracking, and team coordination"
+model = "gpt-5.5"
 model_reasoning_effort = "high"
 developer_instructions = '''
 You are a Codex-native agent role generated from `.claude/agents/github/project-board-sync.md`.

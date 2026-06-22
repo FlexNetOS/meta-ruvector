@@ -3,7 +3,7 @@ use std::fs;
 use std::path::Path;
 
 use anyhow::{Context, Result};
-use serde_json::json;
+use serde_json::{json, Map};
 use walkdir::WalkDir;
 
 use super::agent_roles::CodexAgentRole;
@@ -43,6 +43,8 @@ pub(super) fn codex_config(
 approval_policy = "on-request"
 sandbox_mode = "workspace-write"
 web_search = "live"
+model = "gpt-5.5"
+model_reasoning_effort = "high"
 model_context_window = 4000000
 
 [mcp_servers.github]
@@ -156,44 +158,222 @@ cargo run -p codex-env -- mirror --check
 - `.claude/hooks/` -> `.codex/hooks/`
 - `.claude/skills/` -> `.agents/skills/`
 - `.claude/commands/**/*.md` -> `.agents/skills/source-command-*`
+- `.claude/commands/**/*.md` -> `.codex/prompts/*.md` for `/prompts:*`
+- Codex-native workflow upgrades -> `.agents/skills/codex-*` and
+  `.codex/prompts/codex-*`
 
 Use `--lua-policy <path>` when a repo-local transformation is needed. The Lua
 script receives a `mirror` table with `repo_root` and `claude_dir`, and may
 return `{ config_footer = "...", skill_prelude = "..." }`.
+
+## Install Prompt Commands
+
+Codex loads custom prompts from `$CODEX_HOME/prompts`, not directly from a
+repository. After refreshing this mirror, install the generated prompt commands
+with:
+
+```bash
+.codex/helpers/install-prompts.sh
+```
+
+Restart Codex after installing. The Claude command mirrors then appear as Codex
+prompt commands such as `/prompts:sparc-code` and
+`/prompts:claude-flow-swarm`.
 "#,
     )
+}
+
+pub(super) fn codex_native_workflow_prompts(codex_dir: &Path) -> Vec<PlannedFile> {
+    [
+        (
+            "codex-agent-team.md",
+            "Spawn a Codex-native subagent team from repo custom agents",
+            "[TEAM=core|review|rust|security|github|swarm] [GOAL]",
+            r#"Use Codex-native subagents for this goal: $ARGUMENTS
+
+Select the smallest effective team. Spawn the agents in parallel, wait for all results, then consolidate:
+Use the configured custom agent TOMLs as the routing source: heavy agents run on `gpt-5.5`, lighter explorer/template agents run on `gpt-5.4-mini`, and each agent carries its own reasoning effort.
+
+- core: claude-core-planner, claude-core-researcher, claude-core-coder, claude-core-tester, claude-core-reviewer
+- review: reviewer, claude-core-reviewer, claude-testing-production-validator, claude-v3-security-auditor
+- rust: explorer, claude-core-coder, claude-core-tester, claude-v3-performance-engineer
+- security: claude-v3-security-architect, claude-v3-security-auditor, claude-v3-pii-detector, claude-v3-aidefence-guardian
+- github: claude-github-pr-manager, claude-github-code-review-swarm, claude-github-workflow-automation
+- swarm: claude-swarm-hierarchical-coordinator, claude-hive-mind-queen-coordinator, claude-v3-v3-queen-coordinator
+
+Give each subagent a bounded brief with concrete evidence to return. Do not let subagents modify the same file concurrently. After all results return, decide the implementation path, make the edits in the parent thread, verify, commit, push, and update the PR when publishing applies.
+"#,
+        ),
+        (
+            "codex-auto-loop.md",
+            "Run the full Codex autonomous implementation loop",
+            "[GOAL]",
+            r#"Run the Codex autonomous loop for this goal: $ARGUMENTS
+
+1. Recall project memory and read the closest AGENTS.md instructions.
+2. Inspect current git, branch, PR, and generated-surface state before trusting prior context.
+3. Identify requirements and evidence that would prove completion.
+4. For broad work, spawn a focused Codex subagent team in parallel and wait for results.
+5. Implement the smallest complete upgrade that makes the requested end state more true.
+6. Regenerate deterministic surfaces with codex-env when source or generator changes require it.
+7. Run targeted tests plus mirror/install checks, then broader gates proportional to risk.
+8. Commit, push, and open or update the PR. Store ICM memory for significant completed work.
+9. Continue with the next gap unless the whole objective is proven complete.
+"#,
+        ),
+        (
+            "codex-gap-hunt.md",
+            "Run a deep Codex parity gap hunt before upgrading",
+            "[SURFACE=hooks|agents|skills|prompts|all] [GOAL]",
+            r#"Run a deep current-state gap hunt for this Codex surface: $ARGUMENTS
+
+Compare the actual repo state against Codex-native behavior, not Claude assumptions:
+
+- commands and prompts: .claude/commands, .agents/skills/source-command-*, .codex/prompts, CODEX_HOME/prompts
+- agents and teams: .claude/agents, .codex/agents, custom-agent schema, explicit subagent workflows
+- hooks and helpers: .claude/settings.json, .codex/hooks.json, .codex/hooks, .codex/helpers, supported Codex hook events
+- settings and MCP: .codex/config.toml, active MCP servers, features, model and sandbox defaults
+- auto loop: AGENTS.md, ICM recall/store, verification gates, commit/push/PR workflow
+
+Return missed items ranked by user impact. Implement only upgrades that move Codex closer to the requested final state, then verify with authoritative command output.
+"#,
+        ),
+    ]
+    .into_iter()
+    .map(|(file, description, argument_hint, body)| {
+        let mut prompt = String::new();
+        prompt.push_str("---\n");
+        prompt.push_str(&format!("description: {}\n", yaml_scalar(description)));
+        prompt.push_str(&format!("argument-hint: {argument_hint}\n"));
+        prompt.push_str("---\n\n");
+        prompt.push_str(body.trim_start());
+        if !prompt.ends_with('\n') {
+            prompt.push('\n');
+        }
+        PlannedFile {
+            path: codex_dir.join("prompts").join(file),
+            bytes: normalize_generated_text(&prompt).into_bytes(),
+            executable: false,
+        }
+    })
+    .collect()
+}
+
+pub(super) fn codex_native_workflow_skills(skills_dir: &Path) -> Vec<PlannedFile> {
+    [
+        (
+            "codex-agent-team",
+            "Use when a task should spawn a Codex-native team of project custom agents for parallel research, implementation planning, review, security, GitHub, or swarm coordination.",
+            r#"# Codex Agent Team
+
+Use Codex subagents explicitly. Pick the smallest effective team, spawn agents in parallel, wait for all results, then consolidate in the parent thread.
+Use the configured custom agent TOMLs as the model-routing source: heavy agents run on `gpt-5.5`, lighter explorer/template agents run on `gpt-5.4-mini`, and each agent carries its own reasoning effort.
+
+Recommended teams:
+- core: claude-core-planner, claude-core-researcher, claude-core-coder, claude-core-tester, claude-core-reviewer
+- review: reviewer, claude-core-reviewer, claude-testing-production-validator, claude-v3-security-auditor
+- rust: explorer, claude-core-coder, claude-core-tester, claude-v3-performance-engineer
+- security: claude-v3-security-architect, claude-v3-security-auditor, claude-v3-pii-detector, claude-v3-aidefence-guardian
+- github: claude-github-pr-manager, claude-github-code-review-swarm, claude-github-workflow-automation
+- swarm: claude-swarm-hierarchical-coordinator, claude-hive-mind-queen-coordinator, claude-v3-v3-queen-coordinator
+
+Give each subagent a bounded brief and a required evidence format. Keep write ownership in the parent thread unless a subagent has an isolated file scope.
+"#,
+        ),
+        (
+            "codex-auto-loop",
+            "Use when the user wants autonomous end-to-end Codex execution with memory recall, gap analysis, implementation, verification, commit, push, and PR updates.",
+            r#"# Codex Auto Loop
+
+Run this loop until the requested end state is true or a real blocker is proven:
+
+1. Recall ICM memory and inspect the current repo/branch/PR state.
+2. Derive concrete requirements and completion evidence.
+3. Spawn focused Codex subagents for broad or uncertain work.
+4. Implement upgrades in the parent thread using repo patterns.
+5. Regenerate deterministic Codex surfaces with codex-env when needed.
+6. Run targeted gates, mirror checks, install checks, and risk-appropriate broader gates.
+7. Commit, push, update or open the PR, and store ICM memory for significant work.
+8. Continue to the next gap while the active objective remains incomplete.
+"#,
+        ),
+        (
+            "codex-gap-hunt",
+            "Use when auditing Codex parity gaps across hooks, helpers, prompts, skills, custom agents, subagents, settings, MCP, and auto-loop workflows.",
+            r#"# Codex Gap Hunt
+
+Audit from current evidence, not memory. Compare source and generated surfaces:
+
+- .claude/commands -> .agents/skills/source-command-* and .codex/prompts -> CODEX_HOME/prompts
+- .claude/agents -> .codex/agents custom-agent TOML schema and explicit subagent workflows
+- .claude/settings.json -> .codex/config.toml and .codex/hooks.json using supported Codex hook events
+- .claude/hooks and helpers -> .codex/hooks and .codex/helpers
+- AGENTS.md, ICM, verification, commit/push/PR workflow
+
+Rank gaps by user impact, then implement upgrades only. Verify with commands that prove the touched surface works.
+"#,
+        ),
+    ]
+    .into_iter()
+    .map(|(slug, description, body)| {
+        let mut skill = String::new();
+        skill.push_str("---\n");
+        skill.push_str(&format!("name: {slug}\n"));
+        skill.push_str(&format!("description: {}\n", yaml_scalar(description)));
+        skill.push_str("---\n\n");
+        skill.push_str(body.trim_start());
+        if !skill.ends_with('\n') {
+            skill.push('\n');
+        }
+        PlannedFile {
+            path: skills_dir.join(slug).join("SKILL.md"),
+            bytes: normalize_generated_text(&skill).into_bytes(),
+            executable: false,
+        }
+    })
+    .collect()
 }
 
 pub(super) fn codex_agent_profiles(codex_dir: &Path) -> Vec<PlannedFile> {
     [
         (
             "explorer.toml",
-            "gpt-5.4",
+            "explorer",
+            "Read-only codebase explorer for gathering evidence before changes are proposed.",
+            "gpt-5.4-mini",
             "medium",
             "Stay in exploration mode.\nTrace the real execution path, cite files and symbols, and avoid proposing fixes unless the parent agent asks for them.\nPrefer targeted search and file reads over broad scans.\n",
         ),
         (
             "reviewer.toml",
-            "gpt-5.4",
+            "reviewer",
+            "PR reviewer focused on correctness, security, and missing tests.",
+            "gpt-5.5",
             "high",
             "Review like an owner.\nPrioritize correctness, security, behavioral regressions, and missing tests.\nLead with concrete findings and avoid style-only feedback unless it hides a real bug.\n",
         ),
         (
             "docs-researcher.toml",
-            "gpt-5.4",
+            "docs-researcher",
+            "Documentation specialist that verifies APIs, framework behavior, and release-note claims against primary documentation.",
+            "gpt-5.4-mini",
             "medium",
             "Verify APIs, framework behavior, and release-note claims against primary documentation before changes land.\nCite the exact docs or file paths that support each claim.\nDo not invent undocumented behavior.\n",
         ),
     ]
     .into_iter()
-    .map(|(file, model, effort, instructions)| PlannedFile {
+    .map(
+        |(file, name, description, model, effort, instructions)| PlannedFile {
         path: codex_dir.join("agents").join(file),
         bytes: format!(
-            "model = \"{model}\"\nmodel_reasoning_effort = \"{effort}\"\nsandbox_mode = \"read-only\"\n\ndeveloper_instructions = \"\"\"\n{instructions}\"\"\""
+            "name = \"{}\"\ndescription = \"{}\"\nmodel = \"{model}\"\nmodel_reasoning_effort = \"{effort}\"\nsandbox_mode = \"read-only\"\n\ndeveloper_instructions = \"\"\"\n{instructions}\"\"\"",
+            escape_toml_string(name),
+            escape_toml_string(description),
         )
         .into_bytes(),
         executable: false,
-    })
+    },
+    )
     .collect()
 }
 
@@ -204,19 +384,140 @@ pub(super) fn codex_hooks_json(claude_dir: &Path) -> Result<String> {
             .with_context(|| format!("failed to read {}", settings_path.display()))?,
     )?;
 
-    let hooks = settings.get("hooks").cloned().unwrap_or_else(|| json!({}));
-    let status_line = settings.get("statusLine").cloned();
-    let permissions = settings.get("permissions").cloned();
-    let env = settings.get("env").cloned();
+    let hooks = normalize_codex_hooks(settings.get("hooks"));
     let output = json!({
-        "generatedBy": "codex-env",
-        "source": ".claude/settings.json",
         "hooks": hooks,
-        "statusLine": status_line,
-        "permissions": permissions,
-        "env": env
     });
     Ok(format!("{}\n", serde_json::to_string_pretty(&output)?))
+}
+
+fn normalize_codex_hooks(source: Option<&serde_json::Value>) -> serde_json::Value {
+    let Some(source) = source.and_then(serde_json::Value::as_object) else {
+        return json!({});
+    };
+
+    let mut normalized = Map::new();
+    for (source_event, groups) in source {
+        let Some(codex_event) = codex_hook_event(source_event) else {
+            continue;
+        };
+        let Some(groups) = groups.as_array() else {
+            continue;
+        };
+
+        let target_groups = normalized
+            .entry(codex_event.to_owned())
+            .or_insert_with(|| json!([]))
+            .as_array_mut()
+            .expect("hook event value is initialized as array");
+
+        for group in groups {
+            let Some(group_object) = group.as_object() else {
+                continue;
+            };
+            let Some(source_hooks) = group_object
+                .get("hooks")
+                .and_then(serde_json::Value::as_array)
+            else {
+                continue;
+            };
+
+            let hooks = source_hooks
+                .iter()
+                .filter_map(normalize_codex_hook_handler)
+                .collect::<Vec<_>>();
+            if hooks.is_empty() {
+                continue;
+            }
+
+            let mut target_group = Map::new();
+            if let Some(matcher) = group_object
+                .get("matcher")
+                .and_then(serde_json::Value::as_str)
+            {
+                target_group.insert("matcher".to_owned(), json!(matcher));
+            }
+            target_group.insert("hooks".to_owned(), json!(hooks));
+            target_groups.push(serde_json::Value::Object(target_group));
+        }
+    }
+
+    serde_json::Value::Object(normalized)
+}
+
+fn codex_hook_event(source_event: &str) -> Option<&'static str> {
+    match source_event {
+        "SessionStart" => Some("SessionStart"),
+        "PreToolUse" => Some("PreToolUse"),
+        "PermissionRequest" => Some("PermissionRequest"),
+        "PostToolUse" => Some("PostToolUse"),
+        "PreCompact" => Some("PreCompact"),
+        "PostCompact" => Some("PostCompact"),
+        "UserPromptSubmit" => Some("UserPromptSubmit"),
+        "SubagentStart" => Some("SubagentStart"),
+        "SubagentStop" => Some("SubagentStop"),
+        "Stop" | "SessionEnd" => Some("Stop"),
+        _ => None,
+    }
+}
+
+fn normalize_codex_hook_handler(handler: &serde_json::Value) -> Option<serde_json::Value> {
+    let handler = handler.as_object()?;
+    if handler.get("async").and_then(serde_json::Value::as_bool) == Some(true) {
+        return None;
+    }
+    if handler.get("type").and_then(serde_json::Value::as_str) != Some("command") {
+        return None;
+    }
+
+    let command = handler.get("command").and_then(serde_json::Value::as_str)?;
+    let mut normalized = Map::new();
+    normalized.insert("type".to_owned(), json!("command"));
+    normalized.insert("command".to_owned(), json!(codex_hook_command(command)));
+    if let Some(timeout) = handler.get("timeout").and_then(serde_json::Value::as_u64) {
+        normalized.insert(
+            "timeout".to_owned(),
+            json!(codex_hook_timeout_seconds(timeout)),
+        );
+    }
+    if let Some(status) = handler
+        .get("statusMessage")
+        .and_then(serde_json::Value::as_str)
+    {
+        normalized.insert("statusMessage".to_owned(), json!(status));
+    }
+    Some(serde_json::Value::Object(normalized))
+}
+
+fn codex_hook_command(command: &str) -> String {
+    let hook_handler = r#"node "${CLAUDE_PROJECT_DIR:-.}/.claude/helpers/hook-handler.cjs" "#;
+    if let Some(args) = command.strip_prefix(hook_handler) {
+        return format!(
+            r#""$(git rev-parse --show-toplevel)/.codex/helpers/run-claude-hook.sh" hook-handler.cjs {}"#,
+            args.trim()
+        );
+    }
+
+    let auto_memory = r#"node "${CLAUDE_PROJECT_DIR:-.}/.claude/helpers/auto-memory-hook.mjs" "#;
+    if let Some(args) = command.strip_prefix(auto_memory) {
+        return format!(
+            r#""$(git rev-parse --show-toplevel)/.codex/helpers/run-claude-hook.sh" auto-memory-hook.mjs {}"#,
+            args.trim()
+        );
+    }
+
+    command.replace(
+        "${CLAUDE_PROJECT_DIR:-.}",
+        "$(git rev-parse --show-toplevel)",
+    )
+}
+
+fn codex_hook_timeout_seconds(timeout: u64) -> u64 {
+    if timeout > 600 {
+        timeout.div_ceil(1000)
+    } else {
+        timeout
+    }
 }
 
 pub(super) fn copy_tree_plan(source: &Path, target: &Path) -> Result<Vec<PlannedFile>> {

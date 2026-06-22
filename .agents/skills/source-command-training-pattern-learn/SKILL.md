@@ -1,6 +1,6 @@
 ---
 name: source-command-training-pattern-learn
-description: "pattern-learn"
+description: 'pattern-learn'
 ---
 
 # /training/pattern-learn

@@ -1,6 +1,6 @@
 ---
 name: source-command-analysis-performance-report
-description: "performance-report"
+description: 'performance-report'
 ---
 
 # /analysis/performance-report

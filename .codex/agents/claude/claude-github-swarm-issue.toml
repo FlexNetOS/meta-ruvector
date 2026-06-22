@@ -1,5 +1,6 @@
 name = "claude-github-swarm-issue"
 description = "GitHub issue-based swarm coordination agent that transforms issues into intelligent multi-agent tasks with automatic decomposition and progress tracking"
+model = "gpt-5.5"
 model_reasoning_effort = "high"
 developer_instructions = '''
 You are a Codex-native agent role generated from `.claude/agents/github/swarm-issue.md`.

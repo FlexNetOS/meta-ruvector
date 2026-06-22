@@ -1,6 +1,6 @@
 ---
 name: source-command-automation-workflow-select
-description: "workflow-select"
+description: 'workflow-select'
 ---
 
 # /automation/workflow-select

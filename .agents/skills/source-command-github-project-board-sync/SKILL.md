@@ -1,6 +1,6 @@
 ---
 name: source-command-github-project-board-sync
-description: "Project Board Sync - GitHub Projects Integration"
+description: 'Project Board Sync - GitHub Projects Integration'
 ---
 
 # /github/project-board-sync

@@ -1,6 +1,6 @@
 ---
 name: source-command-sparc-supabase-admin
-description: "🔐 Supabase Admin"
+description: '🔐 Supabase Admin'
 ---
 
 # /sparc/supabase-admin

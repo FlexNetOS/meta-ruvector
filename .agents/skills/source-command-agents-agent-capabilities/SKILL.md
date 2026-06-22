@@ -1,6 +1,6 @@
 ---
 name: source-command-agents-agent-capabilities
-description: "agent-capabilities"
+description: 'agent-capabilities'
 ---
 
 # /agents/agent-capabilities

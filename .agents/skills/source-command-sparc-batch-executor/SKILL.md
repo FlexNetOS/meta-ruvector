@@ -1,6 +1,6 @@
 ---
 name: source-command-sparc-batch-executor
-description: "SPARC Batch Executor Mode"
+description: 'SPARC Batch Executor Mode'
 ---
 
 # /sparc/batch-executor

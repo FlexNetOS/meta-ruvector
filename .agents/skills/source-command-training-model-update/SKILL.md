@@ -1,6 +1,6 @@
 ---
 name: source-command-training-model-update
-description: "model-update"
+description: 'model-update'
 ---
 
 # /training/model-update

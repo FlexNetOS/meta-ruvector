@@ -1,6 +1,6 @@
 ---
 name: source-command-hive-mind-hive-mind-metrics
-description: "hive-mind-metrics"
+description: 'hive-mind-metrics'
 ---
 
 # /hive-mind/hive-mind-metrics

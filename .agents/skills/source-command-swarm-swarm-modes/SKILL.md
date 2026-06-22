@@ -1,6 +1,6 @@
 ---
 name: source-command-swarm-swarm-modes
-description: "swarm-modes"
+description: 'swarm-modes'
 ---
 
 # /swarm/swarm-modes

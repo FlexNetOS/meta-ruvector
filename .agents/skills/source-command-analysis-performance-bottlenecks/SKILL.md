@@ -1,6 +1,6 @@
 ---
 name: source-command-analysis-performance-bottlenecks
-description: "Performance Bottleneck Analysis"
+description: 'Performance Bottleneck Analysis'
 ---
 
 # /analysis/performance-bottlenecks

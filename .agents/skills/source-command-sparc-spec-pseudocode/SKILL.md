@@ -1,6 +1,6 @@
 ---
 name: source-command-sparc-spec-pseudocode
-description: "📋 Specification Writer"
+description: '📋 Specification Writer'
 ---
 
 # /sparc/spec-pseudocode

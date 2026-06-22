@@ -1,6 +1,6 @@
 ---
 name: source-command-automation-smart-spawn
-description: "smart-spawn"
+description: 'smart-spawn'
 ---
 
 # /automation/smart-spawn

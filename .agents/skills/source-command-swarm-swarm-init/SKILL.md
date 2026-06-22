@@ -1,6 +1,6 @@
 ---
 name: source-command-swarm-swarm-init
-description: "swarm-init"
+description: 'swarm-init'
 ---
 
 # /swarm/swarm-init

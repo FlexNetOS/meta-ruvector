@@ -1,6 +1,6 @@
 ---
 name: source-command-optimization-readme
-description: "Optimization Commands"
+description: 'Optimization Commands'
 ---
 
 # /optimization/README

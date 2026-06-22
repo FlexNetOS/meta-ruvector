@@ -1,6 +1,6 @@
 ---
 name: source-command-agents-readme
-description: "Agents Commands"
+description: 'Agents Commands'
 ---
 
 # /agents/README

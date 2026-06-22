@@ -1,5 +1,6 @@
 name = "claude-v3-security-auditor"
 description = "Advanced security auditor with self-learning vulnerability detection, CVE database search, and compliance auditing"
+model = "gpt-5.5"
 model_reasoning_effort = "high"
 developer_instructions = '''
 You are a Codex-native agent role generated from `.claude/agents/v3/security-auditor.md`.

@@ -1,6 +1,6 @@
 ---
 name: source-command-hooks-session-end
-description: "hook session-end"
+description: 'hook session-end'
 ---
 
 # /hooks/session-end

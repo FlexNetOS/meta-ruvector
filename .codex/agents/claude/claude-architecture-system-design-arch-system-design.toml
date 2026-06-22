@@ -1,5 +1,6 @@
 name = "claude-architecture-system-design-arch-system-design"
 description = "Expert agent for system architecture design, patterns, and high-level technical decisions"
+model = "gpt-5.5"
 model_reasoning_effort = "high"
 developer_instructions = """
 You are a Codex-native agent role generated from `.claude/agents/architecture/system-design/arch-system-design.md`.

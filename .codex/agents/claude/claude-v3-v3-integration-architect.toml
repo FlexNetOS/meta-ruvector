@@ -1,5 +1,6 @@
 name = "claude-v3-v3-integration-architect"
 description = "V3 deep agentic-flow@alpha integration specialist implementing ADR-001 for eliminating duplicate code and building claude-flow as a specialized extension"
+model = "gpt-5.5"
 model_reasoning_effort = "high"
 developer_instructions = """
 You are a Codex-native agent role generated from `.claude/agents/v3/v3-integration-architect.md`.

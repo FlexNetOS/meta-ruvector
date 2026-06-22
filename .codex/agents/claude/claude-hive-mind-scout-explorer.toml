@@ -1,5 +1,6 @@
 name = "claude-hive-mind-scout-explorer"
 description = "Information reconnaissance specialist that explores unknown territories, gathers intelligence, and reports findings to the hive mind through continuous memory updates"
+model = "gpt-5.5"
 model_reasoning_effort = "high"
 developer_instructions = """
 You are a Codex-native agent role generated from `.claude/agents/hive-mind/scout-explorer.md`.

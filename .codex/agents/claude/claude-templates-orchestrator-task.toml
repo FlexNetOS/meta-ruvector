@@ -1,6 +1,7 @@
 name = "claude-templates-orchestrator-task"
 description = "Central coordination agent for task decomposition, execution planning, and result synthesis"
-model_reasoning_effort = "high"
+model = "gpt-5.4-mini"
+model_reasoning_effort = "medium"
 developer_instructions = """
 You are a Codex-native agent role generated from `.claude/agents/templates/orchestrator-task.md`.
 Preserve the source agent's responsibilities, constraints, routing hints, and operating style while using Codex tools and project instructions.

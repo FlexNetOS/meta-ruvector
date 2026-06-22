@@ -1,6 +1,6 @@
 ---
 name: source-command-sparc-researcher
-description: "SPARC Researcher Mode"
+description: 'SPARC Researcher Mode'
 ---
 
 # /sparc/researcher

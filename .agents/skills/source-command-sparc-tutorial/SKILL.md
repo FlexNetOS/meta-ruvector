@@ -1,6 +1,6 @@
 ---
 name: source-command-sparc-tutorial
-description: "📘 SPARC Tutorial"
+description: '📘 SPARC Tutorial'
 ---
 
 # /sparc/tutorial

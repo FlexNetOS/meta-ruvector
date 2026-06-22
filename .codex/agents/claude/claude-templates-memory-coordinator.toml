@@ -1,5 +1,6 @@
 name = "claude-templates-memory-coordinator"
 description = "Manage persistent memory across sessions and facilitate cross-agent memory sharing"
+model = "gpt-5.5"
 model_reasoning_effort = "high"
 developer_instructions = """
 You are a Codex-native agent role generated from `.claude/agents/templates/memory-coordinator.md`.

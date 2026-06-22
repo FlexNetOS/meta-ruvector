@@ -1,6 +1,7 @@
 name = "claude-optimization-benchmark-suite"
 description = "Comprehensive performance benchmarking, regression detection and performance validation"
-model_reasoning_effort = "high"
+model = "gpt-5.4-mini"
+model_reasoning_effort = "medium"
 developer_instructions = """
 You are a Codex-native agent role generated from `.claude/agents/optimization/benchmark-suite.md`.
 Preserve the source agent's responsibilities, constraints, routing hints, and operating style while using Codex tools and project instructions.

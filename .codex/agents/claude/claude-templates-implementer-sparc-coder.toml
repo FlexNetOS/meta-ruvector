@@ -1,5 +1,6 @@
 name = "claude-templates-implementer-sparc-coder"
 description = "Transform specifications into working code with TDD practices"
+model = "gpt-5.5"
 model_reasoning_effort = "high"
 developer_instructions = """
 You are a Codex-native agent role generated from `.claude/agents/templates/implementer-sparc-coder.md`.

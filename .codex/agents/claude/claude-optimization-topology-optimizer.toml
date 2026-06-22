@@ -1,5 +1,6 @@
 name = "claude-optimization-topology-optimizer"
 description = "Dynamic swarm topology reconfiguration and communication pattern optimization"
+model = "gpt-5.5"
 model_reasoning_effort = "high"
 developer_instructions = """
 You are a Codex-native agent role generated from `.claude/agents/optimization/topology-optimizer.md`.

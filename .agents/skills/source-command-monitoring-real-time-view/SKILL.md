@@ -1,6 +1,6 @@
 ---
 name: source-command-monitoring-real-time-view
-description: "real-time-view"
+description: 'real-time-view'
 ---
 
 # /monitoring/real-time-view

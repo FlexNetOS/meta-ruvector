@@ -1,6 +1,6 @@
 ---
 name: source-command-monitoring-agent-metrics
-description: "agent-metrics"
+description: 'agent-metrics'
 ---
 
 # /monitoring/agent-metrics

@@ -1,6 +1,6 @@
 ---
 name: source-command-github-issue-triage
-description: "issue-triage"
+description: 'issue-triage'
 ---
 
 # /github/issue-triage

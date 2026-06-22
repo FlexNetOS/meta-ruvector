@@ -1,6 +1,6 @@
 ---
 name: source-command-analysis-bottleneck-detect
-description: "bottleneck detect"
+description: 'bottleneck detect'
 ---
 
 # /analysis/bottleneck-detect

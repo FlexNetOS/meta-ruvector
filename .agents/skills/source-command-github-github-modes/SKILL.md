@@ -1,6 +1,6 @@
 ---
 name: source-command-github-github-modes
-description: "GitHub Integration Modes"
+description: 'GitHub Integration Modes'
 ---
 
 # /github/github-modes

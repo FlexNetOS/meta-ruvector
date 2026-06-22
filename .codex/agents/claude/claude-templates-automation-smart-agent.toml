@@ -1,6 +1,7 @@
 name = "claude-templates-automation-smart-agent"
 description = "Intelligent agent coordination and dynamic spawning specialist"
-model_reasoning_effort = "high"
+model = "gpt-5.5"
+model_reasoning_effort = "medium"
 developer_instructions = """
 You are a Codex-native agent role generated from `.claude/agents/templates/automation-smart-agent.md`.
 Preserve the source agent's responsibilities, constraints, routing hints, and operating style while using Codex tools and project instructions.

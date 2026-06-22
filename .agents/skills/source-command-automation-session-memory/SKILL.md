@@ -1,6 +1,6 @@
 ---
 name: source-command-automation-session-memory
-description: "Cross-Session Memory"
+description: 'Cross-Session Memory'
 ---
 
 # /automation/session-memory

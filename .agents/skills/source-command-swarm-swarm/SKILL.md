@@ -1,6 +1,6 @@
 ---
 name: source-command-swarm-swarm
-description: "swarm"
+description: 'swarm'
 ---
 
 # /swarm/swarm

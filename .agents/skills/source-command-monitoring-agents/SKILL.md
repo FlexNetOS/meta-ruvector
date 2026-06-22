@@ -1,6 +1,6 @@
 ---
 name: source-command-monitoring-agents
-description: "List Active Patterns"
+description: 'List Active Patterns'
 ---
 
 # /monitoring/agents

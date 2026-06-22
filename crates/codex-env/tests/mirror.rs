@@ -1,6 +1,6 @@
 use std::fs;
 
-use codex_env::{mirror_codex_surface, MirrorOptions};
+use codex_env::{install_codex_prompts, mirror_codex_surface, MirrorOptions, PromptInstallOptions};
 
 #[test]
 fn mirror_generates_codex_and_skill_files() {
@@ -13,7 +13,74 @@ fn mirror_generates_codex_and_skill_files() {
     fs::create_dir_all(root.join(".claude/commands/sparc")).unwrap();
     fs::write(
         root.join(".claude/settings.json"),
-        r#"{"hooks":{"Stop":[{"hooks":[{"type":"command","command":"echo done"}]}]},"env":{"BRAIN_URL":"https://pi.ruv.io"}}"#,
+        r#"{
+          "hooks": {
+            "PreToolUse": [
+              {
+                "matcher": "Bash",
+                "hooks": [
+                  {
+                    "type": "command",
+                    "command": "node \"${CLAUDE_PROJECT_DIR:-.}/.claude/helpers/hook-handler.cjs\" pre-bash",
+                    "timeout": 5000
+                  }
+                ]
+              }
+            ],
+            "PostToolUse": [
+              {
+                "matcher": "Bash",
+                "hooks": [
+                  {
+                    "type": "command",
+                    "command": "echo done",
+                    "timeout": 5
+                  },
+                  {
+                    "type": "command",
+                    "command": "echo async",
+                    "timeout": 10000,
+                    "async": true
+                  }
+                ]
+              }
+            ],
+            "SessionEnd": [
+              {
+                "hooks": [
+                  {
+                    "type": "command",
+                    "command": "node \"${CLAUDE_PROJECT_DIR:-.}/.claude/helpers/hook-handler.cjs\" session-end",
+                    "timeout": 10000
+                  }
+                ]
+              }
+            ],
+            "Stop": [
+              {
+                "hooks": [
+                  {
+                    "type": "command",
+                    "command": "node \"${CLAUDE_PROJECT_DIR:-.}/.claude/helpers/auto-memory-hook.mjs\" sync",
+                    "timeout": 10000
+                  }
+                ]
+              }
+            ],
+            "Notification": [
+              {
+                "hooks": [
+                  {
+                    "type": "command",
+                    "command": "echo notify",
+                    "timeout": 3000
+                  }
+                ]
+              }
+            ]
+          },
+          "env": {"BRAIN_URL":"https://pi.ruv.io"}
+        }"#,
     )
     .unwrap();
     fs::write(
@@ -42,7 +109,7 @@ fn mirror_generates_codex_and_skill_files() {
     fs::write(root.join(".claude/skills/demo/SKILL.md"), "# Demo\n").unwrap();
     fs::write(
         root.join(".claude/commands/sparc/code.md"),
-        "# Code\nBody\n",
+        "---\ndescription: Write code through SPARC\n---\n\n# Code\nBody with $ARGUMENTS and shell \"$FOO\".\n",
     )
     .unwrap();
 
@@ -56,6 +123,8 @@ fn mirror_generates_codex_and_skill_files() {
     assert!(report.changed_files > 0);
     let config = fs::read_to_string(root.join(".codex/config.toml")).unwrap();
     toml::from_str::<toml::Value>(&config).unwrap();
+    assert!(config.contains("model = \"gpt-5.5\""));
+    assert!(config.contains("model_reasoning_effort = \"high\""));
     assert!(config.contains("model_context_window = 4000000"));
     assert!(config.contains("[skills]\ninclude_instructions = true"));
     assert!(config.contains("[agents]\nmax_threads = 15\nmax_depth = 3"));
@@ -63,17 +132,32 @@ fn mirror_generates_codex_and_skill_files() {
     assert!(config.contains("config_file = \"agents/claude/claude-browser-browser-agent.toml\""));
     assert!(config.contains("[agents.claude-core-coder]"));
     assert!(config.contains("config_file = \"agents/claude/claude-core-coder.toml\""));
+    let explorer = fs::read_to_string(root.join(".codex/agents/explorer.toml")).unwrap();
+    let explorer: toml::Value = toml::from_str(&explorer).unwrap();
+    assert_eq!(explorer["name"].as_str().unwrap(), "explorer");
+    assert_eq!(explorer["model"].as_str().unwrap(), "gpt-5.4-mini");
+    assert_eq!(
+        explorer["description"].as_str().unwrap(),
+        "Read-only codebase explorer for gathering evidence before changes are proposed."
+    );
     let coder_role =
         fs::read_to_string(root.join(".codex/agents/claude/claude-core-coder.toml")).unwrap();
     toml::from_str::<toml::Value>(&coder_role).unwrap();
     assert!(coder_role.contains("name = \"claude-core-coder\""));
     assert!(coder_role.contains("description = \"Writes code\""));
+    assert!(coder_role.contains("model = \"gpt-5.5\""));
+    assert!(coder_role.contains("model_reasoning_effort = \"medium\""));
     assert!(coder_role.contains("developer_instructions = "));
     assert!(coder_role.contains("Source: `.claude/agents/core/coder.md`"));
     assert!(coder_role.contains("Implement carefully."));
     let verbose_role =
         fs::read_to_string(root.join(".codex/agents/claude/claude-core-verbose.toml")).unwrap();
     let verbose_role: toml::Value = toml::from_str(&verbose_role).unwrap();
+    assert_eq!(verbose_role["model"].as_str().unwrap(), "gpt-5.4-mini");
+    assert_eq!(
+        verbose_role["model_reasoning_effort"].as_str().unwrap(),
+        "medium"
+    );
     assert!(
         verbose_role["description"]
             .as_str()
@@ -96,6 +180,32 @@ fn mirror_generates_codex_and_skill_files() {
     toml::from_str::<toml::Value>(&browser_role).unwrap();
     assert!(browser_role.contains("description = \"Automates browsers\""));
     assert!(root.join(".codex/hooks/rust-check.sh").exists());
+    assert!(root.join(".codex/helpers/run-claude-hook.sh").exists());
+    let hooks: serde_json::Value =
+        serde_json::from_slice(&fs::read(root.join(".codex/hooks.json")).unwrap()).unwrap();
+    assert!(hooks["hooks"]["Notification"].is_null());
+    let pre_tool = &hooks["hooks"]["PreToolUse"][0]["hooks"][0];
+    assert_eq!(pre_tool["timeout"], 5);
+    assert!(pre_tool["command"]
+        .as_str()
+        .unwrap()
+        .contains(".codex/helpers/run-claude-hook.sh\" hook-handler.cjs pre-bash"));
+    let post_tool_hooks = hooks["hooks"]["PostToolUse"][0]["hooks"]
+        .as_array()
+        .unwrap();
+    assert_eq!(post_tool_hooks.len(), 1);
+    assert_eq!(post_tool_hooks[0]["command"], "echo done");
+    assert_eq!(post_tool_hooks[0]["timeout"], 5);
+    let stop_hooks = hooks["hooks"]["Stop"].as_array().unwrap();
+    assert_eq!(stop_hooks.len(), 2);
+    assert!(stop_hooks.iter().any(|group| group["hooks"][0]["command"]
+        .as_str()
+        .unwrap()
+        .contains("hook-handler.cjs session-end")));
+    assert!(stop_hooks.iter().any(|group| group["hooks"][0]["command"]
+        .as_str()
+        .unwrap()
+        .contains("auto-memory-hook.mjs sync")));
     assert_eq!(
         fs::read(root.join(".codex/mirror/.claude/hooks/rust-check.sh")).unwrap(),
         fs::read(root.join(".claude/hooks/rust-check.sh")).unwrap()
@@ -104,6 +214,23 @@ fn mirror_generates_codex_and_skill_files() {
     assert!(root
         .join(".agents/skills/source-command-sparc-code/SKILL.md")
         .exists());
+    let prompt = fs::read_to_string(root.join(".codex/prompts/sparc-code.md")).unwrap();
+    assert!(prompt.contains("description: 'Write code through SPARC'"));
+    assert!(prompt.contains("argument-hint: [ARGUMENTS]"));
+    assert!(prompt.contains("Source: `.claude/commands/sparc/code.md`"));
+    assert!(prompt.contains("Arguments supplied to this prompt: $ARGUMENTS"));
+    assert!(prompt.contains("Body with $ARGUMENTS and shell \"$$FOO\"."));
+    assert!(root.join(".codex/prompts/codex-agent-team.md").exists());
+    assert!(root.join(".codex/prompts/codex-auto-loop.md").exists());
+    assert!(root.join(".codex/prompts/codex-gap-hunt.md").exists());
+    assert!(root.join(".codex/helpers/install-prompts.sh").exists());
+    assert!(root
+        .join(".agents/skills/codex-agent-team/SKILL.md")
+        .exists());
+    assert!(root
+        .join(".agents/skills/codex-auto-loop/SKILL.md")
+        .exists());
+    assert!(root.join(".agents/skills/codex-gap-hunt/SKILL.md").exists());
 
     let inventory: serde_json::Value =
         serde_json::from_slice(&fs::read(root.join(".codex/mirror-symbols.json")).unwrap())
@@ -133,6 +260,46 @@ fn mirror_generates_codex_and_skill_files() {
     let check = mirror_codex_surface(MirrorOptions {
         repo_root: root.to_path_buf(),
         lua_policy: None,
+        check: true,
+    })
+    .unwrap();
+    assert_eq!(check.changed_files, 0);
+}
+
+#[test]
+fn install_prompts_copies_generated_prompt_commands() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path().join("repo");
+    let codex_home = temp.path().join("codex-home");
+    fs::create_dir_all(root.join(".claude/commands")).unwrap();
+    fs::write(root.join(".claude/settings.json"), r#"{"env":{}}"#).unwrap();
+    fs::write(
+        root.join(".claude/commands/demo.md"),
+        "---\ndescription: Demo prompt\n---\n\n# Demo\nUse $ARGUMENTS.\n",
+    )
+    .unwrap();
+
+    mirror_codex_surface(MirrorOptions {
+        repo_root: root.clone(),
+        lua_policy: None,
+        check: false,
+    })
+    .unwrap();
+
+    let report = install_codex_prompts(PromptInstallOptions {
+        repo_root: root.clone(),
+        codex_home: codex_home.clone(),
+        check: false,
+    })
+    .unwrap();
+    assert_eq!(report.total_files, 4);
+    assert_eq!(report.changed_files, 4);
+    assert!(codex_home.join("prompts/demo.md").exists());
+    assert!(codex_home.join("prompts/codex-auto-loop.md").exists());
+
+    let check = install_codex_prompts(PromptInstallOptions {
+        repo_root: root,
+        codex_home,
         check: true,
     })
     .unwrap();

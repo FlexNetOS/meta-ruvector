@@ -1,5 +1,6 @@
 name = "claude-consensus-byzantine-coordinator"
 description = "Coordinates Byzantine fault-tolerant consensus protocols with malicious actor detection"
+model = "gpt-5.5"
 model_reasoning_effort = "high"
 developer_instructions = """
 You are a Codex-native agent role generated from `.claude/agents/consensus/byzantine-coordinator.md`.

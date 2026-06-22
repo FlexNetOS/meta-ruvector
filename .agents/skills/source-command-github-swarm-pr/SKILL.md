@@ -1,6 +1,6 @@
 ---
 name: source-command-github-swarm-pr
-description: "Swarm PR - Managing Swarms through Pull Requests"
+description: 'Swarm PR - Managing Swarms through Pull Requests'
 ---
 
 # /github/swarm-pr

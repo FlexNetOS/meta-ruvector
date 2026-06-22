@@ -1,6 +1,6 @@
 ---
 name: source-command-monitoring-status
-description: "Check Coordination Status"
+description: 'Check Coordination Status'
 ---
 
 # /monitoring/status

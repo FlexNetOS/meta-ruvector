@@ -1,6 +1,6 @@
 ---
 name: source-command-hooks-readme
-description: "Hooks Commands"
+description: 'Hooks Commands'
 ---
 
 # /hooks/README

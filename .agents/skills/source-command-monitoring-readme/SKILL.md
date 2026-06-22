@@ -1,6 +1,6 @@
 ---
 name: source-command-monitoring-readme
-description: "Monitoring Commands"
+description: 'Monitoring Commands'
 ---
 
 # /monitoring/README

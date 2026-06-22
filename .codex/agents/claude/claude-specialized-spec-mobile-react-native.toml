@@ -1,6 +1,7 @@
 name = "claude-specialized-spec-mobile-react-native"
 description = "Expert agent for React Native mobile application development across iOS and Android"
-model_reasoning_effort = "high"
+model = "gpt-5.5"
+model_reasoning_effort = "medium"
 developer_instructions = """
 You are a Codex-native agent role generated from `.claude/agents/specialized/spec-mobile-react-native.md`.
 Preserve the source agent's responsibilities, constraints, routing hints, and operating style while using Codex tools and project instructions.

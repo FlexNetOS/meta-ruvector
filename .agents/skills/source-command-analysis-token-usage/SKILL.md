@@ -1,6 +1,6 @@
 ---
 name: source-command-analysis-token-usage
-description: "token-usage"
+description: 'token-usage'
 ---
 
 # /analysis/token-usage

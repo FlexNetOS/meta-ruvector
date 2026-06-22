@@ -1,5 +1,6 @@
 name = "claude-consensus-gossip-coordinator"
 description = "Coordinates gossip-based consensus protocols for scalable eventually consistent systems"
+model = "gpt-5.5"
 model_reasoning_effort = "high"
 developer_instructions = """
 You are a Codex-native agent role generated from `.claude/agents/consensus/gossip-coordinator.md`.

@@ -1,6 +1,6 @@
 ---
 name: source-command-github-repo-architect
-description: "GitHub Repository Architect"
+description: 'GitHub Repository Architect'
 ---
 
 # /github/repo-architect

@@ -1,5 +1,6 @@
 name = "claude-github-swarm-pr"
 description = "Pull request swarm management agent that coordinates multi-agent code review, validation, and integration workflows with automated PR lifecycle management"
+model = "gpt-5.5"
 model_reasoning_effort = "high"
 developer_instructions = '''
 You are a Codex-native agent role generated from `.claude/agents/github/swarm-pr.md`.

@@ -1,6 +1,6 @@
 ---
 name: source-command-optimization-auto-topology
-description: "Automatic Topology Selection"
+description: 'Automatic Topology Selection'
 ---
 
 # /optimization/auto-topology

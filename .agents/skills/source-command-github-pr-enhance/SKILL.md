@@ -1,6 +1,6 @@
 ---
 name: source-command-github-pr-enhance
-description: "pr-enhance"
+description: 'pr-enhance'
 ---
 
 # /github/pr-enhance

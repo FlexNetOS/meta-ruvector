@@ -1,6 +1,6 @@
 ---
 name: source-command-swarm-swarm-strategies
-description: "swarm-strategies"
+description: 'swarm-strategies'
 ---
 
 # /swarm/swarm-strategies
