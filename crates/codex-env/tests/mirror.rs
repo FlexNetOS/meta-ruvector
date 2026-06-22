@@ -1,6 +1,9 @@
 use std::fs;
 
-use codex_env::{install_codex_prompts, mirror_codex_surface, MirrorOptions, PromptInstallOptions};
+use codex_env::{
+    doctor_codex_surface, install_codex_prompts, mirror_codex_surface, DoctorOptions,
+    MirrorOptions, PromptInstallOptions,
+};
 
 #[test]
 fn mirror_generates_codex_and_skill_files() {
@@ -264,6 +267,27 @@ fn mirror_generates_codex_and_skill_files() {
     })
     .unwrap();
     assert_eq!(check.changed_files, 0);
+
+    let codex_home = root.join("codex-home");
+    install_codex_prompts(PromptInstallOptions {
+        repo_root: root.to_path_buf(),
+        codex_home: codex_home.clone(),
+        check: false,
+    })
+    .unwrap();
+    let doctor = doctor_codex_surface(DoctorOptions {
+        repo_root: root.to_path_buf(),
+        lua_policy: None,
+        codex_home,
+    })
+    .unwrap();
+    assert_eq!(doctor.config_model, "gpt-5.5");
+    assert_eq!(doctor.config_reasoning_effort, "high");
+    assert_eq!(doctor.prompt_files, 4);
+    assert_eq!(doctor.installed_prompt_files, 4);
+    assert!(doctor.agent_models.contains_key("gpt-5.5"));
+    assert!(doctor.agent_models.contains_key("gpt-5.4-mini"));
+    assert!(doctor.hook_events.contains(&"Stop".to_owned()));
 }
 
 #[test]

@@ -2,7 +2,10 @@ use std::path::PathBuf;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
-use codex_env::{install_codex_prompts, mirror_codex_surface, MirrorOptions, PromptInstallOptions};
+use codex_env::{
+    doctor_codex_surface, install_codex_prompts, mirror_codex_surface, DoctorOptions,
+    MirrorOptions, PromptInstallOptions,
+};
 
 #[derive(Parser)]
 #[command(name = "codex-env")]
@@ -38,6 +41,17 @@ enum Commands {
         /// Validate installed prompts without writing files.
         #[arg(long)]
         check: bool,
+    },
+
+    /// Verify the generated Codex surface and installed prompt commands.
+    Doctor {
+        /// Codex home directory. Defaults to CODEX_HOME or ~/.codex.
+        #[arg(long)]
+        codex_home: Option<PathBuf>,
+
+        /// Emit the doctor report as JSON.
+        #[arg(long)]
+        json: bool,
     },
 }
 
@@ -75,9 +89,40 @@ fn main() -> Result<()> {
                 report.target_dir.display()
             );
         }
+        Commands::Doctor { codex_home, json } => {
+            let codex_home = codex_home.unwrap_or_else(default_codex_home);
+            let report = doctor_codex_surface(DoctorOptions {
+                repo_root,
+                lua_policy: cli.lua_policy,
+                codex_home,
+            })?;
+            if json {
+                println!("{}", serde_json::to_string_pretty(&report)?);
+            } else {
+                println!(
+                    "codex-env doctor ok: config {}/{}, {} agents ({}), {} hook event(s), {} hook handler(s), {} prompts installed into {}",
+                    report.config_model,
+                    report.config_reasoning_effort,
+                    report.agent_files,
+                    format_counts(&report.agent_models),
+                    report.hook_events.len(),
+                    report.hook_handlers,
+                    report.installed_prompt_files,
+                    report.codex_home.join("prompts").display()
+                );
+            }
+        }
     }
 
     Ok(())
+}
+
+fn format_counts(counts: &std::collections::BTreeMap<String, usize>) -> String {
+    counts
+        .iter()
+        .map(|(key, count)| format!("{key}={count}"))
+        .collect::<Vec<_>>()
+        .join(", ")
 }
 
 fn default_codex_home() -> PathBuf {
