@@ -7,33 +7,25 @@
 
 **Raft consensus implementation for Ruvector distributed metadata coordination.**
 
-`ruvector-raft` provides a production-ready Raft consensus implementation for coordinating distributed Ruvector deployments. Ensures strong consistency for cluster metadata, configuration, and leader election. Part of the [Ruvector](https://github.com/ruvnet/ruvector) ecosystem.
+`ruvector-raft` provides a Raft consensus core for coordinating distributed
+Ruvector deployments — leader election, log replication, and the Raft RPC message
+types for cluster metadata. Part of the
+[Ruvector](https://github.com/ruvnet/ruvector) ecosystem.
 
 ## Why Ruvector Raft?
 
-- **Strong Consistency**: Linearizable reads and writes
-- **Leader Election**: Automatic failover on leader failure
-- **Log Replication**: Durable, replicated transaction log
-- **Membership Changes**: Dynamic cluster reconfiguration
-- **Snapshot Support**: Log compaction via snapshots
+- **Leader Election**: randomized election timeouts and majority-vote leadership
+- **Log Replication**: AppendEntries-based replication with conflict backtracking
+- **Commit Management**: majority-based commit index tracking
+- **Raft RPC Types**: `AppendEntries`, `RequestVote`, and `InstallSnapshot` messages
 
-## Features
+## Implemented vs. Planned
 
-### Core Capabilities
-
-- **Raft Consensus**: Full Raft protocol implementation
-- **Leader Election**: Randomized timeouts, pre-vote protocol
-- **Log Replication**: Pipelined append entries
-- **Commit Management**: Majority-based commit tracking
-- **State Machine**: Generic state machine interface
-
-### Advanced Features
-
-- **Pre-Vote Protocol**: Prevents disruption during network partitions
-- **Leadership Transfer**: Graceful leader handoff
-- **Read Index**: Linearizable reads without log entry
-- **Learner Nodes**: Non-voting members for scaling reads
-- **Batch Commits**: Coalesce multiple entries per commit
+This crate implements the in-process Raft state machine, election logic, log, and
+RPC message types. **Network transport is not included** — the node computes RPC
+responses internally but does not send them over the wire (the `start` loop and
+handlers contain `TODO: Send …` points where a transport must be plugged in). See
+[Planned / WIP](#planned--wip).
 
 ## Installation
 
@@ -46,162 +38,148 @@ ruvector-raft = "0.1.1"
 
 ## Quick Start
 
-### Create Raft Node
+### Create and run a Raft node
+
+`RaftNode::new` is synchronous and takes a `RaftNodeConfig`. The node is driven by
+`start`, which takes `Arc<Self>` and runs the message loop.
 
 ```rust
-use ruvector_raft::{RaftNode, RaftConfig, StateMachine};
+use std::sync::Arc;
+use ruvector_raft::{RaftNode, RaftNodeConfig};
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Configure Raft node
-    let config = RaftConfig {
-        node_id: 1,
-        peers: vec![2, 3],  // Other node IDs
-        election_timeout_min: Duration::from_millis(150),
-        election_timeout_max: Duration::from_millis(300),
-        heartbeat_interval: Duration::from_millis(50),
-        ..Default::default()
-    };
+async fn main() {
+    // Configure the node: this node's ID + all cluster member IDs (including self).
+    // NodeId is a String.
+    let config = RaftNodeConfig::new(
+        "node1".to_string(),
+        vec!["node1".to_string(), "node2".to_string(), "node3".to_string()],
+    );
+    // RaftNodeConfig also exposes tunable fields:
+    //   election_timeout_min / election_timeout_max (ms), heartbeat_interval (ms),
+    //   max_entries_per_message, snapshot_chunk_size.
 
-    // Create state machine
-    let state_machine = MyStateMachine::new();
+    let node = Arc::new(RaftNode::new(config));
 
-    // Create and start Raft node
-    let node = RaftNode::new(config, state_machine).await?;
-    node.start().await?;
+    // Inspect state before starting.
+    println!("state = {:?}", node.current_state()); // RaftState::Follower
+    println!("term  = {}", node.current_term());      // 0
 
-    // Wait for leader election
-    node.wait_for_leader().await?;
-
-    Ok(())
+    // Drive the node (runs the internal message loop; does not return).
+    // node.clone().start().await;
 }
 ```
 
-### Implement State Machine
+### Submit a command
+
+Commands are opaque byte payloads. Only the leader accepts them; submitting on a
+follower returns `RaftError::NotLeader`.
 
 ```rust
-use ruvector_raft::{StateMachine, Entry, Snapshot};
+use std::sync::Arc;
+use ruvector_raft::{RaftNode, RaftError};
 
-struct MyStateMachine {
-    data: HashMap<String, String>,
+# async fn submit(node: Arc<RaftNode>) {
+match node.submit_command(b"set foo=bar".to_vec()).await {
+    Ok(result) => {
+        // CommandResult { index, term }
+        println!("appended at index {} (term {})", result.index, result.term);
+    }
+    Err(RaftError::NotLeader) => println!("not the leader; redirect to current leader"),
+    Err(e) => eprintln!("submit failed: {e}"),
 }
-
-impl StateMachine for MyStateMachine {
-    type Command = MyCommand;
-    type Response = MyResponse;
-
-    fn apply(&mut self, entry: &Entry<Self::Command>) -> Self::Response {
-        match &entry.command {
-            MyCommand::Set { key, value } => {
-                self.data.insert(key.clone(), value.clone());
-                MyResponse::Ok
-            }
-            MyCommand::Get { key } => {
-                MyResponse::Value(self.data.get(key).cloned())
-            }
-            MyCommand::Delete { key } => {
-                self.data.remove(key);
-                MyResponse::Ok
-            }
-        }
-    }
-
-    fn snapshot(&self) -> Snapshot {
-        Snapshot {
-            data: bincode::serialize(&self.data).unwrap(),
-            last_index: self.last_applied,
-            last_term: self.last_term,
-        }
-    }
-
-    fn restore(&mut self, snapshot: &Snapshot) {
-        self.data = bincode::deserialize(&snapshot.data).unwrap();
-    }
-}
+# }
 ```
 
-### Propose Commands
+### Inspect node state
 
 ```rust
-// Propose a command (only succeeds on leader)
-let response = node.propose(MyCommand::Set {
-    key: "foo".to_string(),
-    value: "bar".to_string(),
-}).await?;
+use std::sync::Arc;
+use ruvector_raft::{RaftNode, RaftState};
 
-// Read with linearizable consistency
-let response = node.read_index(MyCommand::Get {
-    key: "foo".to_string(),
-}).await?;
+# fn inspect(node: Arc<RaftNode>) {
+let state = node.current_state();      // RaftState: Follower | Candidate | Leader
+let term = node.current_term();        // Term (u64)
+let leader = node.current_leader();    // Option<NodeId>
 
-// Check leadership
-if node.is_leader().await {
-    println!("This node is the leader");
+if state.is_leader() {
+    println!("this node is the leader for term {term}");
 }
+if let Some(leader_id) = leader {
+    println!("current leader: {leader_id}");
+}
+# }
 ```
 
 ## API Overview
 
-### Core Types
+### Re-exported types (crate root)
 
 ```rust
-// Raft configuration
-pub struct RaftConfig {
+// Node and configuration
+pub struct RaftNode;          // the consensus node (see src/node.rs)
+pub struct RaftNodeConfig {   // node configuration
     pub node_id: NodeId,
-    pub peers: Vec<NodeId>,
-    pub election_timeout_min: Duration,
-    pub election_timeout_max: Duration,
-    pub heartbeat_interval: Duration,
-    pub max_entries_per_append: usize,
-    pub snapshot_threshold: u64,
+    pub cluster_members: Vec<NodeId>,
+    pub election_timeout_min: u64,   // milliseconds
+    pub election_timeout_max: u64,   // milliseconds
+    pub heartbeat_interval: u64,     // milliseconds
+    pub max_entries_per_message: usize,
+    pub snapshot_chunk_size: usize,
 }
 
-// Log entry
-pub struct Entry<C> {
-    pub index: u64,
-    pub term: u64,
-    pub command: C,
-}
-
-// Snapshot
-pub struct Snapshot {
-    pub data: Vec<u8>,
-    pub last_index: u64,
-    pub last_term: u64,
-}
-
-// Node state
-pub enum NodeState {
+// Raft node state (NOTE: there is no Learner variant)
+pub enum RaftState {
     Follower,
     Candidate,
     Leader,
-    Learner,
 }
+
+// State storage (src/state.rs)
+pub struct PersistentState;   // current_term, voted_for, log
+pub struct VolatileState;     // commit_index, last_applied
+pub struct LeaderState;       // next_index / match_index per follower
+
+// RPC message types (src/rpc.rs)
+pub struct AppendEntriesRequest;
+pub struct AppendEntriesResponse;
+pub struct RequestVoteRequest;
+pub struct RequestVoteResponse;
+pub struct InstallSnapshotRequest;
+pub struct InstallSnapshotResponse;
+
+// Errors and aliases
+pub enum RaftError { NotLeader, NoLeader, InvalidTerm(u64), /* … */ }
+pub type RaftResult<T> = Result<T, RaftError>;
+pub type NodeId = String;
+pub type Term = u64;
+pub type LogIndex = u64;
 ```
 
-### Node Operations
+### Node operations (`impl RaftNode`)
 
 ```rust
-impl<S: StateMachine> RaftNode<S> {
-    pub async fn new(config: RaftConfig, state_machine: S) -> Result<Self>;
-    pub async fn start(&self) -> Result<()>;
-    pub async fn stop(&self) -> Result<()>;
+impl RaftNode {
+    pub fn new(config: RaftNodeConfig) -> Self;
+    pub async fn start(self: std::sync::Arc<Self>);   // runs the message loop
 
-    // Leadership
-    pub async fn is_leader(&self) -> bool;
-    pub async fn leader_id(&self) -> Option<NodeId>;
-    pub async fn wait_for_leader(&self) -> Result<NodeId>;
+    // Client commands (opaque bytes)
+    pub async fn submit_command(&self, data: Vec<u8>) -> RaftResult<CommandResult>;
 
-    // Commands
-    pub async fn propose(&self, command: S::Command) -> Result<S::Response>;
-    pub async fn read_index(&self, command: S::Command) -> Result<S::Response>;
-
-    // Cluster management
-    pub async fn add_node(&self, node_id: NodeId) -> Result<()>;
-    pub async fn remove_node(&self, node_id: NodeId) -> Result<()>;
-    pub async fn transfer_leadership(&self, target: NodeId) -> Result<()>;
+    // Introspection
+    pub fn current_state(&self) -> RaftState;
+    pub fn current_term(&self) -> Term;
+    pub fn current_leader(&self) -> Option<NodeId>;
 }
+
+// Command payload and apply result (src/node.rs)
+pub struct Command { pub data: Vec<u8> }
+pub struct CommandResult { pub index: LogIndex, pub term: Term }
 ```
+
+The `Command` / `CommandResult` types use raw `Vec<u8>` payloads — this crate does
+**not** define a generic `StateMachine` trait with associated `Command` / `Response`
+types. Applying committed commands to your own state machine is left to the caller.
 
 ## Architecture
 
@@ -222,16 +200,35 @@ impl<S: StateMachine> RaftNode<S> {
 └────────────────────────────────────────────────────────┘
 ```
 
+## Planned / WIP
+
+The following are **not** implemented in the current code. They were described in
+earlier drafts of this README but no corresponding API exists:
+
+- **Network transport** — `RaftNode` computes RPC responses but does not deliver
+  them between nodes. The election, heartbeat, and replication paths contain
+  `TODO: Send …` placeholders. You must supply a transport to form a real cluster.
+- **Snapshot installation** — `InstallSnapshotRequest` / `InstallSnapshotResponse`
+  message types exist, but the handler currently only acknowledges; log
+  compaction / snapshot transfer is not yet implemented.
+- **Learner (non-voting) nodes** — `RaftState` has only `Follower`, `Candidate`,
+  and `Leader`. There is no `Learner` variant.
+- **Dynamic membership changes** — there is no `add_node` / `remove_node` /
+  `transfer_leadership` API. Cluster membership is fixed at construction via
+  `RaftNodeConfig::cluster_members`.
+- **Linearizable read index / leadership transfer** — no `read_index`,
+  `wait_for_leader`, or `transfer_leadership` methods exist. Use `current_state` /
+  `current_leader` for polling instead.
+- **Pre-vote protocol** — not implemented.
+
 ## Related Crates
 
-- **[ruvector-core](../ruvector-core/)** - Core vector database engine
-- **[ruvector-cluster](../ruvector-cluster/)** - Clustering and sharding
+- **[ruvector-router-core](../ruvector-router-core/)** - Core vector database engine
 - **[ruvector-replication](../ruvector-replication/)** - Data replication
 
 ## Documentation
 
 - **[Main README](../../README.md)** - Complete project overview
-- **[API Documentation](https://docs.rs/ruvector-raft)** - Full API reference
 - **[GitHub Repository](https://github.com/ruvnet/ruvector)** - Source code
 
 ## License

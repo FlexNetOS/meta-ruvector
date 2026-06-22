@@ -47,10 +47,13 @@ RuvLLM loads GGUF models and runs them on your hardware with full acceleration -
 ## Quick Start
 
 ```rust
-use ruvllm::prelude::*;
+// ruvllm has no `prelude` module — import the types directly from the crate root.
+// `CandleBackend` requires the `candle` feature.
+use std::path::Path;
+use ruvllm::{CandleBackend, DeviceType, GenerateParams, ModelConfig};
 
 let mut backend = CandleBackend::with_device(DeviceType::Metal)?;
-backend.load_gguf("models/qwen2.5-7b-q4_k.gguf", ModelConfig::default())?;
+backend.load_gguf(Path::new("models/qwen2.5-7b-q4_k.gguf"), &ModelConfig::default())?;
 
 let response = backend.generate("Explain quantum computing in simple terms.",
     GenerateParams {

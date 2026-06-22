@@ -1,7 +1,15 @@
-//! ROS3 Core - Next-generation Robot Operating System
+//! agentic-robotics-core - Rust robotics middleware (internally branded "ROS3")
 //!
-//! A ground-up Rust rewrite of ROS targeting microsecond-scale determinism
-//! with hybrid WASM/native deployment via npm.
+//! A Rust publish/subscribe and service (RPC) messaging library for building
+//! robot systems. It provides typed [`Publisher`]/[`Subscriber`] channels,
+//! request/response [`Service`]/[`Queryable`] services, pluggable
+//! serialization ([`Format::Cdr`], [`Format::Json`], [`Format::Rkyv`]), and a
+//! [`Zenoh`] session wrapper.
+//!
+//! Note: this is an early-stage crate. The [`Zenoh`] middleware and the rkyv
+//! serialization path are placeholders today (see each type's docs), and the
+//! `Publisher`/`Subscriber` are in-process channels rather than a live network
+//! transport. Internal message type names use the `ros3_msgs/` prefix.
 
 pub mod middleware;
 pub mod serialization;

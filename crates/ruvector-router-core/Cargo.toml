@@ -6,7 +6,7 @@ authors.workspace = true
 license.workspace = true
 repository.workspace = true
 readme = "README.md"
-description = "Core vector database and neural routing inference engine"
+description = "Core vector database storage and retrieval engine with HNSW indexing"
 
 [lib]
 crate-type = ["lib", "staticlib"]
