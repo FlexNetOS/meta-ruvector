@@ -1,6 +1,6 @@
 ---
 name: source-command-workflows-readme
-description: "Workflows Commands"
+description: 'Workflows Commands'
 ---
 
 # /workflows/README

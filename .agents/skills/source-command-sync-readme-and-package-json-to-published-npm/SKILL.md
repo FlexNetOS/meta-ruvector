@@ -1,6 +1,6 @@
 ---
 name: source-command-sync-readme-and-package-json-to-published-npm
-description: "/sync-readme-and-package-json-to-published-npm"
+description: '/sync-readme-and-package-json-to-published-npm'
 ---
 
 # /sync-readme-and-package-json-to-published-npm

@@ -1,6 +1,6 @@
 ---
 name: source-command-github-swarm-issue
-description: "Swarm Issue - Issue-Based Swarm Coordination"
+description: 'Swarm Issue - Issue-Based Swarm Coordination'
 ---
 
 # /github/swarm-issue

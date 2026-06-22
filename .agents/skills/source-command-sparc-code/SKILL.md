@@ -1,6 +1,6 @@
 ---
 name: source-command-sparc-code
-description: "🧠 Auto-Coder"
+description: '🧠 Auto-Coder'
 ---
 
 # /sparc/code

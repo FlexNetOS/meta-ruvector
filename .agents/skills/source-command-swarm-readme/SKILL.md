@@ -1,6 +1,6 @@
 ---
 name: source-command-swarm-readme
-description: "Swarm Commands"
+description: 'Swarm Commands'
 ---
 
 # /swarm/README

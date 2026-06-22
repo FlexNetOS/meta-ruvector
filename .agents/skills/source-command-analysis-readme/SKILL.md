@@ -1,6 +1,6 @@
 ---
 name: source-command-analysis-readme
-description: "Analysis Commands"
+description: 'Analysis Commands'
 ---
 
 # /analysis/README

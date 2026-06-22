@@ -1,6 +1,6 @@
 ---
 name: source-command-hooks-pre-edit
-description: "hook pre-edit"
+description: 'hook pre-edit'
 ---
 
 # /hooks/pre-edit

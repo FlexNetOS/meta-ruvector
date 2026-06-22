@@ -1,6 +1,6 @@
 ---
 name: gitnexus-usage
-description: Use the GitNexus code-graph MCP server to query, impact-analyze, and refactor across the ruvector workspace (~150 crates). Reach for this skill BEFORE doing wide refactors, large grep sweeps, or "where is X called from" questions — the graph is faster and more accurate than reading files. Lives at .gitnexus/ (gitignored). MCP tools: query, context, impact, detect_changes, rename, cypher.
+description: 'Use the GitNexus code-graph MCP server to query, impact-analyze, and refactor across the ruvector workspace (~150 crates). Reach for this skill BEFORE doing wide refactors, large grep sweeps, or "where is X called from" questions — the graph is faster and more accurate than reading files. Lives at .gitnexus/ (gitignored). MCP tools: query, context, impact, detect_changes, rename, cypher.'
 ---
 
 # GitNexus Usage — RuVector

@@ -1,6 +1,6 @@
 ---
 name: source-command-hooks-post-task
-description: "hook post-task"
+description: 'hook post-task'
 ---
 
 # /hooks/post-task

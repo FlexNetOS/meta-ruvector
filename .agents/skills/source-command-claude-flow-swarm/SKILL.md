@@ -1,6 +1,6 @@
 ---
 name: source-command-claude-flow-swarm
-description: "🐝 Claude-Flow Swarm Coordination"
+description: '🐝 Claude-Flow Swarm Coordination'
 ---
 
 # /claude-flow-swarm

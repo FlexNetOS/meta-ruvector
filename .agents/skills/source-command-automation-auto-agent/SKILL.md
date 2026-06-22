@@ -1,6 +1,6 @@
 ---
 name: source-command-automation-auto-agent
-description: "auto agent"
+description: 'auto agent'
 ---
 
 # /automation/auto-agent

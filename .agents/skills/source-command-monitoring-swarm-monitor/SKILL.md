@@ -1,6 +1,6 @@
 ---
 name: source-command-monitoring-swarm-monitor
-description: "swarm-monitor"
+description: 'swarm-monitor'
 ---
 
 # /monitoring/swarm-monitor

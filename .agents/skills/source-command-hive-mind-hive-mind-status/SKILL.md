@@ -1,6 +1,6 @@
 ---
 name: source-command-hive-mind-hive-mind-status
-description: "hive-mind-status"
+description: 'hive-mind-status'
 ---
 
 # /hive-mind/hive-mind-status

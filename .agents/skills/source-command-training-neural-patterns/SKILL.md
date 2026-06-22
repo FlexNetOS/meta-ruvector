@@ -1,6 +1,6 @@
 ---
 name: source-command-training-neural-patterns
-description: "Neural Pattern Training"
+description: 'Neural Pattern Training'
 ---
 
 # /training/neural-patterns

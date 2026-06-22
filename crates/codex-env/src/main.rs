@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
-use codex_env::{mirror_codex_surface, MirrorOptions};
+use codex_env::{install_codex_prompts, mirror_codex_surface, MirrorOptions, PromptInstallOptions};
 
 #[derive(Parser)]
 #[command(name = "codex-env")]
@@ -28,6 +28,17 @@ enum Commands {
         #[arg(long)]
         check: bool,
     },
+
+    /// Install generated .codex/prompts into CODEX_HOME prompts for /prompts:* usage.
+    InstallPrompts {
+        /// Codex home directory. Defaults to CODEX_HOME or ~/.codex.
+        #[arg(long)]
+        codex_home: Option<PathBuf>,
+
+        /// Validate installed prompts without writing files.
+        #[arg(long)]
+        check: bool,
+    },
 }
 
 fn main() -> Result<()> {
@@ -49,7 +60,29 @@ fn main() -> Result<()> {
                 report.claude_dir.display()
             );
         }
+        Commands::InstallPrompts { codex_home, check } => {
+            let codex_home = codex_home.unwrap_or_else(default_codex_home);
+            let report = install_codex_prompts(PromptInstallOptions {
+                repo_root,
+                codex_home,
+                check,
+            })?;
+            println!(
+                "codex-env installed {} prompt files ({} changed, {} verified) into {}",
+                report.total_files,
+                report.changed_files,
+                report.verified_files,
+                report.target_dir.display()
+            );
+        }
     }
 
     Ok(())
+}
+
+fn default_codex_home() -> PathBuf {
+    std::env::var_os("CODEX_HOME")
+        .map(PathBuf::from)
+        .or_else(|| std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".codex")))
+        .unwrap_or_else(|| PathBuf::from(".codex"))
 }

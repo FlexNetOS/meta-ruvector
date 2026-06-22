@@ -1,6 +1,6 @@
 ---
 name: source-command-sparc-devops
-description: "🚀 DevOps"
+description: '🚀 DevOps'
 ---
 
 # /sparc/devops

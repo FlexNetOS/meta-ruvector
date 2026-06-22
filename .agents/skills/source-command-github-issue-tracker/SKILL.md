@@ -1,6 +1,6 @@
 ---
 name: source-command-github-issue-tracker
-description: "GitHub Issue Tracker"
+description: 'GitHub Issue Tracker'
 ---
 
 # /github/issue-tracker

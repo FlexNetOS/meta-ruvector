@@ -1,6 +1,6 @@
 ---
 name: source-command-agents-agent-coordination
-description: "agent-coordination"
+description: 'agent-coordination'
 ---
 
 # /agents/agent-coordination

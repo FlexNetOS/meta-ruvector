@@ -1,6 +1,6 @@
 ---
 name: source-command-claude-flow-help
-description: "Claude-Flow Commands"
+description: 'Claude-Flow Commands'
 ---
 
 # /claude-flow-help

@@ -1,6 +1,6 @@
 ---
 name: source-command-sparc-designer
-description: "SPARC Designer Mode"
+description: 'SPARC Designer Mode'
 ---
 
 # /sparc/designer

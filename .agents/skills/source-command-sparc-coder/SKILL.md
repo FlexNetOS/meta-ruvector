@@ -1,6 +1,6 @@
 ---
 name: source-command-sparc-coder
-description: "SPARC Coder Mode"
+description: 'SPARC Coder Mode'
 ---
 
 # /sparc/coder

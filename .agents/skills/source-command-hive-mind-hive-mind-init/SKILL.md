@@ -1,6 +1,6 @@
 ---
 name: source-command-hive-mind-hive-mind-init
-description: "hive-mind-init"
+description: 'hive-mind-init'
 ---
 
 # /hive-mind/hive-mind-init

@@ -1,6 +1,6 @@
 ---
 name: source-command-hive-mind-hive-mind-sessions
-description: "hive-mind-sessions"
+description: 'hive-mind-sessions'
 ---
 
 # /hive-mind/hive-mind-sessions

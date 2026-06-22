@@ -1,6 +1,6 @@
 ---
 name: source-command-sparc-reviewer
-description: "SPARC Reviewer Mode"
+description: 'SPARC Reviewer Mode'
 ---
 
 # /sparc/reviewer

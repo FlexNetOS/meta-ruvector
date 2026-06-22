@@ -1,6 +1,6 @@
 ---
 name: source-command-sparc-integration
-description: "🔗 System Integrator"
+description: '🔗 System Integrator'
 ---
 
 # /sparc/integration

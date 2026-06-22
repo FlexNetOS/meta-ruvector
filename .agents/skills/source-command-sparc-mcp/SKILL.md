@@ -1,6 +1,6 @@
 ---
 name: source-command-sparc-mcp
-description: "♾\u{fe0f} MCP Integration"
+description: '♾️ MCP Integration'
 ---
 
 # /sparc/mcp

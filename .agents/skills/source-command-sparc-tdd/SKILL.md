@@ -1,6 +1,6 @@
 ---
 name: source-command-sparc-tdd
-description: "SPARC TDD Mode"
+description: 'SPARC TDD Mode'
 ---
 
 # /sparc/tdd

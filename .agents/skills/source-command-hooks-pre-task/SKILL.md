@@ -1,6 +1,6 @@
 ---
 name: source-command-hooks-pre-task
-description: "hook pre-task"
+description: 'hook pre-task'
 ---
 
 # /hooks/pre-task

@@ -1,6 +1,6 @@
 ---
 name: source-command-github-release-swarm
-description: "Release Swarm - Intelligent Release Automation"
+description: 'Release Swarm - Intelligent Release Automation'
 ---
 
 # /github/release-swarm

@@ -1,6 +1,6 @@
 ---
 name: source-command-sparc-debug
-description: "🪲 Debugger"
+description: '🪲 Debugger'
 ---
 
 # /sparc/debug

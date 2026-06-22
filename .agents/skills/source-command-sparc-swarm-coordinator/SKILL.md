@@ -1,6 +1,6 @@
 ---
 name: source-command-sparc-swarm-coordinator
-description: "SPARC Swarm Coordinator Mode"
+description: 'SPARC Swarm Coordinator Mode'
 ---
 
 # /sparc/swarm-coordinator

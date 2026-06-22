@@ -1,6 +1,6 @@
 ---
 name: source-command-sparc-orchestrator
-description: "SPARC Orchestrator Mode"
+description: 'SPARC Orchestrator Mode'
 ---
 
 # /sparc/orchestrator

@@ -1,6 +1,6 @@
 ---
 name: source-command-hive-mind-readme
-description: "Hive-mind Commands"
+description: 'Hive-mind Commands'
 ---
 
 # /hive-mind/README

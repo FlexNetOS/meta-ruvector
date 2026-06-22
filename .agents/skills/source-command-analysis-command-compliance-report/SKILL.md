@@ -1,6 +1,6 @@
 ---
 name: source-command-analysis-command-compliance-report
-description: "Analysis Commands Compliance Report"
+description: 'Analysis Commands Compliance Report'
 ---
 
 # /analysis/COMMAND_COMPLIANCE_REPORT

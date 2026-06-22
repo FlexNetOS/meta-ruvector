@@ -1,6 +1,6 @@
 ---
 name: source-command-github-sync-coordinator
-description: "GitHub Sync Coordinator"
+description: 'GitHub Sync Coordinator'
 ---
 
 # /github/sync-coordinator

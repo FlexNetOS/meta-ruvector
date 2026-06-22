@@ -1,6 +1,6 @@
 ---
 name: source-command-agents-agent-spawning
-description: "agent-spawning"
+description: 'agent-spawning'
 ---
 
 # /agents/agent-spawning

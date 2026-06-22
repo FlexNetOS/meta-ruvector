@@ -1,6 +1,6 @@
 ---
 name: source-command-github-workflow-automation
-description: "Workflow Automation - GitHub Actions Integration"
+description: 'Workflow Automation - GitHub Actions Integration'
 ---
 
 # /github/workflow-automation

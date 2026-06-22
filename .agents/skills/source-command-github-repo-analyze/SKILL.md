@@ -1,6 +1,6 @@
 ---
 name: source-command-github-repo-analyze
-description: "repo-analyze"
+description: 'repo-analyze'
 ---
 
 # /github/repo-analyze

@@ -1,6 +1,6 @@
 ---
 name: source-command-hooks-setup
-description: "Setting Up Hooks (claude-flow + ICM + RTK + grit + vox)"
+description: 'Setting Up Hooks (claude-flow + ICM + RTK + grit + vox)'
 ---
 
 # /hooks/setup

@@ -1,6 +1,6 @@
 ---
 name: source-command-claude-flow-memory
-description: "🧠 Claude-Flow Memory System"
+description: '🧠 Claude-Flow Memory System'
 ---
 
 # /claude-flow-memory
