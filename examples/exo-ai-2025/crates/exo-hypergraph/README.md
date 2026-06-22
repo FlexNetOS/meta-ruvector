@@ -53,12 +53,16 @@ println!("Betti numbers: {:?}", betti);
 
 ## Crate Layout
 
-| Module      | Purpose                                    |
-|-------------|--------------------------------------------|
-| `graph`     | Core hypergraph data structure              |
-| `sheaf`     | Sheaf sections and restriction maps         |
-| `homology`  | Sparse persistent homology pipeline         |
-| `betti`     | Betti number extraction and summarisation   |
+| Module       | Purpose                                                       |
+|--------------|---------------------------------------------------------------|
+| `hyperedge`  | Hyperedge storage and indexing (`Hyperedge`, `HyperedgeIndex`) |
+| `sheaf`      | Sheaf sections and consistency checks (`SheafStructure`)       |
+| `topology`   | Simplicial complex, persistent homology, Betti numbers (`SimplicialComplex`, `PersistenceDiagram`) |
+| `sparse_tda` | Sparse persistent homology via Rips complexes (`SparseRipsComplex`, `PersistenceDiagram`) |
+
+The top-level `HypergraphSubstrate` ties these together: `create_hyperedge`,
+`hyperedges_for_entity`, `persistent_homology`, `betti_numbers`,
+`check_sheaf_consistency`, and `query`.
 
 ## Requirements
 

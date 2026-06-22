@@ -7,33 +7,35 @@
 
 **Advanced metadata filtering for Ruvector vector search.**
 
-`ruvector-filter` provides a powerful filter expression language for combining vector similarity search with metadata constraints. Supports complex boolean expressions, range queries, and efficient filter evaluation. Part of the [Ruvector](https://github.com/ruvnet/ruvector) ecosystem.
+`ruvector-filter` provides a filter expression type for combining vector similarity search with payload (metadata) constraints, backed by per-field payload indices for efficient evaluation. Part of the [Ruvector](https://github.com/ruvnet/ruvector) ecosystem.
 
 ## Why Ruvector Filter?
 
-- **Rich Expressions**: Complex boolean filter expressions
-- **Type-Safe**: Strongly typed filter operations
-- **Optimized**: Filter pushdown for efficient evaluation
-- **Extensible**: Custom filter operators
-- **JSON Compatible**: Easy integration with JSON metadata
+- **Rich Expressions**: Composable boolean filter expressions (`FilterExpression`)
+- **Indexed Evaluation**: Filters evaluate against typed payload indices (`PayloadIndexManager`)
+- **Type-Safe**: Strongly typed builder constructors
+- **JSON Compatible**: Values are `serde_json::Value`; expressions serialize to/from JSON
 
 ## Features
 
 ### Core Capabilities
 
-- **Comparison Operators**: `=`, `!=`, `<`, `>`, `<=`, `>=`
-- **Boolean Logic**: `AND`, `OR`, `NOT`
-- **Range Queries**: `BETWEEN`, `IN`
-- **String Matching**: `CONTAINS`, `STARTS_WITH`, `ENDS_WITH`
-- **Null Handling**: `IS NULL`, `IS NOT NULL`
+- **Comparison Operators**: `eq`, `ne`, `gt`, `gte`, `lt`, `lte`
+- **Boolean Logic**: `and`, `or`, `not`
+- **Range / Set Queries**: `range`, `in_values`
+- **Text Matching**: `match_text`
+- **Existence Checks**: `exists`, `is_null`
+- **Geo Filters**: `geo_radius`, `geo_bounding_box`
+- **Index Types**: `Integer`, `Float`, `Keyword`, `Bool`, `Geo`, `Text`
 
-### Advanced Features
+### Planned / Not Yet Implemented
 
-- **Nested Fields**: Filter on nested JSON properties
-- **Array Operations**: `ANY`, `ALL`, `NONE` on arrays
-- **Regex Matching**: Pattern-based string filtering
-- **Geo Filters**: Distance and bounding box (planned)
-- **Custom Functions**: Extensible filter functions
+These are **not** present in the current code:
+
+- **Nested JSON field access** in filters
+- **Array operations** (`ANY` / `ALL` / `NONE`)
+- **Regex / prefix / suffix string matching** (only `match_text` today)
+- **Custom filter functions**
 
 ## Installation
 
@@ -49,70 +51,65 @@ ruvector-filter = "0.1.1"
 ### Basic Filtering
 
 ```rust
-use ruvector_filter::{Filter, FilterBuilder};
+use ruvector_filter::{FilterExpression, PayloadIndexManager, FilterEvaluator, IndexType};
+use serde_json::json;
 
-// Build filter expression
-let filter = FilterBuilder::new()
-    .field("category").eq("electronics")
-    .and()
-    .field("price").lt(1000.0)
-    .build()?;
+// 1. Build a payload index manager and declare indexed fields
+let mut manager = PayloadIndexManager::new();
+manager.create_index("status", IndexType::Keyword).unwrap();
+manager.create_index("age", IndexType::Integer).unwrap();
 
-// Apply to search
-let results = db.search(SearchQuery {
-    vector: query_vec,
-    k: 10,
-    filter: Some(filter),
-    ..Default::default()
-})?;
+// 2. Index some payloads (vector_id -> payload JSON)
+manager.index_payload("v1", &json!({"status": "active", "age": 25})).unwrap();
+manager.index_payload("v2", &json!({"status": "active", "age": 30})).unwrap();
+
+// 3. Build a filter expression
+let filter = FilterExpression::and(vec![
+    FilterExpression::eq("status", json!("active")),
+    FilterExpression::gte("age", json!(25)),
+]);
+
+// 4. Evaluate against the indices -> matching vector IDs
+let evaluator = FilterEvaluator::new(&manager);
+let matches = evaluator.evaluate(&filter).unwrap();   // HashSet<String>
 ```
 
 ### Complex Expressions
 
 ```rust
-use ruvector_filter::{Filter, FilterExpr, op};
+use ruvector_filter::FilterExpression;
+use serde_json::json;
 
-// Complex boolean expression
-let filter = op::and(vec![
-    op::eq("status", "active"),
-    op::or(vec![
-        op::gt("priority", 5),
-        op::in_("tags", vec!["urgent", "important"]),
+let filter = FilterExpression::and(vec![
+    FilterExpression::eq("status", json!("active")),
+    FilterExpression::or(vec![
+        FilterExpression::gt("priority", json!(5)),
+        FilterExpression::in_values("tags", vec![json!("urgent"), json!("important")]),
     ]),
-    op::not(op::eq("archived", true)),
+    FilterExpression::not(FilterExpression::eq("archived", json!(true))),
 ]);
 
 // Range query
-let filter = op::and(vec![
-    op::between("price", 100.0, 500.0),
-    op::between("created_at", "2024-01-01", "2024-12-31"),
-]);
+let range = FilterExpression::range("price", Some(json!(100.0)), Some(json!(500.0)));
 ```
 
-### String Matching
+### Text & Geo Matching
 
 ```rust
-use ruvector_filter::op;
+use ruvector_filter::FilterExpression;
 
-// String operations
-let filter = op::and(vec![
-    op::contains("description", "machine learning"),
-    op::starts_with("name", "Project"),
-    op::regex("email", r".*@company\.com"),
-]);
-```
+// Simple text token match (requires an IndexType::Text index on the field)
+let text = FilterExpression::match_text("description", "machine");
 
-### Nested Field Access
+// Geo radius (requires an IndexType::Geo index on the field)
+let near = FilterExpression::geo_radius("location", 40.7128, -74.0060, 1000.0);
 
-```rust
-use ruvector_filter::op;
-
-// Access nested JSON fields
-let filter = op::and(vec![
-    op::eq("user.role", "admin"),
-    op::gt("metadata.views", 1000),
-    op::in_("settings.theme", vec!["dark", "light"]),
-]);
+// Geo bounding box
+let bbox = FilterExpression::geo_bounding_box(
+    "location",
+    (41.0, -75.0),   // top_left (lat, lon)
+    (40.0, -73.0),   // bottom_right (lat, lon)
+);
 ```
 
 ## API Overview
@@ -120,83 +117,77 @@ let filter = op::and(vec![
 ### Core Types
 
 ```rust
-// Filter expression
-pub enum FilterExpr {
-    // Comparison
-    Eq(String, Value),
-    Ne(String, Value),
-    Lt(String, Value),
-    Gt(String, Value),
-    Le(String, Value),
-    Ge(String, Value),
-
-    // Boolean
-    And(Vec<FilterExpr>),
-    Or(Vec<FilterExpr>),
-    Not(Box<FilterExpr>),
-
-    // Range
-    Between(String, Value, Value),
-    In(String, Vec<Value>),
-
-    // String
-    Contains(String, String),
-    StartsWith(String, String),
-    EndsWith(String, String),
-    Regex(String, String),
-
-    // Null
-    IsNull(String),
-    IsNotNull(String),
+// Filter expression (serde tag = "type", snake_case)
+pub enum FilterExpression {
+    Eq { field: String, value: Value },
+    Ne { field: String, value: Value },
+    Gt { field: String, value: Value },
+    Gte { field: String, value: Value },
+    Lt { field: String, value: Value },
+    Lte { field: String, value: Value },
+    Range { field: String, gte: Option<Value>, lte: Option<Value> },
+    In { field: String, values: Vec<Value> },
+    Match { field: String, text: String },
+    GeoRadius { field: String, lat: f64, lon: f64, radius_m: f64 },
+    GeoBoundingBox { field: String, top_left: (f64, f64), bottom_right: (f64, f64) },
+    And(Vec<FilterExpression>),
+    Or(Vec<FilterExpression>),
+    Not(Box<FilterExpression>),
+    Exists { field: String },
+    IsNull { field: String },
 }
 
-// Filter builder
-pub struct FilterBuilder { /* ... */ }
+// Index types
+pub enum IndexType { Integer, Float, Keyword, Bool, Geo, Text }
 ```
 
-### Filter Operations
+### Builder Constructors
 
 ```rust
-// Convenience functions in `op` module
-pub mod op {
-    pub fn eq(field: &str, value: impl Into<Value>) -> FilterExpr;
-    pub fn ne(field: &str, value: impl Into<Value>) -> FilterExpr;
-    pub fn lt(field: &str, value: impl Into<Value>) -> FilterExpr;
-    pub fn gt(field: &str, value: impl Into<Value>) -> FilterExpr;
-    pub fn le(field: &str, value: impl Into<Value>) -> FilterExpr;
-    pub fn ge(field: &str, value: impl Into<Value>) -> FilterExpr;
-
-    pub fn and(exprs: Vec<FilterExpr>) -> FilterExpr;
-    pub fn or(exprs: Vec<FilterExpr>) -> FilterExpr;
-    pub fn not(expr: FilterExpr) -> FilterExpr;
-
-    pub fn between(field: &str, min: impl Into<Value>, max: impl Into<Value>) -> FilterExpr;
-    pub fn in_(field: &str, values: Vec<impl Into<Value>>) -> FilterExpr;
-
-    pub fn contains(field: &str, substring: &str) -> FilterExpr;
-    pub fn starts_with(field: &str, prefix: &str) -> FilterExpr;
-    pub fn ends_with(field: &str, suffix: &str) -> FilterExpr;
-    pub fn regex(field: &str, pattern: &str) -> FilterExpr;
+impl FilterExpression {
+    pub fn eq(field: impl Into<String>, value: Value) -> Self;
+    pub fn ne(field: impl Into<String>, value: Value) -> Self;
+    pub fn gt(field: impl Into<String>, value: Value) -> Self;
+    pub fn gte(field: impl Into<String>, value: Value) -> Self;
+    pub fn lt(field: impl Into<String>, value: Value) -> Self;
+    pub fn lte(field: impl Into<String>, value: Value) -> Self;
+    pub fn range(field: impl Into<String>, gte: Option<Value>, lte: Option<Value>) -> Self;
+    pub fn in_values(field: impl Into<String>, values: Vec<Value>) -> Self;
+    pub fn match_text(field: impl Into<String>, text: impl Into<String>) -> Self;
+    pub fn geo_radius(field: impl Into<String>, lat: f64, lon: f64, radius_m: f64) -> Self;
+    pub fn geo_bounding_box(field: impl Into<String>, top_left: (f64, f64), bottom_right: (f64, f64)) -> Self;
+    pub fn and(filters: Vec<FilterExpression>) -> Self;
+    pub fn or(filters: Vec<FilterExpression>) -> Self;
+    pub fn not(filter: FilterExpression) -> Self;
+    pub fn exists(field: impl Into<String>) -> Self;
+    pub fn is_null(field: impl Into<String>) -> Self;
+    pub fn get_fields(&self) -> Vec<String>;
 }
 ```
 
-### Filter Evaluation
+### Indexing & Evaluation
 
 ```rust
-impl FilterExpr {
-    pub fn evaluate(&self, metadata: &serde_json::Value) -> bool;
-    pub fn optimize(&self) -> FilterExpr;
-    pub fn to_json(&self) -> serde_json::Value;
-    pub fn from_json(json: &serde_json::Value) -> Result<Self>;
+impl PayloadIndexManager {
+    pub fn new() -> Self;
+    pub fn create_index(&mut self, field: &str, index_type: IndexType) -> Result<()>;
+    pub fn index_payload(&mut self, vector_id: &str, payload: &Value) -> Result<()>;
+}
+
+impl<'a> FilterEvaluator<'a> {
+    pub fn new(indices: &'a PayloadIndexManager) -> Self;
+    pub fn evaluate(&self, filter: &FilterExpression) -> Result<HashSet<String>>;
 }
 ```
+
+`FilterExpression` derives `Serialize` / `Deserialize`, so expressions round-trip
+through JSON via `serde_json`.
 
 ## Performance Tips
 
-1. **Put most selective filters first** in AND expressions
-2. **Use IN instead of multiple OR** for equality checks
-3. **Avoid regex when possible** - use prefix/suffix matching
-4. **Index frequently filtered fields** in your metadata
+1. **Put most selective filters first** in `and` expressions
+2. **Use `in_values` instead of multiple `or`** for equality checks
+3. **Index every field you filter on** with `create_index` before evaluating
 
 ## Related Crates
 

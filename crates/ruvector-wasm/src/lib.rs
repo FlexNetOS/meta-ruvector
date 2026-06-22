@@ -1,12 +1,17 @@
 //! WASM bindings for Ruvector
 //!
-//! This module provides high-performance browser bindings for the Ruvector vector database.
+//! This module provides browser bindings for the Ruvector vector database.
+//!
 //! Features:
-//! - Full VectorDB API (insert, search, delete, batch operations)
-//! - SIMD acceleration (when available)
-//! - Web Workers support for parallel operations
-//! - IndexedDB persistence
-//! - Zero-copy transfers via transferable objects
+//! - VectorDB API (insert, insert_batch, search, get, delete, len, is_empty)
+//! - SIMD acceleration (when the build/runtime supports `simd128`; see `detect_simd`)
+//!
+//! Caveats (this build):
+//! - The WASM build of `ruvector-core` is compiled with `memory-only` (no `hnsw`
+//!   feature), so search uses a flat O(n) index, not HNSW.
+//! - `save_to_indexed_db` / `load_from_indexed_db` are stubs. Real IndexedDB and
+//!   Web Worker support live in the companion JS helpers (`indexeddb.js`,
+//!   `worker-pool.js`, `adapter.js`), not in this Rust module.
 //!
 //! # Kernel Pack System (ADR-005)
 //!

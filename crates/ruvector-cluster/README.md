@@ -21,19 +21,21 @@
 
 ### Core Capabilities
 
-- **Cluster Membership**: Node discovery and health monitoring
-- **Consistent Hashing**: Ketama/Jump hash for shard placement
-- **Shard Management**: Create, migrate, and balance shards
-- **Node Coordination**: Leader election and consensus
-- **Failure Detection**: Heartbeat-based failure detection
+- **Cluster Membership**: Node discovery (`StaticDiscovery`, `GossipDiscovery`) and health monitoring
+- **Consistent Hashing**: Virtual-node consistent hashing (`ConsistentHashRing`, 150 virtual nodes per real node) for shard placement
+- **Shard Management**: Assign and rebalance shards (`ShardInfo`, `ShardRouter`)
+- **Node Coordination**: DAG-based consensus (`DagConsensus`)
+- **Failure Detection**: Heartbeat-based health checks (`run_health_checks`)
+- **Dynamic Rebalancing**: Auto-rebalance on node add/remove
 
-### Advanced Features
+### Planned / Not Yet Implemented
 
-- **Dynamic Rebalancing**: Auto-balance on node join/leave
+These are roadmap items and are **not** present in the current code:
+
 - **Rack Awareness**: Place replicas across failure domains
 - **Hot Spot Detection**: Identify and redistribute hot shards
-- **Gradual Migration**: Zero-downtime shard migration
-- **Cluster Metrics**: Prometheus-compatible metrics
+- **Gradual / Zero-downtime Migration**: `ShardStatus::Migrating` exists, but online migration is not yet wired up
+- **Cluster Metrics**: Prometheus-compatible metrics (see the `ruvector-metrics` crate for metrics today)
 
 ## Installation
 
@@ -46,31 +48,39 @@ ruvector-cluster = "0.1.1"
 
 ## Quick Start
 
-### Initialize Cluster
+### Initialize a Cluster Manager
 
 ```rust
-use ruvector_cluster::{Cluster, ClusterConfig, Node};
+use ruvector_cluster::{ClusterManager, ClusterConfig, ClusterNode, StaticDiscovery};
+use std::net::SocketAddr;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Configure cluster
+    // Configure the cluster
     let config = ClusterConfig {
-        node_id: "node-1".to_string(),
-        listen_addr: "0.0.0.0:7000".parse()?,
-        seeds: vec!["10.0.0.1:7000".parse()?, "10.0.0.2:7000".parse()?],
         replication_factor: 3,
-        num_shards: 64,
+        shard_count: 64,
         ..Default::default()
     };
 
-    // Create and start cluster
-    let cluster = Cluster::new(config).await?;
-    cluster.start().await?;
+    // A discovery service supplies the initial node set.
+    // Implementations: StaticDiscovery, GossipDiscovery.
+    let discovery = Box::new(StaticDiscovery::new(vec![]));
 
-    // Wait for cluster to stabilize
-    cluster.wait_for_stable().await?;
+    // Create the manager (config, this node's id, discovery)
+    let manager = ClusterManager::new(config, "node-1".to_string(), discovery)?;
 
-    println!("Cluster ready with {} nodes", cluster.node_count().await);
+    // Start: discover peers, then assign shards
+    manager.start().await?;
+
+    // Add a node manually
+    let node = ClusterNode::new(
+        "node-2".to_string(),
+        "127.0.0.1:7000".parse::<SocketAddr>()?,
+    );
+    manager.add_node(node).await?;
+
+    println!("Cluster has {} nodes", manager.list_nodes().len());
 
     Ok(())
 }
@@ -79,37 +89,44 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 ### Shard Operations
 
 ```rust
-use ruvector_cluster::{Cluster, ShardId};
+// Assign a shard to nodes via consistent hashing
+let shard = manager.assign_shard(0)?;
+println!(
+    "Shard {} -> primary {}, replicas {:?}",
+    shard.shard_id, shard.primary_node, shard.replica_nodes
+);
 
-// Get shard for a vector ID
-let shard_id = cluster.get_shard_for_key("vector-123")?;
+// Look up an existing shard
+if let Some(info) = manager.get_shard(0) {
+    println!("Shard 0 status: {:?}", info.status);
+}
 
-// Get nodes hosting a shard
-let nodes = cluster.get_shard_nodes(shard_id).await?;
-println!("Shard {} hosted on: {:?}", shard_id, nodes);
-
-// Manual shard migration
-cluster.migrate_shard(shard_id, target_node).await?;
-
-// Trigger rebalance
-cluster.rebalance().await?;
+// List all shards
+for s in manager.list_shards() {
+    println!("shard {} on {}", s.shard_id, s.primary_node);
+}
 ```
 
 ### Cluster Health
 
 ```rust
-// Check cluster health
-let health = cluster.health().await?;
-println!("Status: {:?}", health.status);
-println!("Healthy nodes: {}/{}", health.healthy_nodes, health.total_nodes);
+// Run a health-check pass (marks unresponsive nodes Offline)
+manager.run_health_checks().await?;
 
-// Get node status
-for node in cluster.nodes().await? {
-    println!("{}: {:?} (last seen: {})",
-        node.id,
-        node.status,
-        node.last_heartbeat
-    );
+// Healthy nodes only
+let healthy = manager.healthy_nodes();
+println!("{} healthy nodes", healthy.len());
+
+// Aggregate statistics
+let stats = manager.get_stats();
+println!(
+    "{}/{} nodes healthy, {} shards, {} vectors",
+    stats.healthy_nodes, stats.total_nodes, stats.total_shards, stats.total_vectors
+);
+
+// Inspect individual nodes
+for node in manager.list_nodes() {
+    println!("{}: {:?} (last seen: {})", node.node_id, node.status, node.last_seen);
 }
 ```
 
@@ -118,57 +135,67 @@ for node in cluster.nodes().await? {
 ### Core Types
 
 ```rust
-// Cluster configuration
+// Cluster configuration (Default available)
 pub struct ClusterConfig {
-    pub node_id: String,
-    pub listen_addr: SocketAddr,
-    pub seeds: Vec<SocketAddr>,
     pub replication_factor: usize,
-    pub num_shards: usize,
+    pub shard_count: u32,
     pub heartbeat_interval: Duration,
-    pub failure_timeout: Duration,
+    pub node_timeout: Duration,
+    pub enable_consensus: bool,
+    pub min_quorum_size: usize,
 }
 
 // Node information
-pub struct Node {
-    pub id: String,
-    pub addr: SocketAddr,
-    pub status: NodeStatus,
-    pub shards: Vec<ShardId>,
-    pub last_heartbeat: DateTime<Utc>,
+pub struct ClusterNode {
+    pub node_id: String,
+    pub address: SocketAddr,
+    pub status: NodeStatus,        // Leader | Follower | Candidate | Offline
+    pub last_seen: DateTime<Utc>,
+    pub metadata: HashMap<String, String>,
+    pub capacity: f64,
 }
 
 // Shard information
-pub struct Shard {
-    pub id: ShardId,
-    pub primary: NodeId,
-    pub replicas: Vec<NodeId>,
-    pub status: ShardStatus,
-    pub size_bytes: u64,
+pub struct ShardInfo {
+    pub shard_id: u32,
+    pub primary_node: String,
+    pub replica_nodes: Vec<String>,
+    pub vector_count: usize,
+    pub status: ShardStatus,       // Active | Migrating | Replicating | Offline
+    pub created_at: DateTime<Utc>,
+    pub modified_at: DateTime<Utc>,
 }
 ```
 
-### Cluster Operations
+### ClusterManager Operations
 
 ```rust
-impl Cluster {
-    pub async fn new(config: ClusterConfig) -> Result<Self>;
+impl ClusterManager {
+    pub fn new(
+        config: ClusterConfig,
+        node_id: String,
+        discovery: Box<dyn DiscoveryService>,
+    ) -> Result<Self>;
+
     pub async fn start(&self) -> Result<()>;
-    pub async fn stop(&self) -> Result<()>;
 
     // Membership
-    pub async fn nodes(&self) -> Result<Vec<Node>>;
-    pub async fn node_count(&self) -> usize;
-    pub async fn is_leader(&self) -> bool;
+    pub async fn add_node(&self, node: ClusterNode) -> Result<()>;
+    pub async fn remove_node(&self, node_id: &str) -> Result<()>;
+    pub fn get_node(&self, node_id: &str) -> Option<ClusterNode>;
+    pub fn list_nodes(&self) -> Vec<ClusterNode>;
+    pub fn healthy_nodes(&self) -> Vec<ClusterNode>;
 
     // Sharding
-    pub fn get_shard_for_key(&self, key: &str) -> Result<ShardId>;
-    pub async fn get_shard_nodes(&self, shard: ShardId) -> Result<Vec<Node>>;
-    pub async fn migrate_shard(&self, shard: ShardId, target: &NodeId) -> Result<()>;
+    pub fn assign_shard(&self, shard_id: u32) -> Result<ShardInfo>;
+    pub fn get_shard(&self, shard_id: u32) -> Option<ShardInfo>;
+    pub fn list_shards(&self) -> Vec<ShardInfo>;
+    pub fn router(&self) -> Arc<ShardRouter>;
 
-    // Health
-    pub async fn health(&self) -> Result<ClusterHealth>;
-    pub async fn rebalance(&self) -> Result<()>;
+    // Health & consensus
+    pub async fn run_health_checks(&self) -> Result<()>;
+    pub fn get_stats(&self) -> ClusterStats;
+    pub fn consensus(&self) -> Option<Arc<DagConsensus>>;
 }
 ```
 

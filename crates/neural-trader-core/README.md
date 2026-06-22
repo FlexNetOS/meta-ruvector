@@ -17,7 +17,8 @@ L1 Ingest → L2 Graph → L3 GNN+Attention → L4 Memory → L5 Coherence → L
 | L3 | `neural-trader-gnn` | Planned | GNN embeddings + multi-head temporal attention |
 | L4 | [`neural-trader-replay`](../neural-trader-replay) | Implemented | Reservoir store with gated writes + witness receipts |
 | L5 | [`neural-trader-coherence`](../neural-trader-coherence) | Implemented | MinCut coherence gate, CUSUM drift detection |
-| L6 | `neural-trader-policy` | Planned | Policy actuation with position sizing |
+| L6 | [`neural-trader-strategies`](../neural-trader-strategies) | Implemented | Venue-agnostic `Strategy` trait + `RiskGate`, canonical `Intent`, concrete strategies (EV-Kelly, attention scalper, coherence arb) |
+| L6 | `neural-trader-policy` | Planned | Standalone policy-actuation crate with position sizing (currently subsumed by the `RiskGate` in `neural-trader-strategies`) |
 | WASM | [`neural-trader-wasm`](../neural-trader-wasm) | Implemented | Browser bindings via wasm-pack (npm: `@ruvector/neural-trader-wasm`) |
 
 **ADRs:** [ADR-085](../../docs/adr/ADR-085-neural-trader-ruvector.md) (architecture) | [ADR-086](../../docs/adr/ADR-086-neural-trader-wasm.md) (WASM bindings)
@@ -137,6 +138,50 @@ pub trait MemoryStore {
 - Filterable by symbol and regime
 
 **InMemoryReceiptLog** — append-only witness logger for testing and research.
+
+### neural-trader-strategies
+
+Venue-agnostic strategy runtime (L6). Strategies consume
+`neural_trader_core::MarketEvent` and hold no venue-specific state, so the
+same strategy runs in paper replay and against a live venue that normalizes
+to `MarketEvent`.
+
+**Core types** (from `src/lib.rs`):
+
+| Type | Purpose |
+|------|---------|
+| `Strategy` (trait) | `fn name(&self) -> &'static str` + `fn on_event(&mut self, event: &MarketEvent) -> Option<Intent>` — at most one `Intent` per event |
+| `Intent` | Canonical venue-agnostic trade request: `symbol_id`, `side: Side`, `action: Action`, `limit_price_cents`, `quantity`, `edge_bps`, `confidence`, `strategy` |
+| `Action` | `Buy`, `Sell` |
+| `Side` | `Yes`, `No` (binary event-market contract side) |
+| `RiskGate` | Mandatory wrapper around every `Intent`; `evaluate(intent, &PortfolioState) -> RiskDecision` enforcing position cap, daily-loss kill, concentration, min-edge, and a live-trade env flag |
+| `RiskConfig` | Configurable risk thresholds (`min_edge_bps`, `max_cluster_frac`, `max_daily_loss_frac`, `require_live_flag`, …) |
+| `RiskDecision` | `Approve(Intent)` or `Reject { reason: RejectReason, intent }` |
+| `RejectReason` | `EdgeTooThin`, `PositionTooLarge`, `DailyLossKill`, `ClusterConcentration`, `LiveTradingDisabled`, `InsufficientCash`, `NonPositiveQuantity`, `PriceOutOfRange` |
+| `PortfolioState`, `Position` | Portfolio snapshot fed to the risk gate |
+
+**Concrete strategies:**
+
+| Strategy | Config | Module |
+|----------|--------|--------|
+| `ExpectedValueKelly` | `ExpectedValueKellyConfig` | `ev_kelly` |
+| `AttentionScalper` | `AttentionScalperConfig` | `attention_scalper` |
+| `CoherenceArb` | `CoherenceArbConfig` | `coherence_arb` |
+
+A `coherence_bridge` module re-exports the coherence gate types
+(`CoherenceGate`, `ThresholdGate`, `GateConfig`, `GateContext`,
+`CoherenceDecision`, `RegimeLabel`, …) so strategies can gate on market
+coherence.
+
+```rust
+use neural_trader_strategies::{RiskGate, RiskConfig, PortfolioState, RiskDecision};
+
+let gate = RiskGate::new(RiskConfig::default());
+match gate.evaluate(intent, &portfolio) {
+    RiskDecision::Approve(intent) => { /* route to venue adapter */ }
+    RiskDecision::Reject { reason, .. } => { /* log attribution */ }
+}
+```
 
 ### neural-trader-wasm
 
@@ -321,9 +366,10 @@ docker run --rm neural-trader-wasm-test
 
 ## Roadmap
 
+- [x] L6: Venue-agnostic `Strategy` trait + `RiskGate` and EV-Kelly / attention-scalper / coherence-arb strategies (`neural-trader-strategies`)
 - [ ] L2: Graph construction from order book snapshots (`neural-trader-graph`)
 - [ ] L3: GNN embeddings with temporal attention (`neural-trader-gnn`)
-- [ ] L6: Policy kernel with Kelly criterion position sizing (`neural-trader-policy`)
+- [ ] L6: Standalone policy-actuation kernel split out from the `RiskGate` (`neural-trader-policy`)
 - [ ] Backtest harness with historical LOB data (`neural-trader-backtest`)
 - [ ] WebSocket/FIX feed adapters (`neural-trader-feed`)
 - [ ] PostgreSQL integration via `ruvector-postgres` SQL functions

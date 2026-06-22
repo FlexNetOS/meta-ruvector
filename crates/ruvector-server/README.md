@@ -7,33 +7,37 @@
 
 **High-performance REST API server for Ruvector vector databases.**
 
-`ruvector-server` provides a production-ready HTTP API built on Axum with CORS support, compression, and OpenAPI documentation. Exposes full Ruvector functionality via RESTful endpoints. Part of the [Ruvector](https://github.com/ruvnet/ruvector) ecosystem.
+`ruvector-server` provides an HTTP API built on Axum with CORS support, compression, and request tracing. Exposes Ruvector functionality via RESTful endpoints. Part of the [Ruvector](https://github.com/ruvnet/ruvector) ecosystem.
 
 ## Why Ruvector Server?
 
 - **Fast**: Built on Axum and Tokio for high throughput
-- **Production Ready**: CORS, compression, tracing built-in
-- **RESTful API**: Standard HTTP endpoints for all operations
-- **OpenAPI**: Auto-generated API documentation
+- **CORS, compression, tracing built-in**
+- **RESTful API**: Standard HTTP endpoints for collection and point operations
 - **Multi-Collection**: Support multiple vector collections
 
 ## Features
 
 ### Core Capabilities
 
-- **Vector CRUD**: Insert, get, update, delete vectors
-- **Search API**: k-NN search with filtering
-- **Batch Operations**: Bulk insert and search
+- **Point Operations**: Insert, get, and delete points (vectors)
+- **Search API**: k-NN search
 - **Collection Management**: Create and manage collections
-- **Health Checks**: Liveness and readiness probes
+- **Health Checks**: Liveness (`/health`) and readiness (`/ready`) probes
 
-### Advanced Features
+### Built-in Middleware
 
-- **CORS Support**: Configurable cross-origin requests
-- **Compression**: GZIP response compression
-- **Tracing**: Request tracing with tower-http
-- **Rate Limiting**: Request rate limiting (planned)
-- **Authentication**: API key auth (planned)
+- **CORS Support**: Enabled via `Config::enable_cors`
+- **Compression**: Response compression via `Config::enable_compression`
+- **Tracing**: Request tracing with `tower-http`
+
+### Planned / Not Yet Implemented
+
+These are roadmap items and are **not** present in the current code:
+
+- **OpenAPI**: Auto-generated API documentation
+- **Rate Limiting**: Request rate limiting
+- **Authentication**: API key auth
 
 ## Installation
 
@@ -49,22 +53,23 @@ ruvector-server = "0.1.1"
 ### Start Server
 
 ```rust
-use ruvector_server::{Server, ServerConfig};
+use ruvector_server::{RuvectorServer, Config};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Configure server
-    let config = ServerConfig {
+    // Configure the server
+    let config = Config {
         host: "0.0.0.0".to_string(),
-        port: 8080,
-        cors_origins: vec!["*".to_string()],
+        port: 6333,
+        enable_cors: true,
         enable_compression: true,
-        ..Default::default()
     };
 
-    // Create and start server
-    let server = Server::new(config)?;
-    server.run().await?;
+    // Build and start the server (consumes self)
+    let server = RuvectorServer::with_config(config);
+    server.start().await?;
+
+    // Or just use defaults: RuvectorServer::new().start().await?;
 
     Ok(())
 }
@@ -96,7 +101,7 @@ POST   /collections/{name}/search/batch  # Batch search
 
 ```bash
 # Create collection
-curl -X POST http://localhost:8080/collections \
+curl -X POST http://localhost:6333/collections \
   -H "Content-Type: application/json" \
   -d '{
     "name": "documents",
@@ -105,7 +110,7 @@ curl -X POST http://localhost:8080/collections \
   }'
 
 # Insert vector
-curl -X POST http://localhost:8080/collections/documents/vectors \
+curl -X POST http://localhost:6333/collections/documents/vectors \
   -H "Content-Type: application/json" \
   -d '{
     "id": "doc-1",
@@ -114,7 +119,7 @@ curl -X POST http://localhost:8080/collections/documents/vectors \
   }'
 
 # Search
-curl -X POST http://localhost:8080/collections/documents/search \
+curl -X POST http://localhost:6333/collections/documents/search \
   -H "Content-Type: application/json" \
   -d '{
     "vector": [0.1, 0.2, 0.3, ...],
@@ -125,60 +130,39 @@ curl -X POST http://localhost:8080/collections/documents/search \
 
 ## API Overview
 
-### Server Configuration
+### Server Types
 
 ```rust
-pub struct ServerConfig {
+// Server configuration (Default available; host 127.0.0.1, port 6333)
+pub struct Config {
     pub host: String,
     pub port: u16,
-    pub cors_origins: Vec<String>,
+    pub enable_cors: bool,
     pub enable_compression: bool,
-    pub max_body_size: usize,
-    pub request_timeout: Duration,
+}
+
+// Main server
+pub struct RuvectorServer { /* ... */ }
+
+impl RuvectorServer {
+    pub fn new() -> Self;                        // default Config
+    pub fn with_config(config: Config) -> Self;  // custom Config
+    pub async fn start(self) -> Result<()>;      // bind and serve (consumes self)
 }
 ```
 
-### Response Types
+Request and response bodies are defined in the `routes` module (e.g. `routes::points`,
+`routes::collections`); shared handler state lives in `AppState`. Errors are surfaced
+through `ruvector_server::Error` / `Result`.
 
-```rust
-// Search response
-pub struct SearchResponse {
-    pub results: Vec<SearchResult>,
-    pub took_ms: u64,
-}
+### HTTP Status Codes
 
-pub struct SearchResult {
-    pub id: String,
-    pub score: f32,
-    pub vector: Option<Vec<f32>>,
-    pub metadata: Option<serde_json::Value>,
-}
-
-// Collection info
-pub struct CollectionInfo {
-    pub name: String,
-    pub dimensions: usize,
-    pub count: usize,
-    pub distance_metric: String,
-}
-```
-
-### Error Handling
-
-```rust
-// API errors return standard format
-pub struct ApiError {
-    pub code: String,
-    pub message: String,
-    pub details: Option<serde_json::Value>,
-}
-
-// HTTP status codes:
-// 200 - Success
-// 201 - Created
-// 400 - Bad Request
-// 404 - Not Found
-// 500 - Internal Error
+```text
+200 - Success
+201 - Created
+400 - Bad Request
+404 - Not Found
+500 - Internal Error
 ```
 
 ## Docker Deployment
@@ -191,13 +175,13 @@ RUN cargo build --release -p ruvector-server
 
 FROM debian:bookworm-slim
 COPY --from=builder /app/target/release/ruvector-server /usr/local/bin/
-EXPOSE 8080
+EXPOSE 6333
 CMD ["ruvector-server"]
 ```
 
 ```bash
 docker build -t ruvector-server .
-docker run -p 8080:8080 ruvector-server
+docker run -p 6333:6333 ruvector-server
 ```
 
 ## Related Crates

@@ -28,208 +28,160 @@ yarn add agentic-robotics
 pnpm add agentic-robotics
 ```
 
+> **Messaging model:** publishing and receiving are `async`. Messages cross the
+> NAPI boundary as JSON **strings** (publish a JSON string, receive a JSON
+> string). Subscribers are **pull-based**: poll with `tryRecv()` (non-blocking)
+> or `await recv()` (waits for the next message). There is no push-style
+> `onMessage(callback)` API.
+
 ## Quick Start
 
 ### TypeScript
 
 ```typescript
-import { Node, Publisher, Subscriber } from 'agentic-robotics';
+import { AgenticNode } from 'agentic-robotics';
 
 // Create a node
-const node = new Node('robot_node');
+const node = new AgenticNode('robot_node');
 
-// Create publisher
-const pubStatus = node.createPublisher<string>('/status');
+// Create a publisher and a subscriber (async)
+const pubStatus = await node.createPublisher('/status');
+const subCommands = await node.createSubscriber('/commands');
 
-// Create subscriber
-const subCommands = node.createSubscriber<string>('/commands');
+// Publish a JSON-string message
+await pubStatus.publish(JSON.stringify({ state: 'initialized' }));
 
-// Publish messages
-pubStatus.publish('Robot initialized');
-
-// Subscribe to messages
-subCommands.onMessage((msg) => {
-    console.log('Received command:', msg);
-});
+// Pull messages: non-blocking poll, or await the next one
+const maybeMsg = await subCommands.tryRecv(); // string | null
+const next = await subCommands.recv();        // string (waits)
+console.log('Received command:', JSON.parse(next));
 ```
 
 ### JavaScript
 
 ```javascript
-const { Node } = require('agentic-robotics');
+const { AgenticNode } = require('agentic-robotics');
 
-const node = new Node('robot_node');
+async function main() {
+    const node = new AgenticNode('robot_node');
 
-const pubStatus = node.createPublisher('/status');
-pubStatus.publish('Robot active');
+    const pubStatus = await node.createPublisher('/status');
+    await pubStatus.publish(JSON.stringify({ state: 'active' }));
 
-const subSensor = node.createSubscriber('/sensor');
-subSensor.onMessage((data) => {
-    console.log('Sensor data:', data);
-});
+    const subSensor = await node.createSubscriber('/sensor');
+    const data = await subSensor.tryRecv();
+    if (data !== null) {
+        console.log('Sensor data:', JSON.parse(data));
+    }
+}
+
+main();
 ```
 
 ## Examples
 
-### Autonomous Navigator
+### Autonomous Navigator (pull-based loop)
 
 ```typescript
-import { Node } from 'agentic-robotics';
+import { AgenticNode } from 'agentic-robotics';
 
-interface Pose {
-    x: number;
-    y: number;
-    theta: number;
+interface Pose { x: number; y: number; theta: number; }
+interface Velocity { linear: number; angular: number; }
+
+const node = new AgenticNode('navigator');
+
+const subPose = await node.createSubscriber('/robot/pose');
+const pubCmd = await node.createPublisher('/cmd_vel');
+
+// Pull pose updates in a loop and react
+while (running) {
+    const raw = await subPose.recv();           // waits for next message
+    const pose: Pose = JSON.parse(raw);
+    const cmd = computeVelocity(pose, { x: 10, y: 10 });
+    await pubCmd.publish(JSON.stringify(cmd));
 }
-
-interface Velocity {
-    linear: number;
-    angular: number;
-}
-
-const node = new Node('navigator');
-
-// Subscribe to current pose
-const subPose = node.createSubscriber<Pose>('/robot/pose');
-
-// Publish velocity commands
-const pubCmd = node.createPublisher<Velocity>('/cmd_vel');
-
-// Navigation logic
-subPose.onMessage((pose) => {
-    const target = { x: 10, y: 10 };
-    const cmd = computeVelocity(pose, target);
-    pubCmd.publish(cmd);
-});
 
 function computeVelocity(current: Pose, target: { x: number; y: number }): Velocity {
     const dx = target.x - current.x;
     const dy = target.y - current.y;
     const distance = Math.sqrt(dx * dx + dy * dy);
-    const targetAngle = Math.atan2(dy, dx);
-    const angleError = targetAngle - current.theta;
-
-    return {
-        linear: Math.min(distance * 0.5, 1.0),
-        angular: angleError * 2.0,
-    };
+    const angleError = Math.atan2(dy, dx) - current.theta;
+    return { linear: Math.min(distance * 0.5, 1.0), angular: angleError * 2.0 };
 }
 ```
 
-### Vision Processing
+### Vision Processing (non-blocking poll)
 
 ```typescript
-import { Node } from 'agentic-robotics';
+import { AgenticNode } from 'agentic-robotics';
 
-interface Image {
-    width: number;
-    height: number;
-    data: Uint8Array;
-}
+const node = new AgenticNode('vision_node');
+const subImage = await node.createSubscriber('/camera/image');
+const pubDetections = await node.createPublisher('/detections');
 
-interface Detection {
-    label: string;
-    confidence: number;
-    bbox: { x: number; y: number; w: number; h: number };
-}
-
-const node = new Node('vision_node');
-
-const subImage = node.createSubscriber<Image>('/camera/image');
-const pubDetections = node.createPublisher<Detection[]>('/detections');
-
-subImage.onMessage(async (image) => {
+while (running) {
+    const raw = await subImage.tryRecv();        // string | null (non-blocking)
+    if (raw === null) {
+        await sleep(5);
+        continue;
+    }
+    const image = JSON.parse(raw);
     const detections = await detectObjects(image);
-    pubDetections.publish(detections);
-});
-
-async function detectObjects(image: Image): Promise<Detection[]> {
-    // Your ML inference here
-    return [
-        { label: 'person', confidence: 0.95, bbox: { x: 100, y: 100, w: 50, h: 100 } },
-    ];
+    await pubDetections.publish(JSON.stringify(detections));
 }
 ```
 
-### Multi-Robot Coordination
+### Inspecting a Node
 
 ```typescript
-import { Node } from 'agentic-robotics';
+const node = new AgenticNode('robot_node');
+await node.createPublisher('/status');
+await node.createSubscriber('/commands');
 
-class RobotAgent {
-    private node: Node;
-    private id: string;
-
-    constructor(id: string) {
-        this.id = id;
-        this.node = new Node(`robot_${id}`);
-
-        // Subscribe to team status
-        const subTeam = this.node.createSubscriber<TeamStatus>('/team/status');
-        subTeam.onMessage((status) => this.onTeamUpdate(status));
-
-        // Publish own status
-        const pubStatus = this.node.createPublisher<RobotStatus>(`/robot/${id}/status`);
-        setInterval(() => {
-            pubStatus.publish({
-                id: this.id,
-                position: this.getPosition(),
-                battery: this.getBatteryLevel(),
-            });
-        }, 100);
-    }
-
-    private onTeamUpdate(status: TeamStatus) {
-        console.log(`Robot ${this.id} received team update:`, status);
-        // Coordinate with other robots
-    }
-
-    private getPosition() {
-        return { x: 0, y: 0, z: 0 };
-    }
-
-    private getBatteryLevel() {
-        return 95;
-    }
-}
-
-// Create robot swarm
-const robots = [
-    new RobotAgent('scout_1'),
-    new RobotAgent('scout_2'),
-    new RobotAgent('worker_1'),
-];
+console.log('name:', node.getName());
+console.log('publishers:', await node.listPublishers());   // ['/status']
+console.log('subscribers:', await node.listSubscribers()); // ['/commands']
+console.log('version:', AgenticNode.getVersion());
 ```
 
 ## API Reference
 
-### Node
+> All message payloads cross the boundary as JSON **strings**. There are no
+> generic type parameters on the native bindings; type your payloads in
+> TypeScript and `JSON.parse` / `JSON.stringify` at the boundary.
+
+### AgenticNode
 
 ```typescript
-class Node {
+class AgenticNode {
     constructor(name: string);
 
-    createPublisher<T>(topic: string): Publisher<T>;
-    createSubscriber<T>(topic: string): Subscriber<T>;
+    getName(): string;
+    createPublisher(topic: string): Promise<AgenticPublisher>;
+    createSubscriber(topic: string): Promise<AgenticSubscriber>;
+    listPublishers(): Promise<string[]>;
+    listSubscribers(): Promise<string[]>;
 
-    shutdown(): void;
+    static getVersion(): string;
 }
 ```
 
-### Publisher
+### AgenticPublisher
 
 ```typescript
-class Publisher<T> {
-    publish(message: T): Promise<void>;
+class AgenticPublisher {
+    publish(data: string): Promise<void>;   // JSON string
     getTopic(): string;
+    getStats(): { messages: number; bytes: number };
 }
 ```
 
-### Subscriber
+### AgenticSubscriber
 
 ```typescript
-class Subscriber<T> {
-    onMessage(callback: (message: T) => void): void;
+class AgenticSubscriber {
+    tryRecv(): Promise<string | null>;       // non-blocking poll
+    recv(): Promise<string>;                 // waits for next message
     getTopic(): string;
 }
 ```
@@ -292,18 +244,19 @@ node examples/01-hello-robot.ts
 
 ## ROS2 Compatibility
 
-The Node.js bindings are fully compatible with ROS2:
+The Node.js bindings use ROS2-style topics and JSON message payloads:
 
 ```typescript
-// Publish to ROS2 topic
-const pubCmd = node.createPublisher<Twist>('/cmd_vel');
-pubCmd.publish({
+// Publish to a topic (JSON string)
+const pubCmd = await node.createPublisher('/cmd_vel');
+await pubCmd.publish(JSON.stringify({
     linear: { x: 0.5, y: 0, z: 0 },
     angular: { x: 0, y: 0, z: 0.1 },
-});
+}));
 
-// Subscribe from ROS2 topic
-const subPose = node.createSubscriber<PoseStamped>('/robot/pose');
+// Subscribe and pull the next message
+const subPose = await node.createSubscriber('/robot/pose');
+const pose = JSON.parse(await subPose.recv());
 ```
 
 Bridge with ROS2:

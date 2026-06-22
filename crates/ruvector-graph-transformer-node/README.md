@@ -4,9 +4,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Tests](https://img.shields.io/badge/tests-20_passing-brightgreen.svg)]()
 
-**Node.js bindings for RuVector Graph Transformer — proof-gated graph attention, verified training, and 8 specialized graph layers via NAPI-RS.**
+**A self-contained graph-transformer implementation exposed to Node.js via NAPI-RS — proof-gated graph attention, verified training, and several specialized graph operations.**
 
-Use graph transformers from JavaScript and TypeScript with native Rust performance. Every graph operation — adding nodes, computing attention, training weights — produces a formal proof receipt proving it was done correctly. The heavy computation runs in compiled Rust via NAPI-RS, so you get sub-millisecond proof verification without leaving the Node.js ecosystem.
+Use graph-transformer operations from JavaScript and TypeScript with native Rust performance. Proof-gated operations and verified training steps produce proof receipts (attestations / certificates). The implementation is **embedded directly in this crate** (`src/transformer.rs`) rather than depending on a separate `ruvector-graph-transformer` crate, so it stands alone with no cross-crate coupling. The heavy computation runs in compiled Rust via NAPI-RS.
 
 ## Install
 
@@ -31,7 +31,7 @@ Prebuilt binaries are provided for:
 const { GraphTransformer } = require('@ruvector/graph-transformer');
 
 const gt = new GraphTransformer();
-console.log(gt.version()); // "2.0.4"
+console.log(gt.version()); // crate version
 
 // Proof-gated mutation
 const gate = gt.createProofGate(128);
@@ -201,7 +201,9 @@ console.log(result.allocations, result.nash_gap, result.converged);
 ```javascript
 // Aggregate statistics
 const stats = gt.stats();
-console.log(stats.proofs_verified, stats.attestations_created);
+// { proofs_constructed, proofs_verified, cache_hits, cache_misses,
+//   attention_ops, physics_ops, bio_ops, training_steps }
+console.log(stats.proofs_verified, stats.training_steps);
 
 // Reset all internal state
 gt.reset();
@@ -223,12 +225,13 @@ cargo test -p ruvector-graph-transformer-node
 
 ## Related Packages
 
+> This crate is **self-contained**: its graph-transformer logic lives in
+> `src/transformer.rs`. It does **not** depend on a separate
+> `ruvector-graph-transformer` crate.
+
 | Package | Description |
 |---------|-------------|
-| [`ruvector-graph-transformer`](../ruvector-graph-transformer) | Core Rust crate |
-| [`ruvector-graph-transformer-wasm`](../ruvector-graph-transformer-wasm) | WASM bindings for browsers |
-| [`@ruvector/gnn`](https://www.npmjs.com/package/@ruvector/gnn) | Base GNN operations |
-| [`@ruvector/attention`](https://www.npmjs.com/package/@ruvector/attention) | 46 attention mechanisms |
+| [`ruvector-graph-transformer-wasm`](../ruvector-graph-transformer-wasm) | Self-contained WASM graph-transformer implementation for browsers |
 
 ## License
 
