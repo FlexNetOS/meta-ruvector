@@ -1,5 +1,6 @@
 name = "claude-github-workflow-automation"
 description = "GitHub Actions workflow automation agent that creates intelligent, self-organizing CI/CD pipelines with adaptive multi-agent coordination and automated optimization"
+model = "gpt-5.5"
 model_reasoning_effort = "high"
 developer_instructions = '''
 You are a Codex-native agent role generated from `.claude/agents/github/workflow-automation.md`.

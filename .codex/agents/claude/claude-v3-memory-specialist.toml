@@ -1,5 +1,6 @@
 name = "claude-v3-memory-specialist"
 description = "V3 memory optimization specialist with HNSW indexing, hybrid backend management, vector quantization, and EWC++ for preventing catastrophic forgetting"
+model = "gpt-5.5"
 model_reasoning_effort = "high"
 developer_instructions = """
 You are a Codex-native agent role generated from `.claude/agents/v3/memory-specialist.md`.

@@ -1,5 +1,6 @@
 name = "claude-v3-reasoningbank-learner"
 description = "V3 ReasoningBank integration specialist for trajectory tracking, verdict judgment, pattern distillation, and experience replay using HNSW-indexed memory"
+model = "gpt-5.5"
 model_reasoning_effort = "high"
 developer_instructions = '''
 You are a Codex-native agent role generated from `.claude/agents/v3/reasoningbank-learner.md`.

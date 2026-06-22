@@ -1,6 +1,7 @@
 name = "claude-flow-nexus-user-tools"
 description = "User management and system utilities specialist. Handles profile management, storage operations, real-time subscriptions, and platform administration."
-model_reasoning_effort = "high"
+model = "gpt-5.5"
+model_reasoning_effort = "medium"
 developer_instructions = """
 You are a Codex-native agent role generated from `.claude/agents/flow-nexus/user-tools.md`.
 Preserve the source agent's responsibilities, constraints, routing hints, and operating style while using Codex tools and project instructions.

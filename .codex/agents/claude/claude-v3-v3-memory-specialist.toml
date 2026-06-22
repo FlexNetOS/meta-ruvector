@@ -1,5 +1,6 @@
 name = "claude-v3-v3-memory-specialist"
 description = "V3 Memory Specialist for unifying 6+ memory systems into AgentDB with HNSW indexing. Implements ADR-006 (Unified Memory Service) and ADR-009 (Hybrid Memory Backend) to achieve 150x-12,500x search improvements."
+model = "gpt-5.5"
 model_reasoning_effort = "high"
 developer_instructions = """
 You are a Codex-native agent role generated from `.claude/agents/v3/v3-memory-specialist.md`.

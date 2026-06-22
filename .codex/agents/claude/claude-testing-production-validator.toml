@@ -1,5 +1,6 @@
 name = "claude-testing-production-validator"
 description = "Production validation specialist ensuring applications are fully implemented and deployment-ready"
+model = "gpt-5.5"
 model_reasoning_effort = "high"
 developer_instructions = '''
 You are a Codex-native agent role generated from `.claude/agents/testing/production-validator.md`.

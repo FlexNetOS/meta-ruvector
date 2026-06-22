@@ -1,5 +1,6 @@
 name = "claude-github-pr-manager"
 description = "Comprehensive pull request management with swarm coordination for automated reviews, testing, and merge workflows"
+model = "gpt-5.5"
 model_reasoning_effort = "high"
 developer_instructions = """
 You are a Codex-native agent role generated from `.claude/agents/github/pr-manager.md`.

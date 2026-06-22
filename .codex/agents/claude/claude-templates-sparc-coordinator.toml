@@ -1,5 +1,6 @@
 name = "claude-templates-sparc-coordinator"
 description = "SPARC methodology orchestrator with hierarchical coordination and self-learning"
+model = "gpt-5.5"
 model_reasoning_effort = "high"
 developer_instructions = """
 You are a Codex-native agent role generated from `.claude/agents/templates/sparc-coordinator.md`.

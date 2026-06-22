@@ -1,5 +1,6 @@
 name = "claude-swarm-mesh-coordinator"
 description = "Peer-to-peer mesh network swarm with distributed decision making and fault tolerance"
+model = "gpt-5.5"
 model_reasoning_effort = "high"
 developer_instructions = '''
 You are a Codex-native agent role generated from `.claude/agents/swarm/mesh-coordinator.md`.

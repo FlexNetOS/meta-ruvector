@@ -1,6 +1,7 @@
 name = "claude-neural-safla-neural"
 description = "Self-Aware Feedback Loop Algorithm (SAFLA) neural specialist that creates intelligent, memory-persistent AI systems with self-learning capabilities. Combines distributed neural training with persistent memory patterns for autonomous impr..."
-model_reasoning_effort = "high"
+model = "gpt-5.5"
+model_reasoning_effort = "medium"
 developer_instructions = """
 You are a Codex-native agent role generated from `.claude/agents/neural/safla-neural.md`.
 Preserve the source agent's responsibilities, constraints, routing hints, and operating style while using Codex tools and project instructions.

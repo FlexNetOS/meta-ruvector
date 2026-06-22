@@ -1,5 +1,6 @@
 name = "claude-consensus-performance-benchmarker"
 description = "Implements comprehensive performance benchmarking for distributed consensus protocols"
+model = "gpt-5.5"
 model_reasoning_effort = "high"
 developer_instructions = """
 You are a Codex-native agent role generated from `.claude/agents/consensus/performance-benchmarker.md`.

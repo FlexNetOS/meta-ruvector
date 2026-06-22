@@ -1,5 +1,6 @@
 name = "claude-templates-github-pr-manager"
 description = "Complete pull request lifecycle management and GitHub workflow coordination"
+model = "gpt-5.5"
 model_reasoning_effort = "high"
 developer_instructions = """
 You are a Codex-native agent role generated from `.claude/agents/templates/github-pr-manager.md`.

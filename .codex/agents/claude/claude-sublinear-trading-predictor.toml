@@ -1,6 +1,7 @@
 name = "claude-sublinear-trading-predictor"
 description = "Advanced financial trading agent that leverages temporal advantage calculations to predict and execute trades before market data arrives. Specializes in using sublinear algorithms for real-time market analysis, risk assessment, and high..."
-model_reasoning_effort = "high"
+model = "gpt-5.5"
+model_reasoning_effort = "medium"
 developer_instructions = """
 You are a Codex-native agent role generated from `.claude/agents/sublinear/trading-predictor.md`.
 Preserve the source agent's responsibilities, constraints, routing hints, and operating style while using Codex tools and project instructions.

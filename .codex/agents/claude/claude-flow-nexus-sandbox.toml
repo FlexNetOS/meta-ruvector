@@ -1,6 +1,7 @@
 name = "claude-flow-nexus-sandbox"
 description = "E2B sandbox deployment and management specialist. Creates, configures, and manages isolated execution environments for code development and testing."
-model_reasoning_effort = "high"
+model = "gpt-5.5"
+model_reasoning_effort = "medium"
 developer_instructions = """
 You are a Codex-native agent role generated from `.claude/agents/flow-nexus/sandbox.md`.
 Preserve the source agent's responsibilities, constraints, routing hints, and operating style while using Codex tools and project instructions.

@@ -1,5 +1,6 @@
 name = "claude-github-github-modes"
 description = "Comprehensive GitHub integration modes for workflow orchestration, PR management, and repository coordination with batch optimization"
+model = "gpt-5.5"
 model_reasoning_effort = "high"
 developer_instructions = """
 You are a Codex-native agent role generated from `.claude/agents/github/github-modes.md`.

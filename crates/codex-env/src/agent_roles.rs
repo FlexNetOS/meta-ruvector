@@ -30,6 +30,7 @@ pub(super) struct CodexAgentRolePlan {
 struct AgentRoleFile<'a> {
     name: &'a str,
     description: &'a str,
+    model: &'static str,
     model_reasoning_effort: &'static str,
     developer_instructions: &'a str,
 }
@@ -65,10 +66,12 @@ pub(super) fn claude_agent_role_plan(
         let config_file = PathBuf::from("agents/claude").join(format!("{role_name}.toml"));
         let description = agent_description(&source, relative);
         let developer_instructions = agent_developer_instructions(relative, &source);
+        let model_profile = agent_model_profile(relative, &role_name, &description);
         let role_file = AgentRoleFile {
             name: &role_name,
             description: &description,
-            model_reasoning_effort: "high",
+            model: model_profile.model,
+            model_reasoning_effort: model_profile.reasoning_effort,
             developer_instructions: &developer_instructions,
         };
         let toml = toml::to_string_pretty(&role_file)?;
@@ -88,6 +91,92 @@ pub(super) fn claude_agent_role_plan(
     roles.sort_by(|a, b| a.role_name.cmp(&b.role_name));
     files.sort_by(|a, b| a.path.cmp(&b.path));
     Ok(CodexAgentRolePlan { roles, files })
+}
+
+#[derive(Debug, Clone, Copy)]
+struct AgentModelProfile {
+    model: &'static str,
+    reasoning_effort: &'static str,
+}
+
+fn agent_model_profile(relative: &Path, role_name: &str, description: &str) -> AgentModelProfile {
+    let haystack =
+        format!("{} {} {}", relative.display(), role_name, description).to_ascii_lowercase();
+
+    let heavy_keywords = [
+        "architect",
+        "architecture",
+        "auditor",
+        "byzantine",
+        "claims",
+        "code-review",
+        "consensus",
+        "coordinator",
+        "database",
+        "ddd",
+        "github",
+        "hive-mind",
+        "injection",
+        "integration",
+        "memory-specialist",
+        "performance-engineer",
+        "pii",
+        "planner",
+        "queen",
+        "reasoning",
+        "release",
+        "reviewer",
+        "security",
+        "sparc",
+        "swarm",
+        "tdd",
+        "test-architect",
+        "validator",
+        "v3",
+    ];
+    if heavy_keywords
+        .iter()
+        .any(|keyword| haystack.contains(keyword))
+    {
+        return AgentModelProfile {
+            model: "gpt-5.5",
+            reasoning_effort: "high",
+        };
+    }
+
+    let medium_keywords = [
+        "analyzer",
+        "backend",
+        "browser",
+        "coder",
+        "data",
+        "devops",
+        "documentation",
+        "flow-nexus",
+        "learning",
+        "mobile",
+        "optimizer",
+        "payments",
+        "python",
+        "researcher",
+        "specialist",
+        "typescript",
+        "workflow",
+    ];
+    if medium_keywords
+        .iter()
+        .any(|keyword| haystack.contains(keyword))
+    {
+        return AgentModelProfile {
+            model: "gpt-5.5",
+            reasoning_effort: "medium",
+        };
+    }
+
+    AgentModelProfile {
+        model: "gpt-5.4-mini",
+        reasoning_effort: "medium",
+    }
 }
 
 pub(super) fn clean_claude_agent_roles(codex_dir: &Path) -> Result<()> {

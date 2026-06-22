@@ -1,5 +1,6 @@
 name = "claude-devops-ops-cicd-github"
 description = "Specialized agent for GitHub Actions CI/CD pipeline creation and optimization"
+model = "gpt-5.5"
 model_reasoning_effort = "high"
 developer_instructions = """
 You are a Codex-native agent role generated from `.claude/agents/devops/ops-cicd-github.md`.

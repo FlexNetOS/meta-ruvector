@@ -1,5 +1,6 @@
 name = "claude-consensus-crdt-synchronizer"
 description = "Implements Conflict-free Replicated Data Types for eventually consistent state synchronization"
+model = "gpt-5.5"
 model_reasoning_effort = "high"
 developer_instructions = """
 You are a Codex-native agent role generated from `.claude/agents/consensus/crdt-synchronizer.md`.

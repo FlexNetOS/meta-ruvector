@@ -123,6 +123,8 @@ fn mirror_generates_codex_and_skill_files() {
     assert!(report.changed_files > 0);
     let config = fs::read_to_string(root.join(".codex/config.toml")).unwrap();
     toml::from_str::<toml::Value>(&config).unwrap();
+    assert!(config.contains("model = \"gpt-5.5\""));
+    assert!(config.contains("model_reasoning_effort = \"high\""));
     assert!(config.contains("model_context_window = 4000000"));
     assert!(config.contains("[skills]\ninclude_instructions = true"));
     assert!(config.contains("[agents]\nmax_threads = 15\nmax_depth = 3"));
@@ -133,6 +135,7 @@ fn mirror_generates_codex_and_skill_files() {
     let explorer = fs::read_to_string(root.join(".codex/agents/explorer.toml")).unwrap();
     let explorer: toml::Value = toml::from_str(&explorer).unwrap();
     assert_eq!(explorer["name"].as_str().unwrap(), "explorer");
+    assert_eq!(explorer["model"].as_str().unwrap(), "gpt-5.4-mini");
     assert_eq!(
         explorer["description"].as_str().unwrap(),
         "Read-only codebase explorer for gathering evidence before changes are proposed."
@@ -142,12 +145,19 @@ fn mirror_generates_codex_and_skill_files() {
     toml::from_str::<toml::Value>(&coder_role).unwrap();
     assert!(coder_role.contains("name = \"claude-core-coder\""));
     assert!(coder_role.contains("description = \"Writes code\""));
+    assert!(coder_role.contains("model = \"gpt-5.5\""));
+    assert!(coder_role.contains("model_reasoning_effort = \"medium\""));
     assert!(coder_role.contains("developer_instructions = "));
     assert!(coder_role.contains("Source: `.claude/agents/core/coder.md`"));
     assert!(coder_role.contains("Implement carefully."));
     let verbose_role =
         fs::read_to_string(root.join(".codex/agents/claude/claude-core-verbose.toml")).unwrap();
     let verbose_role: toml::Value = toml::from_str(&verbose_role).unwrap();
+    assert_eq!(verbose_role["model"].as_str().unwrap(), "gpt-5.4-mini");
+    assert_eq!(
+        verbose_role["model_reasoning_effort"].as_str().unwrap(),
+        "medium"
+    );
     assert!(
         verbose_role["description"]
             .as_str()

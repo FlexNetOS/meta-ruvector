@@ -1,5 +1,6 @@
 name = "claude-v3-claims-authorizer"
 description = "V3 Claims-based authorization specialist implementing ADR-010 for fine-grained access control across swarm agents and MCP tools"
+model = "gpt-5.5"
 model_reasoning_effort = "high"
 developer_instructions = '''
 You are a Codex-native agent role generated from `.claude/agents/v3/claims-authorizer.md`.

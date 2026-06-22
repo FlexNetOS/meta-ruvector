@@ -1,5 +1,6 @@
 name = "claude-swarm-hierarchical-coordinator"
 description = "Queen-led hierarchical swarm coordination with specialized worker delegation"
+model = "gpt-5.5"
 model_reasoning_effort = "high"
 developer_instructions = '''
 You are a Codex-native agent role generated from `.claude/agents/swarm/hierarchical-coordinator.md`.

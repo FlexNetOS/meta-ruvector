@@ -6,6 +6,7 @@ argument-hint: [TEAM=core|review|rust|security|github|swarm] [GOAL]
 Use Codex-native subagents for this goal: $ARGUMENTS
 
 Select the smallest effective team. Spawn the agents in parallel, wait for all results, then consolidate:
+Use the configured custom agent TOMLs as the routing source: heavy agents run on `gpt-5.5`, lighter explorer/template agents run on `gpt-5.4-mini`, and each agent carries its own reasoning effort.
 
 - core: claude-core-planner, claude-core-researcher, claude-core-coder, claude-core-tester, claude-core-reviewer
 - review: reviewer, claude-core-reviewer, claude-testing-production-validator, claude-v3-security-auditor

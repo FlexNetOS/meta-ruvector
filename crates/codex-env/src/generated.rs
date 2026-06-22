@@ -43,6 +43,8 @@ pub(super) fn codex_config(
 approval_policy = "on-request"
 sandbox_mode = "workspace-write"
 web_search = "live"
+model = "gpt-5.5"
+model_reasoning_effort = "high"
 model_context_window = 4000000
 
 [mcp_servers.github]
@@ -190,6 +192,7 @@ pub(super) fn codex_native_workflow_prompts(codex_dir: &Path) -> Vec<PlannedFile
             r#"Use Codex-native subagents for this goal: $ARGUMENTS
 
 Select the smallest effective team. Spawn the agents in parallel, wait for all results, then consolidate:
+Use the configured custom agent TOMLs as the routing source: heavy agents run on `gpt-5.5`, lighter explorer/template agents run on `gpt-5.4-mini`, and each agent carries its own reasoning effort.
 
 - core: claude-core-planner, claude-core-researcher, claude-core-coder, claude-core-tester, claude-core-reviewer
 - review: reviewer, claude-core-reviewer, claude-testing-production-validator, claude-v3-security-auditor
@@ -264,6 +267,7 @@ pub(super) fn codex_native_workflow_skills(skills_dir: &Path) -> Vec<PlannedFile
             r#"# Codex Agent Team
 
 Use Codex subagents explicitly. Pick the smallest effective team, spawn agents in parallel, wait for all results, then consolidate in the parent thread.
+Use the configured custom agent TOMLs as the model-routing source: heavy agents run on `gpt-5.5`, lighter explorer/template agents run on `gpt-5.4-mini`, and each agent carries its own reasoning effort.
 
 Recommended teams:
 - core: claude-core-planner, claude-core-researcher, claude-core-coder, claude-core-tester, claude-core-reviewer
@@ -336,7 +340,7 @@ pub(super) fn codex_agent_profiles(codex_dir: &Path) -> Vec<PlannedFile> {
             "explorer.toml",
             "explorer",
             "Read-only codebase explorer for gathering evidence before changes are proposed.",
-            "gpt-5.4",
+            "gpt-5.4-mini",
             "medium",
             "Stay in exploration mode.\nTrace the real execution path, cite files and symbols, and avoid proposing fixes unless the parent agent asks for them.\nPrefer targeted search and file reads over broad scans.\n",
         ),
@@ -344,7 +348,7 @@ pub(super) fn codex_agent_profiles(codex_dir: &Path) -> Vec<PlannedFile> {
             "reviewer.toml",
             "reviewer",
             "PR reviewer focused on correctness, security, and missing tests.",
-            "gpt-5.4",
+            "gpt-5.5",
             "high",
             "Review like an owner.\nPrioritize correctness, security, behavioral regressions, and missing tests.\nLead with concrete findings and avoid style-only feedback unless it hides a real bug.\n",
         ),
@@ -352,7 +356,7 @@ pub(super) fn codex_agent_profiles(codex_dir: &Path) -> Vec<PlannedFile> {
             "docs-researcher.toml",
             "docs-researcher",
             "Documentation specialist that verifies APIs, framework behavior, and release-note claims against primary documentation.",
-            "gpt-5.4",
+            "gpt-5.4-mini",
             "medium",
             "Verify APIs, framework behavior, and release-note claims against primary documentation before changes land.\nCite the exact docs or file paths that support each claim.\nDo not invent undocumented behavior.\n",
         ),

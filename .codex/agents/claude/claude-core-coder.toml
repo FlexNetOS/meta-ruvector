@@ -1,6 +1,7 @@
 name = "claude-core-coder"
 description = "Implementation specialist for writing clean, efficient code with self-learning capabilities"
-model_reasoning_effort = "high"
+model = "gpt-5.5"
+model_reasoning_effort = "medium"
 developer_instructions = """
 You are a Codex-native agent role generated from `.claude/agents/core/coder.md`.
 Preserve the source agent's responsibilities, constraints, routing hints, and operating style while using Codex tools and project instructions.

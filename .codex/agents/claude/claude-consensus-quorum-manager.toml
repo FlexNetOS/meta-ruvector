@@ -1,5 +1,6 @@
 name = "claude-consensus-quorum-manager"
 description = "Implements dynamic quorum adjustment and intelligent membership management"
+model = "gpt-5.5"
 model_reasoning_effort = "high"
 developer_instructions = """
 You are a Codex-native agent role generated from `.claude/agents/consensus/quorum-manager.md`.

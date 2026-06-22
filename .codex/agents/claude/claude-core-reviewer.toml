@@ -1,5 +1,6 @@
 name = "claude-core-reviewer"
 description = "Code review and quality assurance specialist with AI-powered pattern detection"
+model = "gpt-5.5"
 model_reasoning_effort = "high"
 developer_instructions = """
 You are a Codex-native agent role generated from `.claude/agents/core/reviewer.md`.

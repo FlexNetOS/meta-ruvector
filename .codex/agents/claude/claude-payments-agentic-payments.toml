@@ -1,5 +1,6 @@
 name = "claude-payments-agentic-payments"
 description = "Multi-agent payment authorization specialist for autonomous AI commerce with cryptographic verification and Byzantine consensus"
+model = "gpt-5.5"
 model_reasoning_effort = "high"
 developer_instructions = """
 You are a Codex-native agent role generated from `.claude/agents/payments/agentic-payments.md`.

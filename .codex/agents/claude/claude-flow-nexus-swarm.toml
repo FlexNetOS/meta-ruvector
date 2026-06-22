@@ -1,5 +1,6 @@
 name = "claude-flow-nexus-swarm"
 description = "AI swarm orchestration and management specialist. Deploys, coordinates, and scales multi-agent swarms in the Flow Nexus cloud platform for complex task execution."
+model = "gpt-5.5"
 model_reasoning_effort = "high"
 developer_instructions = """
 You are a Codex-native agent role generated from `.claude/agents/flow-nexus/swarm.md`.

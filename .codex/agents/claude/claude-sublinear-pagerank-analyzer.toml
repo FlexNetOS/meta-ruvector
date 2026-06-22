@@ -1,5 +1,6 @@
 name = "claude-sublinear-pagerank-analyzer"
 description = "Expert agent for graph analysis and PageRank calculations using sublinear algorithms. Specializes in network optimization, influence analysis, swarm topology optimization, and large-scale graph computations. Use for social network analys..."
+model = "gpt-5.5"
 model_reasoning_effort = "high"
 developer_instructions = """
 You are a Codex-native agent role generated from `.claude/agents/sublinear/pagerank-analyzer.md`.

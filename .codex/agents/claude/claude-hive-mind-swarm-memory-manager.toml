@@ -1,5 +1,6 @@
 name = "claude-hive-mind-swarm-memory-manager"
 description = "Manages distributed memory across the hive mind, ensuring data consistency, persistence, and efficient retrieval through advanced caching and synchronization protocols"
+model = "gpt-5.5"
 model_reasoning_effort = "high"
 developer_instructions = """
 You are a Codex-native agent role generated from `.claude/agents/hive-mind/swarm-memory-manager.md`.
