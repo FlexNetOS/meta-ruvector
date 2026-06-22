@@ -6,6 +6,8 @@
 //! - `SubAgentResult`: outcome of a subagent execution
 //! - `SubAgentOrchestrator`: spawn/parallel execution
 //! - `SubAgentResultValidator`: security validation (ADR-103 C8)
+//! - `crdt_merge`: CRDT-based result merging with `VectorClock` for conflict-free
+//!   reconciliation of concurrent subagent results
 
 pub mod builder;
 pub mod crdt_merge;

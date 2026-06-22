@@ -35,6 +35,7 @@ analysis, and statistical aggregation with confidence intervals.
 | `comparison` | `compare_attention_masks`, `edge_flip_count`, `jaccard_similarity` |
 | `quality` | `quality_check` with `cosine_similarity` and `l2_distance` |
 | `batch` | `evaluate_batch` with mean, std, 95% CI, and pass rate |
+| `spectral` | HNSW graph health monitoring via spectral methods (`HnswHealthMonitor`, `SpectralTracker`, spectral gap / Fiedler / effective resistance) — requires the `spectral` feature |
 
 ## Metrics Explained
 

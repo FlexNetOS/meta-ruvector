@@ -6,9 +6,16 @@ Core type definitions for the RuVector Format (RVF) binary container.
 
 `rvf-types` defines the foundational types shared across all RVF crates:
 
-- **Segment headers** -- magic bytes, version, flags, checksums
-- **Enums** -- element types (`F32`, `F16`, `U8`, `Binary`), compression modes, distance metrics
-- **Flags** -- segment-level feature flags (SIMD hints, encryption, quantization tier)
+- **Segment headers** -- magic bytes, version, flags, checksums (`SegmentHeader`, `SegmentType`)
+- **Enums** -- data types (`DataType`), quant types (`QuantType`), compression algorithms, checksum algorithms
+- **Flags** -- segment-level feature flags (`SegmentFlags`)
+- **AGI container types** -- self-contained AGI container header and capability flags (`AgiContainerHeader`, `ContainerSegments`, `AuthorityLevel`, `ExecutionMode`, `ResourceBudget`)
+- **Membership filters** -- shared-HNSW membership filtering (`MembershipHeader`, `FilterMode`, `FilterType`, `FilterOp`)
+- **Lineage / derivation** -- DNA-style provenance (`DerivationType`, `FileIdentity`, `LineageRecord`)
+- **Computational container** -- embedded kernel and eBPF headers (`KernelHeader`, `EbpfHeader`, `WasmHeader`)
+- **Witness & attestation** -- tamper-evident witness chain and TEE attestation (`WitnessHeader`, `AttestationHeader`, `KernelBinding`)
+- **Quality & profile** -- response-quality budgeting and hardware/domain profiles (`ResponseQuality`, `DomainProfile`, `SecurityPolicy`)
+- **Hashing** -- `sha256`, `hmac_sha256`, and optional `ed25519` signing (feature-gated)
 
 ## Features
 

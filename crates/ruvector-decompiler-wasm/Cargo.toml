@@ -6,7 +6,7 @@ rust-version.workspace = true
 license.workspace = true
 authors.workspace = true
 repository.workspace = true
-description = "WASM bindings for the RuVector JavaScript bundle decompiler (Louvain pipeline)"
+description = "WASM bindings for the RuVector JavaScript bundle decompiler (MinCut + Louvain pipeline)"
 keywords = ["decompiler", "javascript", "wasm", "mincut", "louvain"]
 categories = ["wasm", "development-tools"]
 

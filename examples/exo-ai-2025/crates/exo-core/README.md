@@ -47,14 +47,15 @@ println!("Landauer cost for 1024 bits: {:.6} kT", cost);
 
 ## Crate Layout
 
-| Module        | Purpose                                |
-|---------------|----------------------------------------|
-| `backend`     | SubstrateBackend trait and helpers      |
-| `iit`         | Phi computation and partition analysis  |
-| `thermo`      | Landauer energy and entropy bookkeeping |
-| `coherence`   | Routing and coherence scoring           |
-| `plasticity`  | SONA EWC++ continual-learning engine    |
-| `genomic`     | Genome encoding / decoding utilities    |
+| Module              | Purpose                                  |
+|---------------------|------------------------------------------|
+| `backends`          | SubstrateBackend trait and backend impls  |
+| `consciousness`     | IIT 4.0 Phi computation and partitioning  |
+| `thermodynamics`    | Landauer energy and entropy bookkeeping   |
+| `coherence_router`  | Coherence routing and gate decisions      |
+| `plasticity_engine` | SONA EWC++ continual-learning engine      |
+| `genomic`           | Genome encoding / decoding utilities      |
+| `witness`           | Cross-paradigm witness chain and decisions|
 
 ## Requirements
 

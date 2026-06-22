@@ -90,7 +90,7 @@ pub fn build_mask(width: usize, height: usize, kind: &str, seed: u64, strength: 
 
 // ─── Core pipeline (pure Rust, testable on native) ───────────────────────────
 
-/// Result of a full simulation trace, carrying all five view buffers.
+/// Result of a full simulation trace, carrying all four view buffers.
 ///
 /// Each `*_buf` is a row-major grayscale `Vec<u8>` ready for `ImageData`.
 pub struct TraceResult {
@@ -174,7 +174,7 @@ pub fn run_trace(
 
 // ─── WASM-bindgen exported struct ────────────────────────────────────────────
 
-/// All five view buffers returned to JavaScript.
+/// All four view buffers returned to JavaScript.
 ///
 /// Getters returning `Vec<u8>` copy the data into a fresh JS `Uint8Array`
 /// each call — suitable for passing to `ImageData` or `canvas.putImageData`.

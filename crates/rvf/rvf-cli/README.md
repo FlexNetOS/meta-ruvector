@@ -246,6 +246,59 @@ Verify kernel binding and attestation.
 rvf verify-attestation store.rvf
 ```
 
+### embed-kernel
+
+Embed a kernel / unikernel image into an RVF file (KERNEL_SEG).
+
+```bash
+rvf embed-kernel store.rvf --arch x86_64 --image-path kernel.bin
+rvf embed-kernel store.rvf --prebuilt --json
+```
+
+Options:
+- `--arch` — Target architecture (default: `x86_64`)
+- `--prebuilt` — Embed a built-in prebuilt kernel image
+- `--image-path` — Path to a kernel image to embed
+- `--json` — Output as JSON
+
+### embed-ebpf
+
+Embed an eBPF program into an RVF file (EBPF_SEG).
+
+```bash
+rvf embed-ebpf store.rvf --program prog.o --program-type xdp
+rvf embed-ebpf store.rvf --program prog.o --json
+```
+
+Options:
+- `--program` — Path to the eBPF program object (required)
+- `--program-type` — eBPF program type (default: `xdp`)
+- `--json` — Output as JSON
+
+### filter
+
+Create a membership filter for shared HNSW, including or excluding vector IDs.
+
+```bash
+rvf filter store.rvf --include-ids 1,2,3 --output view.rvf
+rvf filter store.rvf --exclude-ids 4,5,6 --json
+```
+
+Options:
+- `--include-ids` — Comma-separated IDs to include
+- `--exclude-ids` — Comma-separated IDs to exclude
+- `-o, --output` — Output file for the filtered view
+- `--json` — Output as JSON
+
+### rebuild-refcounts
+
+Rebuild the REFCOUNT_SEG from the COW map chain.
+
+```bash
+rvf rebuild-refcounts store.rvf
+rvf rebuild-refcounts store.rvf --json
+```
+
 ### serve
 
 Start an HTTP server (requires `serve` feature).

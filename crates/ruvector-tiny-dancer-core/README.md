@@ -62,7 +62,7 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-ruvector-tiny-dancer-core = "0.1.1"
+ruvector-tiny-dancer-core = "2.2.3"
 ```
 
 ### Basic Usage
