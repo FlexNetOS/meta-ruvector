@@ -8,8 +8,8 @@ use serde::{Deserialize, Serialize};
 use walkdir::WalkDir;
 
 use super::{
-    install_codex_prompts, mirror_codex_surface, strip_repo_prefix, validate_codex_home_settings,
-    CodexHomeSettingsReport, MirrorOptions, PromptInstallOptions,
+    install_codex_prompts, is_executable, mirror_codex_surface, strip_repo_prefix,
+    validate_codex_home_settings, CodexHomeSettingsReport, MirrorOptions, PromptInstallOptions,
 };
 
 const SUPPORTED_HOOK_EVENTS: &[&str] = &[
@@ -35,6 +35,13 @@ const REQUIRED_AGENT_TEAMS: &[&str] = &["core", "review", "rust", "security", "g
 
 type ConfiguredAgents = BTreeMap<String, PathBuf>;
 type AgentCounts = (usize, BTreeMap<String, usize>, BTreeMap<String, usize>);
+
+#[derive(Debug, Clone)]
+struct HookValidationReport {
+    events: Vec<String>,
+    handlers: usize,
+    shim_handlers: usize,
+}
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -80,6 +87,7 @@ pub struct DoctorReport {
     pub agent_team_members: usize,
     pub hook_events: Vec<String>,
     pub hook_handlers: usize,
+    pub hook_shim_handlers: usize,
     pub prompt_files: usize,
     pub prompt_alias_files: usize,
     pub installed_prompt_files: usize,
@@ -120,7 +128,7 @@ pub fn doctor_codex_surface(options: DoctorOptions) -> Result<DoctorReport> {
     let (agent_files, agent_models, agent_efforts) =
         validate_agents(&codex_dir, &configured_agents)?;
     let (agent_teams, agent_team_members) = validate_agent_teams(&codex_dir, &configured_agents)?;
-    let (hook_events, hook_handlers) = validate_hooks(&codex_dir)?;
+    let hook_report = validate_hooks(&codex_dir)?;
     let (prompt_files, prompt_alias_files, installed_prompt_files, workflow_prompts) =
         validate_prompts(&repo_root, &codex_dir, &codex_home)?;
     let git_ignored_generated_files =
@@ -143,8 +151,9 @@ pub fn doctor_codex_surface(options: DoctorOptions) -> Result<DoctorReport> {
         agent_efforts,
         agent_teams,
         agent_team_members,
-        hook_events,
-        hook_handlers,
+        hook_events: hook_report.events,
+        hook_handlers: hook_report.handlers,
+        hook_shim_handlers: hook_report.shim_handlers,
         prompt_files,
         prompt_alias_files,
         installed_prompt_files,
@@ -440,7 +449,7 @@ fn validate_agent_teams(
     Ok((manifest.teams.len(), referenced_members))
 }
 
-fn validate_hooks(codex_dir: &Path) -> Result<(Vec<String>, usize)> {
+fn validate_hooks(codex_dir: &Path) -> Result<HookValidationReport> {
     let path = codex_dir.join("hooks.json");
     let hooks_root: serde_json::Value = serde_json::from_slice(
         &fs::read(&path).with_context(|| format!("failed to read {}", path.display()))?,
@@ -453,6 +462,7 @@ fn validate_hooks(codex_dir: &Path) -> Result<(Vec<String>, usize)> {
     let supported: BTreeSet<_> = SUPPORTED_HOOK_EVENTS.iter().copied().collect();
     let mut events = Vec::new();
     let mut handlers = 0;
+    let mut shim_handlers = 0;
 
     for (event, groups) in hooks {
         if !supported.contains(event.as_str()) {
@@ -476,7 +486,9 @@ fn validate_hooks(codex_dir: &Path) -> Result<(Vec<String>, usize)> {
                     anyhow!("{} hook event {event} has no hooks array", path.display())
                 })?;
             for entry in entries {
-                validate_hook_entry(&path, event, entry)?;
+                if validate_hook_entry(codex_dir, &path, event, entry)? {
+                    shim_handlers += 1;
+                }
                 handlers += 1;
             }
         }
@@ -486,10 +498,19 @@ fn validate_hooks(codex_dir: &Path) -> Result<(Vec<String>, usize)> {
         bail!("{} has no active Codex hook handlers", path.display());
     }
     events.sort();
-    Ok((events, handlers))
+    Ok(HookValidationReport {
+        events,
+        handlers,
+        shim_handlers,
+    })
 }
 
-fn validate_hook_entry(path: &Path, event: &str, entry: &serde_json::Value) -> Result<()> {
+fn validate_hook_entry(
+    codex_dir: &Path,
+    path: &Path,
+    event: &str,
+    entry: &serde_json::Value,
+) -> Result<bool> {
     if entry.get("type").and_then(serde_json::Value::as_str) != Some("command") {
         bail!(
             "{} hook event {event} contains a non-command hook",
@@ -521,7 +542,66 @@ fn validate_hook_entry(path: &Path, event: &str, entry: &serde_json::Value) -> R
             path.display()
         );
     }
-    Ok(())
+    validate_hook_shim_command(codex_dir, path, event, command)
+}
+
+fn validate_hook_shim_command(
+    codex_dir: &Path,
+    path: &Path,
+    event: &str,
+    command: &str,
+) -> Result<bool> {
+    let shim_marker = ".codex/helpers/run-claude-hook.sh";
+    if !command.contains(shim_marker) {
+        return Ok(false);
+    }
+
+    let expected_prefix =
+        r#""$(git rev-parse --show-toplevel)/.codex/helpers/run-claude-hook.sh" "#;
+    let Some(args) = command.strip_prefix(expected_prefix) else {
+        bail!(
+            "{} hook event {event} has unsupported Codex hook shim command form: {command}",
+            path.display()
+        );
+    };
+    let helper = args.split_whitespace().next().ok_or_else(|| {
+        anyhow!(
+            "{} hook event {event} uses the Codex hook shim without a helper argument",
+            path.display()
+        )
+    })?;
+    match helper {
+        "hook-handler.cjs" | "auto-memory-hook.mjs" => {}
+        _ => {
+            bail!(
+                "{} hook event {event} references unsupported Claude helper {helper}",
+                path.display()
+            );
+        }
+    }
+
+    let shim_path = codex_dir.join("helpers/run-claude-hook.sh");
+    if !shim_path.is_file() {
+        bail!(
+            "{} is missing required Codex hook shim",
+            shim_path.display()
+        );
+    }
+    if !is_executable(&shim_path)? {
+        bail!("{} must be executable", shim_path.display());
+    }
+
+    let repo_root = codex_dir.parent().unwrap_or(codex_dir);
+    let claude_helper = repo_root.join(".claude/helpers").join(helper);
+    if !claude_helper.is_file() {
+        bail!(
+            "{} hook event {event} references missing Claude helper {}",
+            path.display(),
+            claude_helper.display()
+        );
+    }
+
+    Ok(true)
 }
 
 fn validate_prompts(
