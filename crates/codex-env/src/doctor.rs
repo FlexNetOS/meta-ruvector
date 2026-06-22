@@ -8,8 +8,8 @@ use serde::Serialize;
 use walkdir::WalkDir;
 
 use super::{
-    install_codex_prompts, mirror_codex_surface, strip_repo_prefix, MirrorOptions,
-    PromptInstallOptions,
+    install_codex_prompts, mirror_codex_surface, strip_repo_prefix, validate_codex_home_settings,
+    CodexHomeSettingsReport, MirrorOptions, PromptInstallOptions,
 };
 
 const SUPPORTED_HOOK_EVENTS: &[&str] = &[
@@ -45,6 +45,7 @@ pub struct DoctorReport {
     pub repo_root: PathBuf,
     pub codex_dir: PathBuf,
     pub codex_home: PathBuf,
+    pub codex_home_settings: CodexHomeSettingsReport,
     pub config_model: String,
     pub config_reasoning_effort: String,
     pub config_approval_policy: String,
@@ -100,11 +101,13 @@ pub fn doctor_codex_surface(options: DoctorOptions) -> Result<DoctorReport> {
         validate_prompts(&repo_root, &codex_dir, &codex_home)?;
     let git_ignored_generated_files =
         validate_generated_files_visible_to_git(&repo_root, &mirror_report.generated)?;
+    let codex_home_settings = validate_codex_home_settings(&codex_home)?;
 
     Ok(DoctorReport {
         repo_root,
         codex_dir,
         codex_home,
+        codex_home_settings,
         config_model,
         config_reasoning_effort,
         config_approval_policy,

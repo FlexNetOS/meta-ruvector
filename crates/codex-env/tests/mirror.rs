@@ -2,8 +2,8 @@ use std::fs;
 use std::process::Command;
 
 use codex_env::{
-    doctor_codex_surface, install_codex_env, install_codex_prompts, mirror_codex_surface,
-    CodexInstallOptions, DoctorOptions, MirrorOptions, PromptInstallOptions,
+    doctor_codex_surface, ensure_codex_home_settings, install_codex_env, install_codex_prompts,
+    mirror_codex_surface, CodexInstallOptions, DoctorOptions, MirrorOptions, PromptInstallOptions,
 };
 
 #[test]
@@ -285,6 +285,7 @@ fn mirror_generates_codex_and_skill_files() {
         check: false,
     })
     .unwrap();
+    ensure_codex_home_settings(&codex_home).unwrap();
     let doctor = doctor_codex_surface(DoctorOptions {
         repo_root: root.to_path_buf(),
         lua_policy: None,
@@ -296,6 +297,8 @@ fn mirror_generates_codex_and_skill_files() {
     assert_eq!(doctor.config_approval_policy, "on-request");
     assert_eq!(doctor.config_approvals_reviewer, "auto_review");
     assert!(doctor.config_goals_enabled);
+    assert_eq!(doctor.codex_home_settings.model_context_window, 4_000_000);
+    assert!(doctor.codex_home_settings.include_skill_instructions);
     assert_eq!(doctor.config_agent_entries, doctor.agent_files);
     assert_eq!(doctor.prompt_files, 5);
     assert_eq!(doctor.prompt_alias_files, 1);
@@ -349,6 +352,11 @@ fn install_refreshes_mirror_prompts_and_doctor_in_one_step() {
     assert_eq!(report.prompts.total_files, 4);
     assert_eq!(report.doctor.prompt_files, 4);
     assert_eq!(report.doctor.prompt_alias_files, 0);
+    assert!(report.home_settings.changed);
+    assert_eq!(report.home_settings.approvals_reviewer, "auto_review");
+    assert_eq!(report.home_settings.model_context_window, 4_000_000);
+    assert!(report.home_settings.goals_enabled);
+    assert!(report.home_settings.include_skill_instructions);
     assert_eq!(
         report.doctor.config_agent_entries,
         report.doctor.agent_files
@@ -364,6 +372,66 @@ fn install_refreshes_mirror_prompts_and_doctor_in_one_step() {
     })
     .unwrap();
     assert_eq!(checked.installed_prompt_files, 4);
+}
+
+#[test]
+fn install_repairs_codex_home_runtime_settings_without_dropping_existing_config() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path().join("repo");
+    let codex_home = temp.path().join("codex-home");
+    fs::create_dir_all(root.join(".claude/commands")).unwrap();
+    fs::create_dir_all(&codex_home).unwrap();
+    fs::write(
+        root.join(".claude/settings.json"),
+        r#"{"hooks":{"Stop":[{"hooks":[{"type":"command","command":"echo stop","timeout":5}]}]},"env":{}}"#,
+    )
+    .unwrap();
+    fs::write(
+        root.join(".claude/commands/demo.md"),
+        "---\ndescription: Demo prompt\n---\n\n# Demo\nUse $ARGUMENTS.\n",
+    )
+    .unwrap();
+    fs::write(
+        codex_home.join("config.toml"),
+        r#"model = "gpt-5"
+model_reasoning_effort = "medium"
+approvals_reviewer = "user"
+
+[features]
+memories = true
+
+[mcp_servers.icm]
+command = "/home/drdave/.local/bin/icm"
+args = ["serve"]
+"#,
+    )
+    .unwrap();
+
+    let report = install_codex_env(CodexInstallOptions {
+        repo_root: root,
+        lua_policy: None,
+        codex_home: codex_home.clone(),
+    })
+    .unwrap();
+
+    assert!(report.home_settings.changed);
+    assert_eq!(report.home_settings.model, "gpt-5.5");
+    assert_eq!(report.home_settings.model_reasoning_effort, "high");
+    assert_eq!(report.home_settings.approval_policy, "on-request");
+    assert_eq!(report.home_settings.approvals_reviewer, "auto_review");
+    assert_eq!(report.home_settings.model_context_window, 4_000_000);
+    assert!(report.home_settings.multi_agent_enabled);
+    assert!(report.home_settings.goals_enabled);
+    assert!(report.home_settings.include_skill_instructions);
+
+    let config = fs::read_to_string(codex_home.join("config.toml")).unwrap();
+    assert!(config.contains("[mcp_servers.icm]"));
+    assert!(config.contains("command = \"/home/drdave/.local/bin/icm\""));
+    assert!(config.contains("memories = true"));
+    assert!(config.contains("model_context_window = 4000000"));
+    assert!(config.contains("approvals_reviewer = \"auto_review\""));
+    assert!(config.contains("goals = true"));
+    assert!(config.contains("[skills]\ninclude_instructions = true"));
 }
 
 #[test]
@@ -514,6 +582,7 @@ fn doctor_rejects_gitignored_generated_surface_files() {
         check: false,
     })
     .unwrap();
+    ensure_codex_home_settings(&codex_home).unwrap();
 
     let error = doctor_codex_surface(DoctorOptions {
         repo_root: root.to_path_buf(),
