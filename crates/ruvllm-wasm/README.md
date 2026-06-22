@@ -62,7 +62,7 @@ console.log(result.name, result.score); // "coder", 1.0
 |------|-------------|
 | `RuvLLMWasm` | Main inference engine with KV cache + buffer pool |
 | `GenerateConfig` | Generation parameters (temperature, top_k, top_p, repetitionPenalty) |
-| `KvCacheWasm` | Two-tier KV cache for token management |
+| `KvCacheWasm` | Two-tier KV cache (FP32 tail + u8 quantized store) for token management |
 | `InferenceArenaWasm` | O(1) bump allocator for inference temporaries |
 | `BufferPoolWasm` | Pre-allocated buffer pool (1KB-256KB size classes) |
 

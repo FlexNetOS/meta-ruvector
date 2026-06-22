@@ -7,6 +7,7 @@
 //!
 //! - [`bridge`]: Core robotics types, converters, spatial indexing, and perception pipeline
 //! - [`perception`]: Scene graph construction, obstacle detection, trajectory prediction
+//! - [`planning`]: Path planning producing a [`GridPath`] and per-step [`VelocityCommand`]s
 //! - [`cognitive`]: Cognitive architecture with behavior trees, memory, skills, and swarm intelligence
 //! - [`mcp`]: Model Context Protocol tool registrations for agentic robotics
 //!

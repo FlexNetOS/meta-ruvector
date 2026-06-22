@@ -2,7 +2,7 @@
 name = "neural-trader-replay"
 version = "0.1.0"
 edition = "2021"
-description = "Witnessable replay segments, RVF serialization, and audit receipt logging for Neural Trader"
+description = "Witnessable replay segments, RVF serialization stubs, and audit receipt logging for Neural Trader"
 license = "MIT OR Apache-2.0"
 publish = false
 

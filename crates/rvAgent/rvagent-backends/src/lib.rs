@@ -18,6 +18,11 @@
 //! - Unicode security detection and stripping (SEC-016)
 //! - Composite path re-validation after prefix stripping (SEC-003)
 //! - Literal grep mode to prevent ReDoS (SEC-021)
+//!
+//! # Model clients
+//!
+//! - [`AnthropicClient`](anthropic::AnthropicClient) — Anthropic (Claude) chat model client
+//! - [`GeminiClient`](gemini::GeminiClient) — Google Gemini chat model client
 
 pub mod anthropic;
 pub mod composite;

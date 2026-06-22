@@ -8,7 +8,7 @@
 //! - Delta capture from vector pairs
 //! - Efficient delta application
 //! - SIMD acceleration (when available)
-//! - Shared memory for zero-copy operations
+//! - Pooled buffer management for efficient buffer reuse
 //! - Streaming delta support
 //!
 //! ## Example (JavaScript)

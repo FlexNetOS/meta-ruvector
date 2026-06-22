@@ -40,14 +40,21 @@
 //!
 //! # Operator binaries
 //!
-//! Three CLI tools wrap this library:
+//! Nine CLI tools wrap this library:
 //!
+//! - `ruvector-hailo-worker` — Hailo NPU embedding server (runs on each Pi)
 //! - `ruvector-hailo-embed` — stdin / `--text` → JSONL embeddings
+//! - `ruvector-hailo-fakeworker` — deterministic mock for demos / tests / dev
 //! - `ruvector-hailo-stats` — fleet observability (TSV / JSON / Prom)
 //! - `ruvector-hailo-cluster-bench` — sustained-load harness
+//! - `ruvector-mmwave-bridge` — decode mmWave frames → cluster embed RPC
+//! - `ruview-csi-bridge` — RuView CSI frames → cluster embed RPC
+//! - `ruvllm-bridge` — JSONL stdin/stdout adapter to embed without gRPC
+//! - `ruvllm-pi-worker` — per-Pi ruvllm completion worker
 //!
-//! All three share `--workers` / `--workers-file` / `--tailscale-tag`
-//! discovery and `--auto-fingerprint` / `--validate-fleet` safety flags.
+//! The fleet-facing client tools share `--workers` / `--workers-file` /
+//! `--tailscale-tag` discovery and `--auto-fingerprint` / `--validate-fleet`
+//! safety flags.
 
 // Iter 75: locks in the doc audit. Future pub additions trigger a
 // warning at build time so docs don't bit-rot back to the iter-73 baseline.
