@@ -47,6 +47,9 @@ pub struct DoctorReport {
     pub codex_home: PathBuf,
     pub config_model: String,
     pub config_reasoning_effort: String,
+    pub config_approval_policy: String,
+    pub config_approvals_reviewer: String,
+    pub config_goals_enabled: bool,
     pub agent_files: usize,
     pub agent_models: BTreeMap<String, usize>,
     pub agent_efforts: BTreeMap<String, usize>,
@@ -79,7 +82,13 @@ pub fn doctor_codex_surface(options: DoctorOptions) -> Result<DoctorReport> {
         check: true,
     })?;
 
-    let (config_model, config_reasoning_effort) = validate_config(&codex_dir)?;
+    let (
+        config_model,
+        config_reasoning_effort,
+        config_approval_policy,
+        config_approvals_reviewer,
+        config_goals_enabled,
+    ) = validate_config(&codex_dir)?;
     let (agent_files, agent_models, agent_efforts) = validate_agents(&codex_dir)?;
     let (hook_events, hook_handlers) = validate_hooks(&codex_dir)?;
     let (prompt_files, installed_prompt_files, workflow_prompts) =
@@ -93,6 +102,9 @@ pub fn doctor_codex_surface(options: DoctorOptions) -> Result<DoctorReport> {
         codex_home,
         config_model,
         config_reasoning_effort,
+        config_approval_policy,
+        config_approvals_reviewer,
+        config_goals_enabled,
         agent_files,
         agent_models,
         agent_efforts,
@@ -105,11 +117,14 @@ pub fn doctor_codex_surface(options: DoctorOptions) -> Result<DoctorReport> {
     })
 }
 
-fn validate_config(codex_dir: &Path) -> Result<(String, String)> {
+fn validate_config(codex_dir: &Path) -> Result<(String, String, String, String, bool)> {
     let path = codex_dir.join("config.toml");
     let config = read_toml(&path)?;
     let model = required_toml_string(&config, "model", &path)?;
     let effort = required_toml_string(&config, "model_reasoning_effort", &path)?;
+    let approval_policy = required_toml_string(&config, "approval_policy", &path)?;
+    let approvals_reviewer = required_toml_string(&config, "approvals_reviewer", &path)?;
+    let goals_enabled = required_toml_bool(&config, &["features", "goals"], &path)?;
     if model != "gpt-5.5" {
         bail!(
             "{} must default Codex to gpt-5.5, found {model}",
@@ -122,7 +137,31 @@ fn validate_config(codex_dir: &Path) -> Result<(String, String)> {
             path.display()
         );
     }
-    Ok((model, effort))
+    if approval_policy != "on-request" {
+        bail!(
+            "{} must set Codex approval_policy to on-request, found {approval_policy}",
+            path.display()
+        );
+    }
+    if approvals_reviewer != "auto_review" {
+        bail!(
+            "{} must set Codex approvals_reviewer to auto_review, found {approvals_reviewer}",
+            path.display()
+        );
+    }
+    if !goals_enabled {
+        bail!(
+            "{} must enable Codex Goal mode with features.goals = true",
+            path.display()
+        );
+    }
+    Ok((
+        model,
+        effort,
+        approval_policy,
+        approvals_reviewer,
+        goals_enabled,
+    ))
 }
 
 fn validate_agents(codex_dir: &Path) -> Result<AgentCounts> {
@@ -384,4 +423,24 @@ fn required_toml_string(value: &toml::Value, key: &str, path: &Path) -> Result<S
         .and_then(toml::Value::as_str)
         .map(ToOwned::to_owned)
         .ok_or_else(|| anyhow!("{} is missing required string key {key}", path.display()))
+}
+
+fn required_toml_bool(value: &toml::Value, keys: &[&str], path: &Path) -> Result<bool> {
+    let mut current = value;
+    for key in keys {
+        current = current.get(*key).ok_or_else(|| {
+            anyhow!(
+                "{} is missing required boolean key {}",
+                path.display(),
+                keys.join(".")
+            )
+        })?;
+    }
+    current.as_bool().ok_or_else(|| {
+        anyhow!(
+            "{} required key {} must be a boolean",
+            path.display(),
+            keys.join(".")
+        )
+    })
 }
