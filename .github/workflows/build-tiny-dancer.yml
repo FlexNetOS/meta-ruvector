@@ -33,7 +33,7 @@ jobs:
       fail-fast: false
       matrix:
         settings:
-          - host: ubuntu-22.04
+          - host: ubuntu-26.04
             target: x86_64-unknown-linux-gnu
             platform: linux-x64-gnu
             extraFlags: ""
@@ -41,7 +41,7 @@ jobs:
             target: x86_64-unknown-linux-musl
             platform: linux-x64-musl
             extraFlags: "--zig"
-          - host: ubuntu-22.04
+          - host: ubuntu-26.04
             target: aarch64-unknown-linux-gnu
             platform: linux-arm64-gnu
             extraFlags: ""
@@ -156,7 +156,7 @@ jobs:
 
   publish:
     name: Publish Tiny Dancer Platform Packages
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-26.04
     needs: build
     if: inputs.publish == true || startsWith(github.ref, 'refs/tags/v')
 
@@ -249,7 +249,7 @@ jobs:
             "keywords": ["ruvector", "tiny-dancer", "neural-router", "napi-rs"],
             "author": "ruv.io Team <info@ruv.io>",
             "license": "MIT",
-            "repository": {"type": "git", "url": "https://github.com/ruvnet/ruvector"},
+            "repository": {"type": "git", "url": "https://github.com/FlexNetOS/ruvector"},
             "engines": {"node": ">= 18"},
             "publishConfig": {"registry": "https://registry.npmjs.org/", "access": "public"}
           }

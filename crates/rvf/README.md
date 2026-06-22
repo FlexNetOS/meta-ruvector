@@ -1911,7 +1911,7 @@ rvf inspect output/linux_microkernel.rvf
 ## 🤝 Contributing
 
 ```bash
-git clone https://github.com/ruvnet/ruvector
+git clone https://github.com/FlexNetOS/ruvector
 cd ruvector/crates/rvf
 cargo test --workspace
 ```

@@ -17,7 +17,7 @@
 │  │  • cargo test --workspace                                 │ │
 │  │  • npm run test:unit                                      │ │
 │  └────────────────────────────────────────────────────────────┘ │
-│                    Runner: ubuntu-22.04                          │
+│                    Runner: ubuntu-26.04                          │
 │                    Time: 3-12 minutes                            │
 └─────────────────────────────────────────────────────────────────┘
                               │
@@ -33,8 +33,8 @@
 │  │ • Release mode      │  │    │  │ • ruvector-graph-   │  │
 │  │ • Run tests         │  │    │  │   wasm              │  │
 │  └─────────────────────┘  │    │  │ • tiny-dancer-wasm  │  │
-│  ubuntu-22.04             │    │  └─────────────────────┘  │
-│  5-20 minutes             │    │  ubuntu-22.04             │
+│  ubuntu-26.04             │    │  └─────────────────────┘  │
+│  5-20 minutes             │    │  ubuntu-26.04             │
 └───────────────────────────┘    │  4-15 minutes             │
             │                    └───────────────────────────┘
             │                                   │
@@ -46,7 +46,7 @@
 │  ┌──────────────────────────────────────────────────────────────┐│
 │  │  Platform 1        Platform 2        Platform 3             ││
 │  │  linux-x64-gnu     linux-arm64-gnu   darwin-x64             ││
-│  │  ubuntu-22.04      ubuntu-22.04      macos-13               ││
+│  │  ubuntu-26.04      ubuntu-26.04      macos-13               ││
 │  │  ┌──────────┐      ┌──────────┐      ┌──────────┐          ││
 │  │  │ napi-rs  │      │ napi-rs  │      │ napi-rs  │          ││
 │  │  │ build    │      │ + cross  │      │ build    │          ││
@@ -128,7 +128,7 @@
 │  Published to:                                                   │
 │  ✅ crates.io: https://crates.io/crates/ruvector-core           │
 │  ✅ npmjs.com: https://www.npmjs.com/package/@ruvector/core     │
-│  ✅ GitHub: https://github.com/ruvnet/ruvector/releases         │
+│  ✅ GitHub: https://github.com/FlexNetOS/ruvector/releases         │
 │                                                                  │
 │  Total Time: 15-30 minutes (with caching)                       │
 └─────────────────────────────────────────────────────────────────┘

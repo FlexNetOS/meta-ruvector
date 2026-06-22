@@ -108,7 +108,8 @@ mod candle_impl {
     use super::*;
     use candle_core::quantized::gguf_file;
     use candle_transformers::models::{
-        llama as llama_model, mistral as mistral_model, quantized_llama as qlama,
+        gemma2 as gemma2_model, llama as llama_model, mistral as mistral_model,
+        quantized_llama as qlama,
     };
     use std::sync::Mutex;
 
@@ -129,6 +130,12 @@ mod candle_impl {
         ),
         /// Quantized GGUF model (Llama-based architecture)
         QuantizedLlama(qlama::ModelWeights),
+        /// Gemma-2 model (safetensors). candle-transformers exposes
+        /// `gemma2::Model::forward(&mut self, input_ids, seqlen_offset)`;
+        /// its internal layers/embeddings are private, so (like Mistral)
+        /// it has no public hidden-state path — `get_embeddings` returns a
+        /// clear error for this variant.
+        Gemma2(gemma2_model::Model),
     }
 
     /// Wrapper for loaded model state
@@ -208,8 +215,15 @@ mod candle_impl {
 
     impl Default for CandleBackend {
         fn default() -> Self {
+            // Resolve the device the same way `new()` does instead of hardcoding CPU.
+            // `create_backend()` falls back to `CandleBackend::default()` when `new()`
+            // errors; a hardcoded `Device::Cpu` here silently stranded a `--features cuda`
+            // box on CPU (and ignored `RUVLLM_DEVICE`) on that path — the exact bug the
+            // device-selection work fixes. `select_device` already fail-safes to CPU for an
+            // unavailable device, so this only changes the *preference*, never panics.
+            let device = Self::select_device(Self::default_device()).unwrap_or(Device::Cpu);
             Self {
-                device: Device::Cpu,
+                device,
                 model: None,
                 tokenizer: None,
                 ruv_tokenizer: None,
@@ -223,9 +237,14 @@ mod candle_impl {
     }
 
     impl CandleBackend {
-        /// Create a new Candle backend
+        /// Create a new Candle backend.
+        ///
+        /// Device selection (was hardcoded `DeviceType::default()` = Metal → CPU-on-Linux, which
+        /// stranded NVIDIA boxes on CPU even in a `--features cuda` build): resolve via
+        /// [`Self::default_device`] so a CUDA build prefers the GPU, honoring a `RUVLLM_DEVICE`
+        /// override (`cpu` | `metal` | `cuda` | `cuda:N`).
         pub fn new() -> Result<Self> {
-            let device = Self::select_device(DeviceType::default())?;
+            let device = Self::select_device(Self::default_device())?;
 
             let cache_dir = get_cache_dir();
             std::fs::create_dir_all(&cache_dir).map_err(|e| {
@@ -355,6 +374,56 @@ mod candle_impl {
         }
 
         /// Select device based on type
+        /// Resolve the default device to construct on.
+        ///
+        /// Precedence: the `RUVLLM_DEVICE` env override (`cpu` | `metal` | `cuda` | `cuda:N`),
+        /// then — when the crate is compiled with the `cuda` feature — CUDA device 0 (the common
+        /// case on the Linux GPU servers that build with `--features cuda`), else the platform
+        /// default (`Metal` on macOS, falling back to CPU elsewhere). `select_device` still
+        /// fail-safes any unavailable device down to CPU, so this only changes the *preference*.
+        pub fn default_device() -> DeviceType {
+            if let Ok(raw) = std::env::var("RUVLLM_DEVICE") {
+                let d = raw.trim().to_lowercase();
+                match d.as_str() {
+                    "cpu" => return DeviceType::Cpu,
+                    "metal" => return DeviceType::Metal,
+                    "cuda" | "gpu" => return DeviceType::Cuda(0),
+                    other => {
+                        if let Some(idx) = other.strip_prefix("cuda:") {
+                            if let Ok(n) = idx.trim().parse::<usize>() {
+                                return DeviceType::Cuda(n);
+                            }
+                        }
+                        // An explicit operator override that we can't parse is a
+                        // configuration mistake (e.g. `cuda;0`, `cuda:x`, `vulkan`).
+                        // Warn loudly rather than silently falling through to the
+                        // platform default — a stranded GPU box is exactly what this
+                        // env override exists to prevent.
+                        tracing::warn!(
+                            "RUVLLM_DEVICE='{}' not recognized (expected cpu | metal | cuda | cuda:N); \
+                             using platform default",
+                            raw.trim()
+                        );
+                    }
+                }
+            }
+            #[cfg(feature = "cuda")]
+            {
+                DeviceType::Cuda(0)
+            }
+            // No CUDA feature: prefer Metal only where it can actually exist (macOS);
+            // on Linux/Windows default to CPU so we don't emit a spurious
+            // "Metal requested but not available" warning on every startup.
+            #[cfg(all(not(feature = "cuda"), target_os = "macos"))]
+            {
+                DeviceType::Metal
+            }
+            #[cfg(all(not(feature = "cuda"), not(target_os = "macos")))]
+            {
+                DeviceType::Cpu
+            }
+        }
+
         pub fn select_device(device_type: DeviceType) -> Result<Device> {
             match device_type {
                 DeviceType::Cpu => Ok(Device::Cpu),
@@ -808,6 +877,71 @@ mod candle_impl {
             None
         }
 
+        /// Build a candle-transformers `gemma2::Config` from a HuggingFace
+        /// `config.json` value.
+        ///
+        /// Gemma-2 carries fields the generic loader path doesn't surface
+        /// (soft-capping, `query_pre_attn_scalar`, an explicit `head_dim`,
+        /// `gelu_pytorch_tanh` activation). We parse them directly off the
+        /// JSON, falling back to the documented gemma-2-2b/9b defaults when a
+        /// key is absent so a slightly-trimmed config still loads.
+        fn build_gemma2_config(
+            model_json: &serde_json::Value,
+            config: &ModelConfig,
+        ) -> Result<gemma2_model::Config> {
+            let hidden_size = model_json["hidden_size"].as_u64().unwrap_or(2304) as usize;
+            let num_attention_heads =
+                model_json["num_attention_heads"].as_u64().unwrap_or(8) as usize;
+            let num_key_value_heads =
+                model_json["num_key_value_heads"].as_u64().unwrap_or(4) as usize;
+            // Gemma-2 sets head_dim explicitly (256 for 2b/9b) — it is NOT
+            // hidden_size / num_heads, so honor the config key first.
+            let head_dim = model_json["head_dim"].as_u64().unwrap_or(256) as usize;
+
+            let hidden_activation = match model_json["hidden_activation"]
+                .as_str()
+                .or_else(|| model_json["hidden_act"].as_str())
+            {
+                Some("gelu") => candle_nn::Activation::Gelu,
+                // Gemma-2's canonical activation.
+                Some("gelu_pytorch_tanh") | None => candle_nn::Activation::GeluPytorchTanh,
+                Some(other) => {
+                    return Err(RuvLLMError::Config(format!(
+                        "Unsupported Gemma2 hidden_activation: {}",
+                        other
+                    )));
+                }
+            };
+
+            Ok(gemma2_model::Config {
+                attention_bias: model_json["attention_bias"].as_bool().unwrap_or(false),
+                head_dim,
+                hidden_activation,
+                hidden_size,
+                intermediate_size: model_json["intermediate_size"].as_u64().unwrap_or(9216)
+                    as usize,
+                num_attention_heads,
+                num_hidden_layers: model_json["num_hidden_layers"].as_u64().unwrap_or(26) as usize,
+                num_key_value_heads,
+                rms_norm_eps: model_json["rms_norm_eps"].as_f64().unwrap_or(1e-6),
+                rope_theta: model_json["rope_theta"].as_f64().unwrap_or(10000.0),
+                vocab_size: model_json["vocab_size"].as_u64().unwrap_or(256000) as usize,
+                final_logit_softcapping: model_json["final_logit_softcapping"].as_f64(),
+                attn_logit_softcapping: model_json["attn_logit_softcapping"].as_f64(),
+                query_pre_attn_scalar: model_json["query_pre_attn_scalar"]
+                    .as_u64()
+                    .unwrap_or(head_dim as u64) as usize,
+                sliding_window: model_json["sliding_window"]
+                    .as_u64()
+                    .map(|w| w as usize)
+                    .or(config.sliding_window),
+                max_position_embeddings: model_json["max_position_embeddings"]
+                    .as_u64()
+                    .map(|m| m as usize)
+                    .unwrap_or(config.max_sequence_length),
+            })
+        }
+
         /// Load model from safetensors files
         pub fn load_safetensors(
             &mut self,
@@ -875,7 +1009,15 @@ mod candle_impl {
                         rms_norm_eps,
                         rope_theta,
                         sliding_window: config.sliding_window,
-                        use_flash_attn: config.use_flash_attention,
+                        // Only request flash-attention when the candle flash-attn
+                        // kernels are actually compiled in. ruvllm does not build the
+                        // `flash-attn` feature (it needs nvcc-built CUDA kernels), and
+                        // candle-transformers' `flash_attn` is `unimplemented!()` without
+                        // it — so passing the config's `true` here panics EVERY chat
+                        // generation on both CPU and CUDA. Gating on `cfg!` falls back to
+                        // candle's standard attention (works everywhere) and auto-enables
+                        // if the feature is ever wired up.
+                        use_flash_attn: config.use_flash_attention && cfg!(feature = "flash-attn"),
                         head_dim: Some(head_dim),
                     };
 
@@ -895,7 +1037,15 @@ mod candle_impl {
                         num_key_value_heads: num_kv_heads,
                         rms_norm_eps,
                         rope_theta: rope_theta as f32,
-                        use_flash_attn: config.use_flash_attention,
+                        // Only request flash-attention when the candle flash-attn
+                        // kernels are actually compiled in. ruvllm does not build the
+                        // `flash-attn` feature (it needs nvcc-built CUDA kernels), and
+                        // candle-transformers' `flash_attn` is `unimplemented!()` without
+                        // it — so passing the config's `true` here panics EVERY chat
+                        // generation on both CPU and CUDA. Gating on `cfg!` falls back to
+                        // candle's standard attention (works everywhere) and auto-enables
+                        // if the feature is ever wired up.
+                        use_flash_attn: config.use_flash_attention && cfg!(feature = "flash-attn"),
                         bos_token_id: None,
                         eos_token_id: None,
                         rope_scaling: None,
@@ -917,6 +1067,19 @@ mod candle_impl {
                     // clear_kv_cache() can rebuild a fresh Cache for
                     // each request — request isolation requires this.
                     LoadedModelInner::Llama(model, cache, llama_config, dtype)
+                }
+                ModelArchitecture::Gemma2 => {
+                    let gemma2_config = Self::build_gemma2_config(&model_json, config)?;
+
+                    // See the Mistral/Llama arms: flash-attn is not compiled in ruvllm,
+                    // so requesting it panics at runtime. Gate on `cfg!` → standard attention.
+                    let use_flash_attn = config.use_flash_attention && cfg!(feature = "flash-attn");
+                    let model = gemma2_model::Model::new(use_flash_attn, &gemma2_config, vb)
+                        .map_err(|e| {
+                            RuvLLMError::Model(format!("Failed to create Gemma2 model: {}", e))
+                        })?;
+
+                    LoadedModelInner::Gemma2(model)
                 }
                 _ => {
                     return Err(RuvLLMError::Config(format!(
@@ -987,6 +1150,9 @@ mod candle_impl {
                 LoadedModelInner::Llama(m, cache, _, _) => m
                     .forward(input_ids, current_pos, cache)
                     .map_err(|e| RuvLLMError::Generation(format!("Forward pass failed: {}", e)))?,
+                LoadedModelInner::Gemma2(m) => m
+                    .forward(input_ids, current_pos)
+                    .map_err(|e| RuvLLMError::Generation(format!("Forward pass failed: {}", e)))?,
             };
 
             *pos += seq_len;
@@ -1007,6 +1173,9 @@ mod candle_impl {
                             // The cache is managed internally; resetting position is sufficient
                         }
                         LoadedModelInner::Mistral(m) => {
+                            m.clear_kv_cache();
+                        }
+                        LoadedModelInner::Gemma2(m) => {
                             m.clear_kv_cache();
                         }
                         LoadedModelInner::Llama(_m, cache_slot, cfg, dtype) => {
@@ -1610,11 +1779,83 @@ mod candle_impl {
                 .as_ref()
                 .ok_or_else(|| RuvLLMError::InvalidOperation("No model loaded".to_string()))?;
 
-            let _input_ids = tokenizer.encode(text)?;
+            let mut input_ids = tokenizer.encode(text)?;
+            if input_ids.is_empty() {
+                // Empty / all-special input — fall back to BOS so the
+                // embedding-table lookup below always has at least one token.
+                let bos = tokenizer.special_tokens().bos_token_id.unwrap_or(0);
+                input_ids.push(bos);
+            }
+            let seq_len = input_ids.len();
 
-            // Placeholder - full implementation would extract hidden states
-            let hidden_size = model.config.hidden_size;
-            let embeddings = vec![0.0f32; hidden_size];
+            // Run the loaded model's *token-embedding table* over the input
+            // ids and MEAN-POOL across the token dimension to get one vector
+            // per input. candle-transformers keeps a decoder model's layer
+            // stack / final norm private and its `forward` narrows to the
+            // last token before the LM head, so the pre-LM-head hidden state
+            // is not reachable from outside the crate. The embedding layer,
+            // however, IS public (`mistral::Model::embed_tokens()`,
+            // `llama::Llama::embed()`) — these are real, trained model
+            // weights (not zeros), and mean-pooled token embeddings are a
+            // standard sentence-embedding baseline of dim = hidden_size.
+            let inner = model.inner.lock().map_err(|e| {
+                RuvLLMError::Backend(format!("Failed to acquire model lock: {}", e))
+            })?;
+
+            let ids_tensor = Tensor::from_vec(input_ids, seq_len, &self.device).map_err(|e| {
+                RuvLLMError::Generation(format!("Failed to build input tensor: {}", e))
+            })?;
+
+            // hidden: [seq_len, hidden_size]
+            let hidden = match &*inner {
+                LoadedModelInner::Mistral(m) => {
+                    use candle_core::Module;
+                    m.embed_tokens().forward(&ids_tensor).map_err(|e| {
+                        RuvLLMError::Generation(format!("Embedding lookup failed: {}", e))
+                    })?
+                }
+                LoadedModelInner::Llama(m, _, _, _) => m.embed(&ids_tensor).map_err(|e| {
+                    RuvLLMError::Generation(format!("Embedding lookup failed: {}", e))
+                })?,
+                LoadedModelInner::Gemma2(_) => {
+                    return Err(RuvLLMError::InvalidOperation(
+                        "Embeddings are not supported for Gemma2 models: candle-transformers \
+                         does not expose its token-embedding table"
+                            .to_string(),
+                    ));
+                }
+                LoadedModelInner::QuantizedLlama(_) => {
+                    return Err(RuvLLMError::InvalidOperation(
+                        "Embeddings are not supported for quantized GGUF models: the \
+                         quantized weight layout does not expose a usable embedding table"
+                            .to_string(),
+                    ));
+                }
+            };
+
+            // Mean-pool over the token dimension (dim 0) → [hidden_size].
+            let pooled = hidden
+                .to_dtype(CandleDType::F32)
+                .and_then(|h| h.mean(0))
+                .map_err(|e| RuvLLMError::Generation(format!("Mean-pool failed: {}", e)))?;
+
+            let embeddings: Vec<f32> = pooled.to_vec1().map_err(|e| {
+                RuvLLMError::Generation(format!("Failed to read embedding vector: {}", e))
+            })?;
+
+            // L2-normalize to unit length. The OpenAI `/v1/embeddings` contract
+            // returns unit-norm vectors, and every consumer here assumes it:
+            // cosine similarity (teri's `query_vec_similarity`) and the ruvector
+            // HNSW index both reduce to a dot product only when inputs are
+            // normalized. `simple_embedding()` already normalizes, so this also
+            // makes the two embedding paths consistent. A zero vector (degenerate
+            // all-special input) is returned as-is rather than dividing by zero.
+            let norm = embeddings.iter().map(|x| x * x).sum::<f32>().sqrt();
+            let embeddings = if norm > f32::EPSILON {
+                embeddings.iter().map(|x| x / norm).collect()
+            } else {
+                embeddings
+            };
 
             Ok(embeddings)
         }
@@ -1638,6 +1879,95 @@ mod candle_impl {
             self.config = None;
             self.model_id.clear();
             *self.current_pos.lock().expect("current_pos mutex poisoned") = 0;
+        }
+    }
+
+    #[cfg(test)]
+    mod candle_tests {
+        use super::*;
+
+        #[test]
+        fn test_build_gemma2_config_from_full_json() {
+            // A representative gemma-2-2b config.json (subset of the real keys).
+            let json: serde_json::Value = serde_json::json!({
+                "hidden_size": 2304,
+                "num_attention_heads": 8,
+                "num_key_value_heads": 4,
+                "head_dim": 256,
+                "intermediate_size": 9216,
+                "num_hidden_layers": 26,
+                "rms_norm_eps": 1e-6,
+                "rope_theta": 10000.0,
+                "vocab_size": 256000,
+                "final_logit_softcapping": 30.0,
+                "attn_logit_softcapping": 50.0,
+                "query_pre_attn_scalar": 256,
+                "sliding_window": 4096,
+                "max_position_embeddings": 8192,
+                "hidden_activation": "gelu_pytorch_tanh",
+                "attention_bias": false
+            });
+            let model_config = ModelConfig {
+                architecture: ModelArchitecture::Gemma2,
+                ..Default::default()
+            };
+
+            let cfg = CandleBackend::build_gemma2_config(&json, &model_config)
+                .expect("gemma2 config should build from full json");
+
+            assert_eq!(cfg.hidden_size, 2304);
+            assert_eq!(cfg.num_attention_heads, 8);
+            assert_eq!(cfg.num_key_value_heads, 4);
+            // head_dim must come from the explicit config key, NOT hidden/heads.
+            assert_eq!(cfg.head_dim, 256);
+            assert_ne!(cfg.head_dim, cfg.hidden_size / cfg.num_attention_heads);
+            assert_eq!(cfg.num_hidden_layers, 26);
+            assert_eq!(cfg.vocab_size, 256000);
+            assert_eq!(cfg.final_logit_softcapping, Some(30.0));
+            assert_eq!(cfg.attn_logit_softcapping, Some(50.0));
+            assert_eq!(cfg.query_pre_attn_scalar, 256);
+            assert_eq!(cfg.sliding_window, Some(4096));
+            assert_eq!(cfg.max_position_embeddings, 8192);
+            assert!(matches!(
+                cfg.hidden_activation,
+                candle_nn::Activation::GeluPytorchTanh
+            ));
+        }
+
+        #[test]
+        fn test_build_gemma2_config_uses_defaults_when_keys_absent() {
+            // Trimmed config: only a couple of keys present. The builder must
+            // fall back to documented gemma-2 defaults rather than erroring.
+            let json: serde_json::Value = serde_json::json!({
+                "hidden_size": 2304
+            });
+            let model_config = ModelConfig::default();
+
+            let cfg = CandleBackend::build_gemma2_config(&json, &model_config)
+                .expect("gemma2 config should build with defaults");
+
+            assert_eq!(cfg.hidden_size, 2304);
+            assert_eq!(cfg.head_dim, 256);
+            // Absent activation defaults to gemma-2's canonical gelu_pytorch_tanh.
+            assert!(matches!(
+                cfg.hidden_activation,
+                candle_nn::Activation::GeluPytorchTanh
+            ));
+            // Absent softcapping → None.
+            assert_eq!(cfg.final_logit_softcapping, None);
+        }
+
+        #[test]
+        fn test_build_gemma2_config_rejects_unknown_activation() {
+            let json: serde_json::Value = serde_json::json!({
+                "hidden_size": 2304,
+                "hidden_activation": "swiglu"
+            });
+            let model_config = ModelConfig::default();
+
+            let err = CandleBackend::build_gemma2_config(&json, &model_config)
+                .expect_err("unknown activation must be rejected");
+            assert!(format!("{}", err).contains("hidden_activation"));
         }
     }
 }
@@ -1853,5 +2183,14 @@ mod tests {
         assert!(super::Quantization::Q4K.is_gguf());
         assert!(super::Quantization::Q8.is_gguf());
         assert!(!super::Quantization::F16.is_gguf());
+    }
+
+    #[test]
+    fn test_get_embeddings_errors_without_model() {
+        // get_embeddings must NOT fabricate a vector when nothing is loaded;
+        // it returns a clear error (fail-closed, no zero-stub).
+        let backend = CandleBackend::default();
+        let result = backend.get_embeddings("hello world");
+        assert!(result.is_err(), "embeddings without a model must error");
     }
 }

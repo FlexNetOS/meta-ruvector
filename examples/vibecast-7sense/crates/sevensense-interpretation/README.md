@@ -115,7 +115,7 @@ embedding (`build_evidence_pack(&query_id)`), pulling neighbors from a
 ## Links
 
 - **Homepage**: [ruv.io](https://ruv.io)
-- **Repository**: [github.com/ruvnet/ruvector](https://github.com/ruvnet/ruvector)
+- **Repository**: [github.com/FlexNetOS/ruvector](https://github.com/FlexNetOS/ruvector)
 - **Crates.io**: [crates.io/crates/sevensense-interpretation](https://crates.io/crates/sevensense-interpretation)
 - **Documentation**: [docs.rs/sevensense-interpretation](https://docs.rs/sevensense-interpretation)
 

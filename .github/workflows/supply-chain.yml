@@ -39,7 +39,6 @@ on:
 
 permissions:
   contents: read
-  pull-requests: read
 
 env:
   CARGO_TERM_COLOR: always
@@ -56,16 +55,30 @@ jobs:
   # ─────────────────────────────────────────────────────────────────
   dependency-review:
     name: dependency-review (PRs only)
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-26.04
     if: github.event_name == 'pull_request'
     continue-on-error: true
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
       - name: dependency-review-action
         uses: actions/dependency-review-action@v4
         with:
           fail-on-severity: moderate
-          allow-licenses: MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC, Unicode-DFS-2016, Unicode-3.0, MPL-2.0, Zlib, CC0-1.0, BSL-1.0, CDLA-Permissive-2.0
+          # SPDX expressions like "MIT AND MIT-0" and "MIT AND Ruby" require
+          # every license in the AND-conjunction to be allow-listed, hence
+          # MIT-0 and Ruby appear explicitly. BlueOak-1.0.0 is the permissive
+          # license adopted by the isaacs ecosystem (cliui, minipass, glob,
+          # minimatch, lru-cache, path-scurry, jackspeak, etc.).
+          allow-licenses: MIT, MIT-0, Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC, Unicode-DFS-2016, Unicode-3.0, MPL-2.0, Zlib, CC0-1.0, BSL-1.0, BlueOak-1.0.0, CDLA-Permissive-2.0, Ruby
+          # @anthropic-ai/claude-code* ships its license as a README/LICENSE.md
+          # reference, which makes GitHub's license detector emit
+          # `LicenseRef-bad-see-license-in-…`. Allow-list the package + per-
+          # platform binary variants by name so the unparseable LicenseRef
+          # doesn't gate PRs.
+          allow-dependencies-licenses: 'pkg:npm/%40anthropic-ai/claude-code, pkg:npm/%40anthropic-ai/claude-code-darwin-arm64, pkg:npm/%40anthropic-ai/claude-code-darwin-x64, pkg:npm/%40anthropic-ai/claude-code-linux-arm64, pkg:npm/%40anthropic-ai/claude-code-linux-arm64-musl, pkg:npm/%40anthropic-ai/claude-code-linux-x64, pkg:npm/%40anthropic-ai/claude-code-linux-x64-musl, pkg:npm/%40anthropic-ai/claude-code-win32-arm64, pkg:npm/%40anthropic-ai/claude-code-win32-x64'
           comment-summary-in-pr: on-failure
 
   # ─────────────────────────────────────────────────────────────────
@@ -73,7 +86,7 @@ jobs:
   # ─────────────────────────────────────────────────────────────────
   cargo-audit:
     name: cargo audit (RustSec advisories)
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -97,7 +110,7 @@ jobs:
   # ─────────────────────────────────────────────────────────────────
   cargo-deny:
     name: cargo deny (license + source + ban policy)
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -105,14 +118,14 @@ jobs:
       - name: install cargo-deny
         run: cargo install --locked cargo-deny
       - name: cargo deny check
-        run: cargo deny check
+        run: cargo deny --all-features check
 
   # ─────────────────────────────────────────────────────────────────
   # Layer 4: npm audit (workspace `npm/`)
   # ─────────────────────────────────────────────────────────────────
   npm-audit:
     name: npm audit (npm/ workspace)
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-26.04
     defaults:
       run:
         working-directory: npm
@@ -148,7 +161,7 @@ jobs:
   # ─────────────────────────────────────────────────────────────────
   lockfile-integrity:
     name: lockfile integrity (Cargo.lock)
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable

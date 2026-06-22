@@ -65,12 +65,33 @@ async fn embed(State(state): State<AppState>, Json(req): Json<EmbedRequest>) -> 
         );
     }
 
-    let engine = state.engine.lock().unwrap();
-    let vectors: Vec<Vec<f32>> = req.texts.iter().map(|t| engine.embed(t)).collect();
-    let response = EmbedResponse {
-        engine: engine.engine_name().to_owned(),
-        corpus_size: engine.corpus_size(),
-        vectors,
+    // Offload to a blocking thread so the lock + embedding work doesn't starve
+    // the tokio runtime (especially for large text arrays).
+    let result = tokio::task::spawn_blocking(move || {
+        let engine = state.engine.lock().map_err(|e| format!("mutex poisoned: {e}"))?;
+        let vectors: Vec<Vec<f32>> = req.texts.iter().map(|t| engine.embed(t)).collect();
+        Ok::<_, String>(EmbedResponse {
+            engine: engine.engine_name().to_owned(),
+            corpus_size: engine.corpus_size(),
+            vectors,
+        })
+    })
+    .await;
+
+    let response = match result {
+        Ok(Ok(r)) => r,
+        Ok(Err(e)) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::to_value(ErrorResponse { error: e }).unwrap()),
+            );
+        }
+        Err(e) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::to_value(ErrorResponse { error: format!("{e}") }).unwrap()),
+            );
+        }
     };
     (
         StatusCode::OK,
@@ -79,15 +100,22 @@ async fn embed(State(state): State<AppState>, Json(req): Json<EmbedRequest>) -> 
 }
 
 async fn health(State(state): State<AppState>) -> impl IntoResponse {
-    let engine = state.engine.lock().unwrap();
-    let response = HealthResponse {
-        status: "ok",
-        engine: engine.engine_name().to_owned(),
-        embed_dim: engine.dim(),
-        corpus_size: engine.corpus_size(),
-        rlm_active: engine.is_rlm_active(),
+    let Ok(engine) = state.engine.lock() else {
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({"status": "error", "error": "mutex poisoned"})),
+        );
     };
-    Json(response)
+    (
+        StatusCode::OK,
+        Json(serde_json::json!({
+            "status": "ok",
+            "engine": engine.engine_name(),
+            "embed_dim": engine.dim(),
+            "corpus_size": engine.corpus_size(),
+            "rlm_active": engine.is_rlm_active(),
+        })),
+    )
 }
 
 #[tokio::main]

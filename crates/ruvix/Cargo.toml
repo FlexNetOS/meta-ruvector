@@ -26,6 +26,9 @@ members = [
     "tests",
     "benches",
     "examples/cognitive_demo",
+    # Crate-membership audit: was orphaned (built by no workspace); path-deps
+    # only to ruvix members.
+    "examples/rvf-demos/swarm-consensus",
 ]
 resolver = "2"
 
@@ -35,7 +38,7 @@ edition = "2021"
 rust-version = "1.77"
 license = "MIT OR Apache-2.0"
 authors = ["RuVector Contributors"]
-repository = "https://github.com/ruvnet/ruvector"
+repository = "https://github.com/FlexNetOS/ruvector"
 
 [workspace.dependencies]
 # RuVix internal crates

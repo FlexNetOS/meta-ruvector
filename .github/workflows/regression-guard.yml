@@ -18,7 +18,7 @@ jobs:
   # Issue #437: parking_lot::RwLock is non-reentrant. Two .write() (or .read())
   # in the same expression deadlocks. Forbid the exact textual pattern.
   reentrant-rwlock-double-write:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v4
       - name: Forbid reentrant parking_lot lock acquisition in a single statement
@@ -34,10 +34,18 @@ jobs:
           # captured prefix `(\S+)` to flag only same-lock cases.
           # Pattern 1: .write() …\1.(write|read)()
           # Pattern 2: .read()  …\1.write()
-          # Bash -P (PCRE) supports backreferences.
-          if grep -rnPe '(\S+)\.write\(\)[^;]*\1\.(write|read)\(\)' \
-                  -rnPe '(\S+)\.read\(\)[^;]*\1\.write\(\)' \
+          # Bash -P (PCRE) supports backreferences but only ONE pattern
+          # per invocation, so we run two separate greps.
+          found=0
+          if grep -rnP '(\S+)\.write\(\)[^;]*\1\.(write|read)\(\)' \
                  --include='*.rs' -- crates/ ; then
+            found=1
+          fi
+          if grep -rnP '(\S+)\.read\(\)[^;]*\1\.write\(\)' \
+                 --include='*.rs' -- crates/ ; then
+            found=1
+          fi
+          if [ "$found" -eq 1 ]; then
             echo "::error::Found reentrant parking_lot lock acquisition on a single statement (regression of issue #437). Bind the guard once: 'let mut g = x.write(); g.field = …;'"
             exit 1
           fi
@@ -45,7 +53,7 @@ jobs:
   # Issue #458: Windows clones break on case-only collisions because NTFS is
   # case-insensitive. Fail CI if any two paths in the tree differ only by case.
   case-insensitive-collisions:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v4
       - name: Detect case-only filename collisions
@@ -61,7 +69,7 @@ jobs:
   # Issue #438: AVX-512 intrinsics must be gated. ruvector-core must build on
   # stable Rust 1.77+ without the simd-avx512 feature.
   ruvector-core-no-avx512-builds-on-stable:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -78,7 +86,7 @@ jobs:
   # Issue #430: HNSW recall@1 must stay above 95% on the regression test that
   # historically exposed the result-heap inversion.
   hnsw-recall-at-1:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -102,7 +110,7 @@ jobs:
   # by default (m=16) and collapses recall at scale. This guard textually
   # forbids the regression.
   hnsw-insert-beam-no-m2-clamp:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v4
       - name: Forbid ef_construction.min(m * 2) clamp in HNSW insert beam
@@ -121,22 +129,27 @@ jobs:
   # that complements the behavioural `test_pruning_keeps_closest_not_newest`
   # test below.
   hnsw-distance-based-neighbor-pruning:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v4
       - name: Require calculate_distance() inside HNSW overflow gate
         run: |
           set -e
-          # The `insert` function in index.rs must reach calculate_distance()
-          # AFTER the `> self.config.m * 2` overflow check fires — that is
-          # what proves the pruner is distance-aware, not FIFO.
-          if ! grep -nE 'calculate_distance' crates/ruvector-router-core/src/index.rs >/dev/null ; then
-            echo "::error::index.rs no longer references calculate_distance (regression of issue #430 bug C). Adjacency-list pruning must score candidates by distance."
+          FILE=crates/ruvector-router-core/src/index.rs
+          # The overflow gate itself must still exist.
+          if ! grep -nE '> self\.config\.m \* 2' "$FILE" >/dev/null ; then
+            echo "::error::HNSW overflow gate '> self.config.m * 2' removed — refusing to ship without the m*2/m prune semantics (#430)."
             exit 1
           fi
-          # And the overflow gate itself must still exist.
-          if ! grep -nE '> self\.config\.m \* 2' crates/ruvector-router-core/src/index.rs >/dev/null ; then
-            echo "::error::HNSW overflow gate '> self.config.m * 2' removed — refusing to ship without the m*2/m prune semantics (#430)."
+          # calculate_distance must appear *inside* the overflow block
+          # (within 20 lines after the gate), not just anywhere in the
+          # file. Searching the whole file would pass even if the pruner
+          # lost its distance scoring, because search code also calls
+          # calculate_distance.
+          GATE_LINE=$(grep -nE '> self\.config\.m \* 2' "$FILE" | head -1 | cut -d: -f1)
+          WINDOW_END=$((GATE_LINE + 20))
+          if ! sed -n "${GATE_LINE},${WINDOW_END}p" "$FILE" | grep -qE 'calculate_distance' ; then
+            echo "::error::calculate_distance is not called within the overflow gate block in index.rs (regression of issue #430 bug C). Adjacency-list pruning must score candidates by distance."
             exit 1
           fi
 
@@ -144,7 +157,7 @@ jobs:
   # persisted storage. The historical bug was that a fresh empty HnswIndex
   # was created on every open, so search returned 0 results after restart.
   vector-db-rebuilds-index-on-open:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v4
       - name: Require storage.get_all_ids() rebuild path in VectorDB::new
@@ -159,7 +172,7 @@ jobs:
   # (which now triggers our prepack hooks) and assert the entry points exist
   # inside the resulting tarball.
   npm-publish-pipeline:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-26.04
     strategy:
       fail-fast: false
       matrix:
@@ -223,7 +236,7 @@ jobs:
   # to subprocess-only commands (security-scan, git-churn, verify) and are
   # tracked separately — this guard locks the #463 regression shut.
   no-npx-execSync-in-route-enhanced:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v4
       - name: Forbid execSync('npx ruvector …') inside hooks_route_enhanced case
@@ -249,7 +262,7 @@ jobs:
   # drowning in false positives, we only flag template literals that include
   # `${args.…}` and don't wrap it in sanitizeShellArg(...).
   shell-injection-in-mcp-server:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v4
       - name: Forbid unsanitized ${args.X} in exec*/spawn* calls
@@ -265,7 +278,7 @@ jobs:
   # wasm32-unknown-unknown and can't use std::time::SystemTime / Instant —
   # they panic at runtime.
   no-systemtime-in-wasm-crates:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v4
       - name: Reject SystemTime/Instant in wasm32-targeted crates
@@ -299,7 +312,7 @@ jobs:
   # configured per-developer (not committed-by-default). Markdown docs and
   # JS example/test files are excluded — they're illustrative.
   no-hardcoded-workspaces-paths:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v4
       - name: Forbid hardcoded devcontainer path in checked-in config
@@ -324,7 +337,7 @@ jobs:
   # If a future refactor removes the log lines, we lose the diagnostic when
   # we need it most. Assert all four "Hydrate <collection>:" log lines stay.
   brain-hydration-counters-present:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v4
       - name: Assert hydration counter log lines exist
@@ -349,7 +362,7 @@ jobs:
   # against the live npm registry and fail if any are missing. Soft-skip on
   # network errors so transient registry hiccups don't false-fail.
   optional-deps-resolvable-on-npm:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

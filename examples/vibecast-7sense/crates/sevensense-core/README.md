@@ -190,7 +190,7 @@ println!("{not_found}");
 ## Links
 
 - **Homepage**: [ruv.io](https://ruv.io)
-- **Repository**: [github.com/ruvnet/ruvector](https://github.com/ruvnet/ruvector)
+- **Repository**: [github.com/FlexNetOS/ruvector](https://github.com/FlexNetOS/ruvector)
 - **Crates.io**: [crates.io/crates/sevensense-core](https://crates.io/crates/sevensense-core)
 - **Documentation**: [docs.rs/sevensense-core](https://docs.rs/sevensense-core)
 

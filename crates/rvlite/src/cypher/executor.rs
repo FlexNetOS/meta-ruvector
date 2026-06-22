@@ -24,8 +24,7 @@ pub enum ExecutionError {
 #[derive(Debug, Clone)]
 pub struct ExecutionContext {
     pub variables: HashMap<String, ContextValue>,
-    /// All matched binding sets from MATCH clauses; populated by execute_match, consumed by execute_return.
-    /// Each entry is one complete set of bindings for one match row.
+    /// Rows produced by MATCH — each entry is one set of matched bindings.
     pub matched_rows: Vec<HashMap<String, ContextValue>>,
 }
 
@@ -271,8 +270,14 @@ impl<'a> Executor<'a> {
             });
         }
 
-        // Store each matched binding set as a separate row so RETURN can iterate all of them
-        context.matched_rows = matches.into_iter().map(|ctx| ctx.variables).collect();
+        // Store each matched binding set as a separate row so RETURN can iterate all of them.
+        // Also merge bindings into the top-level context so SET/DELETE can resolve variables.
+        context.matched_rows = matches.iter().map(|ctx| ctx.variables.clone()).collect();
+        for match_ctx in matches {
+            for (var, val) in match_ctx.variables {
+                context.bind(var, val);
+            }
+        }
 
         Ok(ExecutionResult::new(vec![]))
     }
@@ -419,64 +424,43 @@ impl<'a> Executor<'a> {
         clause: &ReturnClause,
         context: &ExecutionContext,
     ) -> Result<ExecutionResult, ExecutionError> {
-        let mut columns = Vec::new();
-        for item in &clause.items {
-            let col_name = item
-                .alias
-                .clone()
-                .unwrap_or_else(|| match &item.expression {
-                    Expression::Variable(var) => var.clone(),
-                    _ => "?column?".to_string(),
-                });
-            if !columns.contains(&col_name) {
-                columns.push(col_name);
-            }
-        }
+        let columns: Vec<String> = clause
+            .items
+            .iter()
+            .map(|item| {
+                item.alias
+                    .clone()
+                    .unwrap_or_else(|| match &item.expression {
+                        Expression::Variable(var) => var.clone(),
+                        _ => "?column?".to_string(),
+                    })
+            })
+            .collect();
 
         let mut result = ExecutionResult::new(columns.clone());
 
-        // If MATCH produced multiple rows, iterate each row; otherwise use the current context
-        let row_bindings: Vec<&HashMap<String, ContextValue>> = if !context.matched_rows.is_empty()
-        {
-            context.matched_rows.iter().collect()
-        } else {
-            vec![&context.variables]
-        };
-
-        for bindings in row_bindings {
-            // Build a temporary context for this row by merging matched bindings with outer context
-            let mut row_ctx = ExecutionContext::new();
-            for (k, v) in &context.variables {
-                row_ctx.bind(k.clone(), v.clone());
-            }
-            for (k, v) in bindings {
-                row_ctx.bind(k.clone(), v.clone());
-            }
-
+        if context.matched_rows.is_empty() {
+            // No MATCH rows — evaluate once against the top-level context.
             let mut row = HashMap::new();
-            for col_name in &columns {
-                // Find the expression for this column
-                let expr = clause
-                    .items
-                    .iter()
-                    .find(|item| {
-                        let name = item
-                            .alias
-                            .clone()
-                            .unwrap_or_else(|| match &item.expression {
-                                Expression::Variable(var) => var.clone(),
-                                _ => "?column?".to_string(),
-                            });
-                        &name == col_name
-                    })
-                    .map(|item| &item.expression);
-
-                if let Some(expr) = expr {
-                    let value = self.evaluate_expression_ctx(expr, &row_ctx)?;
-                    row.insert(col_name.clone(), value);
-                }
+            for (item, col) in clause.items.iter().zip(columns.iter()) {
+                let value = self.evaluate_expression_ctx(&item.expression, context)?;
+                row.insert(col.clone(), value);
             }
             result.add_row(row);
+        } else {
+            // One result row per matched binding set.
+            for matched_vars in &context.matched_rows {
+                let mut row_ctx = context.clone();
+                for (k, v) in matched_vars {
+                    row_ctx.variables.insert(k.clone(), v.clone());
+                }
+                let mut row = HashMap::new();
+                for (item, col) in clause.items.iter().zip(columns.iter()) {
+                    let value = self.evaluate_expression_ctx(&item.expression, &row_ctx)?;
+                    row.insert(col.clone(), value);
+                }
+                result.add_row(row);
+            }
         }
 
         Ok(result)
@@ -487,24 +471,41 @@ impl<'a> Executor<'a> {
         clause: &SetClause,
         context: &ExecutionContext,
     ) -> Result<ExecutionResult, ExecutionError> {
-        for item in &clause.items {
-            match item {
-                SetItem::Property {
-                    variable,
-                    property,
-                    value,
-                } => {
-                    let val = self.evaluate_expression(value, context)?;
-                    if let Some(ContextValue::Node(node)) = context.get(variable) {
-                        if let Some(node_mut) = self.graph.get_node_mut(&node.id) {
-                            node_mut.set_property(property.clone(), val);
+        // Iterate matched rows so SET applies to every MATCH result.
+        let row_contexts: Vec<HashMap<String, ContextValue>> = if context.matched_rows.is_empty() {
+            vec![context.variables.clone()]
+        } else {
+            context.matched_rows.iter().map(|vars| {
+                let mut merged = context.variables.clone();
+                merged.extend(vars.iter().map(|(k, v)| (k.clone(), v.clone())));
+                merged
+            }).collect()
+        };
+
+        for row_vars in &row_contexts {
+            let row_ctx = ExecutionContext {
+                variables: row_vars.clone(),
+                matched_rows: Vec::new(),
+            };
+            for item in &clause.items {
+                match item {
+                    SetItem::Property {
+                        variable,
+                        property,
+                        value,
+                    } => {
+                        let val = self.evaluate_expression(value, &row_ctx)?;
+                        if let Some(ContextValue::Node(node)) = row_ctx.get(variable) {
+                            if let Some(node_mut) = self.graph.get_node_mut(&node.id) {
+                                node_mut.set_property(property.clone(), val);
+                            }
                         }
                     }
-                }
-                _ => {
-                    return Err(ExecutionError::UnsupportedOperation(
-                        "Only property SET supported".to_string(),
-                    ))
+                    _ => {
+                        return Err(ExecutionError::UnsupportedOperation(
+                            "Only property SET supported".to_string(),
+                        ))
+                    }
                 }
             }
         }
@@ -517,27 +518,56 @@ impl<'a> Executor<'a> {
         clause: &DeleteClause,
         context: &ExecutionContext,
     ) -> Result<ExecutionResult, ExecutionError> {
-        for expr in &clause.expressions {
-            if let Expression::Variable(var) = expr {
-                if let Some(ctx_val) = context.get(var) {
-                    match ctx_val {
-                        ContextValue::Node(node) => {
-                            if clause.detach {
-                                self.graph.delete_node(&node.id)?;
-                            } else {
-                                return Err(ExecutionError::ExecutionError(
-                                    "Cannot delete node with relationships without DETACH"
-                                        .to_string(),
-                                ));
+        // Iterate matched rows so DELETE applies to every MATCH result.
+        let row_contexts: Vec<HashMap<String, ContextValue>> = if context.matched_rows.is_empty() {
+            vec![context.variables.clone()]
+        } else {
+            context.matched_rows.iter().map(|vars| {
+                let mut merged = context.variables.clone();
+                merged.extend(vars.iter().map(|(k, v)| (k.clone(), v.clone())));
+                merged
+            }).collect()
+        };
+
+        // Collect unique node/edge IDs across all matched rows to avoid
+        // double-delete errors when MATCH yields the same entity multiple times.
+        let mut node_ids = std::collections::HashSet::new();
+        let mut edge_ids = std::collections::HashSet::new();
+        let mut has_non_detach_node = false;
+
+        for row_vars in &row_contexts {
+            for expr in &clause.expressions {
+                if let Expression::Variable(var) = expr {
+                    if let Some(ctx_val) = row_vars.get(var) {
+                        match ctx_val {
+                            ContextValue::Node(node) => {
+                                if clause.detach {
+                                    node_ids.insert(node.id.clone());
+                                } else {
+                                    has_non_detach_node = true;
+                                }
                             }
+                            ContextValue::Edge(edge) => {
+                                edge_ids.insert(edge.id.clone());
+                            }
+                            _ => {}
                         }
-                        ContextValue::Edge(edge) => {
-                            self.graph.delete_edge(&edge.id)?;
-                        }
-                        _ => {}
                     }
                 }
             }
+        }
+
+        if has_non_detach_node {
+            return Err(ExecutionError::ExecutionError(
+                "Cannot delete node with relationships without DETACH".to_string(),
+            ));
+        }
+
+        for eid in &edge_ids {
+            self.graph.delete_edge(eid)?;
+        }
+        for nid in &node_ids {
+            self.graph.delete_node(nid)?;
         }
 
         Ok(ExecutionResult::new(vec![]))

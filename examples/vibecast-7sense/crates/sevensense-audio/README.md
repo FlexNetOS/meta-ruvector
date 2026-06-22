@@ -243,7 +243,7 @@ listed as roadmap items only — do not depend on them yet:
 ## Links
 
 - **Homepage**: [ruv.io](https://ruv.io)
-- **Repository**: [github.com/ruvnet/ruvector](https://github.com/ruvnet/ruvector)
+- **Repository**: [github.com/FlexNetOS/ruvector](https://github.com/FlexNetOS/ruvector)
 - **Crates.io**: [crates.io/crates/sevensense-audio](https://crates.io/crates/sevensense-audio)
 - **Documentation**: [docs.rs/sevensense-audio](https://docs.rs/sevensense-audio)
 

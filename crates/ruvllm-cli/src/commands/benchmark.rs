@@ -452,18 +452,10 @@ fn print_csv(results: &BenchmarkResults) {
 
 /// Detect architecture from model ID
 fn detect_architecture(model_id: &str) -> ruvllm::ModelArchitecture {
-    let lower = model_id.to_lowercase();
-    if lower.contains("mistral") {
-        ruvllm::ModelArchitecture::Mistral
-    } else if lower.contains("llama") {
-        ruvllm::ModelArchitecture::Llama
-    } else if lower.contains("phi") {
-        ruvllm::ModelArchitecture::Phi
-    } else if lower.contains("qwen") {
-        ruvllm::ModelArchitecture::Qwen
-    } else {
-        ruvllm::ModelArchitecture::Llama
-    }
+    // Single source of truth: the library detector (handles gemma-2 → Gemma2,
+    // phi-3 → Phi3, etc.). Unknown ids default to Llama.
+    ruvllm::ModelArchitecture::detect_from_model_id(model_id)
+        .unwrap_or(ruvllm::ModelArchitecture::Llama)
 }
 
 /// Map quantization preset

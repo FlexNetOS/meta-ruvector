@@ -36,7 +36,7 @@ jobs:
   # ============================================================================
   validate:
     name: Validate & Test
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v4
 
@@ -64,11 +64,11 @@ jobs:
       fail-fast: false
       matrix:
         settings:
-          - host: ubuntu-22.04
+          - host: ubuntu-26.04
             target: x86_64-unknown-linux-gnu
             platform: linux-x64-gnu
             node_file: attention.linux-x64-gnu.node
-          - host: ubuntu-22.04
+          - host: ubuntu-26.04
             target: aarch64-unknown-linux-gnu
             platform: linux-arm64-gnu
             node_file: attention.linux-arm64-gnu.node
@@ -141,7 +141,7 @@ jobs:
   # ============================================================================
   build-wasm:
     name: Build WASM
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-26.04
     needs: validate
     strategy:
       matrix:
@@ -183,7 +183,7 @@ jobs:
   # ============================================================================
   publish-crates:
     name: Publish to crates.io
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-26.04
     needs: [build-native, build-wasm]
     if: ${{ !inputs.dry_run && (inputs.publish_crates || github.event_name == 'push') }}
 
@@ -277,7 +277,7 @@ jobs:
   # ============================================================================
   publish-npm:
     name: Publish to npm
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-26.04
     needs: [build-native, build-wasm]
     if: ${{ !inputs.dry_run && (inputs.publish_npm || github.event_name == 'push') }}
 
@@ -335,7 +335,7 @@ jobs:
             "files": ["attention.linux-x64-gnu.node"],
             "description": "Linux x64 GNU native module for @ruvector/attention",
             "license": "MIT",
-            "repository": "https://github.com/ruvnet/ruvector"
+            "repository": "https://github.com/FlexNetOS/ruvector"
           }
           EOF
           npm publish --access public
@@ -358,7 +358,7 @@ jobs:
             "files": ["attention.linux-arm64-gnu.node"],
             "description": "Linux ARM64 GNU native module for @ruvector/attention",
             "license": "MIT",
-            "repository": "https://github.com/ruvnet/ruvector"
+            "repository": "https://github.com/FlexNetOS/ruvector"
           }
           EOF
           npm publish --access public
@@ -381,7 +381,7 @@ jobs:
             "files": ["attention.darwin-x64.node"],
             "description": "macOS Intel x64 native module for @ruvector/attention",
             "license": "MIT",
-            "repository": "https://github.com/ruvnet/ruvector"
+            "repository": "https://github.com/FlexNetOS/ruvector"
           }
           EOF
           npm publish --access public
@@ -404,7 +404,7 @@ jobs:
             "files": ["attention.darwin-arm64.node"],
             "description": "macOS Apple Silicon ARM64 native module for @ruvector/attention",
             "license": "MIT",
-            "repository": "https://github.com/ruvnet/ruvector"
+            "repository": "https://github.com/FlexNetOS/ruvector"
           }
           EOF
           npm publish --access public
@@ -427,7 +427,7 @@ jobs:
             "files": ["attention.win32-x64-msvc.node"],
             "description": "Windows x64 MSVC native module for @ruvector/attention",
             "license": "MIT",
-            "repository": "https://github.com/ruvnet/ruvector"
+            "repository": "https://github.com/FlexNetOS/ruvector"
           }
           EOF
           npm publish --access public
@@ -448,7 +448,7 @@ jobs:
             "main": "index.js",
             "types": "index.d.ts",
             "license": "MIT",
-            "repository": "https://github.com/ruvnet/ruvector",
+            "repository": "https://github.com/FlexNetOS/ruvector",
             "keywords": ["attention", "transformer", "machine-learning", "optimal-transport", "hyperbolic", "topology"],
             "optionalDependencies": {
               "@ruvector/attention-linux-x64-gnu": "${{ inputs.version || '0.1.31' }}",
@@ -523,7 +523,7 @@ jobs:
   # ============================================================================
   create-release:
     name: Create GitHub Release
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-26.04
     needs: [publish-crates, publish-npm]
     if: ${{ !inputs.dry_run && github.event_name == 'push' }}
     permissions:

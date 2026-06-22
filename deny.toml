@@ -18,9 +18,14 @@
 targets = [
     { triple = "x86_64-unknown-linux-gnu" },
     { triple = "aarch64-unknown-linux-gnu" },
+    { triple = "x86_64-unknown-linux-musl" },
+    { triple = "aarch64-unknown-linux-musl" },
     { triple = "x86_64-apple-darwin" },
     { triple = "aarch64-apple-darwin" },
+    { triple = "x86_64-pc-windows-msvc" },
+    { triple = "aarch64-pc-windows-msvc" },
 ]
+all-features = true
 
 # ─────────────────────────────────────────────────────────────────────
 # 1) advisories — RustSec DB scan
@@ -124,6 +129,33 @@ ignore = [
     # offline experiments only). No safe upgrade available. Re-review
     # 2026-08-01.
     "RUSTSEC-2026-0105",
+
+    # ── Exposed by --all-features scan (pre-existing, behind optional features) ──
+
+    # derivative 2.2.0 — unmaintained. Pulled transitively by several
+    # derive-heavy crates behind optional features. No drop-in
+    # replacement. Re-review 2026-08-01.
+    "RUSTSEC-2024-0388",
+
+    # pprof 0.13.0 — unsound slice::from_raw_parts usage. Dev/bench
+    # dep only (ruvector-bench), never reaches shipped artifacts.
+    # Re-review 2026-08-01 or when pprof publishes fix.
+    "RUSTSEC-2024-0408",
+
+    # pqcrypto-dilithium 0.5.0 — unmaintained, replaced by
+    # pqcrypto-mldsa. Used by rvdna's post-quantum signing feature.
+    # Migration to pqcrypto-mldsa queued. Re-review 2026-08-01.
+    "RUSTSEC-2024-0380",
+
+    # pqcrypto-kyber 0.8.1 — unmaintained, replaced by
+    # pqcrypto-mlkem. Used by rvdna's post-quantum KEM feature.
+    # Migration to pqcrypto-mlkem queued. Re-review 2026-08-01.
+    "RUSTSEC-2024-0381",
+
+    # wee_alloc 0.4.5 — unmaintained. Used by wasm32 allocator in
+    # optional WASM features. No drop-in replacement; the standard
+    # allocator works fine for our use case. Re-review 2026-08-01.
+    "RUSTSEC-2022-0054",
 ]
 
 # ─────────────────────────────────────────────────────────────────────
@@ -188,6 +220,10 @@ allow = [
     "BSL-1.0",
     "CDLA-Permissive-2.0",
     "NCSA",
+    # CDDL-1.0 — Common Development and Distribution License 1.0
+    # (OSI-approved, FSF free). Required by `inferno` (flamegraph
+    # library), pulled behind optional profiling features.
+    "CDDL-1.0",
 ]
 
 confidence-threshold = 0.8

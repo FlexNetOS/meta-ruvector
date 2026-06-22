@@ -29,7 +29,7 @@ The correct platform-specific package will be automatically installed based on y
 ## Compatibility
 
 This package is compatible with:
-- Ubuntu 18.04+ (all versions)
+- Ubuntu 26.04+ (all versions)
 - Debian 10+ (Buster and later)
 - CentOS 7+ / RHEL 7+
 - Fedora (all supported versions)
@@ -59,7 +59,7 @@ If you need to rebuild the native module:
 
 ```bash
 # Clone the repository
-git clone https://github.com/ruvnet/ruvector.git
+git clone https://github.com/FlexNetOS/ruvector.git
 cd ruvector
 
 # Install Rust toolchain
@@ -84,7 +84,7 @@ If you see "Cannot find module 'ruvector-core-linux-x64-gnu'":
 
 If the module fails to load:
 1. Ensure you have glibc installed: `ldd --version`
-2. The binary requires glibc 2.17+ (CentOS 7+) or 2.27+ (Ubuntu 18.04+)
+2. The binary requires glibc 2.17+ (CentOS 7+) or 2.27+ (Ubuntu 26.04+)
 3. For Alpine Linux or musl-based systems, this package will not work (use a glibc-based distro)
 
 ## Related Packages
@@ -98,13 +98,13 @@ If the module fails to load:
 ## Resources
 
 - 🏠 [Homepage](https://ruv.io)
-- 📦 [GitHub Repository](https://github.com/ruvnet/ruvector)
-- 📚 [Documentation](https://github.com/ruvnet/ruvector/tree/main/docs)
-- 🐛 [Issue Tracker](https://github.com/ruvnet/ruvector/issues)
+- 📦 [GitHub Repository](https://github.com/FlexNetOS/ruvector)
+- 📚 [Documentation](https://github.com/FlexNetOS/ruvector/tree/main/docs)
+- 🐛 [Issue Tracker](https://github.com/FlexNetOS/ruvector/issues)
 
 ## License
 
-MIT License - see [LICENSE](https://github.com/ruvnet/ruvector/blob/main/LICENSE) for details.
+MIT License - see [LICENSE](https://github.com/FlexNetOS/ruvector/blob/main/LICENSE) for details.
 
 ---
 
