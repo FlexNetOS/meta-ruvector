@@ -84,6 +84,7 @@ CLAUDE_FLOW_MEMORY_BACKEND = "hybrid"
 
 [features]
 multi_agent = true
+goals = true
 
 [skills]
 include_instructions = true

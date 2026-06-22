@@ -132,6 +132,7 @@ fn mirror_generates_codex_and_skill_files() {
     assert!(config.contains("model = \"gpt-5.5\""));
     assert!(config.contains("model_reasoning_effort = \"high\""));
     assert!(config.contains("model_context_window = 4000000"));
+    assert!(config.contains("[features]\nmulti_agent = true\ngoals = true"));
     assert!(config.contains("[skills]\ninclude_instructions = true"));
     assert!(config.contains("[agents]\nmax_threads = 15\nmax_depth = 3"));
     assert!(config.contains("[agents.claude-browser-browser-agent]"));
@@ -288,6 +289,7 @@ fn mirror_generates_codex_and_skill_files() {
     assert_eq!(doctor.config_reasoning_effort, "high");
     assert_eq!(doctor.config_approval_policy, "on-request");
     assert_eq!(doctor.config_approvals_reviewer, "auto_review");
+    assert!(doctor.config_goals_enabled);
     assert_eq!(doctor.prompt_files, 4);
     assert_eq!(doctor.installed_prompt_files, 4);
     assert!(doctor.agent_models.contains_key("gpt-5.5"));
