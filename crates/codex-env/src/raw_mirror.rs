@@ -1,7 +1,9 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write as _;
 use std::fs;
+use std::io::Write as _;
 use std::path::{Path, PathBuf};
+use std::process::{Command, Stdio};
 
 use anyhow::{Context, Result};
 use serde::Serialize;
@@ -49,8 +51,60 @@ pub(super) fn claude_source_files(repo_root: &Path, claude_dir: &Path) -> Result
         }
         files.push(strip_repo_prefix(repo_root, entry.path()));
     }
+    let tracked = git_tracked_paths(repo_root, &files)?;
+    let ignored = git_ignored_paths(repo_root, &files)?;
+    files.retain(|file| tracked.contains(file) || !ignored.contains(file));
     files.sort();
     Ok(files)
+}
+
+fn git_tracked_paths(repo_root: &Path, files: &[PathBuf]) -> Result<BTreeSet<PathBuf>> {
+    git_filter_paths(repo_root, files, &["ls-files", "--"])
+}
+
+fn git_ignored_paths(repo_root: &Path, files: &[PathBuf]) -> Result<BTreeSet<PathBuf>> {
+    git_filter_paths(repo_root, files, &["check-ignore", "--stdin"])
+}
+
+fn git_filter_paths(
+    repo_root: &Path,
+    files: &[PathBuf],
+    args: &[&str],
+) -> Result<BTreeSet<PathBuf>> {
+    let mut command = Command::new("git");
+    command
+        .args(args)
+        .current_dir(repo_root)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::null());
+    if args.first() == Some(&"ls-files") {
+        command.args(files);
+    }
+    let mut child = command.spawn().with_context(|| {
+        format!(
+            "failed to run git {} in {}",
+            args.join(" "),
+            repo_root.display()
+        )
+    })?;
+
+    if args.first() == Some(&"check-ignore") {
+        if let Some(mut stdin) = child.stdin.take() {
+            for file in files {
+                writeln!(stdin, "{}", file.display())?;
+            }
+        }
+    }
+
+    let output = child.wait_with_output()?;
+    if output.status.success() || output.status.code() == Some(1) {
+        return Ok(String::from_utf8_lossy(&output.stdout)
+            .lines()
+            .map(PathBuf::from)
+            .collect());
+    }
+    Ok(BTreeSet::new())
 }
 
 pub(super) fn raw_claude_mirror_plan(
