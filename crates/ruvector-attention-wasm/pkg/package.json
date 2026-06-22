@@ -3,7 +3,7 @@
   "collaborators": [
     "Ruvector Team"
   ],
-  "description": "High-performance WebAssembly attention mechanisms: Multi-Head, Flash, Hyperbolic, MoE, CGT Sheaf Attention with GPU acceleration for transformers and LLMs",
+  "description": "WebAssembly attention mechanisms: Multi-Head, Flash, Hyperbolic, Linear, Local-Global, and MoE attention for transformers and LLMs",
   "version": "2.2.3",
   "license": "MIT",
   "repository": {
