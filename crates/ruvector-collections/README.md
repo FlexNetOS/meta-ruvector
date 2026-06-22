@@ -7,33 +7,34 @@
 
 **High-performance collection management for Ruvector vector databases.**
 
-`ruvector-collections` provides multi-tenant collection support with isolated namespaces, schema management, and collection-level configuration. Part of the [Ruvector](https://github.com/FlexNetOS/ruvector) ecosystem.
+`ruvector-collections` provides multi-collection management with on-disk persistence, per-collection configuration, and aliases. Part of the [Ruvector](https://github.com/ruvnet/ruvector) ecosystem.
 
 ## Why Ruvector Collections?
 
-- **Multi-Tenant**: Isolated collections with separate namespaces
-- **Schema Support**: Define and enforce vector schemas
-- **Collection Configs**: Per-collection settings for dimensions, metrics
-- **Thread-Safe**: Concurrent access with DashMap
-- **Metadata Support**: Rich collection metadata and tagging
+- **Multiple Collections**: Organize vectors into separate, isolated collections
+- **Per-Collection Config**: Dimensions, distance metric, HNSW, and quantization per collection
+- **Thread-Safe**: Concurrent access with `DashMap`
+- **Persistence**: Collections and aliases are stored on disk
+- **Aliases**: Human-readable, switchable names for collections
 
 ## Features
 
 ### Core Capabilities
 
-- **Collection CRUD**: Create, read, update, delete collections
-- **Namespace Isolation**: Logical separation between collections
-- **Schema Validation**: Enforce vector dimensions and types
-- **Metadata Management**: Tags, descriptions, custom properties
-- **Alias Support**: Human-readable names for collections
+- **Collection CRUD**: Create, get, list, and delete collections
+- **Per-Collection Config**: `CollectionConfig` (dimensions, distance metric, HNSW, quantization, on-disk payload)
+- **Config Validation**: Dimensions and HNSW parameters are validated on creation
+- **Statistics**: `CollectionStats` (vector count, segment count, disk/RAM size)
+- **Alias Support**: Create, delete, and switch aliases; resolve names through aliases
 
-### Advanced Features
+### Planned / Not Yet Implemented
+
+These are roadmap items and are **not** present in the current code:
 
 - **Collection Groups**: Organize collections hierarchically
-- **Access Control**: Collection-level permissions (planned)
+- **Access Control**: Collection-level permissions
 - **Versioning**: Collection schema versioning
 - **Migration**: Tools for collection migration
-- **Statistics**: Per-collection metrics and stats
 
 ## Installation
 
@@ -49,33 +50,27 @@ ruvector-collections = "0.1.1"
 ### Create a Collection
 
 ```rust
-use ruvector_collections::{CollectionManager, CollectionConfig, Schema};
+use ruvector_collections::{CollectionManager, CollectionConfig};
+use ruvector_core::types::{DistanceMetric, HnswConfig};
+use std::path::PathBuf;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Create collection manager
-    let manager = CollectionManager::new()?;
+    // Create a collection manager rooted at a directory on disk
+    let manager = CollectionManager::new(PathBuf::from("./collections"))?;
 
-    // Define collection schema
-    let schema = Schema {
+    // Define the collection configuration
+    let config = CollectionConfig {
         dimensions: 384,
         distance_metric: DistanceMetric::Cosine,
-        vector_type: VectorType::Float32,
+        hnsw_config: Some(HnswConfig::default()),
+        quantization: None,
+        on_disk_payload: true,
     };
+    // Shortcut: CollectionConfig::with_dimensions(384) builds sensible defaults.
 
-    // Create collection with config
-    let config = CollectionConfig {
-        name: "documents".to_string(),
-        schema,
-        description: Some("Document embeddings".to_string()),
-        metadata: serde_json::json!({
-            "model": "text-embedding-3-small",
-            "created_by": "data-pipeline"
-        }),
-        ..Default::default()
-    };
-
-    let collection = manager.create_collection(config)?;
-    println!("Created collection: {}", collection.id);
+    // Create the collection (named, not stored on the config)
+    manager.create_collection("documents", config)?;
+    println!("Created collection: documents");
 
     Ok(())
 }
@@ -85,37 +80,45 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ```rust
 use ruvector_collections::CollectionManager;
+use std::path::PathBuf;
 
-let manager = CollectionManager::new()?;
+let manager = CollectionManager::new(PathBuf::from("./collections"))?;
 
-// List all collections
-for collection in manager.list_collections()? {
-    println!("{}: {} vectors", collection.name, collection.count);
+// List all collection names
+for name in manager.list_collections() {
+    let stats = manager.collection_stats(&name)?;
+    println!("{}: {} vectors", name, stats.vectors_count);
 }
 
-// Get collection by name
-let docs = manager.get_collection("documents")?;
+// Check existence
+if manager.collection_exists("documents") {
+    // Get a collection handle (Arc<RwLock<Collection>>) by name or alias
+    let docs = manager.get_collection("documents").unwrap();
+    let guard = docs.read();
+    println!("dims: {}", guard.config.dimensions);
+}
 
-// Update collection metadata
-manager.update_collection("documents", |c| {
-    c.metadata["last_updated"] = serde_json::json!(chrono::Utc::now());
-})?;
-
-// Delete collection
+// Delete a collection (must have no active aliases)
 manager.delete_collection("old_collection")?;
 ```
 
 ### Collection Aliases
 
 ```rust
-// Create alias for collection
-manager.create_alias("docs", "documents_v2")?;
+// Create an alias pointing at a collection
+manager.create_alias("current_docs", "documents")?;
 
-// Swap alias to new collection (zero-downtime migration)
-manager.swap_alias("docs", "documents_v3")?;
+// Switch the alias to a different collection (zero-downtime swap)
+manager.switch_alias("current_docs", "documents_v3")?;
 
-// Access via alias
-let collection = manager.get_collection_by_alias("docs")?;
+// get_collection resolves aliases transparently
+let collection = manager.get_collection("current_docs").unwrap();
+
+// Inspect / remove aliases
+for (alias, target) in manager.list_aliases() {
+    println!("{} -> {}", alias, target);
+}
+manager.delete_alias("current_docs")?;
 ```
 
 ## API Overview
@@ -123,32 +126,21 @@ let collection = manager.get_collection_by_alias("docs")?;
 ### Core Types
 
 ```rust
-// Collection configuration
+// Collection configuration (the name is passed separately to create_collection)
 pub struct CollectionConfig {
-    pub name: String,
-    pub schema: Schema,
-    pub description: Option<String>,
-    pub metadata: serde_json::Value,
-    pub replicas: usize,
-    pub shards: usize,
-}
-
-// Vector schema
-pub struct Schema {
     pub dimensions: usize,
-    pub distance_metric: DistanceMetric,
-    pub vector_type: VectorType,
+    pub distance_metric: DistanceMetric,        // from ruvector_core::types
+    pub hnsw_config: Option<HnswConfig>,        // from ruvector_core::types
+    pub quantization: Option<QuantizationConfig>,
+    pub on_disk_payload: bool,
 }
 
-// Collection info
-pub struct Collection {
-    pub id: Uuid,
-    pub name: String,
-    pub schema: Schema,
-    pub count: usize,
-    pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
-    pub metadata: serde_json::Value,
+// Collection statistics
+pub struct CollectionStats {
+    pub vectors_count: usize,
+    pub segments_count: usize,
+    pub disk_size_bytes: u64,
+    pub ram_size_bytes: u64,
 }
 ```
 
@@ -156,14 +148,23 @@ pub struct Collection {
 
 ```rust
 impl CollectionManager {
-    pub fn new() -> Result<Self>;
-    pub fn create_collection(&self, config: CollectionConfig) -> Result<Collection>;
-    pub fn get_collection(&self, name: &str) -> Result<Option<Collection>>;
-    pub fn list_collections(&self) -> Result<Vec<Collection>>;
-    pub fn update_collection<F>(&self, name: &str, f: F) -> Result<Collection>;
-    pub fn delete_collection(&self, name: &str) -> Result<bool>;
+    pub fn new(base_path: PathBuf) -> Result<Self>;
+
+    // Collections
+    pub fn create_collection(&self, name: &str, config: CollectionConfig) -> Result<()>;
+    pub fn delete_collection(&self, name: &str) -> Result<()>;
+    pub fn get_collection(&self, name: &str) -> Option<Arc<RwLock<Collection>>>;
+    pub fn list_collections(&self) -> Vec<String>;
+    pub fn collection_exists(&self, name: &str) -> bool;
+    pub fn collection_stats(&self, name: &str) -> Result<CollectionStats>;
+
+    // Aliases
     pub fn create_alias(&self, alias: &str, collection: &str) -> Result<()>;
-    pub fn delete_alias(&self, alias: &str) -> Result<bool>;
+    pub fn delete_alias(&self, alias: &str) -> Result<()>;
+    pub fn switch_alias(&self, alias: &str, new_collection: &str) -> Result<()>;
+    pub fn resolve_alias(&self, name_or_alias: &str) -> Option<String>;
+    pub fn list_aliases(&self) -> Vec<(String, String)>;
+    pub fn is_alias(&self, name: &str) -> bool;
 }
 ```
 
@@ -177,7 +178,7 @@ impl CollectionManager {
 
 - **[Main README](../../README.md)** - Complete project overview
 - **[API Documentation](https://docs.rs/ruvector-collections)** - Full API reference
-- **[GitHub Repository](https://github.com/FlexNetOS/ruvector)** - Source code
+- **[GitHub Repository](https://github.com/ruvnet/ruvector)** - Source code
 
 ## License
 
@@ -187,10 +188,10 @@ impl CollectionManager {
 
 <div align="center">
 
-**Part of [Ruvector](https://github.com/FlexNetOS/ruvector) - Built by [rUv](https://ruv.io)**
+**Part of [Ruvector](https://github.com/ruvnet/ruvector) - Built by [rUv](https://ruv.io)**
 
-[![Star on GitHub](https://img.shields.io/github/stars/FlexNetOS/ruvector?style=social)](https://github.com/FlexNetOS/ruvector)
+[![Star on GitHub](https://img.shields.io/github/stars/ruvnet/ruvector?style=social)](https://github.com/ruvnet/ruvector)
 
-[Documentation](https://docs.rs/ruvector-collections) | [Crates.io](https://crates.io/crates/ruvector-collections) | [GitHub](https://github.com/FlexNetOS/ruvector)
+[Documentation](https://docs.rs/ruvector-collections) | [Crates.io](https://crates.io/crates/ruvector-collections) | [GitHub](https://github.com/ruvnet/ruvector)
 
 </div>

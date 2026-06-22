@@ -6,32 +6,31 @@
 
 **Node.js bindings for RuVector Graph Database via NAPI-RS.**
 
-`ruvector-graph-node` provides native Node.js bindings for the Ruvector graph database, enabling high-performance graph operations with Cypher queries directly from JavaScript/TypeScript. Part of the [Ruvector](https://github.com/FlexNetOS/ruvector) ecosystem.
+`ruvector-graph-node` provides native Node.js bindings for the Ruvector graph database, exposing a single `GraphDatabase` class that combines a hypergraph index, a causal-memory index, and a property graph with Cypher-like query parsing — directly from JavaScript/TypeScript. Part of the [Ruvector](https://github.com/ruvnet/ruvector) ecosystem.
 
 ## Why Ruvector Graph Node?
 
-- **Native Performance**: Rust speed in Node.js
-- **Zero-Copy**: Efficient data transfer via NAPI-RS
-- **Async/Await**: Full async support for non-blocking I/O
-- **TypeScript**: Complete type definitions included
-- **Neo4j Compatible**: Cypher query language support
+- **Native Performance**: Rust speed in Node.js via NAPI-RS
+- **Async/Await**: Most operations are async (run on a blocking thread pool)
+- **Hypergraph + Property Graph**: Nodes, edges, and multi-node hyperedges in one store
+- **Cypher-like Queries**: A built-in Cypher parser drives `MATCH ... RETURN` lookups
+- **Optional Persistence**: Back the database with on-disk storage
 
 ## Features
 
 ### Core Capabilities
 
-- **Graph CRUD**: Create nodes, edges, and hyperedges
-- **Cypher Queries**: Execute Neo4j-compatible queries
-- **Vector Search**: Semantic search on graph elements
-- **Traversal**: BFS, DFS, shortest path algorithms
-- **Batch Operations**: Bulk insert and query
+- **Graph CRUD**: Create nodes, edges, and hyperedges; delete nodes/edges/hyperedges
+- **Cypher-like Queries**: `query()` / `querySync()` over a built-in parser (label-based `MATCH`)
+- **Hyperedge Vector Search**: `searchHyperedges()` finds similar hyperedges by embedding
+- **k-Hop Traversal**: `kHopNeighbors()` returns nodes reachable within k hops
+- **Batch Operations**: `batchInsert()` for bulk nodes and edges
+- **Transactions**: `begin()` / `commit()` / `rollback()` (transaction manager)
+- **Statistics**: `stats()`
 
-### Advanced Features
-
-- **Streaming Results**: Handle large result sets
-- **Transaction Support**: ACID transactions (planned)
-- **Connection Pooling**: Efficient resource management
-- **Worker Threads**: Multi-threaded operations
+> **Note on traversal:** this binding exposes k-hop neighborhood expansion
+> (`kHopNeighbors`) and hyperedge similarity search. General BFS/DFS and
+> shortest-path algorithms are **not** implemented — see [Planned](#planned--not-yet-implemented).
 
 ## Installation
 
@@ -45,163 +44,201 @@ pnpm add @ruvector/graph
 
 ## Quick Start
 
-### Create a Graph
+### Create a database
 
-```typescript
-import { Graph, Node, Edge } from '@ruvector/graph';
+```javascript
+const { GraphDatabase } = require('@ruvector/graph');
 
-// Create a new graph
-const graph = new Graph({
-  dimensions: 384,  // For vector embeddings
-  distanceMetric: 'cosine',
-});
+// In-memory
+const db = new GraphDatabase({ distanceMetric: 'Cosine', dimensions: 384 });
 
-// Create nodes
-const alice = await graph.createNode({
+// Or persisted to disk
+const persisted = GraphDatabase.open('./my-graph.db');
+console.log(persisted.isPersistent());      // true
+console.log(persisted.getStoragePath());    // './my-graph.db'
+```
+
+### Create nodes, edges, and hyperedges
+
+```javascript
+// Create nodes (id is required; embedding + labels + properties optional)
+const aliceId = await db.createNode({
+  id: 'alice',
+  embedding: new Float32Array([0.1, 0.2, 0.3]),
   labels: ['Person'],
   properties: { name: 'Alice', age: 30 },
 });
 
-const bob = await graph.createNode({
+const bobId = await db.createNode({
+  id: 'bob',
+  embedding: new Float32Array([0.2, 0.1, 0.4]),
   labels: ['Person'],
-  properties: { name: 'Bob', age: 25 },
 });
 
-// Create relationship
-await graph.createEdge({
-  label: 'KNOWS',
-  source: alice.id,
-  target: bob.id,
-  properties: { since: 2020 },
+// Create an edge (a 2-node hyperedge under the hood)
+const edgeId = await db.createEdge({
+  from: 'alice',
+  to: 'bob',
+  description: 'knows',
+  embedding: new Float32Array([0.5, 0.5, 0.5]),
+  confidence: 0.95,
+});
+
+// Create a hyperedge connecting multiple nodes
+const hyperedgeId = await db.createHyperedge({
+  nodes: ['alice', 'bob'],
+  description: 'collaborated_on_project',
+  embedding: new Float32Array([0.3, 0.6, 0.9]),
+  confidence: 0.85,
 });
 ```
 
-### Cypher Queries
+### Cypher-like queries
 
-```typescript
-import { Graph } from '@ruvector/graph';
+```javascript
+// Label-based MATCH ... RETURN over the property graph
+const result = await db.query('MATCH (p:Person) RETURN p LIMIT 10');
+console.log(result.nodes);  // matched JsNodeResult[]
+console.log(result.stats);  // { totalNodes, totalEdges, avgDegree }
 
-const graph = new Graph();
-
-// Execute Cypher query
-const results = await graph.query(`
-  MATCH (p:Person)-[:KNOWS]->(friend:Person)
-  WHERE p.name = 'Alice'
-  RETURN friend.name AS name, friend.age AS age
-`);
-
-for (const row of results) {
-  console.log(`Friend: ${row.name} (age ${row.age})`);
-}
+// Synchronous stats-only variant
+const sync = db.querySync('MATCH (n) RETURN n');
 ```
 
-### Vector Search
+### Hyperedge similarity search
 
-```typescript
-import { Graph } from '@ruvector/graph';
-
-const graph = new Graph({ dimensions: 384 });
-
-// Create node with embedding
-await graph.createNode({
-  labels: ['Document'],
-  properties: { title: 'Introduction to Graphs' },
-  embedding: new Float32Array([0.1, 0.2, 0.3, /* ... */]),
-});
-
-// Semantic search
-const similar = await graph.searchSimilar({
-  vector: new Float32Array([0.1, 0.2, 0.3, /* ... */]),
+```javascript
+const matches = await db.searchHyperedges({
+  embedding: new Float32Array([0.5, 0.5, 0.5]),
   k: 10,
-  labels: ['Document'],
+});
+matches.forEach(m => console.log(m.id, m.score));
+```
+
+### k-hop traversal
+
+```javascript
+const neighbors = await db.kHopNeighbors('alice', 2);
+console.log(neighbors); // string[] of node ids within 2 hops
+```
+
+### Transactions
+
+```javascript
+const txId = await db.begin();
+// ... mutations ...
+await db.commit(txId);   // or await db.rollback(txId);
+```
+
+### Deletes and batch insert
+
+```javascript
+await db.batchInsert({
+  nodes: [{ id: 'n1', embedding: new Float32Array([1, 2, 3]) }],
+  edges: [{ from: 'n1', to: 'alice', description: 'mentions',
+            embedding: new Float32Array([0, 0, 0]) }],
 });
 
-for (const node of similar) {
-  console.log(`${node.properties.title}: ${node.score}`);
-}
+const del = await db.deleteNode('n1', { cascade: true });
+console.log(del.deletedNode, del.deletedEdges);
+
+await db.deleteEdge(edgeId);
+await db.deleteHyperedge(hyperedgeId);
 ```
 
 ## API Reference
 
-### Graph Class
+### `GraphDatabase`
 
 ```typescript
-class Graph {
-  constructor(config?: GraphConfig);
+class GraphDatabase {
+  constructor(options?: JsGraphOptions);
+  static open(path: string): GraphDatabase;
 
-  // Node operations
-  createNode(node: NodeInput): Promise<Node>;
-  getNode(id: string): Promise<Node | null>;
-  updateNode(id: string, updates: Partial<NodeInput>): Promise<Node>;
-  deleteNode(id: string): Promise<boolean>;
+  isPersistent(): boolean;
+  getStoragePath(): string | null;
 
-  // Edge operations
-  createEdge(edge: EdgeInput): Promise<Edge>;
-  getEdge(id: string): Promise<Edge | null>;
-  deleteEdge(id: string): Promise<boolean>;
+  // Mutations (async)
+  createNode(node: JsNode): Promise<string>;
+  createEdge(edge: JsEdge): Promise<string>;
+  createHyperedge(hyperedge: JsHyperedge): Promise<string>;
+  batchInsert(batch: JsBatchInsert): Promise<JsBatchResult>;
+  deleteNode(id: string, opts?: JsDeleteNodeOptions): Promise<JsDeleteNodeResult>;
+  deleteEdge(id: string): Promise<JsDeleteResult>;
+  deleteHyperedge(id: string): Promise<JsDeleteResult>;
 
-  // Query
-  query(cypher: string, params?: Record<string, any>): Promise<Row[]>;
+  // Query & search
+  query(cypher: string): Promise<JsQueryResult>;
+  querySync(cypher: string): JsQueryResult;
+  searchHyperedges(query: JsHyperedgeQuery): Promise<JsHyperedgeResult[]>;
+  kHopNeighbors(startNode: string, k: number): Promise<string[]>;
 
-  // Search
-  searchSimilar(options: SearchOptions): Promise<ScoredNode[]>;
+  // Transactions
+  begin(): Promise<string>;
+  commit(txId: string): Promise<void>;
+  rollback(txId: string): Promise<void>;
 
-  // Traversal
-  neighbors(id: string, direction?: 'in' | 'out' | 'both'): Promise<Node[]>;
-  shortestPath(from: string, to: string): Promise<Path | null>;
+  // Misc
+  subscribe(callback: (change: unknown) => void): void; // placeholder, no-op
+  stats(): Promise<JsGraphStats>;
 }
+
+// Free functions
+function version(): string;  // crate version, e.g. "2.2.3"
+function hello(): string;
 ```
 
 ### Types
 
 ```typescript
-interface GraphConfig {
+interface JsGraphOptions {
+  distanceMetric?: 'Cosine' | 'Euclidean' | 'DotProduct';
   dimensions?: number;
-  distanceMetric?: 'cosine' | 'euclidean' | 'dotProduct';
+  storagePath?: string;
 }
 
-interface NodeInput {
-  labels: string[];
-  properties: Record<string, any>;
-  embedding?: Float32Array;
-}
-
-interface Node {
+interface JsNode {
   id: string;
-  labels: string[];
-  properties: Record<string, any>;
-  embedding?: Float32Array;
-}
-
-interface EdgeInput {
-  label: string;
-  source: string;
-  target: string;
-  properties?: Record<string, any>;
-}
-
-interface SearchOptions {
-  vector: Float32Array;
-  k: number;
+  embedding: Float32Array;
   labels?: string[];
-  filter?: Record<string, any>;
+  properties?: Record<string, unknown>;
 }
+
+interface JsEdge {
+  from: string;
+  to: string;
+  description: string;
+  embedding: Float32Array;
+  confidence?: number;
+}
+
+interface JsHyperedge {
+  nodes: string[];
+  description: string;
+  embedding: Float32Array;
+  confidence?: number;
+}
+
+interface JsHyperedgeQuery { embedding: Float32Array; k: number; }
+interface JsGraphStats { totalNodes: number; totalEdges: number; avgDegree: number; }
 ```
+
+## Planned / Not Yet Implemented
+
+These are **not** part of the current API:
+
+- General **BFS / DFS** traversal and **shortest-path** algorithms (only `kHopNeighbors` exists)
+- Full ACID transaction durability (a transaction manager exists; semantics are best-effort)
+- Change subscriptions — `subscribe()` is currently a no-op placeholder
+- General property/vector similarity search over *nodes* (search is over *hyperedges*)
 
 ## Building from Source
 
 ```bash
-# Clone repository
-git clone https://github.com/FlexNetOS/ruvector.git
+git clone https://github.com/ruvnet/ruvector.git
 cd ruvector/crates/ruvector-graph-node
-
-# Install dependencies
 npm install
-
-# Build native module
 npm run build
-
-# Run tests
 npm test
 ```
 
@@ -218,14 +255,12 @@ npm test
 ## Related Packages
 
 - **[ruvector-graph](../ruvector-graph/)** - Core graph database engine
-- **[ruvector-graph-wasm](../ruvector-graph-wasm/)** - WebAssembly bindings
 - **[@ruvector/core](https://www.npmjs.com/package/@ruvector/core)** - Core vector bindings
 
 ## Documentation
 
-- **[Main README](../../README.md)** - Complete project overview
 - **[API Documentation](https://docs.rs/ruvector-graph-node)** - Full API reference
-- **[GitHub Repository](https://github.com/FlexNetOS/ruvector)** - Source code
+- **[GitHub Repository](https://github.com/ruvnet/ruvector)** - Source code
 
 ## License
 
@@ -235,10 +270,10 @@ npm test
 
 <div align="center">
 
-**Part of [Ruvector](https://github.com/FlexNetOS/ruvector) - Built by [rUv](https://ruv.io)**
+**Part of [Ruvector](https://github.com/ruvnet/ruvector) - Built by [rUv](https://ruv.io)**
 
-[![Star on GitHub](https://img.shields.io/github/stars/FlexNetOS/ruvector?style=social)](https://github.com/FlexNetOS/ruvector)
+[![Star on GitHub](https://img.shields.io/github/stars/ruvnet/ruvector?style=social)](https://github.com/ruvnet/ruvector)
 
-[Documentation](https://docs.rs/ruvector-graph-node) | [npm](https://www.npmjs.com/package/@ruvector/graph) | [GitHub](https://github.com/FlexNetOS/ruvector)
+[Documentation](https://docs.rs/ruvector-graph-node) | [npm](https://www.npmjs.com/package/@ruvector/graph) | [GitHub](https://github.com/ruvnet/ruvector)
 
 </div>

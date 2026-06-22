@@ -6,26 +6,35 @@
 
 > Neural embedding generation using Perch 2.0 for bioacoustic analysis.
 
-**sevensense-embedding** transforms audio segments into rich 1536-dimensional embedding vectors using Google's Perch 2.0 model via ONNX Runtime. These embeddings capture the acoustic essence of bird vocalizations, enabling similarity search, clustering, and species identification.
+**sevensense-embedding** transforms mel spectrograms into 1536-dimensional embedding
+vectors using a Perch 2.0 ONNX model via ONNX Runtime. These embeddings capture the
+acoustic essence of bird vocalizations, enabling similarity search, clustering, and
+species identification.
+
+The crate follows Domain-Driven Design (DDD):
+
+- **Domain Layer**: Core entities (`Embedding`, `EmbeddingModel`, `EmbeddingMetadata`, `StorageTier`) and the `EmbeddingRepository` trait
+- **Application Layer**: `EmbeddingService` for single and batch inference
+- **Infrastructure Layer**: `ModelManager` (session caching + hot-swap) and `OnnxInference`
+- **Quantization / Normalization**: free functions for F16/INT8 quantization and L2 normalization
 
 ## Features
 
-- **Perch 2.0 Integration**: State-of-the-art bird audio embeddings
-- **ONNX Runtime**: Cross-platform GPU/CPU inference
-- **1536-Dimensional Vectors**: Rich semantic representation
-- **Batch Processing**: Efficient multi-segment inference
-- **Product Quantization (PQ)**: 4x memory reduction for storage
+- **Perch 2.0 Integration**: 1536-dimensional bird audio embeddings
+- **ONNX Runtime**: Cross-platform inference (CPU, CUDA, CoreML, DirectML execution providers)
+- **Batch Processing**: Efficient multi-segment inference with a configurable batch size
+- **Model Hot-Swap**: `ModelManager` caches sessions and supports version switching
+- **F16 & INT8 Quantization**: 50% / 75% storage reduction via the `quantization` module
 - **L2 Normalization**: Optimized for cosine similarity search
 
 ## Use Cases
 
-| Use Case | Description | Key Functions |
-|----------|-------------|---------------|
-| Single Inference | Embed one audio segment | `embed()` |
-| Batch Processing | Embed multiple segments efficiently | `embed_batch()` |
-| Streaming | Real-time embedding generation | `EmbeddingStream::new()` |
-| Quantization | Compress embeddings for storage | `quantize_pq()` |
-| Validation | Verify embedding quality | `validate()` |
+| Use Case | Description | Key API |
+|----------|-------------|---------|
+| Single Inference | Embed one spectrogram | `EmbeddingService::embed_segment()` |
+| Batch Processing | Embed multiple spectrograms | `EmbeddingService::embed_batch()` |
+| F16 Quantization | Halve storage footprint | `quantize_to_f16()` / `dequantize_f16()` |
+| INT8 Quantization | Quarter storage footprint | `quantize_to_i8_full()` / `QuantizedEmbedding::dequantize()` |
 
 ## Installation
 
@@ -38,77 +47,66 @@ sevensense-embedding = "0.1"
 
 ### ONNX Model Setup
 
-The Perch 2.0 ONNX model is automatically downloaded on first use. For manual setup:
-
-```bash
-# Download model manually
-curl -L https://example.com/perch-2.0.onnx -o models/perch-2.0.onnx
-```
+The Perch 2.0 ONNX model is loaded from a local directory configured via
+`ModelConfig::model_dir` (default: `models/`). Place the model files in that
+directory before creating a `ModelManager`. The crate does **not** download models
+automatically.
 
 ## Quick Start
 
-```rust
-use sevensense_embedding::{EmbeddingPipeline, EmbeddingConfig};
-use sevensense_audio::AudioLoader;
+`EmbeddingService::embed_segment` takes a `Spectrogram` (a `[1, 500, 128]` mel
+spectrogram wrapper defined in this crate) and returns an `EmbeddingOutput`.
+
+```rust,ignore
+use std::sync::Arc;
+use sevensense_embedding::{EmbeddingService, ModelManager, ModelConfig};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Initialize the embedding pipeline
-    let config = EmbeddingConfig::default();
-    let pipeline = EmbeddingPipeline::new(config).await?;
+    // Initialize the model manager from a model directory
+    let config = ModelConfig::default(); // model_dir = "models"
+    let model_manager = Arc::new(ModelManager::new(config)?);
 
-    // Load audio and generate embedding
-    let audio = AudioLoader::load("birdsong.wav").await?;
-    let embedding = pipeline.embed(&audio).await?;
+    // Create the embedding service with a batch size of 8
+    let service = EmbeddingService::new(model_manager, 8);
 
-    println!("Embedding dimension: {}", embedding.len());  // 1536
-    println!("L2 norm: {:.4}", embedding.iter().map(|x| x*x).sum::<f32>().sqrt());
+    // Embed a spectrogram
+    let output = service.embed_segment(&spectrogram).await?;
 
     Ok(())
 }
 ```
+
+`ModelManager::new` takes a `ModelConfig` and returns `Result<ModelManager, ModelError>`.
+`EmbeddingService::new` takes an `Arc<ModelManager>` and a batch size; a
+builder (`EmbeddingServiceBuilder`) and `EmbeddingService::with_config` are also available.
 
 ---
 
 <details>
 <summary><b>Tutorial: Basic Embedding Generation</b></summary>
 
-### Single Audio Embedding
+```rust,ignore
+use std::sync::Arc;
+use sevensense_embedding::{EmbeddingService, ModelManager, ModelConfig};
 
-```rust
-use sevensense_embedding::{EmbeddingPipeline, EmbeddingConfig};
+# async fn example(spectrogram: &sevensense_embedding::application::services::Spectrogram)
+#   -> Result<(), Box<dyn std::error::Error>> {
+let model_manager = Arc::new(ModelManager::new(ModelConfig::default())?);
+let service = EmbeddingService::new(model_manager, 8);
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Create pipeline with default config
-    let pipeline = EmbeddingPipeline::new(EmbeddingConfig::default()).await?;
+// Single-segment inference
+let output = service.embed_segment(spectrogram).await?;
 
-    // Embed from mel spectrogram
-    let mel = compute_mel_spectrogram(&audio)?;
-    let embedding = pipeline.embed_mel(&mel).await?;
+// The model produces 1536-dimensional vectors (EMBEDDING_DIM)
+assert_eq!(sevensense_embedding::EMBEDDING_DIM, 1536);
 
-    // Embedding properties
-    assert_eq!(embedding.len(), 1536);
-
-    // L2 normalized by default
-    let norm: f32 = embedding.iter().map(|x| x*x).sum::<f32>().sqrt();
-    assert!((norm - 1.0).abs() < 1e-5);
-
-    Ok(())
+// Check that the model is loaded and report its version
+if service.is_ready().await {
+    println!("Model version: {}", service.model_version());
 }
-```
-
-### From Raw Audio
-
-```rust
-use sevensense_embedding::EmbeddingPipeline;
-use sevensense_audio::AudioLoader;
-
-let audio = AudioLoader::load("recording.wav").await?;
-let pipeline = EmbeddingPipeline::new(Default::default()).await?;
-
-// Pipeline handles mel spectrogram computation internally
-let embedding = pipeline.embed_audio(&audio).await?;
+# Ok(())
+# }
 ```
 
 </details>
@@ -116,58 +114,39 @@ let embedding = pipeline.embed_audio(&audio).await?;
 <details>
 <summary><b>Tutorial: Batch Processing</b></summary>
 
-### Efficient Batch Embedding
+```rust,ignore
+use std::sync::Arc;
+use sevensense_embedding::{EmbeddingService, ModelManager, ModelConfig};
 
-```rust
-use sevensense_embedding::{EmbeddingPipeline, BatchConfig};
+# async fn example(spectrograms: &[sevensense_embedding::application::services::Spectrogram])
+#   -> Result<(), Box<dyn std::error::Error>> {
+// Configure batch size via the service constructor
+let model_manager = Arc::new(ModelManager::new(ModelConfig::default())?);
+let service = EmbeddingService::new(model_manager, 32);
 
-let pipeline = EmbeddingPipeline::new(Default::default()).await?;
-
-// Configure batching
-let batch_config = BatchConfig {
-    batch_size: 32,           // Process 32 segments at once
-    max_concurrent: 4,        // 4 concurrent batches
-    prefetch: true,           // Prefetch next batch
-};
-
-// Embed multiple segments
-let segments = load_segments("recordings/")?;
-let embeddings = pipeline.embed_batch(&segments, batch_config).await?;
-
-println!("Generated {} embeddings", embeddings.len());
+// Embed a batch of spectrograms
+let outputs = service.embed_batch(spectrograms).await?;
+println!("Generated {} embeddings", outputs.len());
+# Ok(())
+# }
 ```
 
-### Progress Tracking
+For finer control, build the service with `EmbeddingServiceBuilder`:
 
-```rust
-use sevensense_embedding::EmbeddingPipeline;
+```rust,ignore
+use std::sync::Arc;
+use sevensense_embedding::{EmbeddingService, ModelManager, ModelConfig};
+use sevensense_embedding::application::services::EmbeddingServiceBuilder;
 
-let pipeline = EmbeddingPipeline::new(Default::default()).await?;
-
-let embeddings = pipeline.embed_batch_with_progress(&segments, |progress| {
-    println!("Progress: {}/{} ({:.1}%)",
-        progress.completed,
-        progress.total,
-        progress.percentage());
-}).await?;
-```
-
-### Parallel Processing
-
-```rust
-use sevensense_embedding::EmbeddingPipeline;
-use futures::stream::{self, StreamExt};
-
-let pipeline = Arc::new(EmbeddingPipeline::new(Default::default()).await?);
-
-let embeddings: Vec<_> = stream::iter(segments)
-    .map(|seg| {
-        let pipeline = Arc::clone(&pipeline);
-        async move { pipeline.embed(&seg).await }
-    })
-    .buffer_unordered(8)  // 8 concurrent embeddings
-    .collect()
-    .await;
+# fn example(model_manager: Arc<ModelManager>) -> Result<(), Box<dyn std::error::Error>> {
+let service = EmbeddingServiceBuilder::new()
+    .model_manager(model_manager)
+    .batch_size(32)
+    .normalize(true)
+    .validate_embeddings(true)
+    .build()?;
+# Ok(())
+# }
 ```
 
 </details>
@@ -175,163 +154,75 @@ let embeddings: Vec<_> = stream::iter(segments)
 <details>
 <summary><b>Tutorial: Embedding Quantization</b></summary>
 
-### Product Quantization (PQ)
+The `quantization` module provides free functions for F16 and INT8 quantization.
+There is no product-quantization codebook; storage is reduced by lowering the
+per-element precision.
 
-Product Quantization reduces embedding size by 4x while maintaining search quality.
+### F16 Quantization (50% reduction)
 
-```rust
-use sevensense_embedding::{EmbeddingPipeline, ProductQuantizer};
+```rust,ignore
+use sevensense_embedding::quantization::{quantize_to_f16, dequantize_f16};
 
-let pipeline = EmbeddingPipeline::new(Default::default()).await?;
+let embedding: Vec<f32> = generate_embedding();
 
-// Generate embeddings
-let embeddings: Vec<Vec<f32>> = generate_embeddings(&segments).await?;
+// Quantize to half precision
+let half = quantize_to_f16(&embedding);
 
-// Train PQ codebook on embeddings
-let pq = ProductQuantizer::train(&embeddings, 96, 256)?;  // 96 subvectors, 256 centroids
-
-// Quantize embeddings
-let quantized: Vec<Vec<u8>> = embeddings.iter()
-    .map(|e| pq.encode(e))
-    .collect();
-
-// Memory reduction
-let original_size = embeddings.len() * 1536 * 4;  // f32 = 4 bytes
-let quantized_size = quantized.len() * 96;        // u8 per subvector
-println!("Compression ratio: {:.1}x", original_size as f32 / quantized_size as f32);
-// Output: Compression ratio: 64.0x
+// Round-trip back to f32
+let restored = dequantize_f16(&half);
 ```
 
-### Asymmetric Distance Computation
+### INT8 Quantization (75% reduction)
 
-```rust
-use sevensense_embedding::ProductQuantizer;
+```rust,ignore
+use sevensense_embedding::quantization::{quantize_to_i8_full, QuantizedEmbedding};
 
-// Query embedding (full precision)
-let query = pipeline.embed(&query_audio).await?;
+let embedding: Vec<f32> = generate_embedding();
 
-// Compute distances to quantized vectors
-let distances: Vec<f32> = quantized.iter()
-    .map(|q| pq.asymmetric_distance(&query, q))
-    .collect();
+// Quantize with scale + zero-point captured in QuantizedEmbedding
+let quantized: QuantizedEmbedding = quantize_to_i8_full(&embedding);
+println!("Stored bytes: {}", quantized.size_bytes());
 
-// Find nearest neighbors
-let mut indexed: Vec<_> = distances.iter().enumerate().collect();
-indexed.sort_by(|a, b| a.1.partial_cmp(b.1).unwrap());
-let top_10: Vec<_> = indexed.iter().take(10).collect();
+// Dequantize back to f32
+let restored = quantized.dequantize();
 ```
+
+Additional helpers include `quantize_to_i8` / `dequantize_i8`,
+`quantize_to_u8` / `dequantize_u8`, `compute_quantization_error`,
+`compute_cosine_preservation`, `QuantizationStats`, and `BatchQuantizer`.
 
 </details>
 
 <details>
 <summary><b>Tutorial: Model Configuration</b></summary>
 
-### Custom ONNX Configuration
+`ModelConfig` controls the model directory, threading, execution providers, and
+session caching.
 
-```rust
-use sevensense_embedding::{EmbeddingConfig, ExecutionProvider};
+```rust,ignore
+use std::path::PathBuf;
+use sevensense_embedding::ModelConfig;
+use sevensense_embedding::infrastructure::model_manager::ExecutionProvider;
 
-let config = EmbeddingConfig {
-    model_path: "models/perch-2.0.onnx".into(),
-    execution_provider: ExecutionProvider::CUDA,  // GPU acceleration
-    num_threads: 4,                                // CPU threads (if CPU)
-    normalize: true,                               // L2 normalize output
-    warmup: true,                                  // Warmup inference
+let config = ModelConfig {
+    model_dir: PathBuf::from("models"),
+    intra_op_threads: 4,
+    inter_op_threads: 1,
+    verify_checksums: true,
+    execution_providers: vec![
+        ExecutionProvider::Cuda { device_id: 0 },
+        ExecutionProvider::CoreML,
+        ExecutionProvider::Cpu,
+    ],
+    max_cached_sessions: 4,
 };
-
-let pipeline = EmbeddingPipeline::new(config).await?;
 ```
 
 ### Execution Providers
 
-```rust
-use sevensense_embedding::ExecutionProvider;
-
-// CPU (default)
-let cpu_config = EmbeddingConfig {
-    execution_provider: ExecutionProvider::CPU,
-    ..Default::default()
-};
-
-// CUDA (NVIDIA GPU)
-let cuda_config = EmbeddingConfig {
-    execution_provider: ExecutionProvider::CUDA,
-    ..Default::default()
-};
-
-// CoreML (Apple Silicon)
-let coreml_config = EmbeddingConfig {
-    execution_provider: ExecutionProvider::CoreML,
-    ..Default::default()
-};
-```
-
-### Memory Optimization
-
-```rust
-use sevensense_embedding::{EmbeddingConfig, MemoryConfig};
-
-let config = EmbeddingConfig {
-    memory: MemoryConfig {
-        arena_extend_strategy: ArenaExtendStrategy::NextPowerOfTwo,
-        initial_chunk_size: 1024 * 1024,  // 1MB
-        max_chunk_size: 16 * 1024 * 1024, // 16MB
-    },
-    ..Default::default()
-};
-```
-
-</details>
-
-<details>
-<summary><b>Tutorial: Embedding Validation</b></summary>
-
-### Quality Checks
-
-```rust
-use sevensense_embedding::{EmbeddingValidator, ValidationResult};
-
-let validator = EmbeddingValidator::new();
-
-let embedding = pipeline.embed(&audio).await?;
-let result = validator.validate(&embedding)?;
-
-match result {
-    ValidationResult::Valid => println!("Embedding is valid"),
-    ValidationResult::Invalid(reasons) => {
-        for reason in reasons {
-            eprintln!("Invalid: {}", reason);
-        }
-    }
-}
-```
-
-### Validation Criteria
-
-```rust
-use sevensense_embedding::{ValidationCriteria, EmbeddingValidator};
-
-let criteria = ValidationCriteria {
-    expected_dim: 1536,
-    max_nan_ratio: 0.0,      // No NaN values allowed
-    max_inf_ratio: 0.0,      // No Inf values allowed
-    min_variance: 1e-6,      // Minimum variance threshold
-    norm_range: (0.99, 1.01), // Expected L2 norm range
-};
-
-let validator = EmbeddingValidator::with_criteria(criteria);
-```
-
-### Batch Validation
-
-```rust
-let results = validator.validate_batch(&embeddings);
-
-let valid_count = results.iter().filter(|r| r.is_valid()).count();
-let invalid_count = results.len() - valid_count;
-
-println!("{} valid, {} invalid embeddings", valid_count, invalid_count);
-```
+`ExecutionProvider` is an enum with the variants `Cpu`, `Cuda { device_id }`,
+`CoreML`, and `DirectML { device_id }`. The default priority order is
+CUDA → CoreML → CPU.
 
 </details>
 
@@ -339,32 +230,46 @@ println!("{} valid, {} invalid embeddings", valid_count, invalid_count);
 
 ## Configuration
 
-### EmbeddingConfig Parameters
+### `ModelConfig` Parameters
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `model_path` | Auto-download | Path to ONNX model |
-| `execution_provider` | CPU | CUDA, CoreML, or CPU |
-| `num_threads` | 4 | CPU inference threads |
-| `normalize` | true | L2 normalize embeddings |
-| `warmup` | true | Run warmup inference |
+| `model_dir` | `models` | Directory containing model files |
+| `intra_op_threads` | `min(num_cpus, 4)` | Intra-op parallelism threads |
+| `inter_op_threads` | 1 | Inter-op parallelism threads |
+| `verify_checksums` | true | Verify model checksums on load |
+| `execution_providers` | CUDA, CoreML, CPU | Provider priority order |
+| `max_cached_sessions` | 4 | Maximum cached model sessions |
 
-### Model Specifications
+### Model Specifications & Constants
 
-| Property | Value |
+| Constant | Value | Description |
+|----------|-------|-------------|
+| `EMBEDDING_DIM` | 1536 | Output embedding dimension |
+| `TARGET_SAMPLE_RATE` | 32 000 | Target sample rate (Hz) |
+| `TARGET_WINDOW_SECONDS` | 5.0 | Target window duration |
+| `TARGET_WINDOW_SAMPLES` | 160 000 | 5 s at 32 kHz |
+| `MEL_BINS` | 128 | Mel spectrogram bins |
+| `MEL_FRAMES` | 500 | Mel spectrogram frames |
+
+## Public API
+
+Re-exported at the crate root (`sevensense_embedding::`):
+
+| Category | Items |
 |----------|-------|
-| Input | Mel spectrogram [batch, 128, 312] |
-| Output | Embedding vector [batch, 1536] |
-| Model Size | ~25 MB |
-| Inference Time | ~15ms (CPU) / ~3ms (GPU) |
+| Service | `EmbeddingService` |
+| Entities | `Embedding`, `EmbeddingId`, `EmbeddingMetadata`, `EmbeddingModel`, `InputSpecification`, `ModelVersion`, `StorageTier` |
+| Repository | `EmbeddingRepository` |
+| Infrastructure | `ModelConfig`, `ModelManager`, `OnnxInference` |
+| Errors | `EmbeddingError`, `Result<T>` |
 
-## Performance
+## Planned / Not Yet Implemented
 
-| Operation | CPU (i7-12700) | GPU (RTX 3080) |
-|-----------|----------------|----------------|
-| Single Inference | 15ms | 3ms |
-| Batch (32) | 120ms | 20ms |
-| Throughput | 260/s | 1600/s |
+The following are **not** part of the current public API:
+
+- **Streaming embedding generation** (no `EmbeddingStream` type)
+- **Product Quantization (PQ)** — quantization is F16/INT8 only
 
 ## Links
 

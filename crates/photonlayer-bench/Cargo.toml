@@ -6,7 +6,7 @@ rust-version.workspace = true
 license.workspace = true
 authors.workspace = true
 repository.workspace = true
-description = "PhotonLayer reproducible benchmarks + in-Rust mask learner and digital decoder (ADR-260 Phase 4)"
+description = "PhotonLayer reproducible benchmarks + in-Rust mask learning"
 
 [dependencies]
 photonlayer-core = { version = "0.1.0", path = "../photonlayer-core" }

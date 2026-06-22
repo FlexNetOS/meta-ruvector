@@ -8,7 +8,7 @@
 //! - CRDT-based delta merging
 //! - Causal ordering with vector clocks
 //! - Conflict resolution strategies
-//! - Delta compression for network transfer
+//! - Gossip-based delta dissemination with anti-entropy across replicas
 
 #![allow(missing_docs)]
 #![allow(clippy::all)]

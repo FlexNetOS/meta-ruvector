@@ -33,86 +33,82 @@ tokio = { version = "1", features = ["full"] }
 ### Basic Priority Scheduling
 
 ```rust
-use agentic_robotics_rt::{Executor, Priority, Deadline};
+use agentic_robotics_rt::{ROS3Executor, Priority, Deadline};
 use std::time::Duration;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    // Create executor with dual runtime
-    let executor = Executor::new()?;
+    // Create the dual-runtime executor
+    let executor = ROS3Executor::new()?;
 
-    // High-priority 1kHz control loop
+    // High-priority control task (deadline < 1ms routes to the high-pri runtime)
     executor.spawn_rt(
-        Priority::High,
-        Deadline::from_hz(1000),  // 1ms deadline
+        Priority(3),                         // 3 == High
+        Deadline(Duration::from_micros(500)),
         async {
-            loop {
-                // Read sensors, compute control, write actuators
-                control_robot().await;
-                tokio::time::sleep(Duration::from_micros(1000)).await;
-            }
-        }
-    )?;
+            // Read sensors, compute control, write actuators
+            control_robot().await;
+        },
+    );
 
-    // Low-priority logging (won't interfere with control loop)
-    executor.spawn_rt(
-        Priority::Low,
-        Deadline::from_hz(10),  // 100ms deadline
-        async {
-            loop {
-                log_telemetry().await;
-                tokio::time::sleep(Duration::from_millis(100)).await;
-            }
-        }
-    )?;
+    // Convenience helpers for common priorities:
+    executor.spawn_high(async { control_robot().await; });
+    executor.spawn_low(async { log_telemetry().await; });
 
-    executor.run().await?;
     Ok(())
 }
 ```
 
-### Deadline Enforcement
+`spawn_rt` routes tasks by deadline: a deadline under 1ms runs on the
+high-priority runtime, otherwise on the low-priority runtime.
+
+### Convenience Spawners
 
 ```rust
-use agentic_robotics_rt::{Executor, Priority, Deadline};
-use std::time::Duration;
+use agentic_robotics_rt::ROS3Executor;
 
-let executor = Executor::new()?;
+let executor = ROS3Executor::new()?;
 
-// Critical task must complete within 500µs
-executor.spawn_rt(
-    Priority::High,
-    Deadline(Duration::from_micros(500)),
-    async {
-        // If this takes longer than 500µs, deadline missed warning
-        critical_computation().await;
-    }
-)?;
+// High-priority (Priority(3), 500µs deadline)
+executor.spawn_high(async { critical_computation().await; });
+
+// Low-priority (Priority(1), 100ms deadline)
+executor.spawn_low(async { background_work().await; });
+
+// CPU-bound blocking work, returns a JoinHandle
+let handle = executor.spawn_blocking(|| heavy_cpu_work());
+# Ok::<(), anyhow::Error>(())
 ```
 
 ### Latency Monitoring
 
 ```rust
 use agentic_robotics_rt::LatencyTracker;
+use std::time::Duration;
 
-let tracker = LatencyTracker::new();
+let tracker = LatencyTracker::new("control_loop");
 
 let start = std::time::Instant::now();
 process_message().await;
 tracker.record(start.elapsed());
 
-// Get statistics
-println!("p50: {} µs", tracker.percentile(0.50) / 1000);
-println!("p95: {} µs", tracker.percentile(0.95) / 1000);
-println!("p99: {} µs", tracker.percentile(0.99) / 1000);
-println!("p99.9: {} µs", tracker.percentile(0.999) / 1000);
+// Or use the RAII guard which records on drop
+{
+    let _m = tracker.measure();
+    process_message().await;
+}
+
+// Read the histogram statistics
+let stats = tracker.stats();
+println!("p50: {} µs, p90: {} µs, p99: {} µs, p99.9: {} µs",
+    stats.p50, stats.p90, stats.p99, stats.p999);
 ```
 
 ## Architecture
 
 ```
 ┌────────────────────────────────────────────┐
-│     agentic-robotics-rt (Executor)         │
+│   agentic-robotics-rt (ROS3Executor)       │
 ├────────────────────────────────────────────┤
 │                                            │
 │  ┌──────────────────────────────────────┐ │
@@ -139,101 +135,80 @@ println!("p99.9: {} µs", tracker.percentile(0.999) / 1000);
 
 ## Priority Levels
 
-The executor supports multiple priority levels:
+Two related types model priority:
+
+- `Priority(pub u8)` — the wrapper passed to `spawn_rt`. The `u8` maps onto
+  `RTPriority` (`0..=4`).
+- `RTPriority` — the named enum with five levels:
 
 ```rust
-pub enum Priority {
-    Critical,  // Real-time critical (< 100µs deadlines)
-    High,      // High priority (< 1ms deadlines)
-    Medium,    // Medium priority (< 10ms deadlines)
-    Low,       // Low priority (> 10ms deadlines)
-    Background,// Background tasks (no deadline)
+pub enum RTPriority {
+    Background = 0, // Background tasks
+    Low = 1,        // Low priority
+    Normal = 2,     // Normal priority
+    High = 3,       // High priority
+    Critical = 4,   // Critical (hard real-time)
 }
 ```
 
+`RTPriority` converts to/from `u8` via `From`, so `Priority(3).0.into()` yields
+`RTPriority::High`.
+
 ### Priority Assignment Guidelines
 
-| Priority | Use Case | Example | Deadline |
-|----------|----------|---------|----------|
-| **Critical** | Safety-critical control | Emergency stop, collision avoidance | < 100 µs |
-| **High** | Real-time control | PID control, motor commands | < 1 ms |
-| **Medium** | Sensor processing | Image processing, point cloud filtering | < 10 ms |
-| **Low** | Perception | Object detection, SLAM | < 100 ms |
-| **Background** | Logging, telemetry | File I/O, network sync | No deadline |
+| `RTPriority` | Use Case | Example |
+|--------------|----------|---------|
+| **Critical** | Safety-critical control | Emergency stop, collision avoidance |
+| **High** | Real-time control | PID control, motor commands |
+| **Normal** | Sensor processing | Image processing, point cloud filtering |
+| **Low** | Perception | Object detection, SLAM |
+| **Background** | Logging, telemetry | File I/O, network sync |
 
 ## Deadline Specification
 
-Multiple ways to specify deadlines:
+`Deadline` wraps a `Duration`. Construct it directly from a `Duration`, either
+via the tuple constructor or `From`:
 
 ```rust
 use std::time::Duration;
 use agentic_robotics_rt::Deadline;
 
-// Direct duration
+// Tuple constructor
 let d1 = Deadline(Duration::from_micros(500));
 
-// From frequency (Hz)
-let d2 = Deadline::from_hz(1000);  // 1 kHz = 1ms deadline
-
-// From milliseconds
-let d3 = Deadline::from_millis(10);
-
-// From microseconds
-let d4 = Deadline::from_micros(100);
+// Via From<Duration>
+let d2: Deadline = Duration::from_millis(10).into();
 ```
+
+Note: a `Deadline` shorter than 1ms routes its task to the high-priority runtime
+in `spawn_rt`; the executor does not currently enforce or interrupt on deadline
+misses.
 
 ## Real-Time Control Example
 
 ```rust
-use agentic_robotics_core::Node;
-use agentic_robotics_rt::{Executor, Priority, Deadline};
+use agentic_robotics_rt::{ROS3Executor, Priority, Deadline};
 use std::time::Duration;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let mut node = Node::new("robot_controller")?;
-    let executor = Executor::new()?;
+    let executor = ROS3Executor::new()?;
 
-    // Subscribe to sensor data
-    let sensor_sub = node.subscribe::<JointState>("/joint_states")?;
-
-    // Publish control commands
-    let cmd_pub = node.publish::<JointCommand>("/joint_commands")?;
-
-    // High-priority 1kHz control loop
+    // High-priority control task (sub-millisecond deadline -> high-pri runtime)
     executor.spawn_rt(
-        Priority::High,
-        Deadline::from_hz(1000),
+        Priority(3),
+        Deadline(Duration::from_micros(1000)),
         async move {
-            loop {
-                // Read latest sensor data (non-blocking)
-                if let Some(state) = sensor_sub.try_recv() {
-                    // Compute control law
-                    let cmd = compute_control(&state);
+            // Read sensors, compute control law, send commands
+            run_control_step().await;
+        },
+    );
 
-                    // Send command
-                    cmd_pub.publish(&cmd).await.ok();
-                }
+    // Low-priority telemetry via the convenience spawner
+    executor.spawn_low(async move {
+        log_robot_state().await;
+    });
 
-                // 1kHz loop
-                tokio::time::sleep(Duration::from_micros(1000)).await;
-            }
-        }
-    )?;
-
-    // Low-priority telemetry
-    executor.spawn_rt(
-        Priority::Low,
-        Deadline::from_hz(10),
-        async move {
-            loop {
-                log_robot_state().await;
-                tokio::time::sleep(Duration::from_millis(100)).await;
-            }
-        }
-    )?;
-
-    executor.run().await?;
     Ok(())
 }
 ```
@@ -260,62 +235,23 @@ p99:   990 µs  ✅ Acceptable
 p99.9: 999 µs  ✅ Within deadline
 ```
 
-## Advanced Features
+## Current Runtime Layout
 
-### Custom Thread Pools
+`ROS3Executor::new()` builds a fixed dual runtime: a high-priority Tokio runtime
+with 2 worker threads (`ros3-rt-high`) and a low-priority runtime with 4 worker
+threads (`ros3-rt-low`). Direct handles are available via
+`high_priority_runtime()` and `low_priority_runtime()`.
 
-Configure thread pool sizes:
+## Planned / Not Yet Implemented
 
-```rust
-use agentic_robotics_rt::{Executor, RuntimeConfig};
+The following ergonomic configuration knobs are **not yet implemented** — the
+thread-pool sizes are fixed and there is no affinity or deadline-policy API:
 
-let config = RuntimeConfig {
-    high_priority_threads: 4,  // 4 threads for high-priority
-    low_priority_threads: 8,   // 8 threads for low-priority
-};
-
-let executor = Executor::with_config(config)?;
-```
-
-### CPU Affinity
-
-Pin high-priority threads to specific cores:
-
-```rust
-use agentic_robotics_rt::{Executor, CpuAffinity};
-
-let executor = Executor::new()?;
-
-// Pin high-priority runtime to cores 0-1
-executor.set_cpu_affinity(
-    Priority::High,
-    CpuAffinity::Cores(vec![0, 1])
-)?;
-
-// Pin low-priority runtime to cores 2-7
-executor.set_cpu_affinity(
-    Priority::Low,
-    CpuAffinity::Cores(vec![2, 3, 4, 5, 6, 7])
-)?;
-```
-
-### Deadline Miss Handling
-
-Handle deadline misses gracefully:
-
-```rust
-use agentic_robotics_rt::{Executor, DeadlinePolicy};
-
-let executor = Executor::new()?;
-
-executor.set_deadline_policy(DeadlinePolicy::Warn)?;  // Log warning
-// or
-executor.set_deadline_policy(DeadlinePolicy::Panic)?; // Panic on miss
-// or
-executor.set_deadline_policy(DeadlinePolicy::Callback(|task_id, deadline, actual| {
-    eprintln!("Task {} missed deadline: {:?} vs {:?}", task_id, deadline, actual);
-}))?;
-```
+- **Custom thread-pool sizes** (`RuntimeConfig` / `with_config`)
+- **CPU affinity pinning** (`CpuAffinity` / `set_cpu_affinity`)
+- **Deadline-miss policies** (`DeadlinePolicy` / `set_deadline_policy`) — the
+  executor records latency but does not act on deadline misses
+- **Embedded / RTIC integration** for true hardware hard-real-time
 
 ## Testing
 
@@ -345,12 +281,17 @@ deadline_tracking       time: [120 ns 125 ns 130 ns]
 
 ## Platform Support
 
+The executor is built on Tokio multi-threaded runtimes and runs anywhere Tokio
+runs. "Priority" is expressed by routing tasks across two separate runtimes —
+the crate does **not** currently set OS-level thread priorities (no SCHED_FIFO,
+pthread, or SetThreadPriority calls) or CPU affinity.
+
 | Platform | Status | Notes |
 |----------|--------|-------|
-| **Linux** | ✅ Full support | SCHED_FIFO available with CAP_SYS_NICE |
-| **macOS** | ✅ Supported | Thread priorities via pthread |
-| **Windows** | ✅ Supported | SetThreadPriority API |
-| **Embedded** | ⏳ Planned | RTIC integration coming soon |
+| **Linux** | ✅ Supported | Tokio runtimes; no OS priority/affinity yet |
+| **macOS** | ✅ Supported | Tokio runtimes |
+| **Windows** | ✅ Supported | Tokio runtimes |
+| **Embedded** | ⏳ Planned | RTIC integration not yet implemented |
 
 ## Real-Time Tips
 

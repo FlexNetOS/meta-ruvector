@@ -680,6 +680,6 @@ at your option.
 
 [Quick Start](#-quick-start-5-minutes) · [Tutorial](#-complete-tutorial) · [Examples](#-real-world-use-cases) · [Troubleshooting](#-troubleshooting)
 
-**MCP 2025-11 Compliant** • **STDIO & SSE Transport** • **Production Ready**
+**MCP 2025-11 Compliant** • **STDIO Transport (SSE planned)** • **Production Ready**
 
 </div>

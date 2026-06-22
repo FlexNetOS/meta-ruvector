@@ -6,26 +6,31 @@
 
 > Audio ingestion and preprocessing pipeline for bioacoustic analysis.
 
-**sevensense-audio** handles all aspects of audio input—loading files, streaming from microphones, segmenting into fixed-length chunks, computing Mel spectrograms, and normalizing for neural network input. It's the gateway for raw audio into the 7sense platform.
+**sevensense-audio** handles audio input for the 7sense platform: decoding files,
+converting to mono, resampling to a standard 32 kHz, energy-based segmentation into
+call segments, and computing mel spectrograms for downstream neural-network input.
+
+The crate follows Domain-Driven Design with clean architecture:
+
+- **Domain Layer**: Core entities (`Recording`, `CallSegment`, `SignalQuality`) and the `RecordingRepository` trait
+- **Application Layer**: `AudioIngestionService` orchestrating ingestion and segmentation
+- **Infrastructure Layer**: `SymphoniaFileReader`, `RubatoResampler`, `EnergySegmenter`
+- **Spectrogram**: `MelSpectrogram` and `SpectrogramConfig`
 
 ## Features
 
-- **Multi-Format Support**: WAV, MP3, FLAC, OGG via symphonia
-- **Streaming Input**: Real-time microphone/line-in capture
-- **Smart Segmentation**: Fixed-length or voice-activity-based splitting
-- **Mel Spectrograms**: Configurable FFT, hop length, and mel bins
-- **Audio Augmentation**: Time stretch, pitch shift, noise injection
-- **Batch Processing**: Process multiple files in parallel
+- **Multi-Format Decoding**: WAV, FLAC, MP3, Ogg via [Symphonia](https://crates.io/crates/symphonia) (`SymphoniaFileReader`)
+- **Resampling**: Sample-rate conversion to 32 kHz via [Rubato](https://crates.io/crates/rubato) (`RubatoResampler`)
+- **Energy-Based Segmentation**: Split recordings into call segments (`EnergySegmenter`)
+- **Mel Spectrograms**: Configurable FFT, hop length, and mel bins (`MelSpectrogram`)
 
 ## Use Cases
 
-| Use Case | Description | Key Functions |
-|----------|-------------|---------------|
-| File Loading | Load audio from various formats | `AudioLoader::load()` |
-| Segmentation | Split recordings into analysis chunks | `Segmenter::segment()` |
-| Spectrogram | Convert audio to mel spectrogram | `MelSpectrogram::compute()` |
-| Streaming | Real-time audio capture | `AudioStream::new()` |
-| Augmentation | Data augmentation for training | `Augmenter::augment()` |
+| Use Case | Description | Key API |
+|----------|-------------|---------|
+| File Ingestion | Decode, mono-ize, resample to 32 kHz | `AudioIngestionService::ingest_file()` |
+| Segmentation | Split a recording into call segments | `AudioIngestionService::segment_recording()` |
+| Spectrogram | Convert samples to a mel spectrogram | `MelSpectrogram::compute()` |
 
 ## Installation
 
@@ -38,138 +43,109 @@ sevensense-audio = "0.1"
 
 ## Quick Start
 
-```rust
-use sevensense_audio::{AudioLoader, Segmenter, MelSpectrogram};
+`AudioIngestionService` is composed from three infrastructure components, each
+wrapped in an `Arc` and passed to `new`:
+
+```rust,no_run
+use sevensense_audio::application::AudioIngestionService;
+use sevensense_audio::infrastructure::{SymphoniaFileReader, RubatoResampler, EnergySegmenter};
+use std::path::Path;
+use std::sync::Arc;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Load audio file
-    let audio = AudioLoader::load("birdsong.wav").await?;
-    println!("Loaded {} seconds of audio", audio.duration_secs());
+    // Build the infrastructure components
+    let reader = Arc::new(SymphoniaFileReader::new());
+    let resampler = Arc::new(RubatoResampler::new(32_000)?); // target sample rate
+    let segmenter = Arc::new(EnergySegmenter::default());
 
-    // Segment into 5-second chunks
-    let segmenter = Segmenter::new(5.0, 0.5);  // 5s windows, 0.5s overlap
-    let segments = segmenter.segment(&audio);
-    println!("Created {} segments", segments.len());
+    // Assemble the service
+    let service = AudioIngestionService::new(reader, resampler, segmenter);
 
-    // Compute mel spectrograms
-    for segment in &segments {
-        let mel = MelSpectrogram::compute(segment, Default::default())?;
-        println!("Mel shape: {:?}", mel.shape());
-    }
+    // Ingest an audio file -> Recording
+    let mut recording = service.ingest_file(Path::new("birdsong.wav")).await?;
+    println!("Duration: {} ms", recording.duration_ms());
+
+    // Segment the recording into call segments
+    let segments = service.segment_recording(&mut recording).await?;
+    println!("Found {} call segments", segments.len());
 
     Ok(())
 }
 ```
+
+The crate also exposes the constants `TARGET_SAMPLE_RATE` (32 kHz) and
+`STANDARD_SEGMENT_DURATION_MS` (5 000 ms).
 
 ---
 
 <details>
-<summary><b>Tutorial: Loading Audio Files</b></summary>
+<summary><b>Tutorial: Ingesting Audio Files</b></summary>
 
-### Basic File Loading
+`ingest_file` reads the file, converts it to mono, and resamples it to 32 kHz,
+returning a `Recording` whose samples are loaded and ready for segmentation.
 
-```rust
-use sevensense_audio::{AudioLoader, AudioFormat};
+```rust,no_run
+use sevensense_audio::application::AudioIngestionService;
+use sevensense_audio::infrastructure::{SymphoniaFileReader, RubatoResampler, EnergySegmenter};
+use std::path::Path;
+use std::sync::Arc;
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Auto-detect format
-    let audio = AudioLoader::load("recording.mp3").await?;
+# async fn example() -> Result<(), Box<dyn std::error::Error>> {
+let service = AudioIngestionService::new(
+    Arc::new(SymphoniaFileReader::new()),
+    Arc::new(RubatoResampler::new(32_000)?),
+    Arc::new(EnergySegmenter::default()),
+);
 
-    // Get audio properties
-    println!("Sample rate: {} Hz", audio.sample_rate());
-    println!("Channels: {}", audio.channels());
-    println!("Duration: {:.2}s", audio.duration_secs());
-    println!("Samples: {}", audio.samples().len());
+let recording = service.ingest_file(Path::new("recording.mp3")).await?;
 
-    Ok(())
-}
+// Recording fields and methods
+println!("Duration: {} ms", recording.duration_ms());
+println!("Segments so far: {}", recording.segment_count());
+println!("Processed: {}", recording.is_processed());
+# Ok(())
+# }
 ```
 
-### Loading with Options
-
-```rust
-use sevensense_audio::{AudioLoader, LoadOptions};
-
-let options = LoadOptions {
-    target_sample_rate: Some(32000),  // Resample to 32kHz
-    mono: true,                        // Convert to mono
-    normalize: true,                   // Normalize amplitude
-};
-
-let audio = AudioLoader::load_with_options("stereo.wav", options).await?;
-assert_eq!(audio.channels(), 1);
-assert_eq!(audio.sample_rate(), 32000);
-```
-
-### Batch Loading
-
-```rust
-use sevensense_audio::AudioLoader;
-
-let paths = vec!["file1.wav", "file2.wav", "file3.wav"];
-let audios = AudioLoader::load_batch(&paths).await?;
-
-for (path, audio) in paths.iter().zip(audios.iter()) {
-    println!("{}: {:.2}s", path, audio.duration_secs());
-}
-```
+`SymphoniaFileReader` implements the `AudioFileReader` trait and reports which
+extensions it supports via `supports_extension`.
 
 </details>
 
 <details>
-<summary><b>Tutorial: Audio Segmentation</b></summary>
+<summary><b>Tutorial: Energy-Based Segmentation</b></summary>
 
-### Fixed-Length Segmentation
+`EnergySegmenter` implements the `AudioSegmenter` trait and detects call segments
+based on signal energy. It is driven through the service:
 
-```rust
-use sevensense_audio::{AudioLoader, Segmenter};
+```rust,no_run
+use sevensense_audio::application::AudioIngestionService;
+use sevensense_audio::infrastructure::{SymphoniaFileReader, RubatoResampler, EnergySegmenter};
+use std::path::Path;
+use std::sync::Arc;
 
-let audio = AudioLoader::load("long_recording.wav").await?;
+# async fn example() -> Result<(), Box<dyn std::error::Error>> {
+let service = AudioIngestionService::new(
+    Arc::new(SymphoniaFileReader::new()),
+    Arc::new(RubatoResampler::new(32_000)?),
+    Arc::new(EnergySegmenter::new()),
+);
 
-// 5-second segments with 50% overlap
-let segmenter = Segmenter::new(5.0, 2.5);
-let segments = segmenter.segment(&audio);
+let mut recording = service.ingest_file(Path::new("long_recording.wav")).await?;
 
-println!("Total segments: {}", segments.len());
-for (i, seg) in segments.iter().enumerate() {
-    println!("Segment {}: {:.2}s - {:.2}s",
-        i, seg.start_time(), seg.end_time());
+// Returns the detected CallSegments (also stored on the recording)
+let segments = service.segment_recording(&mut recording).await?;
+
+for seg in &segments {
+    println!("Segment: {} ms, quality {:?}", seg.duration_ms(), seg.signal_quality);
 }
-```
 
-### Voice Activity Detection (VAD)
-
-```rust
-use sevensense_audio::{AudioLoader, VadSegmenter, VadConfig};
-
-let audio = AudioLoader::load("recording.wav").await?;
-
-let config = VadConfig {
-    energy_threshold: 0.01,
-    min_speech_duration: 0.3,
-    min_silence_duration: 0.5,
-};
-
-let segmenter = VadSegmenter::new(config);
-let segments = segmenter.segment(&audio);
-
-println!("Found {} vocalizations", segments.len());
-```
-
-### Segment Iterator
-
-```rust
-use sevensense_audio::{AudioLoader, SegmentIterator};
-
-let audio = AudioLoader::load("stream.wav").await?;
-
-// Lazy iteration over segments
-for segment in SegmentIterator::new(&audio, 5.0, 0.0) {
-    // Process each segment
-    println!("Processing segment at {:.2}s", segment.start_time());
-}
+// Filter to high-quality segments only
+let good = recording.high_quality_segments();
+println!("{} high-quality segments", good.len());
+# Ok(())
+# }
 ```
 
 </details>
@@ -177,113 +153,38 @@ for segment in SegmentIterator::new(&audio, 5.0, 0.0) {
 <details>
 <summary><b>Tutorial: Mel Spectrograms</b></summary>
 
-### Basic Mel Computation
+`MelSpectrogram::compute` takes raw `f32` samples plus a `SpectrogramConfig`
+and returns the spectrogram; `shape()` reports its dimensions.
 
-```rust
-use sevensense_audio::{AudioLoader, MelSpectrogram, MelConfig};
+```rust,no_run
+use sevensense_audio::{MelSpectrogram, SpectrogramConfig};
 
-let audio = AudioLoader::load("birdsong.wav").await?;
+# fn example(samples: &[f32]) -> Result<(), Box<dyn std::error::Error>> {
+// Default config: 128 mel bins, 2048 FFT, 512 hop, 32 kHz
+let mel = MelSpectrogram::compute(samples, SpectrogramConfig::default())?;
 
-// Default configuration (128 mel bins, 2048 FFT, 512 hop)
-let mel = MelSpectrogram::compute(&audio, Default::default())?;
-
-println!("Mel spectrogram shape: {:?}", mel.shape());
-// Shape: [n_frames, n_mels] e.g., [312, 128]
+let (frames, bins) = mel.shape();
+println!("Mel spectrogram: {frames} frames x {bins} bins");
+# Ok(())
+# }
 ```
 
-### Custom Configuration
+Custom configuration:
 
-```rust
-use sevensense_audio::{MelSpectrogram, MelConfig};
+```rust,no_run
+use sevensense_audio::SpectrogramConfig;
 
-let config = MelConfig {
-    n_mels: 128,          // Number of mel frequency bins
-    n_fft: 2048,          // FFT window size
-    hop_length: 512,      // Hop between frames
-    f_min: 50.0,          // Minimum frequency (Hz)
-    f_max: 14000.0,       // Maximum frequency (Hz)
-    power: 2.0,           // Power spectrogram exponent
-    normalized: true,     // Normalize by max value
+let config = SpectrogramConfig {
+    n_mels: 128,        // Number of mel frequency bands
+    n_fft: 2048,        // FFT window size
+    hop_length: 512,    // Hop between frames
+    sample_rate: 32_000,
+    f_min: 0.0,         // Minimum frequency (Hz)
+    f_max: 16_000.0,    // Maximum frequency (Hz), Nyquist for 32 kHz
+    log_scale: true,    // Apply log scaling
+    ref_db: 1.0,        // Reference value for dB conversion
+    min_value: 1e-10,   // Floor to avoid log(0)
 };
-
-let mel = MelSpectrogram::compute(&audio, config)?;
-```
-
-### Log-Mel Spectrogram
-
-```rust
-use sevensense_audio::{MelSpectrogram, MelConfig};
-
-let mel = MelSpectrogram::compute(&audio, Default::default())?;
-
-// Convert to log scale (commonly used for neural networks)
-let log_mel = mel.to_log_scale(1e-10);  // Add small constant to avoid log(0)
-```
-
-### Visualizing Spectrograms
-
-```rust
-use sevensense_audio::{MelSpectrogram, visualize};
-
-let mel = MelSpectrogram::compute(&audio, Default::default())?;
-
-// Save as PNG image
-visualize::save_spectrogram(&mel, "spectrogram.png")?;
-
-// Get as RGB buffer
-let rgb_buffer = visualize::to_rgb(&mel, "viridis")?;
-```
-
-</details>
-
-<details>
-<summary><b>Tutorial: Audio Augmentation</b></summary>
-
-### Basic Augmentation
-
-```rust
-use sevensense_audio::{AudioLoader, Augmenter, AugmentConfig};
-
-let audio = AudioLoader::load("training_sample.wav").await?;
-
-let config = AugmentConfig {
-    time_stretch_range: (0.9, 1.1),  // ±10% speed
-    pitch_shift_range: (-2, 2),       // ±2 semitones
-    noise_level: 0.01,                // 1% noise
-};
-
-let augmenter = Augmenter::new(config);
-let augmented = augmenter.augment(&audio)?;
-```
-
-### Specific Augmentations
-
-```rust
-use sevensense_audio::{Augmenter, TimeStretch, PitchShift, NoiseInjection};
-
-// Time stretch (slow down by 10%)
-let stretched = TimeStretch::apply(&audio, 0.9)?;
-
-// Pitch shift (up by 2 semitones)
-let shifted = PitchShift::apply(&audio, 2)?;
-
-// Add background noise
-let noisy = NoiseInjection::apply(&audio, 0.02)?;
-```
-
-### Augmentation Pipeline
-
-```rust
-use sevensense_audio::{AugmentPipeline, RandomCrop, Normalize};
-
-let pipeline = AugmentPipeline::new()
-    .add(TimeStretch::random(0.9, 1.1))
-    .add(PitchShift::random(-2, 2))
-    .add(NoiseInjection::gaussian(0.01))
-    .add(RandomCrop::new(5.0))
-    .add(Normalize::peak());
-
-let augmented = pipeline.apply(&audio)?;
 ```
 
 </details>
@@ -292,31 +193,52 @@ let augmented = pipeline.apply(&audio)?;
 
 ## Configuration
 
-### Mel Spectrogram Parameters
+### `SpectrogramConfig` Parameters
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `n_mels` | 128 | Number of mel frequency bins |
-| `n_fft` | 2048 | FFT window size |
+| `n_mels` | 128 | Number of mel frequency bands |
+| `n_fft` | 2048 | FFT window size in samples |
 | `hop_length` | 512 | Samples between frames |
-| `f_min` | 50.0 | Minimum frequency (Hz) |
-| `f_max` | 14000.0 | Maximum frequency (Hz) |
+| `sample_rate` | 32 000 | Input sample rate (Hz) |
+| `f_min` | 0.0 | Minimum frequency (Hz) |
+| `f_max` | 16 000.0 | Maximum frequency (Hz) |
+| `log_scale` | true | Apply log scaling |
+| `ref_db` | 1.0 | Reference value for dB conversion |
+| `min_value` | 1e-10 | Floor to avoid log(0) |
 
-### Segmentation Parameters
+### Constants
 
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| `window_size` | 5.0 | Segment duration in seconds |
-| `overlap` | 0.5 | Overlap between segments in seconds |
-| `min_duration` | 1.0 | Minimum segment duration |
+| Constant | Value | Description |
+|----------|-------|-------------|
+| `TARGET_SAMPLE_RATE` | 32 000 | Standard processing sample rate |
+| `STANDARD_SEGMENT_DURATION_MS` | 5 000 | Standard segment duration |
 
-## Performance
+## Public API
 
-| Operation | Throughput | Notes |
-|-----------|------------|-------|
-| File Loading | ~500 MB/s | With SSD |
-| Mel Spectrogram | ~1000 segments/s | 5s segments |
-| Resampling | ~200 MB/s | Using libsamplerate |
+Re-exported at the crate root (`sevensense_audio::`):
+
+| Category | Items |
+|----------|-------|
+| Service | `AudioIngestionService` |
+| Entities | `Recording`, `CallSegment`, `SignalQuality` |
+| Repository | `RecordingRepository` |
+| Spectrogram | `MelSpectrogram`, `SpectrogramConfig` |
+| Errors | `AudioError`, `AudioResult` |
+
+Infrastructure types live under `sevensense_audio::infrastructure`:
+`SymphoniaFileReader`, `RubatoResampler`, `EnergySegmenter`, and the traits
+`AudioFileReader`, `AudioResampler`, `AudioSegmenter`.
+
+## Planned / Not Yet Implemented
+
+The following capabilities are **not** part of the current public API. They are
+listed as roadmap items only — do not depend on them yet:
+
+- **Streaming input**: real-time microphone / line-in capture
+- **Audio augmentation**: time stretch, pitch shift, noise injection
+- **Voice-activity-based (VAD) segmentation** beyond the energy segmenter
+- **Spectrogram visualization helpers**
 
 ## Links
 
