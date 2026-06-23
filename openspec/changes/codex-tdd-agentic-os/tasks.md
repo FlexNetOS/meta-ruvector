@@ -15,3 +15,4 @@
 - [x] Verify `tdd-auto-loop --dry-run` against a real supervised TDD plan.
 
 - [x] Persist `tdd-auto-loop-status.json` so the autonomous handoff has durable status evidence.
+- [x] Record `tdd-auto-loop` handoff state, supervision events, and timestamps in the durable status.

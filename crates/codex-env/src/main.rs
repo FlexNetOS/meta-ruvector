@@ -598,10 +598,11 @@ fn main() -> Result<()> {
                 skip_install,
             })?;
             println!(
-                "codex-env tdd-auto-loop {}: plan={}, target={}, auto_loop_run_dir={}, status={}, iterations={}/{}, completed={}, next_action={}",
+                "codex-env tdd-auto-loop {}: plan={}, target={}, handoff_state={}, auto_loop_run_dir={}, status={}, iterations={}/{}, completed={}, next_action={}",
                 if report.auto_loop.dry_run { "prepared" } else { "ok" },
                 report.next_action.plan_path.display(),
                 report.next_action.target_crate,
+                report.handoff_state,
                 report.auto_loop.run_dir.display(),
                 report.status_path.display(),
                 report.auto_loop.iterations.len(),
