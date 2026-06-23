@@ -385,6 +385,28 @@ pub struct CodexTddCyclePhaseReport {
     pub ended_unix_seconds: u64,
 }
 
+#[derive(Debug, Clone)]
+pub struct CodexTddSuperviseOptions {
+    pub repo_root: PathBuf,
+    pub status_path: Option<PathBuf>,
+    pub check: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct CodexTddSuperviseReport {
+    pub repo_root: PathBuf,
+    pub status_path: PathBuf,
+    pub decision_path: PathBuf,
+    pub guidance_path: Option<PathBuf>,
+    pub cycle_state: String,
+    pub decision: String,
+    pub reason: String,
+    pub next_action: String,
+    pub next_command: Option<String>,
+    pub evidence_path: Option<PathBuf>,
+    pub phase_summary: Vec<String>,
+}
+
 #[derive(Debug, Clone, Serialize)]
 pub struct CodexTddWorkflowStepReport {
     pub name: String,
@@ -1825,6 +1847,153 @@ pub fn run_codex_tdd_cycle(options: CodexTddCycleOptions) -> Result<CodexTddCycl
     Ok(report)
 }
 
+pub fn codex_tdd_supervise(options: CodexTddSuperviseOptions) -> Result<CodexTddSuperviseReport> {
+    let repo_root = options.repo_root.canonicalize().with_context(|| {
+        format!(
+            "failed to canonicalize repo root {}",
+            options.repo_root.display()
+        )
+    })?;
+    let status_path = match options.status_path {
+        Some(path) => {
+            if path.is_absolute() {
+                path
+            } else {
+                repo_root.join(path)
+            }
+        }
+        None => latest_tdd_cycle_status(&repo_root)?,
+    };
+    let status_bytes = fs::read(&status_path)
+        .with_context(|| format!("failed to read {}", status_path.display()))?;
+    let status: JsonValue = serde_json::from_slice(&status_bytes)
+        .with_context(|| format!("failed to parse {}", status_path.display()))?;
+    let cycle_state = json_string(&status, "cycle_state").unwrap_or_else(|| "unknown".to_owned());
+    let guidance_path = json_string(&status, "guidance_path").map(PathBuf::from);
+    let phases = status
+        .get("phases")
+        .and_then(JsonValue::as_array)
+        .cloned()
+        .unwrap_or_default();
+    let phase_summary = phases
+        .iter()
+        .filter_map(|phase| {
+            Some(format!(
+                "{}={}",
+                json_string(phase, "phase")?,
+                json_string(phase, "status")?
+            ))
+        })
+        .collect::<Vec<_>>();
+
+    let failed_phase = phases.iter().find(|phase| {
+        json_string(phase, "status").is_some_and(|status| status == "failed" || status == "error")
+    });
+    let last_phase = phases.last();
+    let (decision, reason, next_action, next_command, evidence_path) = if let Some(phase) =
+        failed_phase
+    {
+        let phase_name = json_string(phase, "phase").unwrap_or_else(|| "unknown".to_owned());
+        let evidence_path = json_string(phase, "evidence_path").map(PathBuf::from);
+        (
+                "guide".to_owned(),
+                format!("phase {phase_name} failed and needs supervisor guidance"),
+                json_string(phase, "next_action").unwrap_or_else(|| {
+                    "Inspect phase evidence, inject supervisor guidance, and rerun the failed Rust-owned step.".to_owned()
+                }),
+                Some(format!(
+                    "cargo run -p codex-env -- tdd-cycle --supervisor-note-file {}",
+                    guidance_path
+                        .as_ref()
+                        .map_or_else(|| "tdd-cycle-guidance.md".to_owned(), |path| path.display().to_string())
+                )),
+                evidence_path,
+            )
+    } else if cycle_state == "planned" {
+        (
+                "proceed".to_owned(),
+                "cycle is planned; execute the built-tool workflow without --dry-run".to_owned(),
+                "Run tdd-cycle without --dry-run so Codex builds codex-env, executes the Rust tools, validates the extraction plan, and prepares handoff.".to_owned(),
+                Some("cargo run -p codex-env -- tdd-cycle \"<goal>\"".to_owned()),
+                last_phase
+                    .and_then(|phase| json_string(phase, "evidence_path"))
+                    .map(PathBuf::from),
+            )
+    } else if cycle_state == "prepared" {
+        (
+                "proceed".to_owned(),
+                "handoff is prepared; supervisor may launch the bounded autonomous worker".to_owned(),
+                "Review tdd-cycle-guidance.md and rerun tdd-cycle with --run-handoff when ready to launch nested Codex workers.".to_owned(),
+                Some(format!(
+                    "cargo run -p codex-env -- tdd-cycle --run-handoff --supervisor-note-file {} \"<goal>\"",
+                    guidance_path
+                        .as_ref()
+                        .map_or_else(|| "tdd-cycle-guidance.md".to_owned(), |path| path.display().to_string())
+                )),
+                last_phase
+                    .and_then(|phase| json_string(phase, "evidence_path"))
+                    .map(PathBuf::from),
+            )
+    } else if cycle_state == "completed" {
+        (
+                "stop".to_owned(),
+                "cycle completed and the supervisor can close the background terminal".to_owned(),
+                "Archive evidence, store durable memory, and continue only if a new extraction gap is identified.".to_owned(),
+                None,
+                last_phase
+                    .and_then(|phase| json_string(phase, "evidence_path"))
+                    .map(PathBuf::from),
+            )
+    } else {
+        (
+            "guide".to_owned(),
+            format!("cycle state {cycle_state} requires supervisor inspection"),
+            last_phase
+                .and_then(|phase| json_string(phase, "next_action"))
+                .unwrap_or_else(|| {
+                    "Inspect tdd-cycle-status.json and tdd-cycle-guidance.md before continuing."
+                        .to_owned()
+                }),
+            Some(format!(
+                "cat {}",
+                guidance_path.as_ref().map_or_else(
+                    || status_path.display().to_string(),
+                    |path| path.display().to_string()
+                )
+            )),
+            last_phase
+                .and_then(|phase| json_string(phase, "evidence_path"))
+                .map(PathBuf::from),
+        )
+    };
+    let decision_path = status_path
+        .parent()
+        .unwrap_or_else(|| Path::new("."))
+        .join("tdd-supervision-decision.json");
+    let report = CodexTddSuperviseReport {
+        repo_root,
+        status_path,
+        decision_path,
+        guidance_path,
+        cycle_state,
+        decision,
+        reason,
+        next_action,
+        next_command,
+        evidence_path,
+        phase_summary,
+    };
+    write_tdd_supervision_decision(&report)?;
+    if options.check && report.decision == "guide" {
+        return Err(anyhow!(
+            "{} requires supervisor guidance: {}",
+            report.status_path.display(),
+            report.reason
+        ));
+    }
+    Ok(report)
+}
+
 pub fn ensure_codex_home_settings(codex_home: &Path) -> Result<CodexHomeSettingsReport> {
     let catalog_path = codex_home.join(REQUIRED_CODEX_MODEL_CATALOG);
     write_file(&PlannedFile {
@@ -2450,6 +2619,10 @@ fn append_supervisor_guidance(goal: &mut String, supervisor_guidance: &[String])
     }
 }
 
+fn json_string(value: &JsonValue, key: &str) -> Option<String> {
+    value.get(key)?.as_str().map(ToOwned::to_owned)
+}
+
 fn parse_auto_loop_marker(last_message: &str) -> Option<String> {
     last_message.lines().find_map(|line| {
         let marker = line.trim().strip_prefix("CODEX_AUTO_LOOP_STATUS:")?;
@@ -2684,6 +2857,14 @@ fn write_tdd_cycle_status(report: &CodexTddCycleReport) -> Result<()> {
     write_tdd_cycle_guidance(report)
 }
 
+fn write_tdd_supervision_decision(report: &CodexTddSuperviseReport) -> Result<()> {
+    fs::write(
+        &report.decision_path,
+        format!("{}\n", serde_json::to_string_pretty(report)?),
+    )
+    .with_context(|| format!("failed to write {}", report.decision_path.display()))
+}
+
 fn write_tdd_cycle_guidance(report: &CodexTddCycleReport) -> Result<()> {
     let mut markdown = String::from("# Codex TDD Cycle Guidance\n\n");
     markdown.push_str("Codex is the human-in-loop supervisor for this Rust-owned cycle. Use this low-token guidance before loading bulk mirrored Markdown or per-step logs.\n\n");
@@ -2887,6 +3068,39 @@ fn latest_tdd_extraction_plan(repo_root: &Path) -> Result<PathBuf> {
                 runs_dir.display()
             )
         })
+}
+
+fn latest_tdd_cycle_status(repo_root: &Path) -> Result<PathBuf> {
+    latest_run_artifact(
+        repo_root,
+        "tdd-cycle-status.json",
+        "run codex-env tdd-cycle first",
+    )
+}
+
+fn latest_run_artifact(repo_root: &Path, file_name: &str, hint: &str) -> Result<PathBuf> {
+    let runs_dir = repo_root.join(".codex/harness/runs");
+    let mut candidates = Vec::new();
+    if runs_dir.exists() {
+        for entry in fs::read_dir(&runs_dir)
+            .with_context(|| format!("failed to read {}", runs_dir.display()))?
+        {
+            let entry =
+                entry.with_context(|| format!("failed to read entry in {}", runs_dir.display()))?;
+            let path = entry.path().join(file_name);
+            if path.exists() {
+                let modified = fs::metadata(&path)
+                    .and_then(|metadata| metadata.modified())
+                    .unwrap_or(UNIX_EPOCH);
+                candidates.push((modified, path));
+            }
+        }
+    }
+    candidates
+        .into_iter()
+        .max_by_key(|(modified, path)| (*modified, path.clone()))
+        .map(|(_, path)| path)
+        .ok_or_else(|| anyhow!("no {file_name} found under {}; {hint}", runs_dir.display()))
 }
 
 fn validate_tdd_extraction_plan(plan: &CodexTddExtractionPlan, path: &Path) -> Result<()> {

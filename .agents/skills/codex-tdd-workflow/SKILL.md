@@ -37,3 +37,5 @@ events, and timestamps so Codex does not wait blind on a background terminal.
 Read `tdd-cycle-guidance.md` first when resuming or guiding the worker.
 Use `--supervisor-note` or `--supervisor-note-file` to pass follow-up guidance
 into the next bounded handoff.
+Run `codex-env tdd-supervise` to turn the latest cycle status into an explicit
+proceed, guide, or stop decision before launching or closing a worker.

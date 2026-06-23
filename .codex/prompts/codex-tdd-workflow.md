@@ -39,4 +39,6 @@ opening per-step logs.
 Use repeatable `--supervisor-note` or `--supervisor-note-file` to inject
 follow-up guidance into the bounded handoff prompt when the supervisor has
 inspected evidence and needs to steer the worker.
+Run `cargo run -p codex-env -- tdd-supervise` after a cycle to persist the
+supervisor proceed/guide/stop decision before launching or closing a worker.
 Do not move this automation into a vendor harness.

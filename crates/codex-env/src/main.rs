@@ -3,12 +3,13 @@ use std::{fs, path::PathBuf};
 use anyhow::{bail, Result};
 use clap::{Parser, Subcommand};
 use codex_env::{
-    codex_tdd_next_action, doctor_codex_surface, install_codex_env, install_codex_prompts,
-    inventory_codex_surface, mirror_codex_surface, run_codex_auto_loop, run_codex_task,
-    run_codex_tdd_auto_loop, run_codex_tdd_cycle, run_codex_team, CodexAutoLoopOptions,
-    CodexInstallOptions, CodexInventoryOptions, CodexRunOptions, CodexTddAutoLoopOptions,
-    CodexTddCycleOptions, CodexTddNextActionOptions, CodexTddWorkflowOptions, CodexTeamRunOptions,
-    DoctorOptions, MirrorOptions, PromptInstallOptions,
+    codex_tdd_next_action, codex_tdd_supervise, doctor_codex_surface, install_codex_env,
+    install_codex_prompts, inventory_codex_surface, mirror_codex_surface, run_codex_auto_loop,
+    run_codex_task, run_codex_tdd_auto_loop, run_codex_tdd_cycle, run_codex_team,
+    CodexAutoLoopOptions, CodexInstallOptions, CodexInventoryOptions, CodexRunOptions,
+    CodexTddAutoLoopOptions, CodexTddCycleOptions, CodexTddNextActionOptions,
+    CodexTddSuperviseOptions, CodexTddWorkflowOptions, CodexTeamRunOptions, DoctorOptions,
+    MirrorOptions, PromptInstallOptions,
 };
 
 #[derive(Parser)]
@@ -302,6 +303,21 @@ enum Commands {
         /// Skip install and only run doctor before launching nested Codex.
         #[arg(long)]
         skip_install: bool,
+    },
+
+    /// Inspect a TDD cycle status and emit the next supervisor decision.
+    TddSupervise {
+        /// Path to tdd-cycle-status.json. Defaults to the newest TDD cycle run.
+        #[arg(long)]
+        status: Option<PathBuf>,
+
+        /// Emit the supervisor decision as JSON.
+        #[arg(long)]
+        json: bool,
+
+        /// Fail if the cycle requires guidance before proceeding.
+        #[arg(long)]
+        check: bool,
     },
 }
 
@@ -719,6 +735,30 @@ fn main() -> Result<()> {
                     .map(|auto_loop| auto_loop.status_path.display().to_string())
                     .unwrap_or_else(|| "not-run".to_owned())
             );
+        }
+        Commands::TddSupervise {
+            status,
+            json,
+            check,
+        } => {
+            let report = codex_tdd_supervise(CodexTddSuperviseOptions {
+                repo_root,
+                status_path: status,
+                check,
+            })?;
+            if json {
+                println!("{}", serde_json::to_string_pretty(&report)?);
+            } else {
+                println!(
+                    "codex-env tdd-supervise: decision={}, state={}, status={}, decision_path={}, next_action={}, next_command={}",
+                    report.decision,
+                    report.cycle_state,
+                    report.status_path.display(),
+                    report.decision_path.display(),
+                    report.next_action,
+                    report.next_command.unwrap_or_else(|| "none".to_owned())
+                );
+            }
         }
     }
 

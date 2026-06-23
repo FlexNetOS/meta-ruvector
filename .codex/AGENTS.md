@@ -80,6 +80,7 @@ cargo run -p codex-env -- tdd-workflow "build, verify, and trace the Codex Rust 
 cargo run -p codex-env -- tdd-next --check
 cargo run -p codex-env -- tdd-auto-loop --dry-run
 cargo run -p codex-env -- tdd-cycle --dry-run "supervise the full Codex TDD cycle"
+cargo run -p codex-env -- tdd-supervise
 ```
 
 Each run refreshes/validates the Codex surface, then invokes `codex exec --json`
@@ -135,3 +136,6 @@ summarizes the current phase, evidence path, and next action without forcing the
 next session to load token-heavy mirrored source. Use repeatable
 `--supervisor-note` or `--supervisor-note-file` when Codex needs to inject
 follow-up guidance into the handoff prompt after inspecting evidence.
+`tdd-supervise` reads the newest cycle status, writes
+`tdd-supervision-decision.json`, and tells Codex whether to proceed, guide, or
+stop the background terminal based on Rust-owned evidence.
