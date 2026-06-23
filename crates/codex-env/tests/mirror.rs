@@ -1349,6 +1349,65 @@ fn tdd_cycle_dry_run_materializes_supervised_cycle_status() {
 }
 
 #[test]
+fn tdd_supervise_emits_next_background_terminal_decision() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path().join("repo");
+    let run_dir = root.join(".codex/harness/runs/001-tdd-cycle");
+    fs::create_dir_all(&run_dir).unwrap();
+    let status_path = run_dir.join("tdd-cycle-status.json");
+    let guidance_path = run_dir.join("tdd-cycle-guidance.md");
+    fs::write(&guidance_path, "# guidance\n").unwrap();
+    fs::write(
+        &status_path,
+        serde_json::to_vec_pretty(&serde_json::json!({
+            "cycle_state": "prepared",
+            "guidance_path": guidance_path,
+            "phases": [
+                {
+                    "phase": "tdd-workflow",
+                    "status": "ok",
+                    "evidence_path": "workflow/tdd-workflow-status.json",
+                    "next_action": "Validate the generated tdd-extraction-plan.json with tdd-next --check."
+                },
+                {
+                    "phase": "tdd-auto-loop",
+                    "status": "prepared",
+                    "evidence_path": "auto-loop/tdd-auto-loop-status.json",
+                    "next_action": "Review tdd-auto-loop-status.json, then rerun tdd-cycle --run-handoff."
+                }
+            ]
+        }))
+        .unwrap(),
+    )
+    .unwrap();
+
+    let report = codex_env::codex_tdd_supervise(codex_env::CodexTddSuperviseOptions {
+        repo_root: root,
+        status_path: Some(status_path.clone()),
+        check: true,
+    })
+    .unwrap();
+
+    assert_eq!(report.status_path, status_path);
+    assert_eq!(report.cycle_state, "prepared");
+    assert_eq!(report.decision, "proceed");
+    assert!(report
+        .next_command
+        .as_ref()
+        .unwrap()
+        .contains("--run-handoff"));
+    assert!(report.next_action.contains("Review tdd-cycle-guidance.md"));
+    assert_eq!(
+        report.phase_summary,
+        vec!["tdd-workflow=ok", "tdd-auto-loop=prepared"]
+    );
+    assert!(report.decision_path.exists());
+    let decision = fs::read_to_string(report.decision_path).unwrap();
+    assert!(decision.contains(r#""decision": "proceed""#));
+    assert!(decision.contains("tdd-auto-loop-status.json"));
+}
+
+#[test]
 fn doctor_rejects_gitignored_generated_surface_files() {
     let temp = tempfile::tempdir().unwrap();
     let root = temp.path();
