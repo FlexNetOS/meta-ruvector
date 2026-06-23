@@ -108,3 +108,5 @@ extract durable behavior into the owning Rust crates rather than a vendor
 harness. Non-dry-run workflow steps also write per-step stdout/stderr logs
 under the workflow run directory so the supervising Codex session can inspect
 what the background worker actually did before deciding the next extraction.
+The workflow also writes `tdd-extraction-report.md`, a concise crate-ownership
+report that turns the supervised trace into the next Rust extraction action.
