@@ -8,10 +8,12 @@ Run the Codex Rust TDD workflow for this goal: $ARGUMENTS
 Use the Rust harness when shell execution is appropriate:
 
 ```bash
-cargo run -p codex-env -- tdd-workflow "$ARGUMENTS"
+cargo run -p codex-env -- tdd-cycle "$ARGUMENTS"
 ```
 
-This builds `crates/codex-env`, then executes the built Codex Rust tools in
+This runs the full Rust-owned TDD cycle: it builds `crates/codex-env`, executes
+the built Codex Rust tools, validates the extraction plan, and prepares the
+bounded auto-loop handoff. The workflow phase executes the tools in
 order: mirror check, repo-local prompt check, doctor, inventory check, and
 bounded dry-run run/team-run/auto-loop probes. The workflow status records what
 each tool does, why it runs, where the behavior belongs, and the Rust extraction
@@ -26,6 +28,8 @@ human-readable evidence summary. Run `cargo run -p codex-env -- tdd-next
 --check` to fail closed before handing the plan to the next autonomous loop, or
 `cargo run -p codex-env -- tdd-auto-loop --dry-run` to materialize the bounded
 auto-loop handoff from the validated plan and write `tdd-auto-loop-status.json`.
-The handoff status records supervision events and timestamps for the terminal
+Prefer `cargo run -p codex-env -- tdd-cycle --dry-run "$ARGUMENTS"` when you
+need a single cycle status before executing nested workers. The handoff and
+cycle statuses record supervision events and timestamps for the terminal
 handoff.
 Do not move this automation into a vendor harness.

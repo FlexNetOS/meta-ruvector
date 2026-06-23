@@ -11,10 +11,10 @@ repo-owned automation layer.
 When running from the shell, prefer the Rust harness:
 
 ```bash
-cargo run -p codex-env -- tdd-workflow "your goal"
+cargo run -p codex-env -- tdd-cycle "your goal"
 ```
 
-The harness builds `crates/codex-env`, then executes the built binary through
+The cycle builds `crates/codex-env`, executes the built binary through
 mirror, prompt, doctor, inventory, run, team-run, and auto-loop probes. Its
 status file records what each tool does, why it runs, where the behavior
 belongs, and the Rust extraction target. Supervise it like a background
@@ -29,4 +29,6 @@ latest plan, reject vendor-harness routing, and select the next Rust-owned
 action for autonomous continuation. Run `codex-env tdd-auto-loop --dry-run` to
 turn that validated plan into bounded auto-loop artifacts before allowing a real
 autonomous continuation; inspect `tdd-auto-loop-status.json` as the durable
-handoff status with supervision events and start/end timestamps.
+handoff status with supervision events and start/end timestamps. Prefer
+`codex-env tdd-cycle --dry-run` for a single Rust-owned status that proves the
+workflow-to-handoff chain is wired before launching nested workers.

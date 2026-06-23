@@ -79,6 +79,7 @@ cargo run -p codex-env -- auto-loop --team core --max-iterations 3 "finish the C
 cargo run -p codex-env -- tdd-workflow "build, verify, and trace the Codex Rust tools"
 cargo run -p codex-env -- tdd-next --check
 cargo run -p codex-env -- tdd-auto-loop --dry-run
+cargo run -p codex-env -- tdd-cycle --dry-run "supervise the full Codex TDD cycle"
 ```
 
 Each run refreshes/validates the Codex surface, then invokes `codex exec --json`
@@ -122,3 +123,7 @@ writes `tdd-auto-loop-status.json` beside the auto-loop artifacts.
 That status records the handoff state, supervision events, and start/end
 timestamps so Codex can supervise the handoff like a background terminal rather
 than waiting blind.
+`tdd-cycle` stitches those phases into one Rust-owned cycle status:
+workflow trace, extraction plan validation, and the auto-loop handoff status are
+recorded under one `tdd-cycle-status.json` so the next Codex session can resume
+from crate-owned evidence instead of a token-heavy vendor harness narrative.

@@ -5,10 +5,10 @@ use clap::{Parser, Subcommand};
 use codex_env::{
     codex_tdd_next_action, doctor_codex_surface, install_codex_env, install_codex_prompts,
     inventory_codex_surface, mirror_codex_surface, run_codex_auto_loop, run_codex_task,
-    run_codex_tdd_auto_loop, run_codex_team, CodexAutoLoopOptions, CodexInstallOptions,
-    CodexInventoryOptions, CodexRunOptions, CodexTddAutoLoopOptions, CodexTddNextActionOptions,
-    CodexTddWorkflowOptions, CodexTeamRunOptions, DoctorOptions, MirrorOptions,
-    PromptInstallOptions,
+    run_codex_tdd_auto_loop, run_codex_tdd_cycle, run_codex_team, CodexAutoLoopOptions,
+    CodexInstallOptions, CodexInventoryOptions, CodexRunOptions, CodexTddAutoLoopOptions,
+    CodexTddCycleOptions, CodexTddNextActionOptions, CodexTddWorkflowOptions, CodexTeamRunOptions,
+    DoctorOptions, MirrorOptions, PromptInstallOptions,
 };
 
 #[derive(Parser)]
@@ -246,6 +246,44 @@ enum Commands {
         dry_run: bool,
 
         /// Skip install and only run doctor before launching.
+        #[arg(long)]
+        skip_install: bool,
+    },
+
+    /// Run the full supervised TDD workflow, plan validation, and auto-loop handoff cycle.
+    TddCycle {
+        /// Team name from .codex/agent-teams.json.
+        #[arg(long, default_value = "core")]
+        team: String,
+
+        /// Goal to trace through the full TDD cycle.
+        goal: Option<String>,
+
+        /// Codex home directory. Defaults to this repo's .codex.
+        #[arg(long)]
+        codex_home: Option<PathBuf>,
+
+        /// Directory for cycle artifacts. Defaults under .codex/harness/runs.
+        #[arg(long)]
+        output_dir: Option<PathBuf>,
+
+        /// Maximum non-dry-run auto-loop iterations before stopping.
+        #[arg(long, default_value_t = 3)]
+        max_iterations: usize,
+
+        /// Sandbox for parallel team members. Defaults to read-only; parent consolidation owns writes.
+        #[arg(long, default_value = "read-only")]
+        member_sandbox: String,
+
+        /// Materialize the cycle plan without building or launching nested commands.
+        #[arg(long)]
+        dry_run: bool,
+
+        /// Launch the handoff auto-loop instead of only preparing its artifacts.
+        #[arg(long)]
+        run_handoff: bool,
+
+        /// Skip install and only run doctor before launching nested Codex.
         #[arg(long)]
         skip_install: bool,
     },
@@ -609,6 +647,50 @@ fn main() -> Result<()> {
                 report.auto_loop.max_iterations,
                 report.auto_loop.completed,
                 report.next_action.next_action
+            );
+        }
+        Commands::TddCycle {
+            team,
+            goal,
+            codex_home,
+            output_dir,
+            max_iterations,
+            member_sandbox,
+            dry_run,
+            run_handoff,
+            skip_install,
+        } => {
+            let codex_home = codex_home.unwrap_or_else(|| default_codex_home(&repo_root));
+            let report = run_codex_tdd_cycle(CodexTddCycleOptions {
+                repo_root,
+                lua_policy: cli.lua_policy,
+                codex_home,
+                output_dir,
+                team,
+                goal,
+                max_iterations,
+                member_sandbox_mode: member_sandbox,
+                dry_run,
+                handoff_dry_run: !run_handoff,
+                skip_install,
+            })?;
+            println!(
+                "codex-env tdd-cycle {}: state={}, run_dir={}, status={}, workflow_status={}, extraction_plan={}, next_ready={}, auto_loop_status={}",
+                if report.dry_run { "planned" } else { "ok" },
+                report.cycle_state,
+                report.run_dir.display(),
+                report.status_path.display(),
+                report.workflow.status_path.display(),
+                report.workflow.extraction_plan_path.display(),
+                report
+                    .next_action
+                    .as_ref()
+                    .is_some_and(|next| next.ready_for_autonomous_loop),
+                report
+                    .auto_loop
+                    .as_ref()
+                    .map(|auto_loop| auto_loop.status_path.display().to_string())
+                    .unwrap_or_else(|| "not-run".to_owned())
             );
         }
     }
