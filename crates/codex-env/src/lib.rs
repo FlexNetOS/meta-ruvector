@@ -117,6 +117,7 @@ pub struct CodexTeamRunOptions {
     pub goal: Option<String>,
     pub prompt_file: Option<PathBuf>,
     pub output_dir: Option<PathBuf>,
+    pub member_sandbox_mode: String,
     pub dry_run: bool,
     pub skip_install: bool,
 }
@@ -131,6 +132,7 @@ pub struct CodexTeamRunReport {
     pub status_path: PathBuf,
     pub consolidation_prompt_path: PathBuf,
     pub consolidation_run: CodexRunReport,
+    pub member_sandbox_mode: String,
     pub members: Vec<CodexTeamRunMemberReport>,
     pub dry_run: bool,
 }
@@ -141,6 +143,7 @@ pub struct CodexTeamRunMemberReport {
     pub description: String,
     pub model: String,
     pub reasoning_effort: String,
+    pub sandbox_mode: String,
     pub profile_path: PathBuf,
     pub run: CodexRunReport,
 }
@@ -564,6 +567,7 @@ pub fn run_codex_team(options: CodexTeamRunOptions) -> Result<CodexTeamRunReport
     let codex_dir = repo_root.join(".codex");
     let team = load_team(&codex_dir, &options.team)?;
     let profiles = load_team_agent_profiles(&codex_dir, &team)?;
+    let member_sandbox_mode = validate_member_sandbox_mode(&options.member_sandbox_mode)?;
     let run_dir = options.output_dir.unwrap_or_else(|| {
         repo_root
             .join(".codex/harness/runs")
@@ -576,7 +580,7 @@ pub fn run_codex_team(options: CodexTeamRunOptions) -> Result<CodexTeamRunReport
     let mut children = Vec::new();
     for profile in profiles {
         let agent_dir = run_dir.join("agents").join(&profile.name);
-        let prompt = codex_team_member_prompt(&goal, &team, &profile);
+        let prompt = codex_team_member_prompt(&goal, &team, &profile, &member_sandbox_mode);
         let report =
             prepared_run_report(&repo_root, &codex_home, agent_dir, prompt, options.dry_run)?;
         let child = if options.dry_run {
@@ -586,7 +590,7 @@ pub fn run_codex_team(options: CodexTeamRunOptions) -> Result<CodexTeamRunReport
                 &repo_root,
                 &codex_home,
                 &report,
-                &profile.sandbox_mode,
+                &member_sandbox_mode,
                 &profile.model,
                 &profile.model_reasoning_effort,
             )?)
@@ -596,6 +600,7 @@ pub fn run_codex_team(options: CodexTeamRunOptions) -> Result<CodexTeamRunReport
             description: profile.description,
             model: profile.model,
             reasoning_effort: profile.model_reasoning_effort,
+            sandbox_mode: member_sandbox_mode.clone(),
             profile_path: profile.path,
             run: report.clone(),
         };
@@ -679,6 +684,7 @@ pub fn run_codex_team(options: CodexTeamRunOptions) -> Result<CodexTeamRunReport
         status_path,
         consolidation_prompt_path,
         consolidation_run,
+        member_sandbox_mode,
         members,
         dry_run: options.dry_run,
     };
@@ -1056,7 +1062,6 @@ struct RunAgentProfile {
     description: String,
     model: String,
     model_reasoning_effort: String,
-    sandbox_mode: String,
     developer_instructions: String,
     path: PathBuf,
 }
@@ -1142,20 +1147,24 @@ fn load_agent_profile(path: &Path) -> Result<RunAgentProfile> {
     let model = required_profile_string(&toml, "model", path)?;
     let model_reasoning_effort = required_profile_string(&toml, "model_reasoning_effort", path)?;
     let developer_instructions = required_profile_string(&toml, "developer_instructions", path)?;
-    let sandbox_mode = toml
-        .get("sandbox_mode")
-        .and_then(toml::Value::as_str)
-        .unwrap_or("workspace-write")
-        .to_owned();
     Ok(RunAgentProfile {
         name,
         description,
         model,
         model_reasoning_effort,
-        sandbox_mode,
         developer_instructions,
         path: path.to_path_buf(),
     })
+}
+
+fn validate_member_sandbox_mode(value: &str) -> Result<String> {
+    let value = value.trim();
+    match value {
+        "read-only" | "workspace-write" => Ok(value.to_owned()),
+        _ => Err(anyhow!(
+            "team-run member sandbox must be read-only or workspace-write, found {value:?}"
+        )),
+    }
 }
 
 fn required_profile_string(toml: &toml::Value, key: &str, path: &Path) -> Result<String> {
@@ -1207,7 +1216,12 @@ Goal:
     ))
 }
 
-fn codex_team_member_prompt(goal: &str, team: &RunAgentTeam, profile: &RunAgentProfile) -> String {
+fn codex_team_member_prompt(
+    goal: &str,
+    team: &RunAgentTeam,
+    profile: &RunAgentProfile,
+    member_sandbox_mode: &str,
+) -> String {
     normalize_generated_text(&format!(
         r#"# codex-env Team Member
 
@@ -1218,8 +1232,9 @@ Team strategy: {}
 
 Agent description: {}
 Model route: {} / {}
+Execution sandbox: {}
 
-Use your agent instructions below as the role contract. Return concrete evidence, file paths, risks, and recommended edits. Do not make broad uncoordinated changes outside this role's scope.
+Use your agent instructions below as the role contract. Return concrete evidence, file paths, risks, and recommended edits. Parallel team members are evidence producers; do not modify files unless the parent explicitly selected a writable member sandbox for an isolated scope.
 
 ## Agent Instructions
 
@@ -1236,6 +1251,7 @@ Use your agent instructions below as the role contract. Return concrete evidence
         profile.description,
         profile.model,
         profile.model_reasoning_effort,
+        member_sandbox_mode,
         profile.developer_instructions.trim(),
         goal
     ))
@@ -1250,10 +1266,11 @@ fn codex_team_consolidation_prompt(
         .iter()
         .map(|member| {
             format!(
-                "- {} ({} / {}): {}",
+                "- {} ({} / {}, sandbox {}): {}",
                 member.agent,
                 member.model,
                 member.reasoning_effort,
+                member.sandbox_mode,
                 member.run.last_message_path.display()
             )
         })
@@ -1271,7 +1288,7 @@ Goal: {}
 Member outputs:
 {}
 
-Read every member output, reconcile conflicts, decide the implementation path, make parent-owned edits, verify, commit, push, and update the PR when publishing applies.
+Read every member output, reconcile conflicts, decide the implementation path, make parent-owned edits, verify, commit, push, and update the PR when publishing applies. Treat parallel member runs as evidence-only unless their status explicitly says they ran with `workspace-write` for an isolated scope.
 "#,
         team.name, team.strategy, goal, member_outputs
     ))

@@ -62,5 +62,7 @@ with artifacts under `.codex/harness/runs/`: `prompt.md`, `events.jsonl`,
 the exact prompt and status without launching a nested Codex run. `team-run`
 loads `.codex/agent-teams.json` plus the referenced `.codex/agents/*.toml`
 profiles, starts every team member with its configured model and reasoning
-effort, then runs a parent consolidation Codex pass that reads the member
-outputs, performs parent-owned edits, and writes its own artifacts.
+effort in a read-only sandbox by default, then runs a parent consolidation
+Codex pass that reads the member outputs, performs parent-owned edits, and
+writes its own artifacts. Use `--member-sandbox workspace-write` only for a
+deliberately isolated writable member scope.

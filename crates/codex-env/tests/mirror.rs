@@ -740,6 +740,7 @@ fn team_run_dry_run_materializes_parallel_agent_artifacts() {
         goal: Some("map the generated Codex team runner".to_owned()),
         prompt_file: None,
         output_dir: Some(run_dir),
+        member_sandbox_mode: "read-only".to_owned(),
         dry_run: true,
         skip_install: false,
     })
@@ -747,6 +748,7 @@ fn team_run_dry_run_materializes_parallel_agent_artifacts() {
 
     assert!(report.dry_run);
     assert_eq!(report.team, "core");
+    assert_eq!(report.member_sandbox_mode, "read-only");
     assert!(report.members.len() >= 2);
     assert!(report.consolidation_prompt_path.exists());
     assert!(report.consolidation_run.prompt_path.exists());
@@ -758,11 +760,16 @@ fn team_run_dry_run_materializes_parallel_agent_artifacts() {
         let prompt = fs::read_to_string(&member.run.prompt_path).unwrap();
         assert!(prompt.contains("codex-env Team Member"));
         assert!(prompt.contains(&member.agent));
+        assert!(prompt.contains("Execution sandbox: read-only"));
+        assert!(prompt.contains("Parallel team members are evidence producers"));
+        assert_eq!(member.sandbox_mode, "read-only");
         assert_eq!(member.run.exit_code, None);
     }
     let consolidation = fs::read_to_string(report.consolidation_prompt_path).unwrap();
     assert!(consolidation.contains("Team: core"));
     assert!(consolidation.contains("Member outputs:"));
+    assert!(consolidation.contains("sandbox read-only"));
+    assert!(consolidation.contains("parallel member runs as evidence-only"));
     let consolidation_prompt = fs::read_to_string(report.consolidation_run.prompt_path).unwrap();
     assert!(consolidation_prompt.contains("Consolidate the completed Codex team run."));
     let consolidation_status = fs::read_to_string(report.consolidation_run.status_path).unwrap();

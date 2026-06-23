@@ -109,6 +109,10 @@ enum Commands {
         #[arg(long)]
         output_dir: Option<PathBuf>,
 
+        /// Sandbox for parallel team members. Defaults to read-only; parent consolidation owns writes.
+        #[arg(long, default_value = "read-only")]
+        member_sandbox: String,
+
         /// Materialize team prompts and status without launching codex exec.
         #[arg(long)]
         dry_run: bool,
@@ -259,6 +263,7 @@ fn main() -> Result<()> {
             prompt_file,
             codex_home,
             output_dir,
+            member_sandbox,
             dry_run,
             skip_install,
         } => {
@@ -271,15 +276,17 @@ fn main() -> Result<()> {
                 goal,
                 prompt_file,
                 output_dir,
+                member_sandbox_mode: member_sandbox,
                 dry_run,
                 skip_install,
             })?;
             println!(
-                "codex-env team-run {}: team={}, strategy={}, members={}, run_dir={}, consolidation_prompt={}, consolidation_last_message={}, status={}",
+                "codex-env team-run {}: team={}, strategy={}, members={}, member_sandbox={}, run_dir={}, consolidation_prompt={}, consolidation_last_message={}, status={}",
                 if report.dry_run { "prepared" } else { "ok" },
                 report.team,
                 report.strategy,
                 report.members.len(),
+                report.member_sandbox_mode,
                 report.run_dir.display(),
                 report.consolidation_prompt_path.display(),
                 report.consolidation_run.last_message_path.display(),

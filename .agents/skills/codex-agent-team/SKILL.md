@@ -22,4 +22,4 @@ When running from the shell, prefer the Rust harness:
 cargo run -p codex-env -- team-run --team core "your goal"
 ```
 
-The harness runs every team member with its configured model/reasoning effort and then launches a parent consolidation Codex pass. Give each subagent a bounded brief and a required evidence format. Keep write ownership in the parent pass unless a subagent has an isolated file scope.
+The harness runs every team member with its configured model/reasoning effort in `read-only` mode by default, then launches a parent consolidation Codex pass. Give each subagent a bounded brief and a required evidence format. Keep write ownership in the parent pass; use `--member-sandbox workspace-write` only for a deliberately isolated writable member scope.

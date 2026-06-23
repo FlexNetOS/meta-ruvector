@@ -21,4 +21,4 @@ Use the Rust harness when shell execution is appropriate:
 cargo run -p codex-env -- team-run --team core "$ARGUMENTS"
 ```
 
-The harness runs every team member with its configured model/reasoning effort and then launches a parent consolidation Codex pass. Give each subagent a bounded brief with concrete evidence to return. Do not let subagents modify the same file concurrently. After all results return, the parent pass decides the implementation path, makes the edits, verifies, commits, pushes, and updates the PR when publishing applies.
+The harness runs every team member with its configured model/reasoning effort in `read-only` mode by default, then launches a parent consolidation Codex pass. Give each subagent a bounded brief with concrete evidence to return. Do not let subagents modify files concurrently; use `--member-sandbox workspace-write` only for a deliberately isolated writable member scope. After all results return, the parent pass decides the implementation path, makes the edits, verifies, commits, pushes, and updates the PR when publishing applies.
