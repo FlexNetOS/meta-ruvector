@@ -1609,7 +1609,7 @@ fn tdd_audit_reports_missing_and_complete_os_requirements() {
                                 {
                                     "name": "mirror-check",
                                     "does": "recomputes extraction",
-                                    "why": "reject stale generated files",
+                                    "why": "reject stale generated files instead of treating a vendor harness narrative as success",
                                     "belongs_in": "crates/codex-env",
                                     "extraction_target": "Rust-owned .claude to .codex extractor/compiler in crates/codex-env"
                                 }
@@ -1625,7 +1625,7 @@ fn tdd_audit_reports_missing_and_complete_os_requirements() {
 
     let complete = codex_env::audit_codex_tdd_os(codex_env::CodexTddAuditOptions {
         repo_root: root,
-        drive_loop_status_path: Some(drive_loop_status),
+        drive_loop_status_path: Some(drive_loop_status.clone()),
         check: true,
     })
     .unwrap();
@@ -1637,6 +1637,57 @@ fn tdd_audit_reports_missing_and_complete_os_requirements() {
     let audit = fs::read_to_string(complete.audit_path).unwrap();
     assert!(audit.contains(r#""audit_state": "complete""#));
     assert!(audit.contains("vendor-harness-rejected"));
+
+    fs::write(
+        &drive_loop_status,
+        serde_json::to_vec_pretty(&serde_json::json!({
+            "loop_state": "prepared",
+            "status_path": drive_loop_status,
+            "dry_run": false,
+            "max_drive_steps": 3,
+            "final_cycle_status_path": cycle_status,
+            "steps": [
+                {
+                    "status_path": run_dir.join("step-1/tdd-drive-status.json"),
+                    "drive_state": "prepared",
+                    "supervision": {
+                        "decision": "proceed",
+                        "next_action": "Review tdd-cycle-guidance.md."
+                    },
+                    "cycle": {
+                        "status_path": cycle_status,
+                        "workflow": {
+                            "steps": [
+                                {
+                                    "name": "mirror-check",
+                                    "does": "recomputes extraction",
+                                    "why": "reject stale generated files",
+                                    "belongs_in": "vendor harness",
+                                    "extraction_target": "vendor harness"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        }))
+        .unwrap(),
+    )
+    .unwrap();
+
+    let vendor = codex_env::audit_codex_tdd_os(codex_env::CodexTddAuditOptions {
+        repo_root: complete.repo_root,
+        drive_loop_status_path: Some(drive_loop_status),
+        check: false,
+    })
+    .unwrap();
+    assert!(vendor
+        .requirements
+        .iter()
+        .any(
+            |requirement| requirement.requirement == "vendor-harness-rejected"
+                && requirement.status == "missing"
+        ));
 }
 
 #[test]

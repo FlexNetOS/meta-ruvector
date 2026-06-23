@@ -2380,9 +2380,23 @@ pub fn audit_codex_tdd_os(options: CodexTddAuditOptions) -> Result<CodexTddAudit
         .get("max_drive_steps")
         .and_then(JsonValue::as_u64)
         .is_some_and(|steps| (1..=20).contains(&steps));
-    let no_vendor_harness = !status_bytes
-        .windows("vendor harness".len())
-        .any(|window| window.eq_ignore_ascii_case(b"vendor harness"));
+    let vendor_routed = steps.iter().any(|step| {
+        step.get("cycle")
+            .and_then(|cycle| cycle.get("workflow"))
+            .and_then(|workflow| workflow.get("steps"))
+            .and_then(JsonValue::as_array)
+            .is_some_and(|workflow_steps| {
+                workflow_steps.iter().any(|workflow_step| {
+                    ["belongs_in", "extraction_target"].iter().any(|key| {
+                        workflow_step
+                            .get(*key)
+                            .and_then(JsonValue::as_str)
+                            .is_some_and(|value| value.to_ascii_lowercase().contains("vendor"))
+                    })
+                })
+            })
+    });
+    let no_vendor_harness = !vendor_routed;
 
     let requirements = vec![
         tdd_audit_requirement(
