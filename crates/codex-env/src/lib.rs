@@ -359,6 +359,7 @@ pub struct CodexTddCycleReport {
     pub codex_home: PathBuf,
     pub run_dir: PathBuf,
     pub status_path: PathBuf,
+    pub guidance_path: PathBuf,
     pub workflow: CodexTddWorkflowReport,
     pub next_action: Option<CodexTddNextActionReport>,
     pub auto_loop: Option<CodexTddAutoLoopReport>,
@@ -1638,6 +1639,7 @@ pub fn run_codex_tdd_cycle(options: CodexTddCycleOptions) -> Result<CodexTddCycl
     fs::create_dir_all(&run_dir)
         .with_context(|| format!("failed to create {}", run_dir.display()))?;
     let status_path = run_dir.join("tdd-cycle-status.json");
+    let guidance_path = run_dir.join("tdd-cycle-guidance.md");
     let mut supervision_events = vec![format!(
         "started: Codex-as-human supervisor opened TDD cycle terminal for {goal}"
     )];
@@ -1676,6 +1678,7 @@ pub fn run_codex_tdd_cycle(options: CodexTddCycleOptions) -> Result<CodexTddCycl
             codex_home,
             run_dir,
             status_path,
+            guidance_path,
             workflow,
             next_action: None,
             auto_loop: None,
@@ -1695,6 +1698,7 @@ pub fn run_codex_tdd_cycle(options: CodexTddCycleOptions) -> Result<CodexTddCycl
         codex_home: codex_home.clone(),
         run_dir: run_dir.clone(),
         status_path: status_path.clone(),
+        guidance_path: guidance_path.clone(),
         workflow: workflow.clone(),
         next_action: None,
         auto_loop: None,
@@ -1731,6 +1735,7 @@ pub fn run_codex_tdd_cycle(options: CodexTddCycleOptions) -> Result<CodexTddCycl
         codex_home: codex_home.clone(),
         run_dir: run_dir.clone(),
         status_path: status_path.clone(),
+        guidance_path: guidance_path.clone(),
         workflow: workflow.clone(),
         next_action: Some(next_action.clone()),
         auto_loop: None,
@@ -1788,6 +1793,7 @@ pub fn run_codex_tdd_cycle(options: CodexTddCycleOptions) -> Result<CodexTddCycl
         codex_home,
         run_dir,
         status_path,
+        guidance_path,
         workflow,
         next_action: Some(next_action),
         auto_loop: Some(auto_loop),
@@ -2640,7 +2646,67 @@ fn write_tdd_cycle_status(report: &CodexTddCycleReport) -> Result<()> {
         &report.status_path,
         format!("{}\n", serde_json::to_string_pretty(report)?),
     )
-    .with_context(|| format!("failed to write {}", report.status_path.display()))
+    .with_context(|| format!("failed to write {}", report.status_path.display()))?;
+    write_tdd_cycle_guidance(report)
+}
+
+fn write_tdd_cycle_guidance(report: &CodexTddCycleReport) -> Result<()> {
+    let mut markdown = String::from("# Codex TDD Cycle Guidance\n\n");
+    markdown.push_str("Codex is the human-in-loop supervisor for this Rust-owned cycle. Use this low-token guidance before loading bulk mirrored Markdown or per-step logs.\n\n");
+    markdown.push_str(&format!("- Cycle state: `{}`\n", report.cycle_state));
+    markdown.push_str(&format!("- Dry run: `{}`\n", report.dry_run));
+    markdown.push_str(&format!(
+        "- Status JSON: `{}`\n",
+        report.status_path.display()
+    ));
+    markdown.push_str(&format!(
+        "- Workflow status: `{}`\n",
+        report.workflow.status_path.display()
+    ));
+    markdown.push_str(&format!(
+        "- Extraction plan: `{}`\n",
+        report.workflow.extraction_plan_path.display()
+    ));
+    if let Some(next_action) = &report.next_action {
+        markdown.push_str(&format!(
+            "- Next-action ready: `{}` from `{}`\n",
+            next_action.ready_for_autonomous_loop,
+            next_action.plan_path.display()
+        ));
+    } else {
+        markdown.push_str("- Next-action ready: `false` (plan not validated yet)\n");
+    }
+    if let Some(auto_loop) = &report.auto_loop {
+        markdown.push_str(&format!(
+            "- Auto-loop status: `{}`\n",
+            auto_loop.status_path.display()
+        ));
+    } else {
+        markdown.push_str("- Auto-loop status: `not-run`\n");
+    }
+
+    markdown.push_str("\n## Phase guidance\n\n");
+    for phase in &report.phases {
+        markdown.push_str(&format!(
+            "### {}\n\n- Status: `{}`\n- Evidence: `{}`\n- Next action: {}\n\n",
+            phase.phase,
+            phase.status,
+            phase.evidence_path.display(),
+            phase.next_action
+        ));
+    }
+
+    markdown.push_str("## Supervision events\n\n");
+    for event in &report.supervision_events {
+        markdown.push_str(&format!("- {event}\n"));
+    }
+    markdown.push_str("\n## Ownership invariant\n\n");
+    markdown.push_str("- Extract durable behavior into `crates/codex-env` or adjacent project-owned Rust automation crates.\n");
+    markdown.push_str("- Do not move this automation into a vendor harness.\n");
+    markdown.push_str("- Do not install repo prompts into user-global Codex prompts by default.\n");
+
+    fs::write(&report.guidance_path, normalize_generated_text(&markdown))
+        .with_context(|| format!("failed to write {}", report.guidance_path.display()))
 }
 
 fn write_tdd_workflow_status(report: &CodexTddWorkflowReport) -> Result<()> {

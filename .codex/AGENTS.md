@@ -130,3 +130,6 @@ from crate-owned evidence instead of a token-heavy vendor harness narrative.
 The cycle status includes phase-level checkpoints, evidence paths, next actions,
 and timestamps so a supervisor can see whether the current terminal is planned,
 running, prepared, ended, or complete without waiting blind.
+It also writes `tdd-cycle-guidance.md`, a human-readable supervision brief that
+summarizes the current phase, evidence path, and next action without forcing the
+next session to load token-heavy mirrored source.

@@ -799,6 +799,9 @@ from crate-owned evidence instead of a token-heavy vendor harness narrative.
 The cycle status includes phase-level checkpoints, evidence paths, next actions,
 and timestamps so a supervisor can see whether the current terminal is planned,
 running, prepared, ended, or complete without waiting blind.
+It also writes `tdd-cycle-guidance.md`, a human-readable supervision brief that
+summarizes the current phase, evidence path, and next action without forcing the
+next session to load token-heavy mirrored source.
 "#,
     )
 }
@@ -899,7 +902,9 @@ need a single cycle status before executing nested workers. The handoff and
 cycle statuses record supervision events and timestamps for the terminal
 handoff. The cycle status also records explicit phase checkpoints with evidence
 paths and next actions so a resumed Codex session can continue from source truth
-instead of reloading token-heavy mirrored material.
+instead of reloading token-heavy mirrored material. Read
+`tdd-cycle-guidance.md` for the concise human-in-loop guidance artifact before
+opening per-step logs.
 Do not move this automation into a vendor harness.
 "#),
         ),
@@ -1021,6 +1026,7 @@ handoff status with supervision events and start/end timestamps. Prefer
 workflow-to-handoff chain is wired before launching nested workers. The cycle
 status includes phase checkpoints, evidence paths, next actions, supervision
 events, and timestamps so Codex does not wait blind on a background terminal.
+Read `tdd-cycle-guidance.md` first when resuming or guiding the worker.
 "#),
         ),
     ]
