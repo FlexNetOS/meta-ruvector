@@ -794,6 +794,14 @@ fn validate_prompts(
     }
 
     let mut installed_prompt_files = 0;
+    let expected_targets: BTreeSet<PathBuf> = source_prompts
+        .iter()
+        .map(|source| {
+            source
+                .strip_prefix(&source_dir)
+                .map(|relative| target_dir.join(relative))
+        })
+        .collect::<std::result::Result<_, _>>()?;
     for source in &source_prompts {
         let relative = source.strip_prefix(&source_dir)?;
         let target = target_dir.join(relative);
@@ -813,6 +821,18 @@ fn validate_prompts(
             );
         }
         installed_prompt_files += 1;
+    }
+    let installed_prompts = prompt_files(&target_dir)?;
+    let stale_targets: Vec<_> = installed_prompts
+        .into_iter()
+        .filter(|path| !expected_targets.contains(path))
+        .collect();
+    if !stale_targets.is_empty() {
+        bail!(
+            "installed Codex prompts include {} stale file(s); first: {}",
+            stale_targets.len(),
+            stale_targets[0].display()
+        );
     }
 
     Ok((

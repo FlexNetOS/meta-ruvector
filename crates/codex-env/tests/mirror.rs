@@ -432,6 +432,24 @@ fn install_refreshes_mirror_prompts_and_doctor_in_one_step() {
     assert!(root.join(".codex/model-catalog.json").exists());
     assert!(codex_home.join("model-catalog.json").exists());
     assert!(codex_home.join("prompts/demo.md").exists());
+    fs::write(codex_home.join("prompts/stale-command.md"), "stale").unwrap();
+
+    let stale_doctor = doctor_codex_surface(DoctorOptions {
+        repo_root: root.clone(),
+        lua_policy: None,
+        codex_home: codex_home.clone(),
+    })
+    .unwrap_err();
+    assert!(stale_doctor.to_string().contains("stale file"));
+
+    let cleaned = install_codex_prompts(PromptInstallOptions {
+        repo_root: root.clone(),
+        codex_home: codex_home.clone(),
+        check: false,
+    })
+    .unwrap();
+    assert_eq!(cleaned.removed_files.len(), 1);
+    assert!(!codex_home.join("prompts/stale-command.md").exists());
 
     let checked = doctor_codex_surface(DoctorOptions {
         repo_root: root,
@@ -649,8 +667,28 @@ fn install_prompts_copies_generated_prompt_commands() {
     .unwrap();
     assert_eq!(report.total_files, 4);
     assert_eq!(report.changed_files, 4);
+    assert_eq!(report.removed_files.len(), 0);
     assert!(codex_home.join("prompts/demo.md").exists());
     assert!(codex_home.join("prompts/codex-auto-loop.md").exists());
+    fs::write(codex_home.join("prompts/stale-command.md"), "stale").unwrap();
+
+    let stale_check = install_codex_prompts(PromptInstallOptions {
+        repo_root: root.clone(),
+        codex_home: codex_home.clone(),
+        check: true,
+    })
+    .unwrap_err();
+    assert!(stale_check.to_string().contains("stale file"));
+
+    let cleaned = install_codex_prompts(PromptInstallOptions {
+        repo_root: root.clone(),
+        codex_home: codex_home.clone(),
+        check: false,
+    })
+    .unwrap();
+    assert_eq!(cleaned.changed_files, 0);
+    assert_eq!(cleaned.removed_files.len(), 1);
+    assert!(!codex_home.join("prompts/stale-command.md").exists());
 
     let check = install_codex_prompts(PromptInstallOptions {
         repo_root: root,
@@ -659,6 +697,7 @@ fn install_prompts_copies_generated_prompt_commands() {
     })
     .unwrap();
     assert_eq!(check.changed_files, 0);
+    assert_eq!(check.removed_files.len(), 0);
 }
 
 #[test]

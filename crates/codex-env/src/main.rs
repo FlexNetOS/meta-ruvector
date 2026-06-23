@@ -221,10 +221,11 @@ fn main() -> Result<()> {
                 check,
             })?;
             println!(
-                "codex-env installed {} prompt files ({} changed, {} verified) into {}",
+                "codex-env installed {} prompt files ({} changed, {} verified, {} removed stale) into {}",
                 report.total_files,
                 report.changed_files,
                 report.verified_files,
+                report.removed_files.len(),
                 report.target_dir.display()
             );
         }

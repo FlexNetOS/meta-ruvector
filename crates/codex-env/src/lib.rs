@@ -1,3 +1,4 @@
+use std::collections::BTreeSet;
 use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
@@ -65,6 +66,7 @@ pub struct PromptInstallReport {
     pub total_files: usize,
     pub changed_files: usize,
     pub verified_files: usize,
+    pub removed_files: Vec<PathBuf>,
 }
 
 #[derive(Debug, Clone)]
@@ -419,6 +421,8 @@ pub fn install_codex_prompts(options: PromptInstallOptions) -> Result<PromptInst
 
     let mut changed_files = 0;
     let mut verified_files = 0;
+    let planned_paths: BTreeSet<PathBuf> = planned.iter().map(|file| file.path.clone()).collect();
+    let stale_files = stale_installed_prompt_files(&target_dir, &planned_paths)?;
     for file in &planned {
         let exists_with_same_content = fs::read(&file.path).is_ok_and(|bytes| bytes == file.bytes);
         if exists_with_same_content {
@@ -430,10 +434,32 @@ pub fn install_codex_prompts(options: PromptInstallOptions) -> Result<PromptInst
             write_file(file)?;
         }
     }
+    if !options.check {
+        for path in &stale_files {
+            fs::remove_file(path).with_context(|| {
+                format!(
+                    "failed to remove stale Codex home prompt {}",
+                    path.display()
+                )
+            })?;
+        }
+    }
 
     if options.check && changed_files > 0 {
         return Err(anyhow!(
             "Codex home prompts are stale: {changed_files} prompt file(s) differ"
+        ));
+    }
+    if options.check && !stale_files.is_empty() {
+        return Err(anyhow!(
+            "Codex home prompts include {} stale file(s): {}",
+            stale_files.len(),
+            stale_files
+                .iter()
+                .take(5)
+                .map(|path| path.display().to_string())
+                .collect::<Vec<_>>()
+                .join(", ")
         ));
     }
 
@@ -444,7 +470,30 @@ pub fn install_codex_prompts(options: PromptInstallOptions) -> Result<PromptInst
         total_files: planned.len(),
         changed_files,
         verified_files,
+        removed_files: stale_files,
     })
+}
+
+fn stale_installed_prompt_files(
+    target_dir: &Path,
+    planned_paths: &BTreeSet<PathBuf>,
+) -> Result<Vec<PathBuf>> {
+    let mut stale = Vec::new();
+    if !target_dir.exists() {
+        return Ok(stale);
+    }
+    for entry in fs::read_dir(target_dir)? {
+        let entry = entry?;
+        let path = entry.path();
+        if path.is_file()
+            && path.extension().and_then(|value| value.to_str()) == Some("md")
+            && !planned_paths.contains(&path)
+        {
+            stale.push(path);
+        }
+    }
+    stale.sort();
+    Ok(stale)
 }
 
 pub fn install_codex_env(options: CodexInstallOptions) -> Result<CodexInstallReport> {
