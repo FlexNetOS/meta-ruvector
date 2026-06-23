@@ -1,6 +1,8 @@
 use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
+use std::process::{Command, Stdio};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use anyhow::{anyhow, Context, Result};
 use mlua::{Lua, Value};
@@ -78,6 +80,32 @@ pub struct CodexInstallReport {
     pub prompts: PromptInstallReport,
     pub home_settings: CodexHomeSettingsReport,
     pub doctor: DoctorReport,
+}
+
+#[derive(Debug, Clone)]
+pub struct CodexRunOptions {
+    pub repo_root: PathBuf,
+    pub lua_policy: Option<PathBuf>,
+    pub codex_home: PathBuf,
+    pub goal: Option<String>,
+    pub prompt_file: Option<PathBuf>,
+    pub output_dir: Option<PathBuf>,
+    pub dry_run: bool,
+    pub skip_install: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct CodexRunReport {
+    pub repo_root: PathBuf,
+    pub codex_home: PathBuf,
+    pub run_dir: PathBuf,
+    pub prompt_path: PathBuf,
+    pub events_path: PathBuf,
+    pub stderr_path: PathBuf,
+    pub last_message_path: PathBuf,
+    pub status_path: PathBuf,
+    pub dry_run: bool,
+    pub exit_code: Option<i32>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -367,6 +395,109 @@ pub fn install_codex_env(options: CodexInstallOptions) -> Result<CodexInstallRep
         home_settings,
         doctor,
     })
+}
+
+pub fn run_codex_task(options: CodexRunOptions) -> Result<CodexRunReport> {
+    let repo_root = options.repo_root.canonicalize().with_context(|| {
+        format!(
+            "failed to canonicalize repo root {}",
+            options.repo_root.display()
+        )
+    })?;
+    let codex_home = options.codex_home;
+    let goal = resolve_run_goal(options.goal.as_deref(), options.prompt_file.as_deref())?;
+
+    if options.skip_install {
+        doctor_codex_surface(DoctorOptions {
+            repo_root: repo_root.clone(),
+            lua_policy: options.lua_policy,
+            codex_home: codex_home.clone(),
+        })?;
+    } else {
+        install_codex_env(CodexInstallOptions {
+            repo_root: repo_root.clone(),
+            lua_policy: options.lua_policy,
+            codex_home: codex_home.clone(),
+        })?;
+    }
+
+    let run_dir = options
+        .output_dir
+        .unwrap_or_else(|| repo_root.join(".codex/harness/runs").join(run_id(&goal)));
+    fs::create_dir_all(&run_dir)
+        .with_context(|| format!("failed to create {}", run_dir.display()))?;
+
+    let prompt = codex_run_prompt(&goal);
+    let prompt_path = run_dir.join("prompt.md");
+    let events_path = run_dir.join("events.jsonl");
+    let stderr_path = run_dir.join("stderr.log");
+    let last_message_path = run_dir.join("last-message.md");
+    let status_path = run_dir.join("status.json");
+    fs::write(&prompt_path, &prompt)
+        .with_context(|| format!("failed to write {}", prompt_path.display()))?;
+
+    let mut report = CodexRunReport {
+        repo_root: repo_root.clone(),
+        codex_home: codex_home.clone(),
+        run_dir: run_dir.clone(),
+        prompt_path,
+        events_path,
+        stderr_path,
+        last_message_path,
+        status_path,
+        dry_run: options.dry_run,
+        exit_code: None,
+    };
+
+    if options.dry_run {
+        write_run_status(&report)?;
+        return Ok(report);
+    }
+
+    let events = fs::File::create(&report.events_path)
+        .with_context(|| format!("failed to create {}", report.events_path.display()))?;
+    let stderr = fs::File::create(&report.stderr_path)
+        .with_context(|| format!("failed to create {}", report.stderr_path.display()))?;
+    let mut child = Command::new("codex")
+        .arg("exec")
+        .arg("--json")
+        .arg("--cd")
+        .arg(&repo_root)
+        .arg("--sandbox")
+        .arg("workspace-write")
+        .arg("--config")
+        .arg("approval_policy=\"never\"")
+        .arg("--output-last-message")
+        .arg(&report.last_message_path)
+        .arg("-")
+        .env("CODEX_HOME", &codex_home)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::from(events))
+        .stderr(Stdio::from(stderr))
+        .spawn()
+        .with_context(|| "failed to spawn codex exec")?;
+    child
+        .stdin
+        .take()
+        .ok_or_else(|| anyhow!("failed to open codex exec stdin"))?
+        .write_all(prompt.as_bytes())
+        .with_context(|| "failed to write codex exec prompt")?;
+    let status = child
+        .wait()
+        .with_context(|| "failed to wait for codex exec")?;
+    report.exit_code = status.code();
+    write_run_status(&report)?;
+    if !status.success() {
+        return Err(anyhow!(
+            "codex-env run failed with exit code {}; see {} and {}",
+            status
+                .code()
+                .map_or_else(|| "signal".to_owned(), |code| code.to_string()),
+            report.events_path.display(),
+            report.stderr_path.display()
+        ));
+    }
+    Ok(report)
 }
 
 pub fn ensure_codex_home_settings(codex_home: &Path) -> Result<CodexHomeSettingsReport> {
@@ -714,6 +845,79 @@ fn manifest_json(
         "files": files
     });
     Ok(format!("{}\n", serde_json::to_string_pretty(&manifest)?))
+}
+
+fn resolve_run_goal(goal: Option<&str>, prompt_file: Option<&Path>) -> Result<String> {
+    let mut parts = Vec::new();
+    if let Some(goal) = goal.map(str::trim).filter(|goal| !goal.is_empty()) {
+        parts.push(goal.to_owned());
+    }
+    if let Some(path) = prompt_file {
+        parts.push(
+            fs::read_to_string(path)
+                .with_context(|| format!("failed to read {}", path.display()))?,
+        );
+    }
+    let goal = parts.join("\n\n");
+    if goal.trim().is_empty() {
+        return Err(anyhow!(
+            "codex-env run requires a goal argument, --prompt-file, or both"
+        ));
+    }
+    Ok(goal)
+}
+
+fn codex_run_prompt(goal: &str) -> String {
+    normalize_generated_text(&format!(
+        r#"# codex-env Run
+
+You are running inside the repo-owned Codex harness. Do real work, not a plan.
+
+Operating rules:
+- Start by recalling ICM project memory and reading the closest AGENTS.md.
+- Inspect git/branch/PR state before editing.
+- Use the repo's generated `.codex` surface, installed prompts, skills, agents, hooks, and MCP settings as the local execution environment.
+- Keep edits scoped to the requested goal.
+- Run targeted verification plus `codex-env` mirror/doctor checks when the Codex surface changes.
+- Commit and push completed publishable work, then open or update the PR.
+- Store ICM memory after significant completed work.
+
+Goal:
+{goal}
+"#
+    ))
+}
+
+fn run_id(goal: &str) -> String {
+    let seconds = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_or(0, |duration| duration.as_secs());
+    let slug = slugify(goal);
+    let slug = if slug.is_empty() {
+        "task".to_owned()
+    } else {
+        slug.chars().take(48).collect()
+    };
+    format!("{seconds}-{slug}")
+}
+
+fn write_run_status(report: &CodexRunReport) -> Result<()> {
+    let status = json!({
+        "repoRoot": report.repo_root,
+        "codexHome": report.codex_home,
+        "runDir": report.run_dir,
+        "promptPath": report.prompt_path,
+        "eventsPath": report.events_path,
+        "stderrPath": report.stderr_path,
+        "lastMessagePath": report.last_message_path,
+        "dryRun": report.dry_run,
+        "exitCode": report.exit_code,
+    });
+    fs::write(
+        &report.status_path,
+        format!("{}\n", serde_json::to_string_pretty(&status)?),
+    )
+    .with_context(|| format!("failed to write {}", report.status_path.display()))
 }
 
 fn codex_prompt_helpers(codex_dir: &Path) -> Vec<PlannedFile> {

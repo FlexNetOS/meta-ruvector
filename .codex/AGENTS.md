@@ -7,6 +7,7 @@ This directory is generated from the tracked `.claude` surface by the Rust
 
 ```bash
 cargo run -p codex-env -- install
+cargo run -p codex-env -- run --dry-run "inspect the Codex surface"
 cargo run -p codex-env -- mirror --check
 cargo run -p codex-env -- install-prompts --check
 cargo run -p codex-env -- doctor
@@ -43,3 +44,17 @@ installs `$CODEX_HOME/prompts`, and runs doctor validation in one pass. Restart
 Codex after installing. The Claude command mirrors then appear as Codex prompt
 commands such as `/prompts:sparc-code`, `/prompts:sparc:code`, and
 `/prompts:claude-flow-swarm`.
+
+## Run Actual Work
+
+Use the repo-owned runner when you want Codex to execute a bounded task from the
+validated local environment and leave artifacts:
+
+```bash
+cargo run -p codex-env -- run "fix the next Codex parity gap"
+```
+
+Each run refreshes/validates the Codex surface, then invokes `codex exec --json`
+with artifacts under `.codex/harness/runs/`: `prompt.md`, `events.jsonl`,
+`stderr.log`, `last-message.md`, and `status.json`. Use `--dry-run` to materialize
+the exact prompt and status without launching a nested Codex run.

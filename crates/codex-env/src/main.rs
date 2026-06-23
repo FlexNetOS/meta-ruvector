@@ -4,7 +4,8 @@ use anyhow::Result;
 use clap::{Parser, Subcommand};
 use codex_env::{
     doctor_codex_surface, install_codex_env, install_codex_prompts, mirror_codex_surface,
-    CodexInstallOptions, DoctorOptions, MirrorOptions, PromptInstallOptions,
+    run_codex_task, CodexInstallOptions, CodexRunOptions, DoctorOptions, MirrorOptions,
+    PromptInstallOptions,
 };
 
 #[derive(Parser)]
@@ -59,6 +60,32 @@ enum Commands {
         /// Emit the doctor report as JSON.
         #[arg(long)]
         json: bool,
+    },
+
+    /// Refresh the Codex env, then run codex exec with JSONL artifacts.
+    Run {
+        /// Goal to give the non-interactive Codex runner.
+        goal: Option<String>,
+
+        /// Read additional goal text from a file.
+        #[arg(long)]
+        prompt_file: Option<PathBuf>,
+
+        /// Codex home directory. Defaults to CODEX_HOME or ~/.codex.
+        #[arg(long)]
+        codex_home: Option<PathBuf>,
+
+        /// Directory for prompt/events/status artifacts. Defaults under .codex/harness/runs.
+        #[arg(long)]
+        output_dir: Option<PathBuf>,
+
+        /// Materialize the run prompt and status without launching codex exec.
+        #[arg(long)]
+        dry_run: bool,
+
+        /// Skip install and only run doctor before launching.
+        #[arg(long)]
+        skip_install: bool,
     },
 }
 
@@ -162,6 +189,39 @@ fn main() -> Result<()> {
                     report.codex_home.join("prompts").display()
                 );
             }
+        }
+        Commands::Run {
+            goal,
+            prompt_file,
+            codex_home,
+            output_dir,
+            dry_run,
+            skip_install,
+        } => {
+            let codex_home = codex_home.unwrap_or_else(default_codex_home);
+            let report = run_codex_task(CodexRunOptions {
+                repo_root,
+                lua_policy: cli.lua_policy,
+                codex_home,
+                goal,
+                prompt_file,
+                output_dir,
+                dry_run,
+                skip_install,
+            })?;
+            println!(
+                "codex-env run {}: run_dir={}, prompt={}, events={}, stderr={}, last_message={}, status={}, exit_code={}",
+                if report.dry_run { "prepared" } else { "ok" },
+                report.run_dir.display(),
+                report.prompt_path.display(),
+                report.events_path.display(),
+                report.stderr_path.display(),
+                report.last_message_path.display(),
+                report.status_path.display(),
+                report
+                    .exit_code
+                    .map_or_else(|| "not-run".to_owned(), |code| code.to_string())
+            );
         }
     }
 

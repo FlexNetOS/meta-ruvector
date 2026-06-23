@@ -3,7 +3,8 @@ use std::process::Command;
 
 use codex_env::{
     doctor_codex_surface, ensure_codex_home_settings, install_codex_env, install_codex_prompts,
-    mirror_codex_surface, CodexInstallOptions, DoctorOptions, MirrorOptions, PromptInstallOptions,
+    mirror_codex_surface, run_codex_task, CodexInstallOptions, CodexRunOptions, DoctorOptions,
+    MirrorOptions, PromptInstallOptions,
 };
 
 #[test]
@@ -658,6 +659,53 @@ fn install_prompts_copies_generated_prompt_commands() {
     })
     .unwrap();
     assert_eq!(check.changed_files, 0);
+}
+
+#[test]
+fn run_dry_run_materializes_bounded_codex_exec_artifacts() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path().join("repo");
+    let codex_home = temp.path().join("codex-home");
+    let run_dir = temp.path().join("run");
+    fs::create_dir_all(root.join(".claude/commands")).unwrap();
+    fs::write(
+        root.join(".claude/settings.json"),
+        r#"{
+          "hooks": {
+            "PreToolUse": [
+              {
+                "matcher": "Bash",
+                "hooks": [{"type": "command", "command": "echo pre", "timeout": 5}]
+              }
+            ]
+          },
+          "env": {}
+        }"#,
+    )
+    .unwrap();
+    fs::write(root.join(".claude/commands/demo.md"), "# Demo\n").unwrap();
+
+    let report = run_codex_task(CodexRunOptions {
+        repo_root: root,
+        lua_policy: None,
+        codex_home,
+        goal: Some("inspect the generated Codex surface".to_owned()),
+        prompt_file: None,
+        output_dir: Some(run_dir),
+        dry_run: true,
+        skip_install: false,
+    })
+    .unwrap();
+
+    assert!(report.dry_run);
+    assert_eq!(report.exit_code, None);
+    assert!(report.prompt_path.exists());
+    assert!(report.status_path.exists());
+    let prompt = fs::read_to_string(report.prompt_path).unwrap();
+    assert!(prompt.contains("Do real work, not a plan."));
+    assert!(prompt.contains("inspect the generated Codex surface"));
+    let status = fs::read_to_string(report.status_path).unwrap();
+    assert!(status.contains(r#""dryRun": true"#));
 }
 
 #[test]
