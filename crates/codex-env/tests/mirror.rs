@@ -967,6 +967,11 @@ fn tdd_workflow_dry_run_materializes_codex_tool_execution_plan() {
         assert_eq!(step.status, "planned");
         assert_eq!(step.crate_owner, "crates/codex-env");
         assert!(!step.rationale.trim().is_empty());
+        assert!(!step.does.trim().is_empty());
+        assert!(!step.why.trim().is_empty());
+        assert_eq!(step.belongs_in, "crates/codex-env");
+        assert!(step.extraction_target.contains("Rust-owned"));
+        assert!(step.supervision_action.contains("supervise"));
         assert_eq!(step.exit_code, None);
     }
     let status = fs::read_to_string(report.status_path).unwrap();

@@ -767,11 +767,14 @@ deliberately isolated writable member scope.
 `tdd-workflow` is the supervised red/green harness for the Rust-owned Codex
 toolchain. It builds `codex-env`, then executes the built binary through
 `mirror --check`, `install-prompts --check`, `doctor`, `inventory --check`,
-and bounded dry-run `run`/`team-run`/`auto-loop` probes. Codex is the
-human-in-loop operator for this workflow: start the background terminal
-equivalent, supervise status/artifacts, provide follow-up guidance when the
-trace exposes a gap, end the worker session, and extract durable behavior into
-the owning Rust crates rather than a vendor harness.
+and bounded dry-run `run`/`team-run`/`auto-loop` probes. Each status entry
+records what the tool does, why it runs, where the behavior belongs, what Rust
+extraction target owns it, and how Codex should supervise the background
+terminal equivalent. Codex is the human-in-loop operator for this workflow:
+start the background terminal equivalent, supervise status/artifacts, provide
+follow-up guidance when the trace exposes a gap, end the worker session, and
+extract durable behavior into the owning Rust crates rather than a vendor
+harness.
 "#,
     )
 }
@@ -852,11 +855,13 @@ cargo run -p codex-env -- tdd-workflow "$ARGUMENTS"
 
 This builds `crates/codex-env`, then executes the built Codex Rust tools in
 order: mirror check, repo-local prompt check, doctor, inventory check, and
-bounded dry-run run/team-run/auto-loop probes. Treat Codex as the
-human-in-loop operator supervising a background terminal: launch the workflow,
-watch status artifacts, give follow-up guidance if the trace exposes a gap,
-end the worker session, then extract durable automation into Rust-owned crates.
-Do not move this automation into a vendor harness.
+bounded dry-run run/team-run/auto-loop probes. The workflow status records what
+each tool does, why it runs, where the behavior belongs, and the Rust extraction
+target. Treat Codex as the human-in-loop operator supervising a background
+terminal: launch the workflow, watch status artifacts, give follow-up guidance
+if the trace exposes a gap, end the worker session, then extract durable
+automation into Rust-owned crates. Do not move this automation into a vendor
+harness.
 "#),
         ),
     ]
@@ -958,11 +963,12 @@ cargo run -p codex-env -- tdd-workflow "your goal"
 ```
 
 The harness builds `crates/codex-env`, then executes the built binary through
-mirror, prompt, doctor, inventory, run, team-run, and auto-loop probes. Supervise
-it like a background terminal: inspect status artifacts, provide follow-up
-guidance if a probe exposes a gap, terminate the worker session when the trace
-is complete, and move durable automation into the correct Rust crate instead of
-a vendor harness.
+mirror, prompt, doctor, inventory, run, team-run, and auto-loop probes. Its
+status file records what each tool does, why it runs, where the behavior
+belongs, and the Rust extraction target. Supervise it like a background
+terminal: inspect status artifacts, provide follow-up guidance if a probe
+exposes a gap, terminate the worker session when the trace is complete, and
+move durable automation into the correct Rust crate instead of a vendor harness.
 "#),
         ),
     ]
