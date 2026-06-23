@@ -5,8 +5,8 @@ use codex_env::{
     doctor_codex_surface, ensure_codex_home_settings, install_codex_env, install_codex_prompts,
     inventory_codex_surface, mirror_codex_surface, run_codex_task, CodexAutoLoopOptions,
     CodexInstallOptions, CodexInventoryOptions, CodexRunOptions, CodexTddAutoLoopOptions,
-    CodexTddNextActionOptions, CodexTddWorkflowOptions, CodexTeamRunOptions, DoctorOptions,
-    MirrorOptions, PromptInstallOptions,
+    CodexTddCycleOptions, CodexTddNextActionOptions, CodexTddWorkflowOptions, CodexTeamRunOptions,
+    DoctorOptions, MirrorOptions, PromptInstallOptions,
 };
 
 #[test]
@@ -1254,6 +1254,73 @@ fn tdd_auto_loop_materializes_plan_driven_autonomous_handoff() {
     assert!(prompt.contains("Codex TDD Autonomous Handoff"));
     assert!(prompt.contains("Selected extraction actions"));
     assert!(prompt.contains("CODEX_AUTO_LOOP_STATUS: complete"));
+}
+
+#[test]
+fn tdd_cycle_dry_run_materializes_supervised_cycle_status() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path().join("repo");
+    let codex_home = temp.path().join("codex-home");
+    let run_dir = temp.path().join("tdd-cycle");
+    fs::create_dir_all(root.join(".claude/commands")).unwrap();
+    fs::write(
+        root.join(".claude/settings.json"),
+        r#"{
+          "hooks": {
+            "PreToolUse": [
+              {
+                "matcher": "Bash",
+                "hooks": [{"type": "command", "command": "echo pre", "timeout": 5}]
+              }
+            ]
+          },
+          "env": {}
+        }"#,
+    )
+    .unwrap();
+    fs::write(root.join(".claude/commands/demo.md"), "# Demo\n").unwrap();
+
+    let report = codex_env::run_codex_tdd_cycle(CodexTddCycleOptions {
+        repo_root: root,
+        lua_policy: None,
+        codex_home,
+        output_dir: Some(run_dir),
+        team: "core".to_owned(),
+        goal: Some("stitch the supervised Codex TDD cycle".to_owned()),
+        max_iterations: 3,
+        member_sandbox_mode: "read-only".to_owned(),
+        dry_run: true,
+        handoff_dry_run: true,
+        skip_install: false,
+    })
+    .unwrap();
+
+    assert!(report.dry_run);
+    assert_eq!(report.cycle_state, "planned");
+    assert!(report.next_action.is_none());
+    assert!(report.auto_loop.is_none());
+    assert!(report.run_dir.ends_with("tdd-cycle"));
+    assert!(report.status_path.ends_with("tdd-cycle-status.json"));
+    assert!(report.status_path.exists());
+    assert!(report.workflow.run_dir.ends_with("workflow"));
+    assert!(report.workflow.status_path.exists());
+    assert!(report.workflow.extraction_plan_path.exists());
+    assert!(report.ended_unix_seconds >= report.started_unix_seconds);
+    assert!(report
+        .supervision_events
+        .iter()
+        .any(|event| event.contains("opened TDD cycle terminal")));
+    assert!(report
+        .supervision_events
+        .iter()
+        .any(|event| event.contains("captured supervised TDD workflow status")));
+
+    let status = fs::read_to_string(report.status_path).unwrap();
+    assert!(status.contains(r#""cycle_state": "planned""#));
+    assert!(status.contains(r#""dry_run": true"#));
+    assert!(status.contains("tdd-workflow-status.json"));
+    assert!(status.contains("tdd-extraction-plan.json"));
+    assert!(status.contains("opened TDD cycle terminal"));
 }
 
 #[test]

@@ -338,6 +338,37 @@ pub struct CodexTddAutoLoopReport {
     pub ended_unix_seconds: u64,
 }
 
+#[derive(Debug, Clone)]
+pub struct CodexTddCycleOptions {
+    pub repo_root: PathBuf,
+    pub lua_policy: Option<PathBuf>,
+    pub codex_home: PathBuf,
+    pub output_dir: Option<PathBuf>,
+    pub team: String,
+    pub goal: Option<String>,
+    pub max_iterations: usize,
+    pub member_sandbox_mode: String,
+    pub dry_run: bool,
+    pub handoff_dry_run: bool,
+    pub skip_install: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct CodexTddCycleReport {
+    pub repo_root: PathBuf,
+    pub codex_home: PathBuf,
+    pub run_dir: PathBuf,
+    pub status_path: PathBuf,
+    pub workflow: CodexTddWorkflowReport,
+    pub next_action: Option<CodexTddNextActionReport>,
+    pub auto_loop: Option<CodexTddAutoLoopReport>,
+    pub cycle_state: String,
+    pub supervision_events: Vec<String>,
+    pub started_unix_seconds: u64,
+    pub ended_unix_seconds: u64,
+    pub dry_run: bool,
+}
+
 #[derive(Debug, Clone, Serialize)]
 pub struct CodexTddWorkflowStepReport {
     pub name: String,
@@ -1576,6 +1607,115 @@ pub fn run_codex_tdd_auto_loop(options: CodexTddAutoLoopOptions) -> Result<Codex
     Ok(report)
 }
 
+pub fn run_codex_tdd_cycle(options: CodexTddCycleOptions) -> Result<CodexTddCycleReport> {
+    let started_unix_seconds = unix_seconds_now();
+    let repo_root = options.repo_root.canonicalize().with_context(|| {
+        format!(
+            "failed to canonicalize repo root {}",
+            options.repo_root.display()
+        )
+    })?;
+    let codex_home = options.codex_home;
+    let goal = options
+        .goal
+        .unwrap_or_else(|| "complete the Codex TDD autonomous extraction cycle".to_owned());
+    let run_dir = options.output_dir.unwrap_or_else(|| {
+        repo_root
+            .join(".codex/harness/runs")
+            .join(format!("{}-tdd-cycle", run_id(&goal)))
+    });
+    fs::create_dir_all(&run_dir)
+        .with_context(|| format!("failed to create {}", run_dir.display()))?;
+    let status_path = run_dir.join("tdd-cycle-status.json");
+    let mut supervision_events = vec![format!(
+        "started: Codex-as-human supervisor opened TDD cycle terminal for {goal}"
+    )];
+
+    let workflow = run_codex_tdd_workflow(CodexTddWorkflowOptions {
+        repo_root: repo_root.clone(),
+        lua_policy: options.lua_policy.clone(),
+        codex_home: codex_home.clone(),
+        output_dir: Some(run_dir.join("workflow")),
+        team: options.team.clone(),
+        goal: Some(goal.clone()),
+        dry_run: options.dry_run,
+    })?;
+    supervision_events.push(format!(
+        "workflow: captured supervised TDD workflow status at {}",
+        workflow.status_path.display()
+    ));
+
+    if options.dry_run {
+        let report = CodexTddCycleReport {
+            repo_root,
+            codex_home,
+            run_dir,
+            status_path,
+            workflow,
+            next_action: None,
+            auto_loop: None,
+            cycle_state: "planned".to_owned(),
+            supervision_events,
+            started_unix_seconds,
+            ended_unix_seconds: unix_seconds_now(),
+            dry_run: true,
+        };
+        write_tdd_cycle_status(&report)?;
+        return Ok(report);
+    }
+
+    let next_action = codex_tdd_next_action(CodexTddNextActionOptions {
+        repo_root: repo_root.clone(),
+        plan_path: Some(workflow.extraction_plan_path.clone()),
+        check: true,
+    })?;
+    supervision_events.push(format!(
+        "validated: TDD extraction plan {} is ready for autonomous handoff",
+        next_action.plan_path.display()
+    ));
+    let auto_loop = run_codex_tdd_auto_loop(CodexTddAutoLoopOptions {
+        repo_root: repo_root.clone(),
+        lua_policy: options.lua_policy,
+        codex_home: codex_home.clone(),
+        plan_path: Some(workflow.extraction_plan_path.clone()),
+        team: options.team,
+        output_dir: Some(run_dir.join("auto-loop")),
+        max_iterations: options.max_iterations,
+        member_sandbox_mode: options.member_sandbox_mode,
+        dry_run: options.handoff_dry_run,
+        skip_install: options.skip_install,
+    })?;
+    supervision_events.push(format!(
+        "{}: captured auto-loop handoff status at {} and closed the TDD cycle terminal",
+        auto_loop.handoff_state,
+        auto_loop.status_path.display()
+    ));
+    let cycle_state = if auto_loop.auto_loop.dry_run {
+        "prepared"
+    } else if auto_loop.auto_loop.completed {
+        "completed"
+    } else {
+        "ended"
+    }
+    .to_owned();
+    let report = CodexTddCycleReport {
+        repo_root,
+        codex_home,
+        run_dir,
+        status_path,
+        workflow,
+        next_action: Some(next_action),
+        auto_loop: Some(auto_loop),
+        cycle_state,
+        supervision_events,
+        started_unix_seconds,
+        ended_unix_seconds: unix_seconds_now(),
+        dry_run: false,
+    };
+    write_tdd_cycle_status(&report)?;
+    Ok(report)
+}
+
 pub fn ensure_codex_home_settings(codex_home: &Path) -> Result<CodexHomeSettingsReport> {
     let catalog_path = codex_home.join(REQUIRED_CODEX_MODEL_CATALOG);
     write_file(&PlannedFile {
@@ -2402,6 +2542,14 @@ fn write_auto_loop_status(report: &CodexAutoLoopReport) -> Result<()> {
 }
 
 fn write_tdd_auto_loop_status(report: &CodexTddAutoLoopReport) -> Result<()> {
+    fs::write(
+        &report.status_path,
+        format!("{}\n", serde_json::to_string_pretty(report)?),
+    )
+    .with_context(|| format!("failed to write {}", report.status_path.display()))
+}
+
+fn write_tdd_cycle_status(report: &CodexTddCycleReport) -> Result<()> {
     fs::write(
         &report.status_path,
         format!("{}\n", serde_json::to_string_pretty(report)?),
