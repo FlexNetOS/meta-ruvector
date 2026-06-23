@@ -31,5 +31,7 @@ auto-loop handoff from the validated plan and write `tdd-auto-loop-status.json`.
 Prefer `cargo run -p codex-env -- tdd-cycle --dry-run "$ARGUMENTS"` when you
 need a single cycle status before executing nested workers. The handoff and
 cycle statuses record supervision events and timestamps for the terminal
-handoff.
+handoff. The cycle status also records explicit phase checkpoints with evidence
+paths and next actions so a resumed Codex session can continue from source truth
+instead of reloading token-heavy mirrored material.
 Do not move this automation into a vendor harness.

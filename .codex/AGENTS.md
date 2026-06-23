@@ -127,3 +127,6 @@ than waiting blind.
 workflow trace, extraction plan validation, and the auto-loop handoff status are
 recorded under one `tdd-cycle-status.json` so the next Codex session can resume
 from crate-owned evidence instead of a token-heavy vendor harness narrative.
+The cycle status includes phase-level checkpoints, evidence paths, next actions,
+and timestamps so a supervisor can see whether the current terminal is planned,
+running, prepared, ended, or complete without waiting blind.
