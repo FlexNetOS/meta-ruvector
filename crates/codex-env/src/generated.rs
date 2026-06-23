@@ -786,7 +786,8 @@ extraction action. `tdd-next` consumes the newest extraction plan, rejects any
 vendor-harness ownership drift, and prints the selected Rust-owned actions for
 the next autonomous loop handoff. `tdd-auto-loop` feeds that validated plan
 directly into the bounded `auto-loop` harness so the next Codex run continues
-from supervised evidence instead of reinterpreting token-heavy reports.
+from supervised evidence instead of reinterpreting token-heavy reports, and
+writes `tdd-auto-loop-status.json` beside the auto-loop artifacts.
 "#,
     )
 }
@@ -879,8 +880,8 @@ machine-readable next-action handoff, using `tdd-extraction-report.md` as the
 human-readable evidence summary. Run `cargo run -p codex-env -- tdd-next
 --check` to fail closed before handing the plan to the next autonomous loop, or
 `cargo run -p codex-env -- tdd-auto-loop --dry-run` to materialize the bounded
-auto-loop handoff from the validated plan. Do not move this automation into a
-vendor harness.
+auto-loop handoff from the validated plan and write `tdd-auto-loop-status.json`.
+Do not move this automation into a vendor harness.
 "#),
         ),
     ]
@@ -995,7 +996,8 @@ summary. Run `codex-env tdd-next --check` after the workflow to consume the
 latest plan, reject vendor-harness routing, and select the next Rust-owned
 action for autonomous continuation. Run `codex-env tdd-auto-loop --dry-run` to
 turn that validated plan into bounded auto-loop artifacts before allowing a real
-autonomous continuation.
+autonomous continuation; inspect `tdd-auto-loop-status.json` as the durable
+handoff status.
 "#),
         ),
     ]

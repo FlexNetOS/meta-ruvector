@@ -328,6 +328,7 @@ pub struct CodexTddAutoLoopOptions {
 
 #[derive(Debug, Clone, Serialize)]
 pub struct CodexTddAutoLoopReport {
+    pub status_path: PathBuf,
     pub next_action: CodexTddNextActionReport,
     pub auto_loop: CodexAutoLoopReport,
     pub handoff_goal: String,
@@ -1535,11 +1536,15 @@ pub fn run_codex_tdd_auto_loop(options: CodexTddAutoLoopOptions) -> Result<Codex
         dry_run: options.dry_run,
         skip_install: options.skip_install,
     })?;
-    Ok(CodexTddAutoLoopReport {
+    let status_path = auto_loop.run_dir.join("tdd-auto-loop-status.json");
+    let report = CodexTddAutoLoopReport {
+        status_path,
         next_action,
         auto_loop,
         handoff_goal,
-    })
+    };
+    write_tdd_auto_loop_status(&report)?;
+    Ok(report)
 }
 
 pub fn ensure_codex_home_settings(codex_home: &Path) -> Result<CodexHomeSettingsReport> {
@@ -2360,6 +2365,14 @@ fn write_team_run_status(report: &CodexTeamRunReport) -> Result<()> {
 }
 
 fn write_auto_loop_status(report: &CodexAutoLoopReport) -> Result<()> {
+    fs::write(
+        &report.status_path,
+        format!("{}\n", serde_json::to_string_pretty(report)?),
+    )
+    .with_context(|| format!("failed to write {}", report.status_path.display()))
+}
+
+fn write_tdd_auto_loop_status(report: &CodexTddAutoLoopReport) -> Result<()> {
     fs::write(
         &report.status_path,
         format!("{}\n", serde_json::to_string_pretty(report)?),

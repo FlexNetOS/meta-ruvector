@@ -42,5 +42,6 @@ The Codex TDD workflow SHALL provide a Rust-native handoff from a validated extr
 - **GIVEN** a completed TDD extraction plan whose actions belong to `crates/codex-env`
 - **WHEN** `codex-env tdd-auto-loop --dry-run` consumes the plan
 - **THEN** it creates bounded `auto-loop` artifacts using a handoff goal derived from the plan
+- **AND** it writes `tdd-auto-loop-status.json` beside the auto-loop artifacts
 - **AND** the handoff goal includes the selected extraction actions and evidence paths
 - **AND** the handoff goal keeps `vendor harness` as a forbidden target

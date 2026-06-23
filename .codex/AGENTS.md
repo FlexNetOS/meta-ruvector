@@ -117,4 +117,5 @@ extraction action. `tdd-next` consumes the newest extraction plan, rejects any
 vendor-harness ownership drift, and prints the selected Rust-owned actions for
 the next autonomous loop handoff. `tdd-auto-loop` feeds that validated plan
 directly into the bounded `auto-loop` harness so the next Codex run continues
-from supervised evidence instead of reinterpreting token-heavy reports.
+from supervised evidence instead of reinterpreting token-heavy reports, and
+writes `tdd-auto-loop-status.json` beside the auto-loop artifacts.
