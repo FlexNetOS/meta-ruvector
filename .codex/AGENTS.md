@@ -132,4 +132,6 @@ and timestamps so a supervisor can see whether the current terminal is planned,
 running, prepared, ended, or complete without waiting blind.
 It also writes `tdd-cycle-guidance.md`, a human-readable supervision brief that
 summarizes the current phase, evidence path, and next action without forcing the
-next session to load token-heavy mirrored source.
+next session to load token-heavy mirrored source. Use repeatable
+`--supervisor-note` or `--supervisor-note-file` when Codex needs to inject
+follow-up guidance into the handoff prompt after inspecting evidence.

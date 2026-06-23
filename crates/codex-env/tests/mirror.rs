@@ -1213,6 +1213,9 @@ fn tdd_auto_loop_materializes_plan_driven_autonomous_handoff() {
         output_dir: Some(run_dir),
         max_iterations: 3,
         member_sandbox_mode: "read-only".to_owned(),
+        supervisor_guidance: vec![
+            "Prefer the Rust-owned extraction graph before reading mirrored Markdown.".to_owned(),
+        ],
         dry_run: true,
         skip_install: false,
     })
@@ -1222,6 +1225,11 @@ fn tdd_auto_loop_materializes_plan_driven_autonomous_handoff() {
     assert!(report.handoff_goal.contains("Codex TDD Autonomous Handoff"));
     assert!(report.handoff_goal.contains("crates/codex-env"));
     assert!(report.handoff_goal.contains("vendor harness"));
+    assert!(report
+        .handoff_goal
+        .contains("Supervisor follow-up guidance"));
+    assert!(report.handoff_goal.contains("Rust-owned extraction graph"));
+    assert_eq!(report.supervisor_guidance.len(), 1);
     assert!(report.auto_loop.dry_run);
     assert_eq!(report.auto_loop.iterations.len(), 1);
     assert_eq!(report.handoff_state, "prepared");
@@ -1289,6 +1297,7 @@ fn tdd_cycle_dry_run_materializes_supervised_cycle_status() {
         goal: Some("stitch the supervised Codex TDD cycle".to_owned()),
         max_iterations: 3,
         member_sandbox_mode: "read-only".to_owned(),
+        supervisor_guidance: vec!["Keep this in crates/codex-env.".to_owned()],
         dry_run: true,
         handoff_dry_run: true,
         skip_install: false,
@@ -1297,6 +1306,7 @@ fn tdd_cycle_dry_run_materializes_supervised_cycle_status() {
 
     assert!(report.dry_run);
     assert_eq!(report.cycle_state, "planned");
+    assert_eq!(report.supervisor_guidance.len(), 1);
     assert!(report.next_action.is_none());
     assert!(report.auto_loop.is_none());
     assert_eq!(report.phases.len(), 1);
@@ -1334,6 +1344,7 @@ fn tdd_cycle_dry_run_materializes_supervised_cycle_status() {
     assert!(guidance.contains("## Phase guidance"));
     assert!(guidance.contains("tdd-workflow"));
     assert!(guidance.contains("Run tdd-cycle without --dry-run"));
+    assert!(guidance.contains("Keep this in crates/codex-env"));
     assert!(guidance.contains("Do not move this automation into a vendor harness"));
 }
 
