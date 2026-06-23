@@ -6,7 +6,8 @@ use codex_env::{
     doctor_codex_surface, install_codex_env, install_codex_prompts, inventory_codex_surface,
     mirror_codex_surface, run_codex_auto_loop, run_codex_task, run_codex_team,
     CodexAutoLoopOptions, CodexInstallOptions, CodexInventoryOptions, CodexRunOptions,
-    CodexTeamRunOptions, DoctorOptions, MirrorOptions, PromptInstallOptions,
+    CodexTddWorkflowOptions, CodexTeamRunOptions, DoctorOptions, MirrorOptions,
+    PromptInstallOptions,
 };
 
 #[derive(Parser)]
@@ -174,6 +175,28 @@ enum Commands {
         /// Skip install and only run doctor before launching.
         #[arg(long)]
         skip_install: bool,
+    },
+
+    /// Build codex-env, then execute the Rust-owned Codex TDD workflow gates.
+    TddWorkflow {
+        /// Team name from .codex/agent-teams.json for team and auto-loop dry-run probes.
+        #[arg(long, default_value = "core")]
+        team: String,
+
+        /// Goal to trace through the TDD workflow.
+        goal: Option<String>,
+
+        /// Codex home directory. Defaults to this repo's .codex.
+        #[arg(long)]
+        codex_home: Option<PathBuf>,
+
+        /// Directory for TDD workflow status artifacts.
+        #[arg(long)]
+        output_dir: Option<PathBuf>,
+
+        /// Materialize the workflow plan without running commands.
+        #[arg(long)]
+        dry_run: bool,
     },
 }
 
@@ -435,6 +458,42 @@ fn main() -> Result<()> {
                 report.run_dir.display(),
                 report.status_path.display()
             );
+        }
+        Commands::TddWorkflow {
+            team,
+            goal,
+            codex_home,
+            output_dir,
+            dry_run,
+        } => {
+            let codex_home = codex_home.unwrap_or_else(|| default_codex_home(&repo_root));
+            let report = codex_env::run_codex_tdd_workflow(CodexTddWorkflowOptions {
+                repo_root,
+                lua_policy: cli.lua_policy,
+                codex_home,
+                output_dir,
+                team,
+                goal,
+                dry_run,
+            })?;
+            println!(
+                "codex-env tdd-workflow {}: operator={}, steps={}, run_dir={}, status={}",
+                if report.dry_run { "planned" } else { "ok" },
+                report.operator_role,
+                report.steps.len(),
+                report.run_dir.display(),
+                report.status_path.display()
+            );
+            for step in &report.steps {
+                println!(
+                    "step: {} status={} exit_code={} command={}",
+                    step.name,
+                    step.status,
+                    step.exit_code
+                        .map_or_else(|| "not-run".to_owned(), |code| code.to_string()),
+                    step.command
+                );
+            }
         }
     }
 

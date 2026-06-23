@@ -1,0 +1,22 @@
+---
+name: codex-tdd-workflow
+description: 'Use when the task needs a supervised TDD workflow that builds codex-env, executes the Codex Rust tools, traces their purpose, and extracts durable behavior into Rust-owned crates.'
+---
+
+# Codex TDD Workflow
+
+Use this when Codex needs to act as the human-in-loop operator for the
+repo-owned automation layer.
+
+When running from the shell, prefer the Rust harness:
+
+```bash
+cargo run -p codex-env -- tdd-workflow "your goal"
+```
+
+The harness builds `crates/codex-env`, then executes the built binary through
+mirror, prompt, doctor, inventory, run, team-run, and auto-loop probes. Supervise
+it like a background terminal: inspect status artifacts, provide follow-up
+guidance if a probe exposes a gap, terminate the worker session when the trace
+is complete, and move durable automation into the correct Rust crate instead of
+a vendor harness.

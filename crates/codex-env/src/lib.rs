@@ -242,6 +242,39 @@ pub struct CodexAutoLoopIterationReport {
     pub team_run: CodexTeamRunReport,
 }
 
+#[derive(Debug, Clone)]
+pub struct CodexTddWorkflowOptions {
+    pub repo_root: PathBuf,
+    pub lua_policy: Option<PathBuf>,
+    pub codex_home: PathBuf,
+    pub output_dir: Option<PathBuf>,
+    pub team: String,
+    pub goal: Option<String>,
+    pub dry_run: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct CodexTddWorkflowReport {
+    pub repo_root: PathBuf,
+    pub codex_home: PathBuf,
+    pub run_dir: PathBuf,
+    pub status_path: PathBuf,
+    pub operator_role: String,
+    pub supervision_protocol: Vec<String>,
+    pub dry_run: bool,
+    pub steps: Vec<CodexTddWorkflowStepReport>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct CodexTddWorkflowStepReport {
+    pub name: String,
+    pub command: String,
+    pub rationale: String,
+    pub crate_owner: String,
+    pub status: String,
+    pub exit_code: Option<i32>,
+}
+
 #[derive(Debug, Clone, Serialize)]
 pub struct CodexHomeSettingsReport {
     pub config_path: PathBuf,
@@ -800,11 +833,11 @@ pub fn inventory_codex_surface(options: CodexInventoryOptions) -> Result<CodexIn
             workflow_prompt_files,
             prompt_files: expected_prompt_files,
             source_command_skills: expected_source_command_skills,
-            workflow_skills: 3,
+            workflow_skills: 4,
             copied_skill_files: skill_plan
                 .len()
                 .saturating_sub(expected_source_command_skills)
-                .saturating_sub(3),
+                .saturating_sub(4),
             claude_agent_profiles: agent_role_plan.files.len(),
             hook_files: hook_plan.len(),
             helper_mirror_files: helper_plan.len(),
@@ -1196,6 +1229,100 @@ pub fn run_codex_auto_loop(options: CodexAutoLoopOptions) -> Result<CodexAutoLoo
         dry_run: options.dry_run,
     };
     write_auto_loop_status(&report)?;
+    Ok(report)
+}
+
+pub fn run_codex_tdd_workflow(options: CodexTddWorkflowOptions) -> Result<CodexTddWorkflowReport> {
+    let repo_root = options.repo_root.canonicalize().with_context(|| {
+        format!(
+            "failed to canonicalize repo root {}",
+            options.repo_root.display()
+        )
+    })?;
+    let codex_home = options.codex_home;
+    let goal = options
+        .goal
+        .unwrap_or_else(|| "trace, test, and execute the Codex Rust automation tools".to_owned());
+    let run_dir = options.output_dir.unwrap_or_else(|| {
+        repo_root
+            .join(".codex/harness/runs")
+            .join(format!("{}-tdd-workflow", run_id(&goal)))
+    });
+    fs::create_dir_all(&run_dir)
+        .with_context(|| format!("failed to create {}", run_dir.display()))?;
+    let status_path = run_dir.join("tdd-workflow-status.json");
+    let binary = repo_root.join("target/debug/codex-env");
+    let repo_arg = repo_root.display().to_string();
+    let codex_home_arg = codex_home.display().to_string();
+    let mut steps = codex_tdd_workflow_steps(
+        &repo_arg,
+        &codex_home_arg,
+        &binary.display().to_string(),
+        &options.team,
+        &goal,
+    );
+    if options.dry_run {
+        let report = CodexTddWorkflowReport {
+            repo_root,
+            codex_home,
+            run_dir,
+            status_path,
+            operator_role: "codex-as-human-in-loop".to_owned(),
+            supervision_protocol: codex_tdd_supervision_protocol(),
+            dry_run: true,
+            steps,
+        };
+        write_tdd_workflow_status(&report)?;
+        return Ok(report);
+    }
+
+    for step in &mut steps {
+        step.status = "running".to_owned();
+        let status = run_tdd_step(&repo_root, &codex_home, &binary, &options.team, &goal, step)?;
+        step.exit_code = status.code();
+        if status.success() {
+            step.status = "ok".to_owned();
+        } else {
+            step.status = "failed".to_owned();
+            let report = CodexTddWorkflowReport {
+                repo_root,
+                codex_home,
+                run_dir,
+                status_path,
+                operator_role: "codex-as-human-in-loop".to_owned(),
+                supervision_protocol: codex_tdd_supervision_protocol(),
+                dry_run: false,
+                steps,
+            };
+            write_tdd_workflow_status(&report)?;
+            return Err(anyhow!(
+                "codex-env tdd-workflow step {} failed with exit code {}",
+                report
+                    .steps
+                    .iter()
+                    .find(|candidate| candidate.status == "failed")
+                    .map_or("unknown", |candidate| candidate.name.as_str()),
+                report
+                    .steps
+                    .iter()
+                    .find(|candidate| candidate.status == "failed")
+                    .and_then(|candidate| candidate.exit_code)
+                    .map_or_else(|| "signal".to_owned(), |code| code.to_string())
+            ));
+        }
+    }
+
+    let report = CodexTddWorkflowReport {
+        repo_root,
+        codex_home,
+        run_dir,
+        status_path,
+        operator_role: "codex-as-human-in-loop".to_owned(),
+        supervision_protocol: codex_tdd_supervision_protocol(),
+        dry_run: false,
+        steps,
+    };
+    write_tdd_workflow_status(&report)?;
     Ok(report)
 }
 
@@ -1972,6 +2099,174 @@ fn write_auto_loop_status(report: &CodexAutoLoopReport) -> Result<()> {
         format!("{}\n", serde_json::to_string_pretty(report)?),
     )
     .with_context(|| format!("failed to write {}", report.status_path.display()))
+}
+
+fn write_tdd_workflow_status(report: &CodexTddWorkflowReport) -> Result<()> {
+    fs::write(
+        &report.status_path,
+        format!("{}\n", serde_json::to_string_pretty(report)?),
+    )
+    .with_context(|| format!("failed to write {}", report.status_path.display()))
+}
+
+fn codex_tdd_supervision_protocol() -> Vec<String> {
+    vec![
+        "build the crate-owned codex-env binary before invoking generated automation".to_owned(),
+        "run the Codex Rust tools from a supervised background terminal equivalent and capture status after every step".to_owned(),
+        "Codex acts as the human-in-loop operator: prompt the worker, inspect artifacts, give follow-up guidance when needed, then end the background terminal session".to_owned(),
+        "extract durable behavior into project-owned Rust crates; do not move automation into a vendor harness".to_owned(),
+    ]
+}
+
+fn codex_tdd_workflow_steps(
+    repo: &str,
+    codex_home: &str,
+    binary: &str,
+    team: &str,
+    goal: &str,
+) -> Vec<CodexTddWorkflowStepReport> {
+    let tool_goal = shell_quote(goal);
+    let run_dir = ".codex/harness/runs/tdd-workflow";
+    [
+        (
+            "build-codex-env",
+            "cargo build -p codex-env".to_owned(),
+            "Build the Rust-owned automation harness first; later steps execute the built tool rather than treating generated Markdown as the runtime.",
+        ),
+        (
+            "mirror-check",
+            format!("{binary} --repo {repo} mirror --check"),
+            "Prove the generated .codex extraction surface is deterministic and current before executing it.",
+        ),
+        (
+            "install-prompts-check",
+            format!("{binary} --repo {repo} install-prompts --check --codex-home {codex_home}"),
+            "Prove prompt commands remain repo-local and do not pollute user-global Codex prompts.",
+        ),
+        (
+            "doctor",
+            format!("{binary} --repo {repo} doctor --codex-home {codex_home}"),
+            "Validate model, MCP, hooks, teams, agents, and prompt runtime wiring before any agentic execution.",
+        ),
+        (
+            "inventory-check",
+            format!("{binary} --repo {repo} inventory --check --codex-home {codex_home}"),
+            "Fail on Claude-to-Codex parity gaps so overload, MCP rot, or empty teams are not mistaken for success.",
+        ),
+        (
+            "single-run-dry-run",
+            format!("{binary} --repo {repo} run --codex-home {codex_home} --output-dir {run_dir}/run --dry-run {tool_goal}"),
+            "Materialize the exact non-interactive Codex prompt and artifacts for one parent-owned work pass.",
+        ),
+        (
+            "team-run-dry-run",
+            format!("{binary} --repo {repo} team-run --codex-home {codex_home} --team {team} --output-dir {run_dir}/team-run --dry-run {tool_goal}"),
+            "Materialize the parallel background-agent prompts while keeping member writes disabled by default.",
+        ),
+        (
+            "auto-loop-dry-run",
+            format!("{binary} --repo {repo} auto-loop --codex-home {codex_home} --team {team} --max-iterations 3 --output-dir {run_dir}/auto-loop --dry-run {tool_goal}"),
+            "Materialize the bounded autonomous loop contract that Codex supervises as the human-in-loop operator.",
+        ),
+    ]
+    .into_iter()
+    .map(|(name, command, rationale)| CodexTddWorkflowStepReport {
+        name: name.to_owned(),
+        command,
+        rationale: rationale.to_owned(),
+        crate_owner: "crates/codex-env".to_owned(),
+        status: "planned".to_owned(),
+        exit_code: None,
+    })
+    .collect()
+}
+
+fn run_tdd_step(
+    repo_root: &Path,
+    codex_home: &Path,
+    binary: &Path,
+    team: &str,
+    goal: &str,
+    step: &CodexTddWorkflowStepReport,
+) -> Result<std::process::ExitStatus> {
+    if step.name == "build-codex-env" {
+        return Command::new("cargo")
+            .arg("build")
+            .arg("-p")
+            .arg("codex-env")
+            .current_dir(repo_root)
+            .status()
+            .with_context(|| "failed to spawn cargo build -p codex-env");
+    }
+    let mut command = Command::new(binary);
+    command.arg("--repo").arg(repo_root);
+    match step.name.as_str() {
+        "mirror-check" => {
+            command.arg("mirror").arg("--check");
+        }
+        "install-prompts-check" => {
+            command
+                .arg("install-prompts")
+                .arg("--codex-home")
+                .arg(codex_home)
+                .arg("--check");
+        }
+        "doctor" => {
+            command.arg("doctor").arg("--codex-home").arg(codex_home);
+        }
+        "inventory-check" => {
+            command
+                .arg("inventory")
+                .arg("--codex-home")
+                .arg(codex_home)
+                .arg("--check");
+        }
+        "single-run-dry-run" => {
+            command
+                .arg("run")
+                .arg("--codex-home")
+                .arg(codex_home)
+                .arg("--output-dir")
+                .arg(repo_root.join(".codex/harness/runs/tdd-workflow/run"))
+                .arg("--dry-run")
+                .arg(goal);
+        }
+        "team-run-dry-run" => {
+            command
+                .arg("team-run")
+                .arg("--codex-home")
+                .arg(codex_home)
+                .arg("--team")
+                .arg(team)
+                .arg("--output-dir")
+                .arg(repo_root.join(".codex/harness/runs/tdd-workflow/team-run"))
+                .arg("--dry-run")
+                .arg(goal);
+        }
+        "auto-loop-dry-run" => {
+            command
+                .arg("auto-loop")
+                .arg("--codex-home")
+                .arg(codex_home)
+                .arg("--team")
+                .arg(team)
+                .arg("--max-iterations")
+                .arg("3")
+                .arg("--output-dir")
+                .arg(repo_root.join(".codex/harness/runs/tdd-workflow/auto-loop"))
+                .arg("--dry-run")
+                .arg(goal);
+        }
+        _ => return Err(anyhow!("unknown tdd-workflow step {}", step.name)),
+    }
+    command
+        .current_dir(repo_root)
+        .status()
+        .with_context(|| format!("failed to spawn {}", step.name))
+}
+
+fn shell_quote(value: &str) -> String {
+    format!("'{}'", value.replace('\'', "'\\''"))
 }
 
 fn codex_prompt_helpers(codex_dir: &Path) -> Vec<PlannedFile> {

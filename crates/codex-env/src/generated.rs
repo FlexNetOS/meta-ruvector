@@ -687,6 +687,7 @@ cargo run -p codex-env -- install
 cargo run -p codex-env -- run --dry-run "inspect the Codex surface"
 cargo run -p codex-env -- team-run --dry-run --team rust "inspect Rust parity gaps"
 cargo run -p codex-env -- auto-loop --dry-run --team core "inspect autonomous loop wiring"
+cargo run -p codex-env -- tdd-workflow --dry-run "trace Codex Rust tool ownership"
 cargo run -p codex-env -- mirror --check
 cargo run -p codex-env -- install-prompts --check
 cargo run -p codex-env -- doctor
@@ -744,6 +745,7 @@ validated local environment and leave artifacts:
 cargo run -p codex-env -- run "fix the next Codex parity gap"
 cargo run -p codex-env -- team-run --team rust "trace and fix the next Rust harness gap"
 cargo run -p codex-env -- auto-loop --team core --max-iterations 3 "finish the Codex parity goal"
+cargo run -p codex-env -- tdd-workflow "build, verify, and trace the Codex Rust tools"
 ```
 
 Each run refreshes/validates the Codex surface, then invokes `codex exec --json`
@@ -761,6 +763,15 @@ deliberately isolated writable member scope.
 `auto-loop-status.json`, and stops early only when parent consolidation emits
 `CODEX_AUTO_LOOP_STATUS: complete`. Otherwise it continues until
 `--max-iterations` is reached.
+
+`tdd-workflow` is the supervised red/green harness for the Rust-owned Codex
+toolchain. It builds `codex-env`, then executes the built binary through
+`mirror --check`, `install-prompts --check`, `doctor`, `inventory --check`,
+and bounded dry-run `run`/`team-run`/`auto-loop` probes. Codex is the
+human-in-loop operator for this workflow: start the background terminal
+equivalent, supervise status/artifacts, provide follow-up guidance when the
+trace exposes a gap, end the worker session, and extract durable behavior into
+the owning Rust crates rather than a vendor harness.
 "#,
     )
 }
@@ -825,6 +836,27 @@ Compare the actual repo state against Codex-native behavior, not Claude assumpti
 - auto loop: AGENTS.md, ICM recall/store, verification gates, commit/push/PR workflow
 
 Return missed items ranked by user impact. Implement only upgrades that move Codex closer to the requested final state, then verify with authoritative command output.
+"#),
+        ),
+        (
+            "codex-tdd-workflow.md",
+            "Build and execute the Rust-owned Codex TDD workflow gates",
+            "[GOAL]",
+            String::from(r#"Run the Codex Rust TDD workflow for this goal: $ARGUMENTS
+
+Use the Rust harness when shell execution is appropriate:
+
+```bash
+cargo run -p codex-env -- tdd-workflow "$ARGUMENTS"
+```
+
+This builds `crates/codex-env`, then executes the built Codex Rust tools in
+order: mirror check, repo-local prompt check, doctor, inventory check, and
+bounded dry-run run/team-run/auto-loop probes. Treat Codex as the
+human-in-loop operator supervising a background terminal: launch the workflow,
+watch status artifacts, give follow-up guidance if the trace exposes a gap,
+end the worker session, then extract durable automation into Rust-owned crates.
+Do not move this automation into a vendor harness.
 "#),
         ),
     ]
@@ -909,6 +941,28 @@ Audit from current evidence, not memory. Start from `.codex/automation-graph.jso
 - AGENTS.md, ICM, verification, commit/push/PR workflow
 
 Rank gaps by user impact, then implement upgrades only. Verify with commands that prove the touched surface works.
+"#),
+        ),
+        (
+            "codex-tdd-workflow",
+            "Use when the task needs a supervised TDD workflow that builds codex-env, executes the Codex Rust tools, traces their purpose, and extracts durable behavior into Rust-owned crates.",
+            String::from(r#"# Codex TDD Workflow
+
+Use this when Codex needs to act as the human-in-loop operator for the
+repo-owned automation layer.
+
+When running from the shell, prefer the Rust harness:
+
+```bash
+cargo run -p codex-env -- tdd-workflow "your goal"
+```
+
+The harness builds `crates/codex-env`, then executes the built binary through
+mirror, prompt, doctor, inventory, run, team-run, and auto-loop probes. Supervise
+it like a background terminal: inspect status artifacts, provide follow-up
+guidance if a probe exposes a gap, terminate the worker session when the trace
+is complete, and move durable automation into the correct Rust crate instead of
+a vendor harness.
 "#),
         ),
     ]
