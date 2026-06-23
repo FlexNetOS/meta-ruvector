@@ -458,6 +458,7 @@ This directory is generated from the tracked `.claude` surface by the Rust
 ```bash
 cargo run -p codex-env -- install
 cargo run -p codex-env -- run --dry-run "inspect the Codex surface"
+cargo run -p codex-env -- team-run --dry-run --team rust "inspect Rust parity gaps"
 cargo run -p codex-env -- mirror --check
 cargo run -p codex-env -- install-prompts --check
 cargo run -p codex-env -- doctor
@@ -502,12 +503,17 @@ validated local environment and leave artifacts:
 
 ```bash
 cargo run -p codex-env -- run "fix the next Codex parity gap"
+cargo run -p codex-env -- team-run --team rust "trace and fix the next Rust harness gap"
 ```
 
 Each run refreshes/validates the Codex surface, then invokes `codex exec --json`
 with artifacts under `.codex/harness/runs/`: `prompt.md`, `events.jsonl`,
 `stderr.log`, `last-message.md`, and `status.json`. Use `--dry-run` to materialize
-the exact prompt and status without launching a nested Codex run.
+the exact prompt and status without launching a nested Codex run. `team-run`
+loads `.codex/agent-teams.json` plus the referenced `.codex/agents/*.toml`
+profiles, starts every team member with its configured model and reasoning
+effort, then runs a parent consolidation Codex pass that reads the member
+outputs, performs parent-owned edits, and writes its own artifacts.
 "#,
     )
 }
@@ -525,12 +531,18 @@ pub(super) fn codex_native_workflow_prompts(
             format!(
                 r#"Use Codex-native subagents for this goal: $ARGUMENTS
 
-Select the smallest effective team. Spawn the agents in parallel, wait for all results, then consolidate:
+Select the smallest effective team. Spawn the agents in parallel, wait for all results, then run parent consolidation:
 Use the configured custom agent TOMLs as the routing source: heavy agents run on `gpt-5.5`, lighter explorer/template agents run on `gpt-5.4-mini`, and each agent carries its own reasoning effort.
 
 {team_markdown}
 
-Give each subagent a bounded brief with concrete evidence to return. Do not let subagents modify the same file concurrently. After all results return, decide the implementation path, make the edits in the parent thread, verify, commit, push, and update the PR when publishing applies.
+Use the Rust harness when shell execution is appropriate:
+
+```bash
+cargo run -p codex-env -- team-run --team core "$ARGUMENTS"
+```
+
+The harness runs every team member with its configured model/reasoning effort and then launches a parent consolidation Codex pass. Give each subagent a bounded brief with concrete evidence to return. Do not let subagents modify the same file concurrently. After all results return, the parent pass decides the implementation path, makes the edits, verifies, commits, pushes, and updates the PR when publishing applies.
 "#
             ),
         ),
@@ -601,13 +613,19 @@ pub(super) fn codex_native_workflow_skills(
             format!(
                 r#"# Codex Agent Team
 
-Use Codex subagents explicitly. Pick the smallest effective team, spawn agents in parallel, wait for all results, then consolidate in the parent thread.
+Use Codex subagents explicitly. Pick the smallest effective team, spawn agents in parallel, wait for all results, then run parent consolidation.
 Use the configured custom agent TOMLs as the model-routing source: heavy agents run on `gpt-5.5`, lighter explorer/template agents run on `gpt-5.4-mini`, and each agent carries its own reasoning effort.
 
 Recommended teams:
 {team_markdown}
 
-Give each subagent a bounded brief and a required evidence format. Keep write ownership in the parent thread unless a subagent has an isolated file scope.
+When running from the shell, prefer the Rust harness:
+
+```bash
+cargo run -p codex-env -- team-run --team core "your goal"
+```
+
+The harness runs every team member with its configured model/reasoning effort and then launches a parent consolidation Codex pass. Give each subagent a bounded brief and a required evidence format. Keep write ownership in the parent pass unless a subagent has an isolated file scope.
 "#
             ),
         ),

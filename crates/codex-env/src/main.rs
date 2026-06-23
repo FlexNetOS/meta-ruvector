@@ -4,8 +4,8 @@ use anyhow::Result;
 use clap::{Parser, Subcommand};
 use codex_env::{
     doctor_codex_surface, install_codex_env, install_codex_prompts, mirror_codex_surface,
-    run_codex_task, CodexInstallOptions, CodexRunOptions, DoctorOptions, MirrorOptions,
-    PromptInstallOptions,
+    run_codex_task, run_codex_team, CodexInstallOptions, CodexRunOptions, CodexTeamRunOptions,
+    DoctorOptions, MirrorOptions, PromptInstallOptions,
 };
 
 #[derive(Parser)]
@@ -80,6 +80,36 @@ enum Commands {
         output_dir: Option<PathBuf>,
 
         /// Materialize the run prompt and status without launching codex exec.
+        #[arg(long)]
+        dry_run: bool,
+
+        /// Skip install and only run doctor before launching.
+        #[arg(long)]
+        skip_install: bool,
+    },
+
+    /// Run a generated Codex agent team in parallel with JSONL artifacts.
+    TeamRun {
+        /// Team name from .codex/agent-teams.json.
+        #[arg(long, default_value = "core")]
+        team: String,
+
+        /// Goal to give every team member.
+        goal: Option<String>,
+
+        /// Read additional goal text from a file.
+        #[arg(long)]
+        prompt_file: Option<PathBuf>,
+
+        /// Codex home directory. Defaults to CODEX_HOME or ~/.codex.
+        #[arg(long)]
+        codex_home: Option<PathBuf>,
+
+        /// Directory for team artifacts. Defaults under .codex/harness/runs.
+        #[arg(long)]
+        output_dir: Option<PathBuf>,
+
+        /// Materialize team prompts and status without launching codex exec.
         #[arg(long)]
         dry_run: bool,
 
@@ -221,6 +251,39 @@ fn main() -> Result<()> {
                 report
                     .exit_code
                     .map_or_else(|| "not-run".to_owned(), |code| code.to_string())
+            );
+        }
+        Commands::TeamRun {
+            team,
+            goal,
+            prompt_file,
+            codex_home,
+            output_dir,
+            dry_run,
+            skip_install,
+        } => {
+            let codex_home = codex_home.unwrap_or_else(default_codex_home);
+            let report = run_codex_team(CodexTeamRunOptions {
+                repo_root,
+                lua_policy: cli.lua_policy,
+                codex_home,
+                team,
+                goal,
+                prompt_file,
+                output_dir,
+                dry_run,
+                skip_install,
+            })?;
+            println!(
+                "codex-env team-run {}: team={}, strategy={}, members={}, run_dir={}, consolidation_prompt={}, consolidation_last_message={}, status={}",
+                if report.dry_run { "prepared" } else { "ok" },
+                report.team,
+                report.strategy,
+                report.members.len(),
+                report.run_dir.display(),
+                report.consolidation_prompt_path.display(),
+                report.consolidation_run.last_message_path.display(),
+                report.status_path.display()
             );
         }
     }

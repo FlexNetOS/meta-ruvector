@@ -3,8 +3,8 @@ use std::process::Command;
 
 use codex_env::{
     doctor_codex_surface, ensure_codex_home_settings, install_codex_env, install_codex_prompts,
-    mirror_codex_surface, run_codex_task, CodexInstallOptions, CodexRunOptions, DoctorOptions,
-    MirrorOptions, PromptInstallOptions,
+    mirror_codex_surface, run_codex_task, CodexInstallOptions, CodexRunOptions,
+    CodexTeamRunOptions, DoctorOptions, MirrorOptions, PromptInstallOptions,
 };
 
 #[test]
@@ -706,6 +706,67 @@ fn run_dry_run_materializes_bounded_codex_exec_artifacts() {
     assert!(prompt.contains("inspect the generated Codex surface"));
     let status = fs::read_to_string(report.status_path).unwrap();
     assert!(status.contains(r#""dryRun": true"#));
+}
+
+#[test]
+fn team_run_dry_run_materializes_parallel_agent_artifacts() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path().join("repo");
+    let codex_home = temp.path().join("codex-home");
+    let run_dir = temp.path().join("team-run");
+    fs::create_dir_all(root.join(".claude/commands")).unwrap();
+    fs::write(
+        root.join(".claude/settings.json"),
+        r#"{
+          "hooks": {
+            "PreToolUse": [
+              {
+                "matcher": "Bash",
+                "hooks": [{"type": "command", "command": "echo pre", "timeout": 5}]
+              }
+            ]
+          },
+          "env": {}
+        }"#,
+    )
+    .unwrap();
+    fs::write(root.join(".claude/commands/demo.md"), "# Demo\n").unwrap();
+
+    let report = codex_env::run_codex_team(CodexTeamRunOptions {
+        repo_root: root,
+        lua_policy: None,
+        codex_home,
+        team: "core".to_owned(),
+        goal: Some("map the generated Codex team runner".to_owned()),
+        prompt_file: None,
+        output_dir: Some(run_dir),
+        dry_run: true,
+        skip_install: false,
+    })
+    .unwrap();
+
+    assert!(report.dry_run);
+    assert_eq!(report.team, "core");
+    assert!(report.members.len() >= 2);
+    assert!(report.consolidation_prompt_path.exists());
+    assert!(report.consolidation_run.prompt_path.exists());
+    assert!(report.consolidation_run.status_path.exists());
+    assert_eq!(report.consolidation_run.exit_code, None);
+    assert!(report.status_path.exists());
+    for member in &report.members {
+        assert!(member.run.prompt_path.exists());
+        let prompt = fs::read_to_string(&member.run.prompt_path).unwrap();
+        assert!(prompt.contains("codex-env Team Member"));
+        assert!(prompt.contains(&member.agent));
+        assert_eq!(member.run.exit_code, None);
+    }
+    let consolidation = fs::read_to_string(report.consolidation_prompt_path).unwrap();
+    assert!(consolidation.contains("Team: core"));
+    assert!(consolidation.contains("Member outputs:"));
+    let consolidation_prompt = fs::read_to_string(report.consolidation_run.prompt_path).unwrap();
+    assert!(consolidation_prompt.contains("Consolidate the completed Codex team run."));
+    let consolidation_status = fs::read_to_string(report.consolidation_run.status_path).unwrap();
+    assert!(consolidation_status.contains(r#""dryRun": true"#));
 }
 
 #[test]

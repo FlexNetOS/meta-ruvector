@@ -8,6 +8,7 @@ This directory is generated from the tracked `.claude` surface by the Rust
 ```bash
 cargo run -p codex-env -- install
 cargo run -p codex-env -- run --dry-run "inspect the Codex surface"
+cargo run -p codex-env -- team-run --dry-run --team rust "inspect Rust parity gaps"
 cargo run -p codex-env -- mirror --check
 cargo run -p codex-env -- install-prompts --check
 cargo run -p codex-env -- doctor
@@ -52,9 +53,14 @@ validated local environment and leave artifacts:
 
 ```bash
 cargo run -p codex-env -- run "fix the next Codex parity gap"
+cargo run -p codex-env -- team-run --team rust "trace and fix the next Rust harness gap"
 ```
 
 Each run refreshes/validates the Codex surface, then invokes `codex exec --json`
 with artifacts under `.codex/harness/runs/`: `prompt.md`, `events.jsonl`,
 `stderr.log`, `last-message.md`, and `status.json`. Use `--dry-run` to materialize
-the exact prompt and status without launching a nested Codex run.
+the exact prompt and status without launching a nested Codex run. `team-run`
+loads `.codex/agent-teams.json` plus the referenced `.codex/agents/*.toml`
+profiles, starts every team member with its configured model and reasoning
+effort, then runs a parent consolidation Codex pass that reads the member
+outputs, performs parent-owned edits, and writes its own artifacts.

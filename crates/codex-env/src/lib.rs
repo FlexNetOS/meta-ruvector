@@ -6,7 +6,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use anyhow::{anyhow, Context, Result};
 use mlua::{Lua, Value};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 use serde_json::Value as JsonValue;
 use toml_edit::{value, DocumentMut, Item, Table};
@@ -106,6 +106,43 @@ pub struct CodexRunReport {
     pub status_path: PathBuf,
     pub dry_run: bool,
     pub exit_code: Option<i32>,
+}
+
+#[derive(Debug, Clone)]
+pub struct CodexTeamRunOptions {
+    pub repo_root: PathBuf,
+    pub lua_policy: Option<PathBuf>,
+    pub codex_home: PathBuf,
+    pub team: String,
+    pub goal: Option<String>,
+    pub prompt_file: Option<PathBuf>,
+    pub output_dir: Option<PathBuf>,
+    pub dry_run: bool,
+    pub skip_install: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct CodexTeamRunReport {
+    pub repo_root: PathBuf,
+    pub codex_home: PathBuf,
+    pub team: String,
+    pub strategy: String,
+    pub run_dir: PathBuf,
+    pub status_path: PathBuf,
+    pub consolidation_prompt_path: PathBuf,
+    pub consolidation_run: CodexRunReport,
+    pub members: Vec<CodexTeamRunMemberReport>,
+    pub dry_run: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct CodexTeamRunMemberReport {
+    pub agent: String,
+    pub description: String,
+    pub model: String,
+    pub reasoning_effort: String,
+    pub profile_path: PathBuf,
+    pub run: CodexRunReport,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -500,6 +537,155 @@ pub fn run_codex_task(options: CodexRunOptions) -> Result<CodexRunReport> {
     Ok(report)
 }
 
+pub fn run_codex_team(options: CodexTeamRunOptions) -> Result<CodexTeamRunReport> {
+    let repo_root = options.repo_root.canonicalize().with_context(|| {
+        format!(
+            "failed to canonicalize repo root {}",
+            options.repo_root.display()
+        )
+    })?;
+    let codex_home = options.codex_home;
+    let goal = resolve_run_goal(options.goal.as_deref(), options.prompt_file.as_deref())?;
+
+    if options.skip_install {
+        doctor_codex_surface(DoctorOptions {
+            repo_root: repo_root.clone(),
+            lua_policy: options.lua_policy,
+            codex_home: codex_home.clone(),
+        })?;
+    } else {
+        install_codex_env(CodexInstallOptions {
+            repo_root: repo_root.clone(),
+            lua_policy: options.lua_policy,
+            codex_home: codex_home.clone(),
+        })?;
+    }
+
+    let codex_dir = repo_root.join(".codex");
+    let team = load_team(&codex_dir, &options.team)?;
+    let profiles = load_team_agent_profiles(&codex_dir, &team)?;
+    let run_dir = options.output_dir.unwrap_or_else(|| {
+        repo_root
+            .join(".codex/harness/runs")
+            .join(format!("{}-team-{}", run_id(&goal), team.name))
+    });
+    fs::create_dir_all(&run_dir)
+        .with_context(|| format!("failed to create {}", run_dir.display()))?;
+
+    let mut members = Vec::new();
+    let mut children = Vec::new();
+    for profile in profiles {
+        let agent_dir = run_dir.join("agents").join(&profile.name);
+        let prompt = codex_team_member_prompt(&goal, &team, &profile);
+        let report =
+            prepared_run_report(&repo_root, &codex_home, agent_dir, prompt, options.dry_run)?;
+        let child = if options.dry_run {
+            None
+        } else {
+            Some(spawn_codex_exec(
+                &repo_root,
+                &codex_home,
+                &report,
+                &profile.sandbox_mode,
+                &profile.model,
+                &profile.model_reasoning_effort,
+            )?)
+        };
+        let member = CodexTeamRunMemberReport {
+            agent: profile.name,
+            description: profile.description,
+            model: profile.model,
+            reasoning_effort: profile.model_reasoning_effort,
+            profile_path: profile.path,
+            run: report.clone(),
+        };
+        if child.is_none() {
+            write_run_status(&report)?;
+        }
+        if let Some(child) = child {
+            children.push((members.len(), child));
+        }
+        members.push(member);
+    }
+
+    for (index, mut child) in children {
+        let status = child
+            .wait()
+            .with_context(|| "failed to wait for codex exec team member")?;
+        members[index].run.exit_code = status.code();
+        write_run_status(&members[index].run)?;
+        if !status.success() {
+            return Err(anyhow!(
+                "codex-env team-run member {} failed with exit code {}; see {} and {}",
+                members[index].agent,
+                status
+                    .code()
+                    .map_or_else(|| "signal".to_owned(), |code| code.to_string()),
+                members[index].run.events_path.display(),
+                members[index].run.stderr_path.display()
+            ));
+        }
+    }
+
+    let consolidation_prompt_path = run_dir.join("consolidation-prompt.md");
+    fs::write(
+        &consolidation_prompt_path,
+        codex_team_consolidation_prompt(&goal, &team, &members),
+    )
+    .with_context(|| format!("failed to write {}", consolidation_prompt_path.display()))?;
+    let consolidation_prompt = fs::read_to_string(&consolidation_prompt_path)
+        .with_context(|| format!("failed to read {}", consolidation_prompt_path.display()))?;
+    let mut consolidation_run = prepared_run_report(
+        &repo_root,
+        &codex_home,
+        run_dir.join("consolidation"),
+        consolidation_prompt,
+        options.dry_run,
+    )?;
+    if options.dry_run {
+        write_run_status(&consolidation_run)?;
+    } else {
+        let mut child = spawn_codex_exec(
+            &repo_root,
+            &codex_home,
+            &consolidation_run,
+            "workspace-write",
+            REQUIRED_CODEX_MODEL,
+            REQUIRED_CODEX_REASONING_EFFORT,
+        )?;
+        let status = child
+            .wait()
+            .with_context(|| "failed to wait for codex exec team consolidation")?;
+        consolidation_run.exit_code = status.code();
+        write_run_status(&consolidation_run)?;
+        if !status.success() {
+            return Err(anyhow!(
+                "codex-env team-run consolidation failed with exit code {}; see {} and {}",
+                status
+                    .code()
+                    .map_or_else(|| "signal".to_owned(), |code| code.to_string()),
+                consolidation_run.events_path.display(),
+                consolidation_run.stderr_path.display()
+            ));
+        }
+    }
+    let status_path = run_dir.join("team-status.json");
+    let report = CodexTeamRunReport {
+        repo_root,
+        codex_home,
+        team: team.name,
+        strategy: team.strategy,
+        run_dir,
+        status_path,
+        consolidation_prompt_path,
+        consolidation_run,
+        members,
+        dry_run: options.dry_run,
+    };
+    write_team_run_status(&report)?;
+    Ok(report)
+}
+
 pub fn ensure_codex_home_settings(codex_home: &Path) -> Result<CodexHomeSettingsReport> {
     let catalog_path = codex_home.join(REQUIRED_CODEX_MODEL_CATALOG);
     write_file(&PlannedFile {
@@ -847,6 +1033,139 @@ fn manifest_json(
     Ok(format!("{}\n", serde_json::to_string_pretty(&manifest)?))
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct RunAgentTeamsManifest {
+    teams: Vec<RunAgentTeam>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct RunAgentTeam {
+    name: String,
+    description: String,
+    strategy: String,
+    parallel: bool,
+    consolidation_owner: String,
+    agents: Vec<String>,
+}
+
+#[derive(Debug, Clone)]
+struct RunAgentProfile {
+    name: String,
+    description: String,
+    model: String,
+    model_reasoning_effort: String,
+    sandbox_mode: String,
+    developer_instructions: String,
+    path: PathBuf,
+}
+
+fn load_team(codex_dir: &Path, team_name: &str) -> Result<RunAgentTeam> {
+    let path = codex_dir.join("agent-teams.json");
+    let manifest: RunAgentTeamsManifest = serde_json::from_slice(
+        &fs::read(&path).with_context(|| format!("failed to read {}", path.display()))?,
+    )
+    .with_context(|| format!("failed to parse {}", path.display()))?;
+    let Some(team) = manifest
+        .teams
+        .into_iter()
+        .find(|team| team.name == team_name)
+    else {
+        return Err(anyhow!("{} has no team named {team_name}", path.display()));
+    };
+    if !team.parallel {
+        return Err(anyhow!(
+            "{} team {team_name} must have parallel=true for team-run",
+            path.display()
+        ));
+    }
+    if team.consolidation_owner != "parent" {
+        return Err(anyhow!(
+            "{} team {team_name} must use parent consolidation",
+            path.display()
+        ));
+    }
+    Ok(team)
+}
+
+fn load_team_agent_profiles(codex_dir: &Path, team: &RunAgentTeam) -> Result<Vec<RunAgentProfile>> {
+    let config_path = codex_dir.join("config.toml");
+    let config = toml::from_str::<toml::Value>(
+        &fs::read_to_string(&config_path)
+            .with_context(|| format!("failed to read {}", config_path.display()))?,
+    )
+    .with_context(|| format!("failed to parse {}", config_path.display()))?;
+    let agents = config
+        .get("agents")
+        .and_then(toml::Value::as_table)
+        .ok_or_else(|| anyhow!("{} is missing agents table", config_path.display()))?;
+    let mut profiles = Vec::new();
+    for agent in &team.agents {
+        let table = agents
+            .get(agent)
+            .and_then(toml::Value::as_table)
+            .ok_or_else(|| {
+                anyhow!(
+                    "{} has no config entry for agent {agent}",
+                    config_path.display()
+                )
+            })?;
+        let config_file = table
+            .get("config_file")
+            .and_then(toml::Value::as_str)
+            .ok_or_else(|| anyhow!("{} agent {agent} has no config_file", config_path.display()))?;
+        let config_file = PathBuf::from(config_file);
+        if config_file.is_absolute()
+            || config_file
+                .components()
+                .any(|component| matches!(component, std::path::Component::ParentDir))
+        {
+            return Err(anyhow!(
+                "{} agent {agent} has unsafe config_file {}",
+                config_path.display(),
+                config_file.display()
+            ));
+        }
+        profiles.push(load_agent_profile(&codex_dir.join(config_file))?);
+    }
+    Ok(profiles)
+}
+
+fn load_agent_profile(path: &Path) -> Result<RunAgentProfile> {
+    let toml = toml::from_str::<toml::Value>(
+        &fs::read_to_string(path).with_context(|| format!("failed to read {}", path.display()))?,
+    )
+    .with_context(|| format!("failed to parse {}", path.display()))?;
+    let name = required_profile_string(&toml, "name", path)?;
+    let description = required_profile_string(&toml, "description", path)?;
+    let model = required_profile_string(&toml, "model", path)?;
+    let model_reasoning_effort = required_profile_string(&toml, "model_reasoning_effort", path)?;
+    let developer_instructions = required_profile_string(&toml, "developer_instructions", path)?;
+    let sandbox_mode = toml
+        .get("sandbox_mode")
+        .and_then(toml::Value::as_str)
+        .unwrap_or("workspace-write")
+        .to_owned();
+    Ok(RunAgentProfile {
+        name,
+        description,
+        model,
+        model_reasoning_effort,
+        sandbox_mode,
+        developer_instructions,
+        path: path.to_path_buf(),
+    })
+}
+
+fn required_profile_string(toml: &toml::Value, key: &str, path: &Path) -> Result<String> {
+    toml.get(key)
+        .and_then(toml::Value::as_str)
+        .map(ToOwned::to_owned)
+        .filter(|value| !value.trim().is_empty())
+        .ok_or_else(|| anyhow!("{} is missing required key {key}", path.display()))
+}
+
 fn resolve_run_goal(goal: Option<&str>, prompt_file: Option<&Path>) -> Result<String> {
     let mut parts = Vec::new();
     if let Some(goal) = goal.map(str::trim).filter(|goal| !goal.is_empty()) {
@@ -888,6 +1207,153 @@ Goal:
     ))
 }
 
+fn codex_team_member_prompt(goal: &str, team: &RunAgentTeam, profile: &RunAgentProfile) -> String {
+    normalize_generated_text(&format!(
+        r#"# codex-env Team Member
+
+You are running as Codex agent `{}` in team `{}`.
+
+Team description: {}
+Team strategy: {}
+
+Agent description: {}
+Model route: {} / {}
+
+Use your agent instructions below as the role contract. Return concrete evidence, file paths, risks, and recommended edits. Do not make broad uncoordinated changes outside this role's scope.
+
+## Agent Instructions
+
+{}
+
+## Goal
+
+{}
+"#,
+        profile.name,
+        team.name,
+        team.description,
+        team.strategy,
+        profile.description,
+        profile.model,
+        profile.model_reasoning_effort,
+        profile.developer_instructions.trim(),
+        goal
+    ))
+}
+
+fn codex_team_consolidation_prompt(
+    goal: &str,
+    team: &RunAgentTeam,
+    members: &[CodexTeamRunMemberReport],
+) -> String {
+    let member_outputs = members
+        .iter()
+        .map(|member| {
+            format!(
+                "- {} ({} / {}): {}",
+                member.agent,
+                member.model,
+                member.reasoning_effort,
+                member.run.last_message_path.display()
+            )
+        })
+        .collect::<Vec<_>>()
+        .join("\n");
+    normalize_generated_text(&format!(
+        r#"# codex-env Team Consolidation
+
+Consolidate the completed Codex team run.
+
+Team: {}
+Strategy: {}
+Goal: {}
+
+Member outputs:
+{}
+
+Read every member output, reconcile conflicts, decide the implementation path, make parent-owned edits, verify, commit, push, and update the PR when publishing applies.
+"#,
+        team.name, team.strategy, goal, member_outputs
+    ))
+}
+
+fn prepared_run_report(
+    repo_root: &Path,
+    codex_home: &Path,
+    run_dir: PathBuf,
+    prompt: String,
+    dry_run: bool,
+) -> Result<CodexRunReport> {
+    fs::create_dir_all(&run_dir)
+        .with_context(|| format!("failed to create {}", run_dir.display()))?;
+    let prompt_path = run_dir.join("prompt.md");
+    let events_path = run_dir.join("events.jsonl");
+    let stderr_path = run_dir.join("stderr.log");
+    let last_message_path = run_dir.join("last-message.md");
+    let status_path = run_dir.join("status.json");
+    fs::write(&prompt_path, prompt)
+        .with_context(|| format!("failed to write {}", prompt_path.display()))?;
+    Ok(CodexRunReport {
+        repo_root: repo_root.to_path_buf(),
+        codex_home: codex_home.to_path_buf(),
+        run_dir,
+        prompt_path,
+        events_path,
+        stderr_path,
+        last_message_path,
+        status_path,
+        dry_run,
+        exit_code: None,
+    })
+}
+
+fn spawn_codex_exec(
+    repo_root: &Path,
+    codex_home: &Path,
+    report: &CodexRunReport,
+    sandbox_mode: &str,
+    model: &str,
+    model_reasoning_effort: &str,
+) -> Result<std::process::Child> {
+    let events = fs::File::create(&report.events_path)
+        .with_context(|| format!("failed to create {}", report.events_path.display()))?;
+    let stderr = fs::File::create(&report.stderr_path)
+        .with_context(|| format!("failed to create {}", report.stderr_path.display()))?;
+    let prompt = fs::read(&report.prompt_path)
+        .with_context(|| format!("failed to read {}", report.prompt_path.display()))?;
+    let mut child = Command::new("codex")
+        .arg("exec")
+        .arg("--json")
+        .arg("--cd")
+        .arg(repo_root)
+        .arg("--sandbox")
+        .arg(sandbox_mode)
+        .arg("--model")
+        .arg(model)
+        .arg("--config")
+        .arg(format!(
+            "model_reasoning_effort=\"{model_reasoning_effort}\""
+        ))
+        .arg("--config")
+        .arg("approval_policy=\"never\"")
+        .arg("--output-last-message")
+        .arg(&report.last_message_path)
+        .arg("-")
+        .env("CODEX_HOME", codex_home)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::from(events))
+        .stderr(Stdio::from(stderr))
+        .spawn()
+        .with_context(|| "failed to spawn codex exec")?;
+    child
+        .stdin
+        .take()
+        .ok_or_else(|| anyhow!("failed to open codex exec stdin"))?
+        .write_all(&prompt)
+        .with_context(|| "failed to write codex exec prompt")?;
+    Ok(child)
+}
+
 fn run_id(goal: &str) -> String {
     let seconds = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -916,6 +1382,14 @@ fn write_run_status(report: &CodexRunReport) -> Result<()> {
     fs::write(
         &report.status_path,
         format!("{}\n", serde_json::to_string_pretty(&status)?),
+    )
+    .with_context(|| format!("failed to write {}", report.status_path.display()))
+}
+
+fn write_team_run_status(report: &CodexTeamRunReport) -> Result<()> {
+    fs::write(
+        &report.status_path,
+        format!("{}\n", serde_json::to_string_pretty(report)?),
     )
     .with_context(|| format!("failed to write {}", report.status_path.display()))
 }
