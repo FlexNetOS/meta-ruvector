@@ -77,6 +77,7 @@ cargo run -p codex-env -- run "fix the next Codex parity gap"
 cargo run -p codex-env -- team-run --team rust "trace and fix the next Rust harness gap"
 cargo run -p codex-env -- auto-loop --team core --max-iterations 3 "finish the Codex parity goal"
 cargo run -p codex-env -- tdd-workflow "build, verify, and trace the Codex Rust tools"
+cargo run -p codex-env -- tdd-next --check
 ```
 
 Each run refreshes/validates the Codex surface, then invokes `codex exec --json`
@@ -111,4 +112,6 @@ what the background worker actually did before deciding the next extraction.
 The workflow also writes `tdd-extraction-report.md` plus
 `tdd-extraction-plan.json`; the JSON plan is the low-token machine-readable
 crate-ownership handoff that turns the supervised trace into the next Rust
-extraction action.
+extraction action. `tdd-next` consumes the newest extraction plan, rejects any
+vendor-harness ownership drift, and prints the selected Rust-owned actions for
+the next autonomous loop handoff.

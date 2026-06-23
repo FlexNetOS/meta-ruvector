@@ -20,3 +20,17 @@ The Codex TDD workflow SHALL write a deterministic JSON extraction plan next to 
 - **WHEN** the extraction plan is written
 - **THEN** the top-level next action tells the operator to promote uncovered automation behavior into `crates/codex-env`
 - **AND** no plan action routes ownership to a vendor harness
+
+### Requirement: Codex TDD next-action consumer SHALL fail closed on ownership drift
+The Codex TDD workflow SHALL provide a Rust-native consumer for extraction plans so the autonomous loop can read the newest plan, select the next crate-owned action, and reject vendor-harness routing before continuing.
+
+#### Scenario: Latest plan is ready for autonomous handoff
+- **GIVEN** a completed TDD extraction plan whose actions all passed and belong to `crates/codex-env`
+- **WHEN** `codex-env tdd-next --check` reads the plan
+- **THEN** it reports the plan as ready for autonomous loop handoff
+- **AND** it prints the next crate-owned action and selected extraction actions
+
+#### Scenario: Plan routes ownership to a forbidden target
+- **GIVEN** a TDD extraction plan with an action belonging to `vendor harness`
+- **WHEN** `codex-env tdd-next` reads the plan
+- **THEN** it fails before handing the action to the autonomous loop
