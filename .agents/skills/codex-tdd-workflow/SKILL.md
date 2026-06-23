@@ -46,4 +46,6 @@ supervisor loop; without `--dry-run` it repeats safe drive actions until
 prepared handoff, guide, stop, or max drive steps.
 Run `codex-env tdd-audit --check` only when the drive-loop evidence should prove
 the autonomous OS criteria; otherwise inspect `tdd-os-audit.json` and keep
-extracting the missing crate-owned requirements.
+extracting the missing crate-owned requirements. Run `codex-env tdd-os --check`
+when Codex should drive and audit the full autonomous OS loop through one
+crate-owned command.

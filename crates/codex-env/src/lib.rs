@@ -449,6 +449,25 @@ pub struct CodexTddAuditOptions {
     pub check: bool,
 }
 
+#[derive(Debug, Clone)]
+pub struct CodexTddOsOptions {
+    pub repo_root: PathBuf,
+    pub lua_policy: Option<PathBuf>,
+    pub codex_home: PathBuf,
+    pub status_path: Option<PathBuf>,
+    pub output_dir: Option<PathBuf>,
+    pub team: String,
+    pub goal: Option<String>,
+    pub max_drive_steps: usize,
+    pub max_iterations: usize,
+    pub member_sandbox_mode: String,
+    pub supervisor_guidance: Vec<String>,
+    pub dry_run: bool,
+    pub run_handoff: bool,
+    pub skip_install: bool,
+    pub check: bool,
+}
+
 #[derive(Debug, Clone, Serialize)]
 pub struct CodexTddDriveReport {
     pub repo_root: PathBuf,
@@ -493,6 +512,21 @@ pub struct CodexTddAuditReport {
     pub next_action: String,
     pub started_unix_seconds: u64,
     pub ended_unix_seconds: u64,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct CodexTddOsReport {
+    pub repo_root: PathBuf,
+    pub codex_home: PathBuf,
+    pub run_dir: PathBuf,
+    pub status_path: PathBuf,
+    pub os_state: String,
+    pub drive_loop: CodexTddDriveLoopReport,
+    pub audit: CodexTddAuditReport,
+    pub next_action: String,
+    pub started_unix_seconds: u64,
+    pub ended_unix_seconds: u64,
+    pub dry_run: bool,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -2280,6 +2314,59 @@ pub fn run_codex_tdd_drive_loop(
     Ok(report)
 }
 
+pub fn run_codex_tdd_os(options: CodexTddOsOptions) -> Result<CodexTddOsReport> {
+    let started_unix_seconds = unix_seconds_now();
+    let drive_loop = run_codex_tdd_drive_loop(CodexTddDriveLoopOptions {
+        repo_root: options.repo_root,
+        lua_policy: options.lua_policy,
+        codex_home: options.codex_home,
+        status_path: options.status_path,
+        output_dir: options.output_dir,
+        team: options.team,
+        goal: options.goal,
+        max_drive_steps: options.max_drive_steps,
+        max_iterations: options.max_iterations,
+        member_sandbox_mode: options.member_sandbox_mode,
+        supervisor_guidance: options.supervisor_guidance,
+        dry_run: options.dry_run,
+        run_handoff: options.run_handoff,
+        skip_install: options.skip_install,
+    })?;
+    let audit = audit_codex_tdd_os(CodexTddAuditOptions {
+        repo_root: drive_loop.repo_root.clone(),
+        drive_loop_status_path: Some(drive_loop.status_path.clone()),
+        check: options.check,
+    })?;
+    let status_path = drive_loop.run_dir.join("tdd-os-status.json");
+    let os_state = if audit.audit_state == "complete" {
+        "complete".to_owned()
+    } else if options.dry_run {
+        "planned".to_owned()
+    } else {
+        "incomplete".to_owned()
+    };
+    let next_action = if os_state == "complete" {
+        "Autonomous OS evidence is complete; store durable ICM memory and continue only for newly discovered crate-owned extraction gaps.".to_owned()
+    } else {
+        audit.next_action.clone()
+    };
+    let report = CodexTddOsReport {
+        repo_root: drive_loop.repo_root.clone(),
+        codex_home: drive_loop.codex_home.clone(),
+        run_dir: drive_loop.run_dir.clone(),
+        status_path,
+        os_state,
+        drive_loop,
+        audit,
+        next_action,
+        started_unix_seconds,
+        ended_unix_seconds: unix_seconds_now(),
+        dry_run: options.dry_run,
+    };
+    write_tdd_os_status(&report)?;
+    Ok(report)
+}
+
 pub fn audit_codex_tdd_os(options: CodexTddAuditOptions) -> Result<CodexTddAuditReport> {
     let started_unix_seconds = unix_seconds_now();
     let repo_root = options.repo_root.canonicalize().with_context(|| {
@@ -3389,6 +3476,14 @@ fn write_tdd_audit_status(report: &CodexTddAuditReport) -> Result<()> {
         format!("{}\n", serde_json::to_string_pretty(report)?),
     )
     .with_context(|| format!("failed to write {}", report.audit_path.display()))
+}
+
+fn write_tdd_os_status(report: &CodexTddOsReport) -> Result<()> {
+    fs::write(
+        &report.status_path,
+        format!("{}\n", serde_json::to_string_pretty(report)?),
+    )
+    .with_context(|| format!("failed to write {}", report.status_path.display()))
 }
 
 fn write_tdd_cycle_guidance(report: &CodexTddCycleReport) -> Result<()> {
