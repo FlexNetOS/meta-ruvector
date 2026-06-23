@@ -44,3 +44,6 @@ or without `--dry-run` to let Codex advance the next safe Rust-owned step.
 Run `codex-env tdd-drive-loop --dry-run` to persist a bounded multi-step
 supervisor loop; without `--dry-run` it repeats safe drive actions until
 prepared handoff, guide, stop, or max drive steps.
+Run `codex-env tdd-audit --check` only when the drive-loop evidence should prove
+the autonomous OS criteria; otherwise inspect `tdd-os-audit.json` and keep
+extracting the missing crate-owned requirements.

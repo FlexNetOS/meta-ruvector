@@ -3,14 +3,14 @@ use std::{fs, path::PathBuf};
 use anyhow::{bail, Result};
 use clap::{Parser, Subcommand};
 use codex_env::{
-    codex_tdd_next_action, codex_tdd_supervise, doctor_codex_surface, install_codex_env,
-    install_codex_prompts, inventory_codex_surface, mirror_codex_surface, run_codex_auto_loop,
-    run_codex_task, run_codex_tdd_auto_loop, run_codex_tdd_cycle, run_codex_tdd_drive,
-    run_codex_tdd_drive_loop, run_codex_team, CodexAutoLoopOptions, CodexInstallOptions,
-    CodexInventoryOptions, CodexRunOptions, CodexTddAutoLoopOptions, CodexTddCycleOptions,
-    CodexTddDriveLoopOptions, CodexTddDriveOptions, CodexTddNextActionOptions,
-    CodexTddSuperviseOptions, CodexTddWorkflowOptions, CodexTeamRunOptions, DoctorOptions,
-    MirrorOptions, PromptInstallOptions,
+    audit_codex_tdd_os, codex_tdd_next_action, codex_tdd_supervise, doctor_codex_surface,
+    install_codex_env, install_codex_prompts, inventory_codex_surface, mirror_codex_surface,
+    run_codex_auto_loop, run_codex_task, run_codex_tdd_auto_loop, run_codex_tdd_cycle,
+    run_codex_tdd_drive, run_codex_tdd_drive_loop, run_codex_team, CodexAutoLoopOptions,
+    CodexInstallOptions, CodexInventoryOptions, CodexRunOptions, CodexTddAuditOptions,
+    CodexTddAutoLoopOptions, CodexTddCycleOptions, CodexTddDriveLoopOptions, CodexTddDriveOptions,
+    CodexTddNextActionOptions, CodexTddSuperviseOptions, CodexTddWorkflowOptions,
+    CodexTeamRunOptions, DoctorOptions, MirrorOptions, PromptInstallOptions,
 };
 
 #[derive(Parser)]
@@ -423,6 +423,21 @@ enum Commands {
         /// Skip install and only run doctor before launching nested Codex.
         #[arg(long)]
         skip_install: bool,
+    },
+
+    /// Audit the latest TDD drive-loop evidence against the autonomous OS done criteria.
+    TddAudit {
+        /// Path to tdd-drive-loop-status.json. Defaults to the newest TDD drive-loop run.
+        #[arg(long)]
+        status: Option<PathBuf>,
+
+        /// Emit the audit report as JSON.
+        #[arg(long)]
+        json: bool,
+
+        /// Fail if any autonomous OS requirement is still missing.
+        #[arg(long)]
+        check: bool,
     },
 }
 
@@ -950,6 +965,36 @@ fn main() -> Result<()> {
                 report.status_path.display(),
                 report.next_action
             );
+        }
+        Commands::TddAudit {
+            status,
+            json,
+            check,
+        } => {
+            let report = audit_codex_tdd_os(CodexTddAuditOptions {
+                repo_root,
+                drive_loop_status_path: status,
+                check,
+            })?;
+            if json {
+                println!("{}", serde_json::to_string_pretty(&report)?);
+            } else {
+                let missing = report
+                    .requirements
+                    .iter()
+                    .filter(|requirement| requirement.status != "ok")
+                    .map(|requirement| requirement.requirement.as_str())
+                    .collect::<Vec<_>>()
+                    .join(",");
+                println!(
+                    "codex-env tdd-audit: state={}, status={}, drive_loop={}, missing={}, next_action={}",
+                    report.audit_state,
+                    report.audit_path.display(),
+                    report.drive_loop_status_path.display(),
+                    if missing.is_empty() { "none" } else { missing.as_str() },
+                    report.next_action
+                );
+            }
         }
     }
 

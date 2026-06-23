@@ -442,6 +442,13 @@ pub struct CodexTddDriveLoopOptions {
     pub skip_install: bool,
 }
 
+#[derive(Debug, Clone)]
+pub struct CodexTddAuditOptions {
+    pub repo_root: PathBuf,
+    pub drive_loop_status_path: Option<PathBuf>,
+    pub check: bool,
+}
+
 #[derive(Debug, Clone, Serialize)]
 pub struct CodexTddDriveReport {
     pub repo_root: PathBuf,
@@ -474,6 +481,26 @@ pub struct CodexTddDriveLoopReport {
     pub dry_run: bool,
     pub max_drive_steps: usize,
     pub run_handoff: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct CodexTddAuditReport {
+    pub repo_root: PathBuf,
+    pub drive_loop_status_path: PathBuf,
+    pub audit_path: PathBuf,
+    pub audit_state: String,
+    pub requirements: Vec<CodexTddAuditRequirementReport>,
+    pub next_action: String,
+    pub started_unix_seconds: u64,
+    pub ended_unix_seconds: u64,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct CodexTddAuditRequirementReport {
+    pub requirement: String,
+    pub status: String,
+    pub evidence_path: Option<PathBuf>,
+    pub summary: String,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -2253,6 +2280,194 @@ pub fn run_codex_tdd_drive_loop(
     Ok(report)
 }
 
+pub fn audit_codex_tdd_os(options: CodexTddAuditOptions) -> Result<CodexTddAuditReport> {
+    let started_unix_seconds = unix_seconds_now();
+    let repo_root = options.repo_root.canonicalize().with_context(|| {
+        format!(
+            "failed to canonicalize repo root {}",
+            options.repo_root.display()
+        )
+    })?;
+    let drive_loop_status_path = match options.drive_loop_status_path {
+        Some(path) => {
+            if path.is_absolute() {
+                path
+            } else {
+                repo_root.join(path)
+            }
+        }
+        None => latest_tdd_drive_loop_status(&repo_root)?,
+    };
+    let status_bytes = fs::read(&drive_loop_status_path).with_context(|| {
+        format!(
+            "failed to read TDD drive-loop status {}",
+            drive_loop_status_path.display()
+        )
+    })?;
+    let status: JsonValue = serde_json::from_slice(&status_bytes).with_context(|| {
+        format!(
+            "failed to parse TDD drive-loop status {}",
+            drive_loop_status_path.display()
+        )
+    })?;
+    let run_dir = drive_loop_status_path
+        .parent()
+        .unwrap_or_else(|| Path::new("."))
+        .to_path_buf();
+    let audit_path = run_dir.join("tdd-os-audit.json");
+    let steps = status
+        .get("steps")
+        .and_then(JsonValue::as_array)
+        .cloned()
+        .unwrap_or_default();
+    let loop_state = json_string(&status, "loop_state").unwrap_or_else(|| "unknown".to_owned());
+    let dry_run = status
+        .get("dry_run")
+        .and_then(JsonValue::as_bool)
+        .unwrap_or(false);
+    let final_cycle_status_path = status
+        .get("final_cycle_status_path")
+        .and_then(JsonValue::as_str)
+        .map(PathBuf::from);
+
+    let has_supervision = !steps.is_empty()
+        && steps.iter().all(|step| {
+            step.get("supervision")
+                .and_then(|supervision| supervision.get("decision"))
+                .and_then(JsonValue::as_str)
+                .is_some()
+        });
+    let has_cycle = steps.iter().any(|step| step.get("cycle").is_some());
+    let has_workflow_trace = steps.iter().any(|step| {
+        step.get("cycle")
+            .and_then(|cycle| cycle.get("workflow"))
+            .and_then(|workflow| workflow.get("steps"))
+            .and_then(JsonValue::as_array)
+            .is_some_and(|workflow_steps| {
+                workflow_steps.iter().any(|workflow_step| {
+                    ["does", "why", "belongs_in", "extraction_target"]
+                        .iter()
+                        .all(|key| {
+                            workflow_step
+                                .get(*key)
+                                .and_then(JsonValue::as_str)
+                                .is_some_and(|value| !value.trim().is_empty())
+                        })
+                })
+            })
+    });
+    let crate_owned = steps.iter().any(|step| {
+        step.get("cycle")
+            .and_then(|cycle| cycle.get("workflow"))
+            .and_then(|workflow| workflow.get("steps"))
+            .and_then(JsonValue::as_array)
+            .is_some_and(|workflow_steps| {
+                workflow_steps.iter().all(|workflow_step| {
+                    workflow_step.get("belongs_in").and_then(JsonValue::as_str)
+                        == Some("crates/codex-env")
+                        && workflow_step
+                            .get("extraction_target")
+                            .and_then(JsonValue::as_str)
+                            .is_some_and(|target| target.contains("crates/codex-env"))
+                })
+            })
+    });
+    let terminal_closed = matches!(
+        loop_state.as_str(),
+        "prepared" | "completed" | "ended" | "stopped" | "guidance-required"
+    ) && !dry_run;
+    let handoff_bounded = status
+        .get("max_drive_steps")
+        .and_then(JsonValue::as_u64)
+        .is_some_and(|steps| (1..=20).contains(&steps));
+    let no_vendor_harness = !status_bytes
+        .windows("vendor harness".len())
+        .any(|window| window.eq_ignore_ascii_case(b"vendor harness"));
+
+    let requirements = vec![
+        tdd_audit_requirement(
+            "supervisor-decision-loop",
+            has_supervision,
+            Some(drive_loop_status_path.clone()),
+            "drive-loop status records at least one supervise/drive step with explicit decisions",
+        ),
+        tdd_audit_requirement(
+            "built-tool-cycle-executed",
+            has_cycle && !dry_run,
+            final_cycle_status_path.clone(),
+            "a non-dry-run drive step executed tdd-cycle after building and probing codex-env",
+        ),
+        tdd_audit_requirement(
+            "does-why-belongs-trace",
+            has_workflow_trace,
+            final_cycle_status_path.clone(),
+            "workflow step evidence records what each Codex Rust tool does, why it runs, and where it belongs",
+        ),
+        tdd_audit_requirement(
+            "crate-owned-extraction-target",
+            crate_owned,
+            final_cycle_status_path.clone(),
+            "tool behavior routes to crates/codex-env instead of a vendor harness",
+        ),
+        tdd_audit_requirement(
+            "bounded-autonomous-loop",
+            handoff_bounded,
+            Some(drive_loop_status_path.clone()),
+            "drive-loop has an explicit max-drive-step bound for autonomous operation",
+        ),
+        tdd_audit_requirement(
+            "background-terminal-closed",
+            terminal_closed,
+            final_cycle_status_path.or_else(|| Some(drive_loop_status_path.clone())),
+            "loop reached a terminal supervisor state after captured evidence",
+        ),
+        tdd_audit_requirement(
+            "vendor-harness-rejected",
+            no_vendor_harness,
+            Some(drive_loop_status_path.clone()),
+            "audit evidence does not route automation into a vendor harness",
+        ),
+    ];
+    let audit_state = if requirements
+        .iter()
+        .all(|requirement| requirement.status == "ok")
+    {
+        "complete".to_owned()
+    } else {
+        "incomplete".to_owned()
+    };
+    let next_action = if audit_state == "complete" {
+        "Store durable memory, close the supervised terminal, and continue only for newly discovered extraction gaps.".to_owned()
+    } else {
+        "Run tdd-drive-loop without --dry-run, inspect tdd-os-audit.json, and implement the first missing crate-owned automation requirement.".to_owned()
+    };
+    let report = CodexTddAuditReport {
+        repo_root,
+        drive_loop_status_path,
+        audit_path,
+        audit_state,
+        requirements,
+        next_action,
+        started_unix_seconds,
+        ended_unix_seconds: unix_seconds_now(),
+    };
+    write_tdd_audit_status(&report)?;
+    if options.check && report.audit_state != "complete" {
+        return Err(anyhow!(
+            "{} found incomplete TDD OS requirements: {}",
+            report.audit_path.display(),
+            report
+                .requirements
+                .iter()
+                .filter(|requirement| requirement.status != "ok")
+                .map(|requirement| requirement.requirement.as_str())
+                .collect::<Vec<_>>()
+                .join(", ")
+        ));
+    }
+    Ok(report)
+}
+
 pub fn ensure_codex_home_settings(codex_home: &Path) -> Result<CodexHomeSettingsReport> {
     let catalog_path = codex_home.join(REQUIRED_CODEX_MODEL_CATALOG);
     write_file(&PlannedFile {
@@ -2882,6 +3097,20 @@ fn json_string(value: &JsonValue, key: &str) -> Option<String> {
     value.get(key)?.as_str().map(ToOwned::to_owned)
 }
 
+fn tdd_audit_requirement(
+    requirement: &str,
+    ok: bool,
+    evidence_path: Option<PathBuf>,
+    summary: &str,
+) -> CodexTddAuditRequirementReport {
+    CodexTddAuditRequirementReport {
+        requirement: requirement.to_owned(),
+        status: if ok { "ok" } else { "missing" }.to_owned(),
+        evidence_path,
+        summary: summary.to_owned(),
+    }
+}
+
 fn parse_auto_loop_marker(last_message: &str) -> Option<String> {
     last_message.lines().find_map(|line| {
         let marker = line.trim().strip_prefix("CODEX_AUTO_LOOP_STATUS:")?;
@@ -3140,6 +3369,14 @@ fn write_tdd_drive_loop_status(report: &CodexTddDriveLoopReport) -> Result<()> {
     .with_context(|| format!("failed to write {}", report.status_path.display()))
 }
 
+fn write_tdd_audit_status(report: &CodexTddAuditReport) -> Result<()> {
+    fs::write(
+        &report.audit_path,
+        format!("{}\n", serde_json::to_string_pretty(report)?),
+    )
+    .with_context(|| format!("failed to write {}", report.audit_path.display()))
+}
+
 fn write_tdd_cycle_guidance(report: &CodexTddCycleReport) -> Result<()> {
     let mut markdown = String::from("# Codex TDD Cycle Guidance\n\n");
     markdown.push_str("Codex is the human-in-loop supervisor for this Rust-owned cycle. Use this low-token guidance before loading bulk mirrored Markdown or per-step logs.\n\n");
@@ -3350,6 +3587,14 @@ fn latest_tdd_cycle_status(repo_root: &Path) -> Result<PathBuf> {
         repo_root,
         "tdd-cycle-status.json",
         "run codex-env tdd-cycle first",
+    )
+}
+
+fn latest_tdd_drive_loop_status(repo_root: &Path) -> Result<PathBuf> {
+    latest_run_artifact(
+        repo_root,
+        "tdd-drive-loop-status.json",
+        "run codex-env tdd-drive-loop first",
     )
 }
 

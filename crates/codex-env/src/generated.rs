@@ -752,6 +752,7 @@ cargo run -p codex-env -- tdd-cycle --dry-run "supervise the full Codex TDD cycl
 cargo run -p codex-env -- tdd-supervise
 cargo run -p codex-env -- tdd-drive --dry-run
 cargo run -p codex-env -- tdd-drive-loop --dry-run
+cargo run -p codex-env -- tdd-audit
 ```
 
 Each run refreshes/validates the Codex surface, then invokes `codex exec --json`
@@ -818,6 +819,11 @@ Rust-owned loop until the cycle reaches prepared handoff, guide, stop, or the
 configured max drive steps. It records `tdd-drive-loop-status.json` so the
 autonomous OS loop has one low-token state artifact instead of relying on owner
 messages as its clock.
+`tdd-audit` reads that drive-loop status and emits `tdd-os-audit.json`, a
+requirement-by-requirement completion audit for the autonomous OS criteria:
+supervisor decisions, built-tool execution, does/why/belongs traces,
+crate-owned extraction, bounded looping, terminal closure, and vendor-harness
+rejection.
 "#,
     )
 }
@@ -1060,6 +1066,9 @@ or without `--dry-run` to let Codex advance the next safe Rust-owned step.
 Run `codex-env tdd-drive-loop --dry-run` to persist a bounded multi-step
 supervisor loop; without `--dry-run` it repeats safe drive actions until
 prepared handoff, guide, stop, or max drive steps.
+Run `codex-env tdd-audit --check` only when the drive-loop evidence should prove
+the autonomous OS criteria; otherwise inspect `tdd-os-audit.json` and keep
+extracting the missing crate-owned requirements.
 "#),
         ),
     ]
