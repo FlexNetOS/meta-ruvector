@@ -363,10 +363,21 @@ pub struct CodexTddCycleReport {
     pub next_action: Option<CodexTddNextActionReport>,
     pub auto_loop: Option<CodexTddAutoLoopReport>,
     pub cycle_state: String,
+    pub phases: Vec<CodexTddCyclePhaseReport>,
     pub supervision_events: Vec<String>,
     pub started_unix_seconds: u64,
     pub ended_unix_seconds: u64,
     pub dry_run: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct CodexTddCyclePhaseReport {
+    pub phase: String,
+    pub status: String,
+    pub evidence_path: PathBuf,
+    pub next_action: String,
+    pub started_unix_seconds: u64,
+    pub ended_unix_seconds: u64,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -1630,7 +1641,9 @@ pub fn run_codex_tdd_cycle(options: CodexTddCycleOptions) -> Result<CodexTddCycl
     let mut supervision_events = vec![format!(
         "started: Codex-as-human supervisor opened TDD cycle terminal for {goal}"
     )];
+    let mut phases = Vec::new();
 
+    let workflow_started = unix_seconds_now();
     let workflow = run_codex_tdd_workflow(CodexTddWorkflowOptions {
         repo_root: repo_root.clone(),
         lua_policy: options.lua_policy.clone(),
@@ -1644,6 +1657,18 @@ pub fn run_codex_tdd_cycle(options: CodexTddCycleOptions) -> Result<CodexTddCycl
         "workflow: captured supervised TDD workflow status at {}",
         workflow.status_path.display()
     ));
+    phases.push(CodexTddCyclePhaseReport {
+        phase: "tdd-workflow".to_owned(),
+        status: if workflow.dry_run { "planned" } else { "ok" }.to_owned(),
+        evidence_path: workflow.status_path.clone(),
+        next_action: if workflow.dry_run {
+            "Run tdd-cycle without --dry-run to execute the built Codex Rust tools and validate the extraction plan.".to_owned()
+        } else {
+            "Validate the generated tdd-extraction-plan.json with tdd-next --check.".to_owned()
+        },
+        started_unix_seconds: workflow_started,
+        ended_unix_seconds: unix_seconds_now(),
+    });
 
     if options.dry_run {
         let report = CodexTddCycleReport {
@@ -1655,6 +1680,7 @@ pub fn run_codex_tdd_cycle(options: CodexTddCycleOptions) -> Result<CodexTddCycl
             next_action: None,
             auto_loop: None,
             cycle_state: "planned".to_owned(),
+            phases,
             supervision_events,
             started_unix_seconds,
             ended_unix_seconds: unix_seconds_now(),
@@ -1664,6 +1690,24 @@ pub fn run_codex_tdd_cycle(options: CodexTddCycleOptions) -> Result<CodexTddCycl
         return Ok(report);
     }
 
+    let checkpoint = CodexTddCycleReport {
+        repo_root: repo_root.clone(),
+        codex_home: codex_home.clone(),
+        run_dir: run_dir.clone(),
+        status_path: status_path.clone(),
+        workflow: workflow.clone(),
+        next_action: None,
+        auto_loop: None,
+        cycle_state: "running".to_owned(),
+        phases: phases.clone(),
+        supervision_events: supervision_events.clone(),
+        started_unix_seconds,
+        ended_unix_seconds: unix_seconds_now(),
+        dry_run: false,
+    };
+    write_tdd_cycle_status(&checkpoint)?;
+
+    let next_started = unix_seconds_now();
     let next_action = codex_tdd_next_action(CodexTddNextActionOptions {
         repo_root: repo_root.clone(),
         plan_path: Some(workflow.extraction_plan_path.clone()),
@@ -1673,6 +1717,33 @@ pub fn run_codex_tdd_cycle(options: CodexTddCycleOptions) -> Result<CodexTddCycl
         "validated: TDD extraction plan {} is ready for autonomous handoff",
         next_action.plan_path.display()
     ));
+    phases.push(CodexTddCyclePhaseReport {
+        phase: "tdd-next".to_owned(),
+        status: "ok".to_owned(),
+        evidence_path: next_action.plan_path.clone(),
+        next_action: "Feed the validated Rust-owned extraction plan into tdd-auto-loop handoff."
+            .to_owned(),
+        started_unix_seconds: next_started,
+        ended_unix_seconds: unix_seconds_now(),
+    });
+    let checkpoint = CodexTddCycleReport {
+        repo_root: repo_root.clone(),
+        codex_home: codex_home.clone(),
+        run_dir: run_dir.clone(),
+        status_path: status_path.clone(),
+        workflow: workflow.clone(),
+        next_action: Some(next_action.clone()),
+        auto_loop: None,
+        cycle_state: "running".to_owned(),
+        phases: phases.clone(),
+        supervision_events: supervision_events.clone(),
+        started_unix_seconds,
+        ended_unix_seconds: unix_seconds_now(),
+        dry_run: false,
+    };
+    write_tdd_cycle_status(&checkpoint)?;
+
+    let auto_loop_started = unix_seconds_now();
     let auto_loop = run_codex_tdd_auto_loop(CodexTddAutoLoopOptions {
         repo_root: repo_root.clone(),
         lua_policy: options.lua_policy,
@@ -1690,6 +1761,20 @@ pub fn run_codex_tdd_cycle(options: CodexTddCycleOptions) -> Result<CodexTddCycl
         auto_loop.handoff_state,
         auto_loop.status_path.display()
     ));
+    phases.push(CodexTddCyclePhaseReport {
+        phase: "tdd-auto-loop".to_owned(),
+        status: auto_loop.handoff_state.clone(),
+        evidence_path: auto_loop.status_path.clone(),
+        next_action: if auto_loop.auto_loop.dry_run {
+            "Review tdd-auto-loop-status.json, then rerun tdd-cycle --run-handoff when the supervised handoff should launch nested Codex workers.".to_owned()
+        } else if auto_loop.auto_loop.completed {
+            "Archive the completed Rust-owned automation evidence and continue extracting remaining behavior from .claude/.codex into crates/codex-env.".to_owned()
+        } else {
+            "Inspect auto-loop artifacts and continue the bounded Rust-owned autonomous loop.".to_owned()
+        },
+        started_unix_seconds: auto_loop_started,
+        ended_unix_seconds: unix_seconds_now(),
+    });
     let cycle_state = if auto_loop.auto_loop.dry_run {
         "prepared"
     } else if auto_loop.auto_loop.completed {
@@ -1707,6 +1792,7 @@ pub fn run_codex_tdd_cycle(options: CodexTddCycleOptions) -> Result<CodexTddCycl
         next_action: Some(next_action),
         auto_loop: Some(auto_loop),
         cycle_state,
+        phases,
         supervision_events,
         started_unix_seconds,
         ended_unix_seconds: unix_seconds_now(),

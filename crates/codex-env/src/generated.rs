@@ -796,6 +796,9 @@ than waiting blind.
 workflow trace, extraction plan validation, and the auto-loop handoff status are
 recorded under one `tdd-cycle-status.json` so the next Codex session can resume
 from crate-owned evidence instead of a token-heavy vendor harness narrative.
+The cycle status includes phase-level checkpoints, evidence paths, next actions,
+and timestamps so a supervisor can see whether the current terminal is planned,
+running, prepared, ended, or complete without waiting blind.
 "#,
     )
 }
@@ -894,7 +897,9 @@ auto-loop handoff from the validated plan and write `tdd-auto-loop-status.json`.
 Prefer `cargo run -p codex-env -- tdd-cycle --dry-run "$ARGUMENTS"` when you
 need a single cycle status before executing nested workers. The handoff and
 cycle statuses record supervision events and timestamps for the terminal
-handoff.
+handoff. The cycle status also records explicit phase checkpoints with evidence
+paths and next actions so a resumed Codex session can continue from source truth
+instead of reloading token-heavy mirrored material.
 Do not move this automation into a vendor harness.
 "#),
         ),
@@ -1013,7 +1018,9 @@ turn that validated plan into bounded auto-loop artifacts before allowing a real
 autonomous continuation; inspect `tdd-auto-loop-status.json` as the durable
 handoff status with supervision events and start/end timestamps. Prefer
 `codex-env tdd-cycle --dry-run` for a single Rust-owned status that proves the
-workflow-to-handoff chain is wired before launching nested workers.
+workflow-to-handoff chain is wired before launching nested workers. The cycle
+status includes phase checkpoints, evidence paths, next actions, supervision
+events, and timestamps so Codex does not wait blind on a background terminal.
 "#),
         ),
     ]

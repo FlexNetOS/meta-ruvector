@@ -31,4 +31,6 @@ turn that validated plan into bounded auto-loop artifacts before allowing a real
 autonomous continuation; inspect `tdd-auto-loop-status.json` as the durable
 handoff status with supervision events and start/end timestamps. Prefer
 `codex-env tdd-cycle --dry-run` for a single Rust-owned status that proves the
-workflow-to-handoff chain is wired before launching nested workers.
+workflow-to-handoff chain is wired before launching nested workers. The cycle
+status includes phase checkpoints, evidence paths, next actions, supervision
+events, and timestamps so Codex does not wait blind on a background terminal.

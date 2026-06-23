@@ -1299,6 +1299,10 @@ fn tdd_cycle_dry_run_materializes_supervised_cycle_status() {
     assert_eq!(report.cycle_state, "planned");
     assert!(report.next_action.is_none());
     assert!(report.auto_loop.is_none());
+    assert_eq!(report.phases.len(), 1);
+    assert_eq!(report.phases[0].phase, "tdd-workflow");
+    assert_eq!(report.phases[0].status, "planned");
+    assert!(report.phases[0].next_action.contains("without --dry-run"));
     assert!(report.run_dir.ends_with("tdd-cycle"));
     assert!(report.status_path.ends_with("tdd-cycle-status.json"));
     assert!(report.status_path.exists());
@@ -1318,6 +1322,8 @@ fn tdd_cycle_dry_run_materializes_supervised_cycle_status() {
     let status = fs::read_to_string(report.status_path).unwrap();
     assert!(status.contains(r#""cycle_state": "planned""#));
     assert!(status.contains(r#""dry_run": true"#));
+    assert!(status.contains(r#""phase": "tdd-workflow""#));
+    assert!(status.contains(r#""status": "planned""#));
     assert!(status.contains("tdd-workflow-status.json"));
     assert!(status.contains("tdd-extraction-plan.json"));
     assert!(status.contains("opened TDD cycle terminal"));
