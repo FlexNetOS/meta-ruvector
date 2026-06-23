@@ -22,5 +22,6 @@ terminal: inspect status artifacts, provide follow-up guidance if a probe
 exposes a gap, terminate the worker session when the trace is complete, and
 move durable automation into the correct Rust crate instead of a vendor harness.
 Non-dry-run steps capture stdout/stderr logs and supervision events for
-post-run extraction, then emit `tdd-extraction-report.md` to summarize the
-next Rust crate action.
+post-run extraction, then emit `tdd-extraction-plan.json` for machine-readable
+next-action routing and `tdd-extraction-report.md` as the human-readable
+summary.

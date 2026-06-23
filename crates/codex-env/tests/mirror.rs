@@ -944,12 +944,47 @@ fn tdd_workflow_dry_run_materializes_codex_tool_execution_plan() {
     assert_eq!(report.steps.len(), 8);
     assert!(report.status_path.exists());
     assert!(report.extraction_report_path.exists());
+    assert!(report.extraction_plan_path.exists());
     let extraction = fs::read_to_string(&report.extraction_report_path).unwrap();
     assert!(extraction.contains("# Codex TDD Extraction Report"));
     assert!(extraction.contains("crates/codex-env"));
     assert!(extraction.contains("vendor harness"));
     assert!(extraction.contains("mirror-check"));
     assert!(extraction.contains("Next extraction action"));
+    let extraction_plan: serde_json::Value =
+        serde_json::from_slice(&fs::read(&report.extraction_plan_path).unwrap()).unwrap();
+    assert_eq!(extraction_plan["schema_version"], 1);
+    assert_eq!(extraction_plan["target_crate"], "crates/codex-env");
+    assert_eq!(extraction_plan["forbidden_target"], "vendor harness");
+    assert_eq!(
+        extraction_plan["runtime_representation"],
+        "machine-readable Rust-owned extraction plan"
+    );
+    assert!(extraction_plan["next_action"]
+        .as_str()
+        .unwrap()
+        .contains("without --dry-run"));
+    let actions = extraction_plan["actions"].as_array().unwrap();
+    assert_eq!(actions.len(), report.steps.len());
+    assert!(actions
+        .iter()
+        .any(|action| action["step"] == "mirror-check"));
+    for action in actions {
+        assert_eq!(action["crate_owner"], "crates/codex-env");
+        assert_eq!(action["belongs_in"], "crates/codex-env");
+        assert!(action["next_action"]
+            .as_str()
+            .unwrap()
+            .contains("before claiming"));
+        assert!(action["evidence_stdout"]
+            .as_str()
+            .unwrap()
+            .contains("steps/"));
+        assert!(action["evidence_stderr"]
+            .as_str()
+            .unwrap()
+            .contains("steps/"));
+    }
     assert!(report.steps[0]
         .command
         .ends_with("cargo build -p codex-env"));
