@@ -1224,6 +1224,13 @@ fn tdd_auto_loop_materializes_plan_driven_autonomous_handoff() {
     assert!(report.handoff_goal.contains("vendor harness"));
     assert!(report.auto_loop.dry_run);
     assert_eq!(report.auto_loop.iterations.len(), 1);
+    assert!(report.status_path.exists());
+    assert!(report.status_path.ends_with("tdd-auto-loop-status.json"));
+    let status = fs::read_to_string(&report.status_path).unwrap();
+    assert!(status.contains("Codex TDD Autonomous Handoff"));
+    assert!(status.contains(r#""target_crate": "crates/codex-env""#));
+    assert!(status.contains(r#""forbidden_target": "vendor harness""#));
+    assert!(status.contains(r#""dry_run": true"#));
     let prompt = fs::read_to_string(
         &report.auto_loop.iterations[0]
             .team_run

@@ -13,3 +13,5 @@
 - [x] Add a Rust-native `tdd-auto-loop` handoff from validated TDD extraction plans into `auto-loop`.
 - [x] Ensure the handoff prompt preserves Codex-as-human supervision evidence and forbids vendor harness routing.
 - [x] Verify `tdd-auto-loop --dry-run` against a real supervised TDD plan.
+
+- [x] Persist `tdd-auto-loop-status.json` so the autonomous handoff has durable status evidence.
