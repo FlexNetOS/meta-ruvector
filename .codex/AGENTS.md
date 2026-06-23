@@ -82,6 +82,7 @@ cargo run -p codex-env -- tdd-auto-loop --dry-run
 cargo run -p codex-env -- tdd-cycle --dry-run "supervise the full Codex TDD cycle"
 cargo run -p codex-env -- tdd-supervise
 cargo run -p codex-env -- tdd-drive --dry-run
+cargo run -p codex-env -- tdd-drive-loop --dry-run
 ```
 
 Each run refreshes/validates the Codex surface, then invokes `codex exec --json`
@@ -143,3 +144,8 @@ stop the background terminal based on Rust-owned evidence.
 `tdd-drive` consumes that decision and either materializes the chosen next action
 or executes the next safe Rust-owned cycle step, so Codex can carry the
 human-in-loop loop forward without handing the clock back to the owner.
+`tdd-drive-loop` repeats that supervise/drive handoff inside a bounded
+Rust-owned loop until the cycle reaches prepared handoff, guide, stop, or the
+configured max drive steps. It records `tdd-drive-loop-status.json` so the
+autonomous OS loop has one low-token state artifact instead of relying on owner
+messages as its clock.

@@ -41,3 +41,6 @@ Run `codex-env tdd-supervise` to turn the latest cycle status into an explicit
 proceed, guide, or stop decision before launching or closing a worker.
 Run `codex-env tdd-drive --dry-run` to materialize the next supervisor action,
 or without `--dry-run` to let Codex advance the next safe Rust-owned step.
+Run `codex-env tdd-drive-loop --dry-run` to persist a bounded multi-step
+supervisor loop; without `--dry-run` it repeats safe drive actions until
+prepared handoff, guide, stop, or max drive steps.

@@ -1469,6 +1469,76 @@ fn tdd_drive_materializes_supervisor_decision_without_waiting_blind() {
 }
 
 #[test]
+fn tdd_drive_loop_persists_bounded_supervisor_loop_without_owner_clock() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path().join("repo");
+    let run_dir = root.join(".codex/harness/runs/001-tdd-cycle");
+    let loop_dir = temp.path().join("tdd-drive-loop");
+    fs::create_dir_all(&run_dir).unwrap();
+    let status_path = run_dir.join("tdd-cycle-status.json");
+    let guidance_path = run_dir.join("tdd-cycle-guidance.md");
+    fs::write(&guidance_path, "# guidance\n").unwrap();
+    fs::write(
+        &status_path,
+        serde_json::to_vec_pretty(&serde_json::json!({
+            "cycle_state": "prepared",
+            "guidance_path": guidance_path,
+            "workflow": {
+                "extraction_plan_path": run_dir.join("workflow/tdd-extraction-plan.json")
+            },
+            "phases": [
+                {
+                    "phase": "tdd-workflow",
+                    "status": "ok",
+                    "evidence_path": "workflow/tdd-workflow-status.json",
+                    "next_action": "Workflow completed."
+                },
+                {
+                    "phase": "tdd-auto-loop",
+                    "status": "prepared",
+                    "evidence_path": "tdd-auto-loop-status.json",
+                    "next_action": "Review tdd-auto-loop-status.json."
+                }
+            ]
+        }))
+        .unwrap(),
+    )
+    .unwrap();
+
+    let report = codex_env::run_codex_tdd_drive_loop(codex_env::CodexTddDriveLoopOptions {
+        repo_root: root,
+        lua_policy: None,
+        codex_home: temp.path().join("codex-home"),
+        status_path: Some(status_path.clone()),
+        output_dir: Some(loop_dir),
+        team: "core".to_owned(),
+        goal: Some("drive loop to prepared handoff".to_owned()),
+        max_drive_steps: 3,
+        max_iterations: 3,
+        member_sandbox_mode: "read-only".to_owned(),
+        supervisor_guidance: vec!["Do not wait for owner clock.".to_owned()],
+        dry_run: false,
+        run_handoff: false,
+        skip_install: false,
+    })
+    .unwrap();
+
+    assert_eq!(report.loop_state, "prepared");
+    assert_eq!(report.steps.len(), 1);
+    assert_eq!(
+        report.final_cycle_status_path.as_ref().unwrap(),
+        &status_path
+    );
+    assert!(report.status_path.ends_with("tdd-drive-loop-status.json"));
+    assert!(report.status_path.exists());
+    let status = fs::read_to_string(report.status_path).unwrap();
+    assert!(status.contains(r#""loop_state": "prepared""#));
+    assert!(status.contains(r#""max_drive_steps": 3"#));
+    assert!(status.contains("Do not wait for owner clock"));
+    assert!(status.contains("tdd-drive-status.json"));
+}
+
+#[test]
 fn doctor_rejects_gitignored_generated_surface_files() {
     let temp = tempfile::tempdir().unwrap();
     let root = temp.path();

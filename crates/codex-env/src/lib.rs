@@ -424,6 +424,24 @@ pub struct CodexTddDriveOptions {
     pub skip_install: bool,
 }
 
+#[derive(Debug, Clone)]
+pub struct CodexTddDriveLoopOptions {
+    pub repo_root: PathBuf,
+    pub lua_policy: Option<PathBuf>,
+    pub codex_home: PathBuf,
+    pub status_path: Option<PathBuf>,
+    pub output_dir: Option<PathBuf>,
+    pub team: String,
+    pub goal: Option<String>,
+    pub max_drive_steps: usize,
+    pub max_iterations: usize,
+    pub member_sandbox_mode: String,
+    pub supervisor_guidance: Vec<String>,
+    pub dry_run: bool,
+    pub run_handoff: bool,
+    pub skip_install: bool,
+}
+
 #[derive(Debug, Clone, Serialize)]
 pub struct CodexTddDriveReport {
     pub repo_root: PathBuf,
@@ -438,6 +456,24 @@ pub struct CodexTddDriveReport {
     pub started_unix_seconds: u64,
     pub ended_unix_seconds: u64,
     pub dry_run: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct CodexTddDriveLoopReport {
+    pub repo_root: PathBuf,
+    pub codex_home: PathBuf,
+    pub run_dir: PathBuf,
+    pub status_path: PathBuf,
+    pub loop_state: String,
+    pub steps: Vec<CodexTddDriveReport>,
+    pub final_cycle_status_path: Option<PathBuf>,
+    pub next_action: String,
+    pub supervisor_guidance: Vec<String>,
+    pub started_unix_seconds: u64,
+    pub ended_unix_seconds: u64,
+    pub dry_run: bool,
+    pub max_drive_steps: usize,
+    pub run_handoff: bool,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -2124,6 +2160,99 @@ pub fn run_codex_tdd_drive(options: CodexTddDriveOptions) -> Result<CodexTddDriv
     Ok(report)
 }
 
+pub fn run_codex_tdd_drive_loop(
+    options: CodexTddDriveLoopOptions,
+) -> Result<CodexTddDriveLoopReport> {
+    let started_unix_seconds = unix_seconds_now();
+    let repo_root = options.repo_root.canonicalize().with_context(|| {
+        format!(
+            "failed to canonicalize repo root {}",
+            options.repo_root.display()
+        )
+    })?;
+    let codex_home = options.codex_home;
+    let run_dir = options.output_dir.unwrap_or_else(|| {
+        repo_root.join(".codex/harness/runs").join(format!(
+            "{}-tdd-drive-loop",
+            run_id(
+                options
+                    .goal
+                    .as_deref()
+                    .unwrap_or("drive the Codex TDD supervisor loop")
+            )
+        ))
+    });
+    fs::create_dir_all(&run_dir)
+        .with_context(|| format!("failed to create {}", run_dir.display()))?;
+    let status_path = run_dir.join("tdd-drive-loop-status.json");
+    let max_drive_steps = options.max_drive_steps.max(1);
+    let mut current_status_path = options.status_path;
+    let mut final_cycle_status_path = None;
+    let mut steps = Vec::new();
+    let mut loop_state = "planned".to_owned();
+    let mut next_action = "Run the first supervisor drive step.".to_owned();
+
+    for step_index in 0..max_drive_steps {
+        let drive_report = run_codex_tdd_drive(CodexTddDriveOptions {
+            repo_root: repo_root.clone(),
+            lua_policy: options.lua_policy.clone(),
+            codex_home: codex_home.clone(),
+            status_path: current_status_path.clone(),
+            output_dir: Some(run_dir.join(format!("step-{}", step_index + 1))),
+            team: options.team.clone(),
+            goal: options.goal.clone(),
+            max_iterations: options.max_iterations,
+            member_sandbox_mode: options.member_sandbox_mode.clone(),
+            supervisor_guidance: options.supervisor_guidance.clone(),
+            dry_run: options.dry_run,
+            run_handoff: options.run_handoff,
+            skip_install: options.skip_install,
+        })?;
+
+        loop_state = drive_report.drive_state.clone();
+        next_action = drive_report.supervision.next_action.clone();
+        if let Some(cycle) = &drive_report.cycle {
+            current_status_path = Some(cycle.status_path.clone());
+            final_cycle_status_path = Some(cycle.status_path.clone());
+        } else {
+            final_cycle_status_path = Some(drive_report.supervision.status_path.clone());
+        }
+
+        let should_continue = !options.dry_run
+            && drive_report.supervision.decision == "proceed"
+            && drive_report.drive_state == "planned";
+        steps.push(drive_report);
+        if !should_continue {
+            break;
+        }
+    }
+
+    if steps.len() == max_drive_steps && loop_state == "planned" {
+        next_action = format!(
+            "Reached max drive steps ({max_drive_steps}); inspect tdd-drive-loop-status.json before continuing."
+        );
+    }
+
+    let report = CodexTddDriveLoopReport {
+        repo_root,
+        codex_home,
+        run_dir,
+        status_path,
+        loop_state,
+        steps,
+        final_cycle_status_path,
+        next_action,
+        supervisor_guidance: options.supervisor_guidance,
+        started_unix_seconds,
+        ended_unix_seconds: unix_seconds_now(),
+        dry_run: options.dry_run,
+        max_drive_steps,
+        run_handoff: options.run_handoff,
+    };
+    write_tdd_drive_loop_status(&report)?;
+    Ok(report)
+}
+
 pub fn ensure_codex_home_settings(codex_home: &Path) -> Result<CodexHomeSettingsReport> {
     let catalog_path = codex_home.join(REQUIRED_CODEX_MODEL_CATALOG);
     write_file(&PlannedFile {
@@ -2996,6 +3125,14 @@ fn write_tdd_supervision_decision(report: &CodexTddSuperviseReport) -> Result<()
 }
 
 fn write_tdd_drive_status(report: &CodexTddDriveReport) -> Result<()> {
+    fs::write(
+        &report.status_path,
+        format!("{}\n", serde_json::to_string_pretty(report)?),
+    )
+    .with_context(|| format!("failed to write {}", report.status_path.display()))
+}
+
+fn write_tdd_drive_loop_status(report: &CodexTddDriveLoopReport) -> Result<()> {
     fs::write(
         &report.status_path,
         format!("{}\n", serde_json::to_string_pretty(report)?),
