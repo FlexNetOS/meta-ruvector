@@ -3,12 +3,13 @@
 # Integrates with criterion benchmarks and stores results
 
 set -e
+repo_root="${CODEX_REPO_ROOT:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
 
 CRATE="${1:-all}"
-BASELINE_DIR="/workspaces/ruvector/.claude-flow/metrics/benchmarks"
+BASELINE_DIR="${repo_root}/.claude-flow/metrics/benchmarks"
 mkdir -p "$BASELINE_DIR"
 
-cd /workspaces/ruvector
+cd ${repo_root}
 
 echo "📊 RuVector Benchmark Runner"
 echo "============================"

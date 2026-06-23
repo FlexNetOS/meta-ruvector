@@ -3,6 +3,7 @@
 # Outputs relevant examples, tests, and documentation paths
 
 set -e
+repo_root="${CODEX_REPO_ROOT:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
 
 FILE="$1"
 if [ -z "$FILE" ]; then
@@ -10,7 +11,7 @@ if [ -z "$FILE" ]; then
     exit 1
 fi
 
-cd /workspaces/ruvector
+cd ${repo_root}
 
 # Detect crate from file path
 CRATE_DIR=$(echo "$FILE" | grep -oP "crates/[^/]+" | head -1 || echo "")

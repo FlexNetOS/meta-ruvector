@@ -27,9 +27,9 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    /// Refresh .codex, install prompt commands into CODEX_HOME, then run doctor.
+    /// Refresh the repo-local .codex surface, then run doctor.
     Install {
-        /// Codex home directory. Defaults to CODEX_HOME or ~/.codex.
+        /// Codex home directory for runtime settings. Defaults to this repo's .codex.
         #[arg(long)]
         codex_home: Option<PathBuf>,
     },
@@ -41,9 +41,9 @@ enum Commands {
         check: bool,
     },
 
-    /// Install generated .codex/prompts into CODEX_HOME prompts for /prompts:* usage.
+    /// Verify generated repo-local .codex/prompts for /prompts:* usage.
     InstallPrompts {
-        /// Codex home directory. Defaults to CODEX_HOME or ~/.codex.
+        /// Deprecated compatibility option; prompts stay in this repo's .codex.
         #[arg(long)]
         codex_home: Option<PathBuf>,
 
@@ -52,9 +52,9 @@ enum Commands {
         check: bool,
     },
 
-    /// Verify the generated Codex surface and installed prompt commands.
+    /// Verify the generated Codex surface and repo-local prompt commands.
     Doctor {
-        /// Codex home directory. Defaults to CODEX_HOME or ~/.codex.
+        /// Codex home directory for runtime settings. Defaults to this repo's .codex.
         #[arg(long)]
         codex_home: Option<PathBuf>,
 
@@ -183,14 +183,14 @@ fn main() -> Result<()> {
 
     match cli.command {
         Commands::Install { codex_home } => {
-            let codex_home = codex_home.unwrap_or_else(default_codex_home);
+            let codex_home = codex_home.unwrap_or_else(|| default_codex_home(&repo_root));
             let report = install_codex_env(CodexInstallOptions {
                 repo_root,
                 lua_policy: cli.lua_policy,
                 codex_home,
             })?;
             println!(
-                "codex-env install ok: mirrored {} files ({} changed), installed {} prompts ({} changed), home settings {} at {}, doctor verified config {}/{}, {} MCP server(s), {} agents ({} config entries), {} team(s), {} team member reference(s), {} hook handler(s), {} shim-backed hook handler(s), {} helper mirrors, {} prompts ({} aliases) in {}",
+                "codex-env install ok: mirrored {} files ({} changed), verified {} repo-local prompts ({} changed), runtime settings {} at {}, doctor verified config {}/{}, {} MCP server(s), {} agents ({} config entries), {} team(s), {} team member reference(s), {} hook handler(s), {} shim-backed hook handler(s), {} helper mirrors, {} prompts ({} aliases) in {}",
                 report.mirror.total_files,
                 report.mirror.changed_files,
                 report.prompts.total_files,
@@ -213,7 +213,7 @@ fn main() -> Result<()> {
                 report.doctor.claude_helper_files,
                 report.doctor.installed_prompt_files,
                 report.doctor.prompt_alias_files,
-                report.doctor.codex_home.join("prompts").display()
+                report.doctor.codex_dir.join("prompts").display()
             );
         }
         Commands::Mirror { check } => {
@@ -231,14 +231,14 @@ fn main() -> Result<()> {
             );
         }
         Commands::InstallPrompts { codex_home, check } => {
-            let codex_home = codex_home.unwrap_or_else(default_codex_home);
+            let codex_home = codex_home.unwrap_or_else(|| default_codex_home(&repo_root));
             let report = install_codex_prompts(PromptInstallOptions {
                 repo_root,
                 codex_home,
                 check,
             })?;
             println!(
-                "codex-env installed {} prompt files ({} changed, {} verified, {} removed stale) into {}",
+                "codex-env verified {} repo-local prompt files ({} changed, {} verified, {} stale removed) in {}",
                 report.total_files,
                 report.changed_files,
                 report.verified_files,
@@ -247,7 +247,7 @@ fn main() -> Result<()> {
             );
         }
         Commands::Doctor { codex_home, json } => {
-            let codex_home = codex_home.unwrap_or_else(default_codex_home);
+            let codex_home = codex_home.unwrap_or_else(|| default_codex_home(&repo_root));
             let report = doctor_codex_surface(DoctorOptions {
                 repo_root,
                 lua_policy: cli.lua_policy,
@@ -257,7 +257,7 @@ fn main() -> Result<()> {
                 println!("{}", serde_json::to_string_pretty(&report)?);
             } else {
                 println!(
-                    "codex-env doctor ok: config {}/{}, approvals {}/{}, goals {}, home context {}, skills {}, {} MCP server(s), {} agents ({} config entries; {}), {} team(s), {} team member reference(s), {} hook event(s), {} hook handler(s), {} shim-backed hook handler(s), {} helper mirrors, {} prompts ({} aliases) installed into {}",
+                    "codex-env doctor ok: config {}/{}, approvals {}/{}, goals {}, home context {}, skills {}, {} MCP server(s), {} agents ({} config entries; {}), {} team(s), {} team member reference(s), {} hook event(s), {} hook handler(s), {} shim-backed hook handler(s), {} helper mirrors, {} repo-local prompts ({} aliases) in {}",
                     report.config_model,
                     report.config_reasoning_effort,
                     report.config_approval_policy,
@@ -277,7 +277,7 @@ fn main() -> Result<()> {
                     report.claude_helper_files,
                     report.installed_prompt_files,
                     report.prompt_alias_files,
-                    report.codex_home.join("prompts").display()
+                    report.codex_dir.join("prompts").display()
                 );
             }
         }
@@ -286,7 +286,7 @@ fn main() -> Result<()> {
             json,
             check,
         } => {
-            let codex_home = codex_home.unwrap_or_else(default_codex_home);
+            let codex_home = codex_home.unwrap_or_else(|| default_codex_home(&repo_root));
             let report = inventory_codex_surface(CodexInventoryOptions {
                 repo_root,
                 lua_policy: cli.lua_policy,
@@ -335,7 +335,7 @@ fn main() -> Result<()> {
             dry_run,
             skip_install,
         } => {
-            let codex_home = codex_home.unwrap_or_else(default_codex_home);
+            let codex_home = codex_home.unwrap_or_else(|| default_codex_home(&repo_root));
             let report = run_codex_task(CodexRunOptions {
                 repo_root,
                 lua_policy: cli.lua_policy,
@@ -370,7 +370,7 @@ fn main() -> Result<()> {
             dry_run,
             skip_install,
         } => {
-            let codex_home = codex_home.unwrap_or_else(default_codex_home);
+            let codex_home = codex_home.unwrap_or_else(|| default_codex_home(&repo_root));
             let report = run_codex_team(CodexTeamRunOptions {
                 repo_root,
                 lua_policy: cli.lua_policy,
@@ -407,7 +407,7 @@ fn main() -> Result<()> {
             dry_run,
             skip_install,
         } => {
-            let codex_home = codex_home.unwrap_or_else(default_codex_home);
+            let codex_home = codex_home.unwrap_or_else(|| default_codex_home(&repo_root));
             let report = run_codex_auto_loop(CodexAutoLoopOptions {
                 repo_root,
                 lua_policy: cli.lua_policy,
@@ -449,9 +449,6 @@ fn format_counts(counts: &std::collections::BTreeMap<String, usize>) -> String {
         .join(", ")
 }
 
-fn default_codex_home() -> PathBuf {
-    std::env::var_os("CODEX_HOME")
-        .map(PathBuf::from)
-        .or_else(|| std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".codex")))
-        .unwrap_or_else(|| PathBuf::from(".codex"))
+fn default_codex_home(repo_root: &std::path::Path) -> PathBuf {
+    repo_root.join(".codex")
 }

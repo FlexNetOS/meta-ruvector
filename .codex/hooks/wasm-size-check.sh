@@ -3,11 +3,12 @@
 # Ensures bundles stay within target size (<3MB gzipped)
 
 set -e
+repo_root="${CODEX_REPO_ROOT:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
 
 CRATE="${1:-rvlite}"
 MAX_SIZE_KB="${2:-3072}"  # 3MB default
 
-cd /workspaces/ruvector
+cd ${repo_root}
 
 echo "📏 WASM Size Checker"
 echo "==================="

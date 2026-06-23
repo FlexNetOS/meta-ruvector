@@ -24,9 +24,9 @@ use agent_roles::{
 use command_prompts::{clean_codex_prompts, command_prompt_plan, stale_codex_prompt_files};
 pub use doctor::{doctor_codex_surface, DoctorOptions, DoctorReport};
 use generated::{
-    codex_agent_profiles, codex_agent_teams_json, codex_agents_md, codex_config, codex_hooks_json,
-    codex_native_workflow_prompts, codex_native_workflow_skills, command_skill_plan,
-    copy_tree_plan, read_claude_env,
+    codex_agent_profiles, codex_agent_teams_json, codex_agents_md, codex_automation_graph_json,
+    codex_config, codex_hooks_json, codex_native_workflow_prompts, codex_native_workflow_skills,
+    codex_runtime_hook_plan, command_skill_plan, copy_tree_plan, read_claude_env,
 };
 use raw_mirror::{
     claude_source_files, clean_raw_mirror, mirror_symbol_inventory_json, raw_claude_mirror_plan,
@@ -318,6 +318,12 @@ pub fn mirror_codex_surface(options: MirrorOptions) -> Result<MirrorReport> {
         executable: false,
     });
     planned.push(codex_agent_teams_json(&codex_dir, &agent_role_plan.roles)?);
+    planned.push(codex_automation_graph_json(
+        &codex_dir,
+        &claude_dir,
+        &claude_files,
+        &agent_role_plan.roles,
+    )?);
     planned.extend(codex_agent_profiles(&codex_dir));
     planned.extend(agent_role_plan.files);
     planned.extend(prompt_plan.files);
@@ -335,7 +341,7 @@ pub fn mirror_codex_surface(options: MirrorOptions) -> Result<MirrorReport> {
         bytes: codex_hooks_json(&claude_dir)?.into_bytes(),
         executable: false,
     });
-    planned.extend(copy_tree_plan(
+    planned.extend(codex_runtime_hook_plan(
         &claude_dir.join("hooks"),
         &codex_dir.join("hooks"),
     )?);
@@ -373,12 +379,6 @@ pub fn mirror_codex_surface(options: MirrorOptions) -> Result<MirrorReport> {
     let stale_agent_role_files = stale_claude_agent_role_files(&repo_root, &codex_dir, &planned)?;
     let stale_prompt_files = stale_codex_prompt_files(&repo_root, &codex_dir, &planned)?;
 
-    if !options.check {
-        clean_raw_mirror(&codex_dir)?;
-        clean_claude_agent_roles(&codex_dir)?;
-        clean_codex_prompts(&codex_dir)?;
-    }
-
     for file in &planned {
         let exists_with_same_content = fs::read(&file.path).is_ok_and(|bytes| bytes == file.bytes);
         if exists_with_same_content {
@@ -387,6 +387,15 @@ pub fn mirror_codex_surface(options: MirrorOptions) -> Result<MirrorReport> {
             changed_files += 1;
         }
         generated.push(strip_repo_prefix(&repo_root, &file.path));
+    }
+
+    if !options.check {
+        clean_raw_mirror(&codex_dir)?;
+        clean_claude_agent_roles(&codex_dir)?;
+        clean_codex_prompts(&codex_dir)?;
+    }
+
+    for file in &planned {
         if !options.check {
             write_file(file)?;
         }
@@ -456,7 +465,7 @@ pub fn install_codex_prompts(options: PromptInstallOptions) -> Result<PromptInst
         )
     })?;
     let source_dir = repo_root.join(".codex/prompts");
-    let target_dir = options.codex_home.join("prompts");
+    let target_dir = source_dir.clone();
     if !source_dir.exists() {
         return Err(anyhow!(
             "{} does not exist; run `cargo run -p codex-env -- mirror` first",
@@ -472,7 +481,7 @@ pub fn install_codex_prompts(options: PromptInstallOptions) -> Result<PromptInst
             continue;
         }
         planned.push(PlannedFile {
-            path: target_dir.join(entry.file_name()),
+            path: path.clone(),
             bytes: fs::read(path)?,
             executable: false,
         });
@@ -490,9 +499,6 @@ pub fn install_codex_prompts(options: PromptInstallOptions) -> Result<PromptInst
         } else {
             changed_files += 1;
         }
-        if !options.check {
-            write_file(file)?;
-        }
     }
     if !options.check {
         for path in &stale_files {
@@ -507,7 +513,7 @@ pub fn install_codex_prompts(options: PromptInstallOptions) -> Result<PromptInst
 
     if options.check && changed_files > 0 {
         return Err(anyhow!(
-            "Codex home prompts are stale: {changed_files} prompt file(s) differ"
+            "Codex repo-local prompts are stale: {changed_files} prompt file(s) differ"
         ));
     }
     if options.check && !stale_files.is_empty() {
@@ -664,7 +670,8 @@ pub fn inventory_codex_surface(options: CodexInventoryOptions) -> Result<CodexIn
     let copied_skill_plan = copy_tree_plan(&claude_dir.join("skills"), &skills_dir)?;
     let command_skill_plan = command_skill_plan(&claude_dir.join("commands"), &skills_dir, None)?;
     let workflow_skills = codex_native_workflow_skills(&skills_dir, &agent_role_plan.roles);
-    let hook_plan = copy_tree_plan(&claude_dir.join("hooks"), &codex_dir.join("hooks"))?;
+    let source_hook_files = count_files_recursive(&claude_dir.join("hooks"))?;
+    let hook_plan = codex_runtime_hook_plan(&claude_dir.join("hooks"), &codex_dir.join("hooks"))?;
     let helper_plan = copy_tree_plan(&claude_dir.join("helpers"), &codex_dir.join("helpers"))?;
 
     let codex_home = options.codex_home;
@@ -767,7 +774,7 @@ pub fn inventory_codex_surface(options: CodexInventoryOptions) -> Result<CodexIn
         claude: CodexInventoryClaudeCounts {
             command_files: count_markdown_files(&claude_dir.join("commands"))?,
             agent_files: count_files_recursive(&claude_dir.join("agents"))?,
-            hook_files: hook_plan.len(),
+            hook_files: source_hook_files,
             helper_files: helper_plan.len(),
         },
         codex: CodexInventoryCodexCounts {
@@ -1220,7 +1227,9 @@ pub fn ensure_codex_home_settings(codex_home: &Path) -> Result<CodexHomeSettings
     set_root_string(
         &mut document,
         "model_catalog_json",
-        catalog_path.to_string_lossy().as_ref(),
+        model_catalog_config_value(codex_home)
+            .to_string_lossy()
+            .as_ref(),
     );
     set_root_string(
         &mut document,
@@ -1253,6 +1262,14 @@ pub fn ensure_codex_home_settings(codex_home: &Path) -> Result<CodexHomeSettings
     }
 
     validate_codex_home_settings_at(codex_home, changed)
+}
+
+fn model_catalog_config_value(codex_home: &Path) -> PathBuf {
+    if codex_home.file_name().and_then(|value| value.to_str()) == Some(".codex") {
+        PathBuf::from(REQUIRED_CODEX_MODEL_CATALOG)
+    } else {
+        codex_home.join(REQUIRED_CODEX_MODEL_CATALOG)
+    }
 }
 
 pub(crate) fn validate_codex_home_settings(codex_home: &Path) -> Result<CodexHomeSettingsReport> {
@@ -1295,11 +1312,12 @@ fn validate_codex_home_settings_at(
         ));
     }
     let expected_catalog = codex_home.join(REQUIRED_CODEX_MODEL_CATALOG);
-    if model_catalog_json != expected_catalog.to_string_lossy() {
+    let expected_catalog_config = model_catalog_config_value(codex_home);
+    if model_catalog_json != expected_catalog_config.to_string_lossy() {
         return Err(anyhow!(
             "{} must set model_catalog_json to {}, found {model_catalog_json}",
             config_path.display(),
-            expected_catalog.display()
+            expected_catalog_config.display()
         ));
     }
     validate_model_catalog(&expected_catalog)?;
@@ -1965,13 +1983,13 @@ fn codex_prompt_helpers(codex_dir: &Path) -> Vec<PlannedFile> {
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-codex_home="${CODEX_HOME:-${HOME}/.codex}"
+codex_home="${repo_root}/.codex"
 
 cargo run -p codex-env -- --repo "${repo_root}" install --codex-home "${codex_home}"
 
 cat <<'MSG'
-Installed Codex mirror surface and prompt commands.
-Restart Codex, then invoke Claude command mirrors as /prompts:<name>.
+Installed Codex mirror surface and verified repo-local prompt commands.
+Restart Codex from this repo, then invoke Claude command mirrors as /prompts:<name>.
 Examples: /prompts:sparc-code, /prompts:sparc:code, /prompts:claude-flow-swarm
 MSG
 "#,

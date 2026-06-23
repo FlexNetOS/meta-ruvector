@@ -8,12 +8,22 @@
         "claude-core-researcher",
         "claude-core-coder",
         "claude-core-tester",
-        "claude-core-reviewer"
+        "claude-core-reviewer",
+        "claude-goal-code-goal-planner"
       ],
       "consolidationOwner": "parent",
       "description": "Plan, research, implement, test, and review broad repo work.",
+      "members": [
+        "claude-core-planner",
+        "claude-core-researcher",
+        "claude-core-coder",
+        "claude-core-tester",
+        "claude-core-reviewer",
+        "claude-goal-code-goal-planner"
+      ],
       "name": "core",
       "parallel": true,
+      "source": "codex-env automation extraction",
       "strategy": "parallel-evidence-then-parent-implementation"
     },
     {
@@ -21,12 +31,23 @@
         "reviewer",
         "claude-core-reviewer",
         "claude-testing-production-validator",
-        "claude-v3-security-auditor"
+        "claude-v3-security-auditor",
+        "claude-analysis-analyze-code-quality",
+        "claude-analysis-code-analyzer"
       ],
       "consolidationOwner": "parent",
       "description": "Find correctness, production, security, and regression risks before shipping.",
+      "members": [
+        "reviewer",
+        "claude-core-reviewer",
+        "claude-testing-production-validator",
+        "claude-v3-security-auditor",
+        "claude-analysis-analyze-code-quality",
+        "claude-analysis-code-analyzer"
+      ],
       "name": "review",
       "parallel": true,
+      "source": "codex-env automation extraction",
       "strategy": "parallel-review-then-parent-remediation"
     },
     {
@@ -34,12 +55,23 @@
         "explorer",
         "claude-core-coder",
         "claude-core-tester",
-        "claude-v3-performance-engineer"
+        "claude-v3-performance-engineer",
+        "claude-consensus-performance-benchmarker",
+        "claude-development-backend-dev-backend-api"
       ],
       "consolidationOwner": "parent",
       "description": "Trace Rust code paths, implement Rust changes, test, and optimize.",
+      "members": [
+        "explorer",
+        "claude-core-coder",
+        "claude-core-tester",
+        "claude-v3-performance-engineer",
+        "claude-consensus-performance-benchmarker",
+        "claude-development-backend-dev-backend-api"
+      ],
       "name": "rust",
       "parallel": true,
+      "source": "codex-env automation extraction",
       "strategy": "parallel-rust-research-then-parent-patch"
     },
     {
@@ -47,36 +79,67 @@
         "claude-v3-security-architect",
         "claude-v3-security-auditor",
         "claude-v3-pii-detector",
-        "claude-v3-aidefence-guardian"
+        "claude-v3-aidefence-guardian",
+        "claude-consensus-security-manager",
+        "claude-v3-security-architect-aidefence"
       ],
       "consolidationOwner": "parent",
       "description": "Review architecture, audit implementation, inspect PII, and harden defenses.",
+      "members": [
+        "claude-v3-security-architect",
+        "claude-v3-security-auditor",
+        "claude-v3-pii-detector",
+        "claude-v3-aidefence-guardian",
+        "claude-consensus-security-manager",
+        "claude-v3-security-architect-aidefence"
+      ],
       "name": "security",
       "parallel": true,
+      "source": "codex-env automation extraction",
       "strategy": "parallel-security-analysis-then-parent-remediation"
     },
     {
       "agents": [
         "claude-github-pr-manager",
         "claude-github-code-review-swarm",
-        "claude-github-workflow-automation"
+        "claude-github-workflow-automation",
+        "claude-analysis-analyze-code-quality",
+        "claude-analysis-code-analyzer"
       ],
       "consolidationOwner": "parent",
       "description": "Prepare PRs, review GitHub feedback, and keep repository automation aligned.",
+      "members": [
+        "claude-github-pr-manager",
+        "claude-github-code-review-swarm",
+        "claude-github-workflow-automation",
+        "claude-analysis-analyze-code-quality",
+        "claude-analysis-code-analyzer"
+      ],
       "name": "github",
       "parallel": true,
+      "source": "codex-env automation extraction",
       "strategy": "parallel-github-coordination-then-parent-publish"
     },
     {
       "agents": [
         "claude-swarm-hierarchical-coordinator",
         "claude-hive-mind-queen-coordinator",
-        "claude-v3-v3-queen-coordinator"
+        "claude-v3-v3-queen-coordinator",
+        "claude-consensus-byzantine-coordinator",
+        "claude-consensus-gossip-coordinator"
       ],
       "consolidationOwner": "parent",
       "description": "Coordinate larger multi-agent efforts with hierarchical and hive-mind controllers.",
+      "members": [
+        "claude-swarm-hierarchical-coordinator",
+        "claude-hive-mind-queen-coordinator",
+        "claude-v3-v3-queen-coordinator",
+        "claude-consensus-byzantine-coordinator",
+        "claude-consensus-gossip-coordinator"
+      ],
       "name": "swarm",
       "parallel": true,
+      "source": "codex-env automation extraction",
       "strategy": "parallel-swarm-coordination-then-parent-decision"
     }
   ]

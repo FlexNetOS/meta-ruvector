@@ -5,9 +5,9 @@ description: 'Use when auditing Codex parity gaps across hooks, helpers, prompts
 
 # Codex Gap Hunt
 
-Audit from current evidence, not memory. Compare source and generated surfaces:
+Audit from current evidence, not memory. Start from `.codex/automation-graph.json`, then compare source and generated surfaces only as needed:
 
-- .claude/commands -> .agents/skills/source-command-* and .codex/prompts -> CODEX_HOME/prompts
+- .claude/commands -> .agents/skills/source-command-* and repo-local .codex/prompts
 - .claude/agents -> .codex/agents custom-agent TOML schema and explicit subagent workflows
 - .claude/settings.json -> .codex/config.toml and .codex/hooks.json using supported Codex hook events
 - .claude/hooks and helpers -> .codex/hooks and .codex/helpers

@@ -1,7 +1,15 @@
-# Codex Mirror Surface
+# Codex Automation Extraction Surface
 
-This directory is generated from the tracked `.claude` surface by the Rust
-`codex-env` harness.
+This directory is generated from tracked `.claude` source material by the Rust
+`codex-env` harness. It is the Rust automation extraction frontier for this
+repository, not a vendor harness and not a user-global prompt dump.
+
+`.claude` remains source material. `.codex/mirror/.claude` is byte-for-byte
+evidence/debug material. The crate-owned runtime target is the compact,
+deterministic automation layer generated under `.codex`, especially
+`.codex/automation-graph.json`, `.codex/agent-teams.json`,
+`.codex/hooks.json`, `.codex/hooks/`, `.codex/prompts/`, and
+`.codex/agents/`.
 
 ## Refresh
 
@@ -18,12 +26,13 @@ cargo run -p codex-env -- doctor
 ## Mirrored Surfaces
 
 - `.claude/**` -> `.codex/mirror/.claude/**` byte-for-byte
-- `.claude/**` -> `.codex/mirror-symbols.json` deterministic file/symbol inventory
+- `.claude/**` -> `.codex/mirror-symbols.json` deterministic file/symbol evidence inventory
+- `.claude/**` -> `.codex/automation-graph.json` compact crate-owned capability graph
 - `.claude/settings.json` -> `.codex/hooks.json` and shell environment defaults
-- `.claude/hooks/` -> `.codex/hooks/`
+- `.claude/hooks/` -> normalized `.codex/hooks/` runtime scripts
 - `.claude/skills/` -> `.agents/skills/`
 - `.claude/commands/**/*.md` -> `.agents/skills/source-command-*`
-- `.claude/commands/**/*.md` -> `.codex/prompts/*.md` for `/prompts:*`,
+- `.claude/commands/**/*.md` -> repo-local `.codex/prompts/*.md` for `/prompts:*`,
   including Claude namespace aliases such as `/prompts:sparc:code`
 - Codex-native workflow upgrades -> `.agents/skills/codex-*` and
   `.codex/prompts/codex-*`
@@ -32,20 +41,30 @@ Use `--lua-policy <path>` when a repo-local transformation is needed. The Lua
 script receives a `mirror` table with `repo_root` and `claude_dir`, and may
 return `{ config_footer = "...", skill_prelude = "..." }`.
 
-## Install Prompt Commands
+## Prompt Commands
 
-Codex loads custom prompts from `$CODEX_HOME/prompts`, not directly from a
-repository. Refresh the mirror and install the generated prompt commands with:
+Prompt commands generated for this repository stay in this repository's
+`.codex/prompts`; do not copy meta-ruvector prompts into user-global
+`~/.codex/prompts` or the meta root prompt set. Refresh and verify with:
 
 ```bash
 .codex/helpers/install-prompts.sh
 ```
 
-That helper runs `cargo run -p codex-env -- install`, which mirrors `.claude`,
-installs `$CODEX_HOME/prompts`, and runs doctor validation in one pass. Restart
-Codex after installing. The Claude command mirrors then appear as Codex prompt
-commands such as `/prompts:sparc-code`, `/prompts:sparc:code`, and
-`/prompts:claude-flow-swarm`.
+That helper runs `cargo run -p codex-env -- install`, which mirrors `.claude`
+into repo-local Codex surfaces and runs doctor validation in one pass. Restart
+Codex from this repository after refreshing. The Claude command mirrors then
+appear as Codex prompt commands such as `/prompts:sparc-code`,
+`/prompts:sparc:code`, and `/prompts:claude-flow-swarm`.
+
+## Automation Ownership
+
+Use `.codex/automation-graph.json` as the low-token routing and capability
+index before loading bulk mirrored Markdown. Agent teams are generated from
+actual configured Codex agent roles and expose both `agents` and `members` for
+runtime consumers. Generated runtime hooks must resolve the repository root
+dynamically; stale absolute paths such as `/workspaces/ruvector` are rejected by
+doctor checks. Do not move this automation into a vendor harness.
 
 ## Run Actual Work
 
