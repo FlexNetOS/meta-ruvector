@@ -1,5 +1,5 @@
 {
-  "fileCount": 990,
+  "fileCount": 991,
   "files": [
     ".codex/mirror/.claude/agentic-flow-fast.sh",
     ".codex/mirror/.claude/agents/analysis/analyze-code-quality.md",
@@ -328,6 +328,7 @@
     ".codex/mirror/.claude/intelligence/tests/prove-it-works.js",
     ".codex/mirror/.claude/intelligence/tests/v2-features.js",
     ".codex/mirror/.claude/intelligence/tests/validate.js",
+    ".codex/mirror/.claude/rusty-idd-adapter.md",
     ".codex/mirror/.claude/ruvector-fast.sh",
     ".codex/mirror/.claude/scheduled_tasks.lock",
     ".codex/mirror/.claude/settings.json",
