@@ -36,4 +36,7 @@ paths and next actions so a resumed Codex session can continue from source truth
 instead of reloading token-heavy mirrored material. Read
 `tdd-cycle-guidance.md` for the concise human-in-loop guidance artifact before
 opening per-step logs.
+Use repeatable `--supervisor-note` or `--supervisor-note-file` to inject
+follow-up guidance into the bounded handoff prompt when the supervisor has
+inspected evidence and needs to steer the worker.
 Do not move this automation into a vendor harness.

@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{fs, path::PathBuf};
 
 use anyhow::{bail, Result};
 use clap::{Parser, Subcommand};
@@ -245,6 +245,14 @@ enum Commands {
         #[arg(long)]
         dry_run: bool,
 
+        /// Supervisor guidance note to inject into the autonomous handoff prompt. Repeatable.
+        #[arg(long = "supervisor-note")]
+        supervisor_notes: Vec<String>,
+
+        /// File containing supervisor guidance to inject into the autonomous handoff prompt. Repeatable.
+        #[arg(long = "supervisor-note-file")]
+        supervisor_note_files: Vec<PathBuf>,
+
         /// Skip install and only run doctor before launching.
         #[arg(long)]
         skip_install: bool,
@@ -282,6 +290,14 @@ enum Commands {
         /// Launch the handoff auto-loop instead of only preparing its artifacts.
         #[arg(long)]
         run_handoff: bool,
+
+        /// Supervisor guidance note to inject into the autonomous handoff prompt. Repeatable.
+        #[arg(long = "supervisor-note")]
+        supervisor_notes: Vec<String>,
+
+        /// File containing supervisor guidance to inject into the autonomous handoff prompt. Repeatable.
+        #[arg(long = "supervisor-note-file")]
+        supervisor_note_files: Vec<PathBuf>,
 
         /// Skip install and only run doctor before launching nested Codex.
         #[arg(long)]
@@ -620,9 +636,13 @@ fn main() -> Result<()> {
             max_iterations,
             member_sandbox,
             dry_run,
+            supervisor_notes,
+            supervisor_note_files,
             skip_install,
         } => {
             let codex_home = codex_home.unwrap_or_else(|| default_codex_home(&repo_root));
+            let supervisor_guidance =
+                read_supervisor_guidance(supervisor_notes, supervisor_note_files)?;
             let report = run_codex_tdd_auto_loop(CodexTddAutoLoopOptions {
                 repo_root,
                 lua_policy: cli.lua_policy,
@@ -632,6 +652,7 @@ fn main() -> Result<()> {
                 output_dir,
                 max_iterations,
                 member_sandbox_mode: member_sandbox,
+                supervisor_guidance,
                 dry_run,
                 skip_install,
             })?;
@@ -658,9 +679,13 @@ fn main() -> Result<()> {
             member_sandbox,
             dry_run,
             run_handoff,
+            supervisor_notes,
+            supervisor_note_files,
             skip_install,
         } => {
             let codex_home = codex_home.unwrap_or_else(|| default_codex_home(&repo_root));
+            let supervisor_guidance =
+                read_supervisor_guidance(supervisor_notes, supervisor_note_files)?;
             let report = run_codex_tdd_cycle(CodexTddCycleOptions {
                 repo_root,
                 lua_policy: cli.lua_policy,
@@ -670,6 +695,7 @@ fn main() -> Result<()> {
                 goal,
                 max_iterations,
                 member_sandbox_mode: member_sandbox,
+                supervisor_guidance,
                 dry_run,
                 handoff_dry_run: !run_handoff,
                 skip_install,
@@ -705,6 +731,18 @@ fn format_counts(counts: &std::collections::BTreeMap<String, usize>) -> String {
         .map(|(key, count)| format!("{key}={count}"))
         .collect::<Vec<_>>()
         .join(", ")
+}
+
+fn read_supervisor_guidance(
+    mut notes: Vec<String>,
+    note_files: Vec<PathBuf>,
+) -> Result<Vec<String>> {
+    for path in note_files {
+        let note = fs::read_to_string(&path)?;
+        notes.push(note);
+    }
+    notes.retain(|note| !note.trim().is_empty());
+    Ok(notes)
 }
 
 fn default_codex_home(repo_root: &std::path::Path) -> PathBuf {

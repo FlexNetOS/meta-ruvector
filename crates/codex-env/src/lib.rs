@@ -322,6 +322,7 @@ pub struct CodexTddAutoLoopOptions {
     pub output_dir: Option<PathBuf>,
     pub max_iterations: usize,
     pub member_sandbox_mode: String,
+    pub supervisor_guidance: Vec<String>,
     pub dry_run: bool,
     pub skip_install: bool,
 }
@@ -333,6 +334,7 @@ pub struct CodexTddAutoLoopReport {
     pub auto_loop: CodexAutoLoopReport,
     pub handoff_goal: String,
     pub handoff_state: String,
+    pub supervisor_guidance: Vec<String>,
     pub supervision_events: Vec<String>,
     pub started_unix_seconds: u64,
     pub ended_unix_seconds: u64,
@@ -348,6 +350,7 @@ pub struct CodexTddCycleOptions {
     pub goal: Option<String>,
     pub max_iterations: usize,
     pub member_sandbox_mode: String,
+    pub supervisor_guidance: Vec<String>,
     pub dry_run: bool,
     pub handoff_dry_run: bool,
     pub skip_install: bool,
@@ -365,6 +368,7 @@ pub struct CodexTddCycleReport {
     pub auto_loop: Option<CodexTddAutoLoopReport>,
     pub cycle_state: String,
     pub phases: Vec<CodexTddCyclePhaseReport>,
+    pub supervisor_guidance: Vec<String>,
     pub supervision_events: Vec<String>,
     pub started_unix_seconds: u64,
     pub ended_unix_seconds: u64,
@@ -1574,7 +1578,14 @@ pub fn run_codex_tdd_auto_loop(options: CodexTddAutoLoopOptions) -> Result<Codex
         "started: Codex-as-human supervisor validated TDD extraction plan {} for autonomous handoff",
         next_action.plan_path.display()
     )];
-    let handoff_goal = codex_tdd_auto_loop_goal(&next_action);
+    let mut handoff_goal = codex_tdd_auto_loop_goal(&next_action);
+    append_supervisor_guidance(&mut handoff_goal, &options.supervisor_guidance);
+    if !options.supervisor_guidance.is_empty() {
+        supervision_events.push(format!(
+            "guided: supervisor injected {} follow-up guidance note(s) into the handoff goal",
+            options.supervisor_guidance.len()
+        ));
+    }
     supervision_events.push(
         "handoff: supervisor converted selected extraction actions into a bounded auto-loop goal"
             .to_owned(),
@@ -1611,6 +1622,7 @@ pub fn run_codex_tdd_auto_loop(options: CodexTddAutoLoopOptions) -> Result<Codex
         auto_loop,
         handoff_goal,
         handoff_state,
+        supervisor_guidance: options.supervisor_guidance,
         supervision_events,
         started_unix_seconds,
         ended_unix_seconds: unix_seconds_now(),
@@ -1684,6 +1696,7 @@ pub fn run_codex_tdd_cycle(options: CodexTddCycleOptions) -> Result<CodexTddCycl
             auto_loop: None,
             cycle_state: "planned".to_owned(),
             phases,
+            supervisor_guidance: options.supervisor_guidance,
             supervision_events,
             started_unix_seconds,
             ended_unix_seconds: unix_seconds_now(),
@@ -1704,6 +1717,7 @@ pub fn run_codex_tdd_cycle(options: CodexTddCycleOptions) -> Result<CodexTddCycl
         auto_loop: None,
         cycle_state: "running".to_owned(),
         phases: phases.clone(),
+        supervisor_guidance: options.supervisor_guidance.clone(),
         supervision_events: supervision_events.clone(),
         started_unix_seconds,
         ended_unix_seconds: unix_seconds_now(),
@@ -1741,6 +1755,7 @@ pub fn run_codex_tdd_cycle(options: CodexTddCycleOptions) -> Result<CodexTddCycl
         auto_loop: None,
         cycle_state: "running".to_owned(),
         phases: phases.clone(),
+        supervisor_guidance: options.supervisor_guidance.clone(),
         supervision_events: supervision_events.clone(),
         started_unix_seconds,
         ended_unix_seconds: unix_seconds_now(),
@@ -1758,6 +1773,7 @@ pub fn run_codex_tdd_cycle(options: CodexTddCycleOptions) -> Result<CodexTddCycl
         output_dir: Some(run_dir.join("auto-loop")),
         max_iterations: options.max_iterations,
         member_sandbox_mode: options.member_sandbox_mode,
+        supervisor_guidance: options.supervisor_guidance.clone(),
         dry_run: options.handoff_dry_run,
         skip_install: options.skip_install,
     })?;
@@ -1799,6 +1815,7 @@ pub fn run_codex_tdd_cycle(options: CodexTddCycleOptions) -> Result<CodexTddCycl
         auto_loop: Some(auto_loop),
         cycle_state,
         phases,
+        supervisor_guidance: options.supervisor_guidance,
         supervision_events,
         started_unix_seconds,
         ended_unix_seconds: unix_seconds_now(),
@@ -2416,6 +2433,23 @@ Rules:
     ))
 }
 
+fn append_supervisor_guidance(goal: &mut String, supervisor_guidance: &[String]) {
+    if supervisor_guidance.is_empty() {
+        return;
+    }
+    goal.push_str("\n## Supervisor follow-up guidance\n\n");
+    goal.push_str(
+        "These notes were injected by the Codex-as-human supervisor after inspecting cycle evidence. Apply them before expanding scope.\n\n",
+    );
+    for (index, guidance) in supervisor_guidance.iter().enumerate() {
+        goal.push_str(&format!(
+            "{}. {}\n",
+            index + 1,
+            guidance.trim().replace('\n', "\n   ")
+        ));
+    }
+}
+
 fn parse_auto_loop_marker(last_message: &str) -> Option<String> {
     last_message.lines().find_map(|line| {
         let marker = line.trim().strip_prefix("CODEX_AUTO_LOOP_STATUS:")?;
@@ -2684,6 +2718,14 @@ fn write_tdd_cycle_guidance(report: &CodexTddCycleReport) -> Result<()> {
     } else {
         markdown.push_str("- Auto-loop status: `not-run`\n");
     }
+    if report.supervisor_guidance.is_empty() {
+        markdown.push_str("- Supervisor follow-up guidance: `none`\n");
+    } else {
+        markdown.push_str(&format!(
+            "- Supervisor follow-up guidance: `{}` note(s)\n",
+            report.supervisor_guidance.len()
+        ));
+    }
 
     markdown.push_str("\n## Phase guidance\n\n");
     for phase in &report.phases {
@@ -2694,6 +2736,14 @@ fn write_tdd_cycle_guidance(report: &CodexTddCycleReport) -> Result<()> {
             phase.evidence_path.display(),
             phase.next_action
         ));
+    }
+
+    if !report.supervisor_guidance.is_empty() {
+        markdown.push_str("## Supervisor follow-up guidance\n\n");
+        for (index, guidance) in report.supervisor_guidance.iter().enumerate() {
+            markdown.push_str(&format!("{}. {}\n", index + 1, guidance.trim()));
+        }
+        markdown.push('\n');
     }
 
     markdown.push_str("## Supervision events\n\n");

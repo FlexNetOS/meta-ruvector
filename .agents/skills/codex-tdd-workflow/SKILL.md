@@ -35,3 +35,5 @@ workflow-to-handoff chain is wired before launching nested workers. The cycle
 status includes phase checkpoints, evidence paths, next actions, supervision
 events, and timestamps so Codex does not wait blind on a background terminal.
 Read `tdd-cycle-guidance.md` first when resuming or guiding the worker.
+Use `--supervisor-note` or `--supervisor-note-file` to pass follow-up guidance
+into the next bounded handoff.
