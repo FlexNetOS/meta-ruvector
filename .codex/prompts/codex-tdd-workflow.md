@@ -20,5 +20,7 @@ terminal: launch the workflow, watch status artifacts, give follow-up guidance
 if the trace exposes a gap, end the worker session, then extract durable
 automation into Rust-owned crates. Inspect each step's stdout/stderr log paths
 and supervision events before deciding whether to proceed, guide, or stop the
-worker. Then read `tdd-extraction-report.md` for the next crate-owned
-extraction action. Do not move this automation into a vendor harness.
+worker. Then read `tdd-extraction-plan.json` first as the low-token
+machine-readable next-action handoff, using `tdd-extraction-report.md` as the
+human-readable evidence summary. Do not move this automation into a vendor
+harness.

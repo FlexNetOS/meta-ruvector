@@ -260,10 +260,37 @@ pub struct CodexTddWorkflowReport {
     pub run_dir: PathBuf,
     pub status_path: PathBuf,
     pub extraction_report_path: PathBuf,
+    pub extraction_plan_path: PathBuf,
     pub operator_role: String,
     pub supervision_protocol: Vec<String>,
     pub dry_run: bool,
     pub steps: Vec<CodexTddWorkflowStepReport>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct CodexTddExtractionPlan {
+    pub schema_version: u8,
+    pub generated_by: String,
+    pub goal: String,
+    pub target_crate: String,
+    pub forbidden_target: String,
+    pub source_material: String,
+    pub runtime_representation: String,
+    pub next_action: String,
+    pub actions: Vec<CodexTddExtractionAction>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct CodexTddExtractionAction {
+    pub step: String,
+    pub status: String,
+    pub worker_state: String,
+    pub crate_owner: String,
+    pub belongs_in: String,
+    pub extraction_target: String,
+    pub next_action: String,
+    pub evidence_stdout: PathBuf,
+    pub evidence_stderr: PathBuf,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -1266,6 +1293,7 @@ pub fn run_codex_tdd_workflow(options: CodexTddWorkflowOptions) -> Result<CodexT
         .with_context(|| format!("failed to create {}", run_dir.join("steps").display()))?;
     let status_path = run_dir.join("tdd-workflow-status.json");
     let extraction_report_path = run_dir.join("tdd-extraction-report.md");
+    let extraction_plan_path = run_dir.join("tdd-extraction-plan.json");
     let binary = repo_root.join("target/debug/codex-env");
     let repo_arg = repo_root.display().to_string();
     let codex_home_arg = codex_home.display().to_string();
@@ -1284,12 +1312,13 @@ pub fn run_codex_tdd_workflow(options: CodexTddWorkflowOptions) -> Result<CodexT
             run_dir,
             status_path,
             extraction_report_path,
+            extraction_plan_path,
             operator_role: "codex-as-human-in-loop".to_owned(),
             supervision_protocol: codex_tdd_supervision_protocol(),
             dry_run: true,
             steps,
         };
-        write_tdd_extraction_report(&report, &goal)?;
+        write_tdd_extraction_artifacts(&report, &goal)?;
         write_tdd_workflow_status(&report)?;
         return Ok(report);
     }
@@ -1310,6 +1339,7 @@ pub fn run_codex_tdd_workflow(options: CodexTddWorkflowOptions) -> Result<CodexT
             &run_dir,
             &status_path,
             &extraction_report_path,
+            &extraction_plan_path,
             false,
             &steps,
         ))?;
@@ -1348,12 +1378,13 @@ pub fn run_codex_tdd_workflow(options: CodexTddWorkflowOptions) -> Result<CodexT
                 run_dir,
                 status_path,
                 extraction_report_path,
+                extraction_plan_path,
                 operator_role: "codex-as-human-in-loop".to_owned(),
                 supervision_protocol: codex_tdd_supervision_protocol(),
                 dry_run: false,
                 steps,
             };
-            write_tdd_extraction_report(&report, &goal)?;
+            write_tdd_extraction_artifacts(&report, &goal)?;
             write_tdd_workflow_status(&report)?;
             return Err(anyhow!(
                 "codex-env tdd-workflow step {} failed with exit code {}",
@@ -1378,12 +1409,13 @@ pub fn run_codex_tdd_workflow(options: CodexTddWorkflowOptions) -> Result<CodexT
         run_dir,
         status_path,
         extraction_report_path,
+        extraction_plan_path,
         operator_role: "codex-as-human-in-loop".to_owned(),
         supervision_protocol: codex_tdd_supervision_protocol(),
         dry_run: false,
         steps,
     };
-    write_tdd_extraction_report(&report, &goal)?;
+    write_tdd_extraction_artifacts(&report, &goal)?;
     write_tdd_workflow_status(&report)?;
     Ok(report)
 }
@@ -2171,6 +2203,11 @@ fn write_tdd_workflow_status(report: &CodexTddWorkflowReport) -> Result<()> {
     .with_context(|| format!("failed to write {}", report.status_path.display()))
 }
 
+fn write_tdd_extraction_artifacts(report: &CodexTddWorkflowReport, goal: &str) -> Result<()> {
+    write_tdd_extraction_report(report, goal)?;
+    write_tdd_extraction_plan(report, goal)
+}
+
 fn write_tdd_extraction_report(report: &CodexTddWorkflowReport, goal: &str) -> Result<()> {
     let mut markdown = String::from("# Codex TDD Extraction Report\n\n");
     markdown.push_str(&format!("Goal: {goal}\n\n"));
@@ -2223,6 +2260,76 @@ fn write_tdd_extraction_report(report: &CodexTddWorkflowReport, goal: &str) -> R
             report.extraction_report_path.display()
         )
     })
+}
+
+fn write_tdd_extraction_plan(report: &CodexTddWorkflowReport, goal: &str) -> Result<()> {
+    let plan = CodexTddExtractionPlan {
+        schema_version: 1,
+        generated_by: "codex-env tdd-workflow".to_owned(),
+        goal: goal.to_owned(),
+        target_crate: "crates/codex-env".to_owned(),
+        forbidden_target: "vendor harness".to_owned(),
+        source_material: ".claude and generated .codex evidence".to_owned(),
+        runtime_representation: "machine-readable Rust-owned extraction plan".to_owned(),
+        next_action: tdd_next_extraction_action(report),
+        actions: report
+            .steps
+            .iter()
+            .map(|step| CodexTddExtractionAction {
+                step: step.name.clone(),
+                status: step.status.clone(),
+                worker_state: step.worker_state.clone(),
+                crate_owner: step.crate_owner.clone(),
+                belongs_in: step.belongs_in.clone(),
+                extraction_target: step.extraction_target.clone(),
+                next_action: tdd_step_next_action(step),
+                evidence_stdout: step.stdout_path.clone(),
+                evidence_stderr: step.stderr_path.clone(),
+            })
+            .collect(),
+    };
+    fs::write(
+        &report.extraction_plan_path,
+        format!("{}\n", serde_json::to_string_pretty(&plan)?),
+    )
+    .with_context(|| format!("failed to write {}", report.extraction_plan_path.display()))
+}
+
+fn tdd_next_extraction_action(report: &CodexTddWorkflowReport) -> String {
+    if let Some(failed) = report.steps.iter().find(|step| step.status == "failed") {
+        return format!(
+            "Fix {} in {} using {} and its captured stdout/stderr evidence.",
+            failed.name, failed.belongs_in, failed.extraction_target
+        );
+    }
+    if report.dry_run {
+        return "Execute codex-env tdd-workflow without --dry-run, supervise logs, then apply discovered behavior into crates/codex-env.".to_owned();
+    }
+    "Promote the next uncovered automation behavior into crates/codex-env; do not move it into a vendor harness.".to_owned()
+}
+
+fn tdd_step_next_action(step: &CodexTddWorkflowStepReport) -> String {
+    match step.status.as_str() {
+        "failed" => format!(
+            "Inspect {} and {}; repair {} in {}.",
+            step.stdout_path.display(),
+            step.stderr_path.display(),
+            step.extraction_target,
+            step.belongs_in
+        ),
+        "ok" => format!(
+            "Use this passing evidence as the crate-owned guard for {}; keep it out of the vendor harness.",
+            step.extraction_target
+        ),
+        "planned" | "running" => format!(
+            "Run or supervise this step before claiming {} is covered.",
+            step.extraction_target
+        ),
+        _ => format!(
+            "Review status {} and route the finding to {}.",
+            step.status, step.belongs_in
+        ),
+    }
 }
 
 fn codex_tdd_supervision_protocol() -> Vec<String> {
@@ -2365,6 +2472,7 @@ fn tdd_workflow_snapshot(
     run_dir: &Path,
     status_path: &Path,
     extraction_report_path: &Path,
+    extraction_plan_path: &Path,
     dry_run: bool,
     steps: &[CodexTddWorkflowStepReport],
 ) -> CodexTddWorkflowReport {
@@ -2374,6 +2482,7 @@ fn tdd_workflow_snapshot(
         run_dir: run_dir.to_path_buf(),
         status_path: status_path.to_path_buf(),
         extraction_report_path: extraction_report_path.to_path_buf(),
+        extraction_plan_path: extraction_plan_path.to_path_buf(),
         operator_role: "codex-as-human-in-loop".to_owned(),
         supervision_protocol: codex_tdd_supervision_protocol(),
         dry_run,

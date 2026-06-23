@@ -777,8 +777,10 @@ extract durable behavior into the owning Rust crates rather than a vendor
 harness. Non-dry-run workflow steps also write per-step stdout/stderr logs
 under the workflow run directory so the supervising Codex session can inspect
 what the background worker actually did before deciding the next extraction.
-The workflow also writes `tdd-extraction-report.md`, a concise crate-ownership
-report that turns the supervised trace into the next Rust extraction action.
+The workflow also writes `tdd-extraction-report.md` plus
+`tdd-extraction-plan.json`; the JSON plan is the low-token machine-readable
+crate-ownership handoff that turns the supervised trace into the next Rust
+extraction action.
 "#,
     )
 }
@@ -866,8 +868,10 @@ terminal: launch the workflow, watch status artifacts, give follow-up guidance
 if the trace exposes a gap, end the worker session, then extract durable
 automation into Rust-owned crates. Inspect each step's stdout/stderr log paths
 and supervision events before deciding whether to proceed, guide, or stop the
-worker. Then read `tdd-extraction-report.md` for the next crate-owned
-extraction action. Do not move this automation into a vendor harness.
+worker. Then read `tdd-extraction-plan.json` first as the low-token
+machine-readable next-action handoff, using `tdd-extraction-report.md` as the
+human-readable evidence summary. Do not move this automation into a vendor
+harness.
 "#),
         ),
     ]
@@ -976,8 +980,9 @@ terminal: inspect status artifacts, provide follow-up guidance if a probe
 exposes a gap, terminate the worker session when the trace is complete, and
 move durable automation into the correct Rust crate instead of a vendor harness.
 Non-dry-run steps capture stdout/stderr logs and supervision events for
-post-run extraction, then emit `tdd-extraction-report.md` to summarize the
-next Rust crate action.
+post-run extraction, then emit `tdd-extraction-plan.json` for machine-readable
+next-action routing and `tdd-extraction-report.md` as the human-readable
+summary.
 "#),
         ),
     ]
