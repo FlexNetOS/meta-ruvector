@@ -24,4 +24,6 @@ move durable automation into the correct Rust crate instead of a vendor harness.
 Non-dry-run steps capture stdout/stderr logs and supervision events for
 post-run extraction, then emit `tdd-extraction-plan.json` for machine-readable
 next-action routing and `tdd-extraction-report.md` as the human-readable
-summary.
+summary. Run `codex-env tdd-next --check` after the workflow to consume the
+latest plan, reject vendor-harness routing, and select the next Rust-owned
+action for autonomous continuation.

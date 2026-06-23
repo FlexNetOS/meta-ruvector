@@ -746,6 +746,7 @@ cargo run -p codex-env -- run "fix the next Codex parity gap"
 cargo run -p codex-env -- team-run --team rust "trace and fix the next Rust harness gap"
 cargo run -p codex-env -- auto-loop --team core --max-iterations 3 "finish the Codex parity goal"
 cargo run -p codex-env -- tdd-workflow "build, verify, and trace the Codex Rust tools"
+cargo run -p codex-env -- tdd-next --check
 ```
 
 Each run refreshes/validates the Codex surface, then invokes `codex exec --json`
@@ -780,7 +781,9 @@ what the background worker actually did before deciding the next extraction.
 The workflow also writes `tdd-extraction-report.md` plus
 `tdd-extraction-plan.json`; the JSON plan is the low-token machine-readable
 crate-ownership handoff that turns the supervised trace into the next Rust
-extraction action.
+extraction action. `tdd-next` consumes the newest extraction plan, rejects any
+vendor-harness ownership drift, and prints the selected Rust-owned actions for
+the next autonomous loop handoff.
 "#,
     )
 }
@@ -870,8 +873,9 @@ automation into Rust-owned crates. Inspect each step's stdout/stderr log paths
 and supervision events before deciding whether to proceed, guide, or stop the
 worker. Then read `tdd-extraction-plan.json` first as the low-token
 machine-readable next-action handoff, using `tdd-extraction-report.md` as the
-human-readable evidence summary. Do not move this automation into a vendor
-harness.
+human-readable evidence summary. Run `cargo run -p codex-env -- tdd-next
+--check` to fail closed before handing the plan to the next autonomous loop. Do
+not move this automation into a vendor harness.
 "#),
         ),
     ]
@@ -982,7 +986,9 @@ move durable automation into the correct Rust crate instead of a vendor harness.
 Non-dry-run steps capture stdout/stderr logs and supervision events for
 post-run extraction, then emit `tdd-extraction-plan.json` for machine-readable
 next-action routing and `tdd-extraction-report.md` as the human-readable
-summary.
+summary. Run `codex-env tdd-next --check` after the workflow to consume the
+latest plan, reject vendor-harness routing, and select the next Rust-owned
+action for autonomous continuation.
 "#),
         ),
     ]

@@ -3,11 +3,11 @@ use std::path::PathBuf;
 use anyhow::{bail, Result};
 use clap::{Parser, Subcommand};
 use codex_env::{
-    doctor_codex_surface, install_codex_env, install_codex_prompts, inventory_codex_surface,
-    mirror_codex_surface, run_codex_auto_loop, run_codex_task, run_codex_team,
-    CodexAutoLoopOptions, CodexInstallOptions, CodexInventoryOptions, CodexRunOptions,
-    CodexTddWorkflowOptions, CodexTeamRunOptions, DoctorOptions, MirrorOptions,
-    PromptInstallOptions,
+    codex_tdd_next_action, doctor_codex_surface, install_codex_env, install_codex_prompts,
+    inventory_codex_surface, mirror_codex_surface, run_codex_auto_loop, run_codex_task,
+    run_codex_team, CodexAutoLoopOptions, CodexInstallOptions, CodexInventoryOptions,
+    CodexRunOptions, CodexTddNextActionOptions, CodexTddWorkflowOptions, CodexTeamRunOptions,
+    DoctorOptions, MirrorOptions, PromptInstallOptions,
 };
 
 #[derive(Parser)]
@@ -197,6 +197,21 @@ enum Commands {
         /// Materialize the workflow plan without running commands.
         #[arg(long)]
         dry_run: bool,
+    },
+
+    /// Read a TDD extraction plan and print the next Rust-owned action.
+    TddNext {
+        /// Path to tdd-extraction-plan.json. Defaults to the newest TDD workflow run.
+        #[arg(long)]
+        plan: Option<PathBuf>,
+
+        /// Emit the next-action report as JSON.
+        #[arg(long)]
+        json: bool,
+
+        /// Fail unless the plan is ready for autonomous loop handoff.
+        #[arg(long)]
+        check: bool,
     },
 }
 
@@ -495,6 +510,32 @@ fn main() -> Result<()> {
                         .map_or_else(|| "not-run".to_owned(), |code| code.to_string()),
                     step.command
                 );
+            }
+        }
+        Commands::TddNext { plan, json, check } => {
+            let report = codex_tdd_next_action(CodexTddNextActionOptions {
+                repo_root,
+                plan_path: plan,
+                check,
+            })?;
+            if json {
+                println!("{}", serde_json::to_string_pretty(&report)?);
+            } else {
+                println!(
+                    "codex-env tdd-next: plan={}, target={}, forbidden={}, ready={}, selected_actions={}, next_action={}",
+                    report.plan_path.display(),
+                    report.target_crate,
+                    report.forbidden_target,
+                    report.ready_for_autonomous_loop,
+                    report.selected_actions.len(),
+                    report.next_action
+                );
+                for action in &report.selected_actions {
+                    println!(
+                        "action: {} status={} target={} next={}",
+                        action.step, action.status, action.extraction_target, action.next_action
+                    );
+                }
             }
         }
     }

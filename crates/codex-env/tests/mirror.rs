@@ -4,8 +4,9 @@ use std::process::Command;
 use codex_env::{
     doctor_codex_surface, ensure_codex_home_settings, install_codex_env, install_codex_prompts,
     inventory_codex_surface, mirror_codex_surface, run_codex_task, CodexAutoLoopOptions,
-    CodexInstallOptions, CodexInventoryOptions, CodexRunOptions, CodexTddWorkflowOptions,
-    CodexTeamRunOptions, DoctorOptions, MirrorOptions, PromptInstallOptions,
+    CodexInstallOptions, CodexInventoryOptions, CodexRunOptions, CodexTddNextActionOptions,
+    CodexTddWorkflowOptions, CodexTeamRunOptions, DoctorOptions, MirrorOptions,
+    PromptInstallOptions,
 };
 
 #[test]
@@ -1033,6 +1034,119 @@ fn tdd_workflow_dry_run_materializes_codex_tool_execution_plan() {
     assert!(status.contains("codex-as-human-in-loop"));
     assert!(status.contains("background terminal"));
     assert!(status.contains("vendor harness"));
+}
+
+#[test]
+fn tdd_next_action_reads_plan_as_rust_owned_handoff() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path().join("repo");
+    let run_dir = root.join(".codex/harness/runs/001-tdd-workflow");
+    fs::create_dir_all(&run_dir).unwrap();
+    let plan_path = run_dir.join("tdd-extraction-plan.json");
+    fs::write(
+        &plan_path,
+        serde_json::to_vec_pretty(&serde_json::json!({
+            "schema_version": 1,
+            "generated_by": "codex-env tdd-workflow",
+            "goal": "promote the next automation action",
+            "target_crate": "crates/codex-env",
+            "forbidden_target": "vendor harness",
+            "source_material": ".claude and generated .codex evidence",
+            "runtime_representation": "machine-readable Rust-owned extraction plan",
+            "next_action": "Promote the next uncovered automation behavior into crates/codex-env; do not move it into a vendor harness.",
+            "actions": [
+                {
+                    "step": "mirror-check",
+                    "status": "ok",
+                    "worker_state": "ended",
+                    "crate_owner": "crates/codex-env",
+                    "belongs_in": "crates/codex-env",
+                    "extraction_target": "Rust-owned .claude to .codex extractor/compiler in crates/codex-env",
+                    "next_action": "Use this passing evidence as the crate-owned guard; keep it out of the vendor harness.",
+                    "evidence_stdout": "steps/mirror-check.stdout.log",
+                    "evidence_stderr": "steps/mirror-check.stderr.log"
+                },
+                {
+                    "step": "auto-loop-dry-run",
+                    "status": "ok",
+                    "worker_state": "ended",
+                    "crate_owner": "crates/codex-env",
+                    "belongs_in": "crates/codex-env",
+                    "extraction_target": "Rust-owned autonomous loop harness in crates/codex-env",
+                    "next_action": "Use this passing evidence as the crate-owned guard; keep it out of the vendor harness.",
+                    "evidence_stdout": "steps/auto-loop-dry-run.stdout.log",
+                    "evidence_stderr": "steps/auto-loop-dry-run.stderr.log"
+                }
+            ]
+        }))
+        .unwrap(),
+    )
+    .unwrap();
+
+    let report = codex_env::codex_tdd_next_action(CodexTddNextActionOptions {
+        repo_root: root,
+        plan_path: None,
+        check: true,
+    })
+    .unwrap();
+
+    assert_eq!(report.plan_path, plan_path);
+    assert_eq!(report.target_crate, "crates/codex-env");
+    assert_eq!(report.forbidden_target, "vendor harness");
+    assert!(report.ready_for_autonomous_loop);
+    assert_eq!(report.selected_actions.len(), 2);
+    assert!(report.next_action.contains("crates/codex-env"));
+    assert!(report
+        .selected_actions
+        .iter()
+        .all(|action| action.belongs_in == "crates/codex-env"));
+}
+
+#[test]
+fn tdd_next_action_rejects_vendor_harness_routing() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path().join("repo");
+    let run_dir = root.join(".codex/harness/runs/001-tdd-workflow");
+    fs::create_dir_all(&run_dir).unwrap();
+    let plan_path = run_dir.join("tdd-extraction-plan.json");
+    fs::write(
+        &plan_path,
+        serde_json::to_vec_pretty(&serde_json::json!({
+            "schema_version": 1,
+            "generated_by": "codex-env tdd-workflow",
+            "goal": "bad ownership",
+            "target_crate": "crates/codex-env",
+            "forbidden_target": "vendor harness",
+            "source_material": ".claude and generated .codex evidence",
+            "runtime_representation": "machine-readable Rust-owned extraction plan",
+            "next_action": "bad",
+            "actions": [
+                {
+                    "step": "team-run-dry-run",
+                    "status": "ok",
+                    "worker_state": "ended",
+                    "crate_owner": "crates/codex-env",
+                    "belongs_in": "vendor harness",
+                    "extraction_target": "wrong target",
+                    "next_action": "wrong",
+                    "evidence_stdout": "steps/team-run-dry-run.stdout.log",
+                    "evidence_stderr": "steps/team-run-dry-run.stderr.log"
+                }
+            ]
+        }))
+        .unwrap(),
+    )
+    .unwrap();
+
+    let err = codex_env::codex_tdd_next_action(CodexTddNextActionOptions {
+        repo_root: root,
+        plan_path: Some(plan_path),
+        check: false,
+    })
+    .unwrap_err()
+    .to_string();
+
+    assert!(err.contains("forbidden target vendor harness"));
 }
 
 #[test]

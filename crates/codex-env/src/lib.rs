@@ -267,7 +267,7 @@ pub struct CodexTddWorkflowReport {
     pub steps: Vec<CodexTddWorkflowStepReport>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CodexTddExtractionPlan {
     pub schema_version: u8,
     pub generated_by: String,
@@ -280,7 +280,7 @@ pub struct CodexTddExtractionPlan {
     pub actions: Vec<CodexTddExtractionAction>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CodexTddExtractionAction {
     pub step: String,
     pub status: String,
@@ -291,6 +291,25 @@ pub struct CodexTddExtractionAction {
     pub next_action: String,
     pub evidence_stdout: PathBuf,
     pub evidence_stderr: PathBuf,
+}
+
+#[derive(Debug, Clone)]
+pub struct CodexTddNextActionOptions {
+    pub repo_root: PathBuf,
+    pub plan_path: Option<PathBuf>,
+    pub check: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct CodexTddNextActionReport {
+    pub repo_root: PathBuf,
+    pub plan_path: PathBuf,
+    pub target_crate: String,
+    pub forbidden_target: String,
+    pub next_action: String,
+    pub selected_actions: Vec<CodexTddExtractionAction>,
+    pub ready_for_autonomous_loop: bool,
+    pub status_summary: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -1420,6 +1439,61 @@ pub fn run_codex_tdd_workflow(options: CodexTddWorkflowOptions) -> Result<CodexT
     Ok(report)
 }
 
+pub fn codex_tdd_next_action(
+    options: CodexTddNextActionOptions,
+) -> Result<CodexTddNextActionReport> {
+    let repo_root = options.repo_root.canonicalize().with_context(|| {
+        format!(
+            "failed to canonicalize repo root {}",
+            options.repo_root.display()
+        )
+    })?;
+    let plan_path = match options.plan_path {
+        Some(path) => {
+            if path.is_absolute() {
+                path
+            } else {
+                repo_root.join(path)
+            }
+        }
+        None => latest_tdd_extraction_plan(&repo_root)?,
+    };
+    let plan_bytes =
+        fs::read(&plan_path).with_context(|| format!("failed to read {}", plan_path.display()))?;
+    let plan: CodexTddExtractionPlan = serde_json::from_slice(&plan_bytes)
+        .with_context(|| format!("failed to parse {}", plan_path.display()))?;
+
+    validate_tdd_extraction_plan(&plan, &plan_path)?;
+    let selected_actions = select_tdd_next_actions(&plan);
+    let ready_for_autonomous_loop = plan
+        .actions
+        .iter()
+        .all(|action| action.status == "ok" && action.belongs_in == plan.target_crate);
+    let status_summary = plan
+        .actions
+        .iter()
+        .map(|action| format!("{}={}", action.step, action.status))
+        .collect();
+    let report = CodexTddNextActionReport {
+        repo_root,
+        plan_path,
+        target_crate: plan.target_crate,
+        forbidden_target: plan.forbidden_target,
+        next_action: plan.next_action,
+        selected_actions,
+        ready_for_autonomous_loop,
+        status_summary,
+    };
+    if options.check && !report.ready_for_autonomous_loop {
+        return Err(anyhow!(
+            "{} is not ready for autonomous loop handoff: {}",
+            report.plan_path.display(),
+            report.status_summary.join(", ")
+        ));
+    }
+    Ok(report)
+}
+
 pub fn ensure_codex_home_settings(codex_home: &Path) -> Result<CodexHomeSettingsReport> {
     let catalog_path = codex_home.join(REQUIRED_CODEX_MODEL_CATALOG);
     write_file(&PlannedFile {
@@ -2293,6 +2367,114 @@ fn write_tdd_extraction_plan(report: &CodexTddWorkflowReport, goal: &str) -> Res
         format!("{}\n", serde_json::to_string_pretty(&plan)?),
     )
     .with_context(|| format!("failed to write {}", report.extraction_plan_path.display()))
+}
+
+fn latest_tdd_extraction_plan(repo_root: &Path) -> Result<PathBuf> {
+    let runs_dir = repo_root.join(".codex/harness/runs");
+    let mut candidates = Vec::new();
+    if runs_dir.exists() {
+        for entry in fs::read_dir(&runs_dir)
+            .with_context(|| format!("failed to read {}", runs_dir.display()))?
+        {
+            let entry =
+                entry.with_context(|| format!("failed to read entry in {}", runs_dir.display()))?;
+            let path = entry.path().join("tdd-extraction-plan.json");
+            if path.exists() {
+                let modified = fs::metadata(&path)
+                    .and_then(|metadata| metadata.modified())
+                    .unwrap_or(UNIX_EPOCH);
+                candidates.push((modified, path));
+            }
+        }
+    }
+    candidates
+        .into_iter()
+        .max_by_key(|(modified, path)| (*modified, path.clone()))
+        .map(|(_, path)| path)
+        .ok_or_else(|| {
+            anyhow!(
+                "no tdd-extraction-plan.json found under {}; run codex-env tdd-workflow first",
+                runs_dir.display()
+            )
+        })
+}
+
+fn validate_tdd_extraction_plan(plan: &CodexTddExtractionPlan, path: &Path) -> Result<()> {
+    if plan.schema_version != 1 {
+        return Err(anyhow!(
+            "{} has unsupported schema_version {}",
+            path.display(),
+            plan.schema_version
+        ));
+    }
+    if plan.target_crate != "crates/codex-env" {
+        return Err(anyhow!(
+            "{} routes target_crate to {}, expected crates/codex-env",
+            path.display(),
+            plan.target_crate
+        ));
+    }
+    if plan.forbidden_target != "vendor harness" {
+        return Err(anyhow!(
+            "{} must keep forbidden_target as vendor harness, found {}",
+            path.display(),
+            plan.forbidden_target
+        ));
+    }
+    if plan.actions.is_empty() {
+        return Err(anyhow!("{} contains no extraction actions", path.display()));
+    }
+    for action in &plan.actions {
+        if action.belongs_in == plan.forbidden_target || action.crate_owner == plan.forbidden_target
+        {
+            return Err(anyhow!(
+                "{} action {} routes ownership to forbidden target {}",
+                path.display(),
+                action.step,
+                plan.forbidden_target
+            ));
+        }
+        if action.belongs_in != plan.target_crate || action.crate_owner != plan.target_crate {
+            return Err(anyhow!(
+                "{} action {} must belong to {}, found owner={} belongs_in={}",
+                path.display(),
+                action.step,
+                plan.target_crate,
+                action.crate_owner,
+                action.belongs_in
+            ));
+        }
+        if action.next_action.trim().is_empty() {
+            return Err(anyhow!(
+                "{} action {} has an empty next_action",
+                path.display(),
+                action.step
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn select_tdd_next_actions(plan: &CodexTddExtractionPlan) -> Vec<CodexTddExtractionAction> {
+    let failed = plan
+        .actions
+        .iter()
+        .filter(|action| action.status == "failed")
+        .cloned()
+        .collect::<Vec<_>>();
+    if !failed.is_empty() {
+        return failed;
+    }
+    let pending = plan
+        .actions
+        .iter()
+        .filter(|action| action.status != "ok")
+        .cloned()
+        .collect::<Vec<_>>();
+    if !pending.is_empty() {
+        return pending;
+    }
+    plan.actions.clone()
 }
 
 fn tdd_next_extraction_action(report: &CodexTddWorkflowReport) -> String {
