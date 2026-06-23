@@ -3,8 +3,8 @@ use std::process::Command;
 
 use codex_env::{
     doctor_codex_surface, ensure_codex_home_settings, install_codex_env, install_codex_prompts,
-    mirror_codex_surface, run_codex_task, CodexInstallOptions, CodexRunOptions,
-    CodexTeamRunOptions, DoctorOptions, MirrorOptions, PromptInstallOptions,
+    mirror_codex_surface, run_codex_task, CodexAutoLoopOptions, CodexInstallOptions,
+    CodexRunOptions, CodexTeamRunOptions, DoctorOptions, MirrorOptions, PromptInstallOptions,
 };
 
 #[test]
@@ -774,6 +774,62 @@ fn team_run_dry_run_materializes_parallel_agent_artifacts() {
     assert!(consolidation_prompt.contains("Consolidate the completed Codex team run."));
     let consolidation_status = fs::read_to_string(report.consolidation_run.status_path).unwrap();
     assert!(consolidation_status.contains(r#""dryRun": true"#));
+}
+
+#[test]
+fn auto_loop_dry_run_materializes_bounded_iteration_artifacts() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path().join("repo");
+    let codex_home = temp.path().join("codex-home");
+    let run_dir = temp.path().join("auto-loop");
+    fs::create_dir_all(root.join(".claude/commands")).unwrap();
+    fs::write(
+        root.join(".claude/settings.json"),
+        r#"{
+          "hooks": {
+            "PreToolUse": [
+              {
+                "matcher": "Bash",
+                "hooks": [{"type": "command", "command": "echo pre", "timeout": 5}]
+              }
+            ]
+          },
+          "env": {}
+        }"#,
+    )
+    .unwrap();
+    fs::write(root.join(".claude/commands/demo.md"), "# Demo\n").unwrap();
+
+    let report = codex_env::run_codex_auto_loop(CodexAutoLoopOptions {
+        repo_root: root,
+        lua_policy: None,
+        codex_home,
+        team: "core".to_owned(),
+        goal: Some("drive the Codex parity loop".to_owned()),
+        prompt_file: None,
+        output_dir: Some(run_dir),
+        max_iterations: 3,
+        member_sandbox_mode: "read-only".to_owned(),
+        dry_run: true,
+        skip_install: false,
+    })
+    .unwrap();
+
+    assert!(report.dry_run);
+    assert!(!report.completed);
+    assert_eq!(report.max_iterations, 3);
+    assert_eq!(report.iterations.len(), 1);
+    assert!(report.status_path.exists());
+    let team_run = &report.iterations[0].team_run;
+    assert!(team_run.run_dir.ends_with("iteration-01"));
+    assert!(team_run.consolidation_run.prompt_path.exists());
+    let prompt = fs::read_to_string(&team_run.consolidation_run.prompt_path).unwrap();
+    assert!(prompt.contains("codex-env Auto Loop"));
+    assert!(prompt.contains("CODEX_AUTO_LOOP_STATUS: complete"));
+    assert!(prompt.contains("CODEX_AUTO_LOOP_STATUS: continue"));
+    let status = fs::read_to_string(report.status_path).unwrap();
+    assert!(status.contains(r#""max_iterations": 3"#));
+    assert!(status.contains(r#""completed": false"#));
 }
 
 #[test]

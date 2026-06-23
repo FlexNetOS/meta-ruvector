@@ -4,8 +4,8 @@ use anyhow::Result;
 use clap::{Parser, Subcommand};
 use codex_env::{
     doctor_codex_surface, install_codex_env, install_codex_prompts, mirror_codex_surface,
-    run_codex_task, run_codex_team, CodexInstallOptions, CodexRunOptions, CodexTeamRunOptions,
-    DoctorOptions, MirrorOptions, PromptInstallOptions,
+    run_codex_auto_loop, run_codex_task, run_codex_team, CodexAutoLoopOptions, CodexInstallOptions,
+    CodexRunOptions, CodexTeamRunOptions, DoctorOptions, MirrorOptions, PromptInstallOptions,
 };
 
 #[derive(Parser)]
@@ -114,6 +114,44 @@ enum Commands {
         member_sandbox: String,
 
         /// Materialize team prompts and status without launching codex exec.
+        #[arg(long)]
+        dry_run: bool,
+
+        /// Skip install and only run doctor before launching.
+        #[arg(long)]
+        skip_install: bool,
+    },
+
+    /// Run bounded autonomous Codex team iterations until complete or max iterations.
+    AutoLoop {
+        /// Team name from .codex/agent-teams.json.
+        #[arg(long, default_value = "core")]
+        team: String,
+
+        /// Goal to pursue through the auto-loop.
+        goal: Option<String>,
+
+        /// Read additional goal text from a file.
+        #[arg(long)]
+        prompt_file: Option<PathBuf>,
+
+        /// Codex home directory. Defaults to CODEX_HOME or ~/.codex.
+        #[arg(long)]
+        codex_home: Option<PathBuf>,
+
+        /// Directory for auto-loop artifacts. Defaults under .codex/harness/runs.
+        #[arg(long)]
+        output_dir: Option<PathBuf>,
+
+        /// Maximum non-dry-run iterations before stopping.
+        #[arg(long, default_value_t = 3)]
+        max_iterations: usize,
+
+        /// Sandbox for parallel team members. Defaults to read-only; parent consolidation owns writes.
+        #[arg(long, default_value = "read-only")]
+        member_sandbox: String,
+
+        /// Materialize the first iteration prompts and status without launching codex exec.
         #[arg(long)]
         dry_run: bool,
 
@@ -290,6 +328,46 @@ fn main() -> Result<()> {
                 report.run_dir.display(),
                 report.consolidation_prompt_path.display(),
                 report.consolidation_run.last_message_path.display(),
+                report.status_path.display()
+            );
+        }
+        Commands::AutoLoop {
+            team,
+            goal,
+            prompt_file,
+            codex_home,
+            output_dir,
+            max_iterations,
+            member_sandbox,
+            dry_run,
+            skip_install,
+        } => {
+            let codex_home = codex_home.unwrap_or_else(default_codex_home);
+            let report = run_codex_auto_loop(CodexAutoLoopOptions {
+                repo_root,
+                lua_policy: cli.lua_policy,
+                codex_home,
+                team,
+                goal,
+                prompt_file,
+                output_dir,
+                max_iterations,
+                member_sandbox_mode: member_sandbox,
+                dry_run,
+                skip_install,
+            })?;
+            println!(
+                "codex-env auto-loop {}: team={}, iterations={}/{}, completed={}, marker={}, run_dir={}, status={}",
+                if report.dry_run { "prepared" } else { "ok" },
+                report.team,
+                report.iterations.len(),
+                report.max_iterations,
+                report.completed,
+                report
+                    .completion_marker
+                    .clone()
+                    .unwrap_or_else(|| "none".to_owned()),
+                report.run_dir.display(),
                 report.status_path.display()
             );
         }

@@ -148,6 +148,42 @@ pub struct CodexTeamRunMemberReport {
     pub run: CodexRunReport,
 }
 
+#[derive(Debug, Clone)]
+pub struct CodexAutoLoopOptions {
+    pub repo_root: PathBuf,
+    pub lua_policy: Option<PathBuf>,
+    pub codex_home: PathBuf,
+    pub team: String,
+    pub goal: Option<String>,
+    pub prompt_file: Option<PathBuf>,
+    pub output_dir: Option<PathBuf>,
+    pub max_iterations: usize,
+    pub member_sandbox_mode: String,
+    pub dry_run: bool,
+    pub skip_install: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct CodexAutoLoopReport {
+    pub repo_root: PathBuf,
+    pub codex_home: PathBuf,
+    pub team: String,
+    pub run_dir: PathBuf,
+    pub status_path: PathBuf,
+    pub max_iterations: usize,
+    pub completed: bool,
+    pub completion_marker: Option<String>,
+    pub iterations: Vec<CodexAutoLoopIterationReport>,
+    pub dry_run: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct CodexAutoLoopIterationReport {
+    pub iteration: usize,
+    pub marker: Option<String>,
+    pub team_run: CodexTeamRunReport,
+}
+
 #[derive(Debug, Clone, Serialize)]
 pub struct CodexHomeSettingsReport {
     pub config_path: PathBuf,
@@ -692,6 +728,110 @@ pub fn run_codex_team(options: CodexTeamRunOptions) -> Result<CodexTeamRunReport
     Ok(report)
 }
 
+pub fn run_codex_auto_loop(options: CodexAutoLoopOptions) -> Result<CodexAutoLoopReport> {
+    if options.max_iterations == 0 || options.max_iterations > 20 {
+        return Err(anyhow!(
+            "codex-env auto-loop requires --max-iterations between 1 and 20"
+        ));
+    }
+    let repo_root = options.repo_root.canonicalize().with_context(|| {
+        format!(
+            "failed to canonicalize repo root {}",
+            options.repo_root.display()
+        )
+    })?;
+    let codex_home = options.codex_home;
+    let goal = resolve_run_goal(options.goal.as_deref(), options.prompt_file.as_deref())?;
+    let member_sandbox_mode = validate_member_sandbox_mode(&options.member_sandbox_mode)?;
+
+    if options.skip_install {
+        doctor_codex_surface(DoctorOptions {
+            repo_root: repo_root.clone(),
+            lua_policy: options.lua_policy.clone(),
+            codex_home: codex_home.clone(),
+        })?;
+    } else {
+        install_codex_env(CodexInstallOptions {
+            repo_root: repo_root.clone(),
+            lua_policy: options.lua_policy.clone(),
+            codex_home: codex_home.clone(),
+        })?;
+    }
+
+    let run_dir = options.output_dir.unwrap_or_else(|| {
+        repo_root
+            .join(".codex/harness/runs")
+            .join(format!("{}-auto-loop", run_id(&goal)))
+    });
+    fs::create_dir_all(&run_dir)
+        .with_context(|| format!("failed to create {}", run_dir.display()))?;
+
+    let iteration_count = if options.dry_run {
+        1
+    } else {
+        options.max_iterations
+    };
+    let mut iterations = Vec::new();
+    let mut completed = false;
+    let mut completion_marker = None;
+
+    for iteration in 1..=iteration_count {
+        let iteration_goal = codex_auto_loop_goal(&goal, iteration, options.max_iterations);
+        let team_run = run_codex_team(CodexTeamRunOptions {
+            repo_root: repo_root.clone(),
+            lua_policy: options.lua_policy.clone(),
+            codex_home: codex_home.clone(),
+            team: options.team.clone(),
+            goal: Some(iteration_goal),
+            prompt_file: None,
+            output_dir: Some(run_dir.join(format!("iteration-{iteration:02}"))),
+            member_sandbox_mode: member_sandbox_mode.clone(),
+            dry_run: options.dry_run,
+            skip_install: true,
+        })?;
+        let marker = if options.dry_run {
+            None
+        } else {
+            let last_message = fs::read_to_string(&team_run.consolidation_run.last_message_path)
+                .with_context(|| {
+                    format!(
+                        "failed to read {}",
+                        team_run.consolidation_run.last_message_path.display()
+                    )
+                })?;
+            parse_auto_loop_marker(&last_message)
+        };
+        if marker.as_deref() == Some("complete") {
+            completed = true;
+        }
+        completion_marker = marker.clone().or(completion_marker);
+        iterations.push(CodexAutoLoopIterationReport {
+            iteration,
+            marker,
+            team_run,
+        });
+        if completed || options.dry_run {
+            break;
+        }
+    }
+
+    let status_path = run_dir.join("auto-loop-status.json");
+    let report = CodexAutoLoopReport {
+        repo_root,
+        codex_home,
+        team: options.team,
+        run_dir,
+        status_path,
+        max_iterations: options.max_iterations,
+        completed,
+        completion_marker,
+        iterations,
+        dry_run: options.dry_run,
+    };
+    write_auto_loop_status(&report)?;
+    Ok(report)
+}
+
 pub fn ensure_codex_home_settings(codex_home: &Path) -> Result<CodexHomeSettingsReport> {
     let catalog_path = codex_home.join(REQUIRED_CODEX_MODEL_CATALOG);
     write_file(&PlannedFile {
@@ -1216,6 +1356,43 @@ Goal:
     ))
 }
 
+fn codex_auto_loop_goal(goal: &str, iteration: usize, max_iterations: usize) -> String {
+    normalize_generated_text(&format!(
+        r#"# codex-env Auto Loop
+
+You are executing iteration {iteration} of at most {max_iterations} in the repo-owned Codex auto-loop harness.
+
+Loop contract:
+- Recall ICM memory and read the closest AGENTS.md before relying on prior context.
+- Inspect current git/branch/PR/generated-surface state.
+- Use read-only team members for parallel evidence and parent consolidation for writes.
+- Implement only changes that move the requested final state closer to true.
+- Run targeted verification and Codex mirror/doctor checks for Codex-surface changes.
+- Commit, push, update the PR, and store ICM memory when publishable work is completed.
+- End the parent consolidation response with exactly one marker line:
+  - `CODEX_AUTO_LOOP_STATUS: complete` only when the full requested state is achieved and verified.
+  - `CODEX_AUTO_LOOP_STATUS: continue` when another iteration is needed, followed by the next concrete gap.
+
+Original goal:
+{goal}
+"#
+    ))
+}
+
+fn parse_auto_loop_marker(last_message: &str) -> Option<String> {
+    last_message.lines().find_map(|line| {
+        let marker = line.trim().strip_prefix("CODEX_AUTO_LOOP_STATUS:")?;
+        let marker = marker.trim();
+        if marker.eq_ignore_ascii_case("complete") {
+            Some("complete".to_owned())
+        } else if marker.eq_ignore_ascii_case("continue") {
+            Some("continue".to_owned())
+        } else {
+            None
+        }
+    })
+}
+
 fn codex_team_member_prompt(
     goal: &str,
     team: &RunAgentTeam,
@@ -1404,6 +1581,14 @@ fn write_run_status(report: &CodexRunReport) -> Result<()> {
 }
 
 fn write_team_run_status(report: &CodexTeamRunReport) -> Result<()> {
+    fs::write(
+        &report.status_path,
+        format!("{}\n", serde_json::to_string_pretty(report)?),
+    )
+    .with_context(|| format!("failed to write {}", report.status_path.display()))
+}
+
+fn write_auto_loop_status(report: &CodexAutoLoopReport) -> Result<()> {
     fs::write(
         &report.status_path,
         format!("{}\n", serde_json::to_string_pretty(report)?),

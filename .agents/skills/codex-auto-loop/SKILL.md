@@ -7,11 +7,13 @@ description: 'Use when the user wants autonomous end-to-end Codex execution with
 
 Run this loop until the requested end state is true or a real blocker is proven:
 
-1. Recall ICM memory and inspect the current repo/branch/PR state.
-2. Derive concrete requirements and completion evidence.
-3. Spawn focused Codex subagents for broad or uncertain work.
-4. Implement upgrades in the parent thread using repo patterns.
-5. Regenerate deterministic Codex surfaces with codex-env when needed.
-6. Run targeted gates, mirror checks, install checks, and risk-appropriate broader gates.
-7. Commit, push, update or open the PR, and store ICM memory for significant work.
-8. Continue to the next gap while the active objective remains incomplete.
+When running from the shell, prefer the Rust harness:
+
+```bash
+cargo run -p codex-env -- auto-loop --team core --max-iterations 3 "your goal"
+```
+
+The harness runs bounded team iterations, writes `auto-loop-status.json`, and
+stops early only when parent consolidation emits
+`CODEX_AUTO_LOOP_STATUS: complete`. Keep working while the marker is
+`continue` or absent.

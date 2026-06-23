@@ -459,6 +459,7 @@ This directory is generated from the tracked `.claude` surface by the Rust
 cargo run -p codex-env -- install
 cargo run -p codex-env -- run --dry-run "inspect the Codex surface"
 cargo run -p codex-env -- team-run --dry-run --team rust "inspect Rust parity gaps"
+cargo run -p codex-env -- auto-loop --dry-run --team core "inspect autonomous loop wiring"
 cargo run -p codex-env -- mirror --check
 cargo run -p codex-env -- install-prompts --check
 cargo run -p codex-env -- doctor
@@ -504,6 +505,7 @@ validated local environment and leave artifacts:
 ```bash
 cargo run -p codex-env -- run "fix the next Codex parity gap"
 cargo run -p codex-env -- team-run --team rust "trace and fix the next Rust harness gap"
+cargo run -p codex-env -- auto-loop --team core --max-iterations 3 "finish the Codex parity goal"
 ```
 
 Each run refreshes/validates the Codex surface, then invokes `codex exec --json`
@@ -516,6 +518,11 @@ effort in a read-only sandbox by default, then runs a parent consolidation
 Codex pass that reads the member outputs, performs parent-owned edits, and
 writes its own artifacts. Use `--member-sandbox workspace-write` only for a
 deliberately isolated writable member scope.
+
+`auto-loop` wraps `team-run` in bounded iterations, records
+`auto-loop-status.json`, and stops early only when parent consolidation emits
+`CODEX_AUTO_LOOP_STATUS: complete`. Otherwise it continues until
+`--max-iterations` is reached.
 "#,
     )
 }
@@ -554,15 +561,15 @@ The harness runs every team member with its configured model/reasoning effort in
             "[GOAL]",
             String::from(r#"Run the Codex autonomous loop for this goal: $ARGUMENTS
 
-1. Recall project memory and read the closest AGENTS.md instructions.
-2. Inspect current git, branch, PR, and generated-surface state before trusting prior context.
-3. Identify requirements and evidence that would prove completion.
-4. For broad work, spawn a focused Codex subagent team in parallel and wait for results.
-5. Implement the smallest complete upgrade that makes the requested end state more true.
-6. Regenerate deterministic surfaces with codex-env when source or generator changes require it.
-7. Run targeted tests plus mirror/install checks, then broader gates proportional to risk.
-8. Commit, push, and open or update the PR. Store ICM memory for significant completed work.
-9. Continue with the next gap unless the whole objective is proven complete.
+Use the Rust harness when shell execution is appropriate:
+
+```bash
+cargo run -p codex-env -- auto-loop --team core --max-iterations 3 "$ARGUMENTS"
+```
+
+The harness runs bounded team iterations, stores artifacts under
+`.codex/harness/runs/`, and requires the parent consolidation pass to emit
+`CODEX_AUTO_LOOP_STATUS: complete` before the loop stops early.
 "#),
         ),
         (
@@ -638,14 +645,16 @@ The harness runs every team member with its configured model/reasoning effort in
 
 Run this loop until the requested end state is true or a real blocker is proven:
 
-1. Recall ICM memory and inspect the current repo/branch/PR state.
-2. Derive concrete requirements and completion evidence.
-3. Spawn focused Codex subagents for broad or uncertain work.
-4. Implement upgrades in the parent thread using repo patterns.
-5. Regenerate deterministic Codex surfaces with codex-env when needed.
-6. Run targeted gates, mirror checks, install checks, and risk-appropriate broader gates.
-7. Commit, push, update or open the PR, and store ICM memory for significant work.
-8. Continue to the next gap while the active objective remains incomplete.
+When running from the shell, prefer the Rust harness:
+
+```bash
+cargo run -p codex-env -- auto-loop --team core --max-iterations 3 "your goal"
+```
+
+The harness runs bounded team iterations, writes `auto-loop-status.json`, and
+stops early only when parent consolidation emits
+`CODEX_AUTO_LOOP_STATUS: complete`. Keep working while the marker is
+`continue` or absent.
 "#),
         ),
         (
