@@ -259,6 +259,7 @@ pub struct CodexTddWorkflowReport {
     pub codex_home: PathBuf,
     pub run_dir: PathBuf,
     pub status_path: PathBuf,
+    pub extraction_report_path: PathBuf,
     pub operator_role: String,
     pub supervision_protocol: Vec<String>,
     pub dry_run: bool,
@@ -1264,6 +1265,7 @@ pub fn run_codex_tdd_workflow(options: CodexTddWorkflowOptions) -> Result<CodexT
     fs::create_dir_all(run_dir.join("steps"))
         .with_context(|| format!("failed to create {}", run_dir.join("steps").display()))?;
     let status_path = run_dir.join("tdd-workflow-status.json");
+    let extraction_report_path = run_dir.join("tdd-extraction-report.md");
     let binary = repo_root.join("target/debug/codex-env");
     let repo_arg = repo_root.display().to_string();
     let codex_home_arg = codex_home.display().to_string();
@@ -1281,11 +1283,13 @@ pub fn run_codex_tdd_workflow(options: CodexTddWorkflowOptions) -> Result<CodexT
             codex_home,
             run_dir,
             status_path,
+            extraction_report_path,
             operator_role: "codex-as-human-in-loop".to_owned(),
             supervision_protocol: codex_tdd_supervision_protocol(),
             dry_run: true,
             steps,
         };
+        write_tdd_extraction_report(&report, &goal)?;
         write_tdd_workflow_status(&report)?;
         return Ok(report);
     }
@@ -1305,6 +1309,7 @@ pub fn run_codex_tdd_workflow(options: CodexTddWorkflowOptions) -> Result<CodexT
             &codex_home,
             &run_dir,
             &status_path,
+            &extraction_report_path,
             false,
             &steps,
         ))?;
@@ -1342,11 +1347,13 @@ pub fn run_codex_tdd_workflow(options: CodexTddWorkflowOptions) -> Result<CodexT
                 codex_home,
                 run_dir,
                 status_path,
+                extraction_report_path,
                 operator_role: "codex-as-human-in-loop".to_owned(),
                 supervision_protocol: codex_tdd_supervision_protocol(),
                 dry_run: false,
                 steps,
             };
+            write_tdd_extraction_report(&report, &goal)?;
             write_tdd_workflow_status(&report)?;
             return Err(anyhow!(
                 "codex-env tdd-workflow step {} failed with exit code {}",
@@ -1370,11 +1377,13 @@ pub fn run_codex_tdd_workflow(options: CodexTddWorkflowOptions) -> Result<CodexT
         codex_home,
         run_dir,
         status_path,
+        extraction_report_path,
         operator_role: "codex-as-human-in-loop".to_owned(),
         supervision_protocol: codex_tdd_supervision_protocol(),
         dry_run: false,
         steps,
     };
+    write_tdd_extraction_report(&report, &goal)?;
     write_tdd_workflow_status(&report)?;
     Ok(report)
 }
@@ -2162,6 +2171,60 @@ fn write_tdd_workflow_status(report: &CodexTddWorkflowReport) -> Result<()> {
     .with_context(|| format!("failed to write {}", report.status_path.display()))
 }
 
+fn write_tdd_extraction_report(report: &CodexTddWorkflowReport, goal: &str) -> Result<()> {
+    let mut markdown = String::from("# Codex TDD Extraction Report\n\n");
+    markdown.push_str(&format!("Goal: {goal}\n\n"));
+    markdown.push_str(&format!("Operator: `{}`\n\n", report.operator_role));
+    markdown.push_str(
+        "This report converts the supervised background-terminal trace into Rust-owned extraction actions. The target is the project crate layer, especially `crates/codex-env`; the target is not a vendor harness.\n\n",
+    );
+    markdown.push_str("## Next extraction action\n\n");
+    if let Some(failed) = report.steps.iter().find(|step| step.status == "failed") {
+        markdown.push_str(&format!(
+            "- Fix `{}` in `{}` using `{}`; inspect `{}` and `{}` before editing.\n\n",
+            failed.name,
+            failed.belongs_in,
+            failed.extraction_target,
+            failed.stdout_path.display(),
+            failed.stderr_path.display()
+        ));
+    } else if report.dry_run {
+        markdown.push_str(
+            "- Execute `codex-env tdd-workflow` without `--dry-run`, supervise logs, then apply any discovered behavior into `crates/codex-env`.\n\n",
+        );
+    } else {
+        markdown.push_str(
+            "- All current TDD tool gates passed; inspect the per-step logs and promote the next uncovered automation behavior into `crates/codex-env` rather than a vendor harness.\n\n",
+        );
+    }
+    markdown.push_str("## Tool trace\n\n");
+    for step in &report.steps {
+        markdown.push_str(&format!(
+            "### {}\n\n- Status: `{}`\n- Worker state: `{}`\n- Does: {}\n- Why: {}\n- Belongs in: `{}`\n- Extraction target: {}\n- Supervision action: {}\n- Stdout: `{}`\n- Stderr: `{}`\n\n",
+            step.name,
+            step.status,
+            step.worker_state,
+            step.does,
+            step.why,
+            step.belongs_in,
+            step.extraction_target,
+            step.supervision_action,
+            step.stdout_path.display(),
+            step.stderr_path.display()
+        ));
+    }
+    fs::write(
+        &report.extraction_report_path,
+        normalize_generated_text(&markdown),
+    )
+    .with_context(|| {
+        format!(
+            "failed to write {}",
+            report.extraction_report_path.display()
+        )
+    })
+}
+
 fn codex_tdd_supervision_protocol() -> Vec<String> {
     vec![
         "build the crate-owned codex-env binary before invoking generated automation".to_owned(),
@@ -2301,6 +2364,7 @@ fn tdd_workflow_snapshot(
     codex_home: &Path,
     run_dir: &Path,
     status_path: &Path,
+    extraction_report_path: &Path,
     dry_run: bool,
     steps: &[CodexTddWorkflowStepReport],
 ) -> CodexTddWorkflowReport {
@@ -2309,6 +2373,7 @@ fn tdd_workflow_snapshot(
         codex_home: codex_home.to_path_buf(),
         run_dir: run_dir.to_path_buf(),
         status_path: status_path.to_path_buf(),
+        extraction_report_path: extraction_report_path.to_path_buf(),
         operator_role: "codex-as-human-in-loop".to_owned(),
         supervision_protocol: codex_tdd_supervision_protocol(),
         dry_run,

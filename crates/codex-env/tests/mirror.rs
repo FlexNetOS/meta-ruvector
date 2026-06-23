@@ -943,6 +943,13 @@ fn tdd_workflow_dry_run_materializes_codex_tool_execution_plan() {
     assert_eq!(report.operator_role, "codex-as-human-in-loop");
     assert_eq!(report.steps.len(), 8);
     assert!(report.status_path.exists());
+    assert!(report.extraction_report_path.exists());
+    let extraction = fs::read_to_string(&report.extraction_report_path).unwrap();
+    assert!(extraction.contains("# Codex TDD Extraction Report"));
+    assert!(extraction.contains("crates/codex-env"));
+    assert!(extraction.contains("vendor harness"));
+    assert!(extraction.contains("mirror-check"));
+    assert!(extraction.contains("Next extraction action"));
     assert!(report.steps[0]
         .command
         .ends_with("cargo build -p codex-env"));

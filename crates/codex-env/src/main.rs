@@ -477,12 +477,13 @@ fn main() -> Result<()> {
                 dry_run,
             })?;
             println!(
-                "codex-env tdd-workflow {}: operator={}, steps={}, run_dir={}, status={}",
+                "codex-env tdd-workflow {}: operator={}, steps={}, run_dir={}, status={}, extraction_report={}",
                 if report.dry_run { "planned" } else { "ok" },
                 report.operator_role,
                 report.steps.len(),
                 report.run_dir.display(),
-                report.status_path.display()
+                report.status_path.display(),
+                report.extraction_report_path.display()
             );
             for step in &report.steps {
                 println!(
