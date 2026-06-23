@@ -1,10 +1,12 @@
 use std::path::PathBuf;
 
-use anyhow::Result;
+use anyhow::{bail, Result};
 use clap::{Parser, Subcommand};
 use codex_env::{
-    doctor_codex_surface, install_codex_env, install_codex_prompts, mirror_codex_surface,
-    CodexInstallOptions, DoctorOptions, MirrorOptions, PromptInstallOptions,
+    doctor_codex_surface, install_codex_env, install_codex_prompts, inventory_codex_surface,
+    mirror_codex_surface, run_codex_auto_loop, run_codex_task, run_codex_team,
+    CodexAutoLoopOptions, CodexInstallOptions, CodexInventoryOptions, CodexRunOptions,
+    CodexTeamRunOptions, DoctorOptions, MirrorOptions, PromptInstallOptions,
 };
 
 #[derive(Parser)]
@@ -60,6 +62,119 @@ enum Commands {
         #[arg(long)]
         json: bool,
     },
+
+    /// Inventory Claude-to-Codex parity coverage and fail on detected gaps.
+    Inventory {
+        /// Codex home directory. Defaults to CODEX_HOME or ~/.codex.
+        #[arg(long)]
+        codex_home: Option<PathBuf>,
+
+        /// Emit the inventory report as JSON.
+        #[arg(long)]
+        json: bool,
+
+        /// Fail if the inventory contains any parity gaps.
+        #[arg(long)]
+        check: bool,
+    },
+
+    /// Refresh the Codex env, then run codex exec with JSONL artifacts.
+    Run {
+        /// Goal to give the non-interactive Codex runner.
+        goal: Option<String>,
+
+        /// Read additional goal text from a file.
+        #[arg(long)]
+        prompt_file: Option<PathBuf>,
+
+        /// Codex home directory. Defaults to CODEX_HOME or ~/.codex.
+        #[arg(long)]
+        codex_home: Option<PathBuf>,
+
+        /// Directory for prompt/events/status artifacts. Defaults under .codex/harness/runs.
+        #[arg(long)]
+        output_dir: Option<PathBuf>,
+
+        /// Materialize the run prompt and status without launching codex exec.
+        #[arg(long)]
+        dry_run: bool,
+
+        /// Skip install and only run doctor before launching.
+        #[arg(long)]
+        skip_install: bool,
+    },
+
+    /// Run a generated Codex agent team in parallel with JSONL artifacts.
+    TeamRun {
+        /// Team name from .codex/agent-teams.json.
+        #[arg(long, default_value = "core")]
+        team: String,
+
+        /// Goal to give every team member.
+        goal: Option<String>,
+
+        /// Read additional goal text from a file.
+        #[arg(long)]
+        prompt_file: Option<PathBuf>,
+
+        /// Codex home directory. Defaults to CODEX_HOME or ~/.codex.
+        #[arg(long)]
+        codex_home: Option<PathBuf>,
+
+        /// Directory for team artifacts. Defaults under .codex/harness/runs.
+        #[arg(long)]
+        output_dir: Option<PathBuf>,
+
+        /// Sandbox for parallel team members. Defaults to read-only; parent consolidation owns writes.
+        #[arg(long, default_value = "read-only")]
+        member_sandbox: String,
+
+        /// Materialize team prompts and status without launching codex exec.
+        #[arg(long)]
+        dry_run: bool,
+
+        /// Skip install and only run doctor before launching.
+        #[arg(long)]
+        skip_install: bool,
+    },
+
+    /// Run bounded autonomous Codex team iterations until complete or max iterations.
+    AutoLoop {
+        /// Team name from .codex/agent-teams.json.
+        #[arg(long, default_value = "core")]
+        team: String,
+
+        /// Goal to pursue through the auto-loop.
+        goal: Option<String>,
+
+        /// Read additional goal text from a file.
+        #[arg(long)]
+        prompt_file: Option<PathBuf>,
+
+        /// Codex home directory. Defaults to CODEX_HOME or ~/.codex.
+        #[arg(long)]
+        codex_home: Option<PathBuf>,
+
+        /// Directory for auto-loop artifacts. Defaults under .codex/harness/runs.
+        #[arg(long)]
+        output_dir: Option<PathBuf>,
+
+        /// Maximum non-dry-run iterations before stopping.
+        #[arg(long, default_value_t = 3)]
+        max_iterations: usize,
+
+        /// Sandbox for parallel team members. Defaults to read-only; parent consolidation owns writes.
+        #[arg(long, default_value = "read-only")]
+        member_sandbox: String,
+
+        /// Materialize the first iteration prompts and status without launching codex exec.
+        #[arg(long)]
+        dry_run: bool,
+
+        /// Skip install and only run doctor before launching.
+        #[arg(long)]
+        skip_install: bool,
+    },
 }
 
 fn main() -> Result<()> {
@@ -75,7 +190,7 @@ fn main() -> Result<()> {
                 codex_home,
             })?;
             println!(
-                "codex-env install ok: mirrored {} files ({} changed), installed {} prompts ({} changed), home settings {} at {}, doctor verified config {}/{}, {} agents ({} config entries), {} team(s), {} team member reference(s), {} hook handler(s), {} shim-backed hook handler(s), {} prompts ({} aliases) in {}",
+                "codex-env install ok: mirrored {} files ({} changed), installed {} prompts ({} changed), home settings {} at {}, doctor verified config {}/{}, {} MCP server(s), {} agents ({} config entries), {} team(s), {} team member reference(s), {} hook handler(s), {} shim-backed hook handler(s), {} helper mirrors, {} prompts ({} aliases) in {}",
                 report.mirror.total_files,
                 report.mirror.changed_files,
                 report.prompts.total_files,
@@ -88,12 +203,14 @@ fn main() -> Result<()> {
                 report.home_settings.config_path.display(),
                 report.doctor.config_model,
                 report.doctor.config_reasoning_effort,
+                report.doctor.config_mcp_servers.len(),
                 report.doctor.agent_files,
                 report.doctor.config_agent_entries,
                 report.doctor.agent_teams,
                 report.doctor.agent_team_members,
                 report.doctor.hook_handlers,
                 report.doctor.hook_shim_handlers,
+                report.doctor.claude_helper_files,
                 report.doctor.installed_prompt_files,
                 report.doctor.prompt_alias_files,
                 report.doctor.codex_home.join("prompts").display()
@@ -121,10 +238,11 @@ fn main() -> Result<()> {
                 check,
             })?;
             println!(
-                "codex-env installed {} prompt files ({} changed, {} verified) into {}",
+                "codex-env installed {} prompt files ({} changed, {} verified, {} removed stale) into {}",
                 report.total_files,
                 report.changed_files,
                 report.verified_files,
+                report.removed_files.len(),
                 report.target_dir.display()
             );
         }
@@ -139,7 +257,7 @@ fn main() -> Result<()> {
                 println!("{}", serde_json::to_string_pretty(&report)?);
             } else {
                 println!(
-                    "codex-env doctor ok: config {}/{}, approvals {}/{}, goals {}, home context {}, skills {}, {} agents ({} config entries; {}), {} team(s), {} team member reference(s), {} hook event(s), {} hook handler(s), {} shim-backed hook handler(s), {} prompts ({} aliases) installed into {}",
+                    "codex-env doctor ok: config {}/{}, approvals {}/{}, goals {}, home context {}, skills {}, {} MCP server(s), {} agents ({} config entries; {}), {} team(s), {} team member reference(s), {} hook event(s), {} hook handler(s), {} shim-backed hook handler(s), {} helper mirrors, {} prompts ({} aliases) installed into {}",
                     report.config_model,
                     report.config_reasoning_effort,
                     report.config_approval_policy,
@@ -147,6 +265,7 @@ fn main() -> Result<()> {
                     report.config_goals_enabled,
                     report.codex_home_settings.model_context_window,
                     report.codex_home_settings.include_skill_instructions,
+                    report.config_mcp_servers.len(),
                     report.agent_files,
                     report.config_agent_entries,
                     format_counts(&report.agent_models),
@@ -155,11 +274,167 @@ fn main() -> Result<()> {
                     report.hook_events.len(),
                     report.hook_handlers,
                     report.hook_shim_handlers,
+                    report.claude_helper_files,
                     report.installed_prompt_files,
                     report.prompt_alias_files,
                     report.codex_home.join("prompts").display()
                 );
             }
+        }
+        Commands::Inventory {
+            codex_home,
+            json,
+            check,
+        } => {
+            let codex_home = codex_home.unwrap_or_else(default_codex_home);
+            let report = inventory_codex_surface(CodexInventoryOptions {
+                repo_root,
+                lua_policy: cli.lua_policy,
+                codex_home,
+            })?;
+            if json {
+                println!("{}", serde_json::to_string_pretty(&report)?);
+            } else {
+                println!(
+                    "codex-env inventory: commands {} -> {} prompts ({} aliases, {} installed), agents {} -> {} Claude profiles / {} total, helpers {} -> {} mirrored ({} helper files), hooks {} -> {}, skills {} source-command / {} total, teams {} ({} members), MCP {}, gaps {}",
+                    report.claude.command_files,
+                    report.codex.prompt_files,
+                    report.codex.prompt_alias_files,
+                    report.codex.installed_prompt_files,
+                    report.claude.agent_files,
+                    report.codex.claude_agent_profiles,
+                    report.codex.agent_profiles,
+                    report.claude.helper_files,
+                    report.codex.helper_mirror_files,
+                    report.codex.helper_files,
+                    report.claude.hook_files,
+                    report.codex.hook_files,
+                    report.codex.source_command_skills,
+                    report.codex.skill_entrypoints,
+                    report.codex.agent_teams,
+                    report.codex.agent_team_members,
+                    report.codex.mcp_servers,
+                    report.gaps.len()
+                );
+                for gap in &report.gaps {
+                    println!("gap: {gap}");
+                }
+            }
+            if check && !report.gaps.is_empty() {
+                bail!(
+                    "codex-env inventory found {} parity gap(s)",
+                    report.gaps.len()
+                );
+            }
+        }
+        Commands::Run {
+            goal,
+            prompt_file,
+            codex_home,
+            output_dir,
+            dry_run,
+            skip_install,
+        } => {
+            let codex_home = codex_home.unwrap_or_else(default_codex_home);
+            let report = run_codex_task(CodexRunOptions {
+                repo_root,
+                lua_policy: cli.lua_policy,
+                codex_home,
+                goal,
+                prompt_file,
+                output_dir,
+                dry_run,
+                skip_install,
+            })?;
+            println!(
+                "codex-env run {}: run_dir={}, prompt={}, events={}, stderr={}, last_message={}, status={}, exit_code={}",
+                if report.dry_run { "prepared" } else { "ok" },
+                report.run_dir.display(),
+                report.prompt_path.display(),
+                report.events_path.display(),
+                report.stderr_path.display(),
+                report.last_message_path.display(),
+                report.status_path.display(),
+                report
+                    .exit_code
+                    .map_or_else(|| "not-run".to_owned(), |code| code.to_string())
+            );
+        }
+        Commands::TeamRun {
+            team,
+            goal,
+            prompt_file,
+            codex_home,
+            output_dir,
+            member_sandbox,
+            dry_run,
+            skip_install,
+        } => {
+            let codex_home = codex_home.unwrap_or_else(default_codex_home);
+            let report = run_codex_team(CodexTeamRunOptions {
+                repo_root,
+                lua_policy: cli.lua_policy,
+                codex_home,
+                team,
+                goal,
+                prompt_file,
+                output_dir,
+                member_sandbox_mode: member_sandbox,
+                dry_run,
+                skip_install,
+            })?;
+            println!(
+                "codex-env team-run {}: team={}, strategy={}, members={}, member_sandbox={}, run_dir={}, consolidation_prompt={}, consolidation_last_message={}, status={}",
+                if report.dry_run { "prepared" } else { "ok" },
+                report.team,
+                report.strategy,
+                report.members.len(),
+                report.member_sandbox_mode,
+                report.run_dir.display(),
+                report.consolidation_prompt_path.display(),
+                report.consolidation_run.last_message_path.display(),
+                report.status_path.display()
+            );
+        }
+        Commands::AutoLoop {
+            team,
+            goal,
+            prompt_file,
+            codex_home,
+            output_dir,
+            max_iterations,
+            member_sandbox,
+            dry_run,
+            skip_install,
+        } => {
+            let codex_home = codex_home.unwrap_or_else(default_codex_home);
+            let report = run_codex_auto_loop(CodexAutoLoopOptions {
+                repo_root,
+                lua_policy: cli.lua_policy,
+                codex_home,
+                team,
+                goal,
+                prompt_file,
+                output_dir,
+                max_iterations,
+                member_sandbox_mode: member_sandbox,
+                dry_run,
+                skip_install,
+            })?;
+            println!(
+                "codex-env auto-loop {}: team={}, iterations={}/{}, completed={}, marker={}, run_dir={}, status={}",
+                if report.dry_run { "prepared" } else { "ok" },
+                report.team,
+                report.iterations.len(),
+                report.max_iterations,
+                report.completed,
+                report
+                    .completion_marker
+                    .clone()
+                    .unwrap_or_else(|| "none".to_owned()),
+                report.run_dir.display(),
+                report.status_path.display()
+            );
         }
     }
 

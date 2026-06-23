@@ -133,6 +133,7 @@ data/
 
 # Codex mirrors the tracked .claude source tree, including selected paths that
 # match broad runtime ignores above.
+.codex/harness/runs/
 !.codex/mirror/.claude/agents/data/
 !.codex/mirror/.claude/agents/data/**
 !.codex/mirror/.claude/intelligence/data/

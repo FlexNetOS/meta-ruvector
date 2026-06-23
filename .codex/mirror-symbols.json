@@ -2,7 +2,7 @@
   "generatedBy": "codex-env",
   "sourceRoot": ".claude",
   "rawMirrorRoot": ".codex/mirror/.claude",
-  "sourceFileCount": 375,
+  "sourceFileCount": 376,
   "kindCounts": {
     "agent": 124,
     "command": 130,
@@ -10,7 +10,7 @@
     "hook": 5,
     "identity": 1,
     "intelligence": 23,
-    "other": 7,
+    "other": 8,
     "setting": 1,
     "skill": 43
   },
@@ -5650,6 +5650,21 @@
       }
     },
     {
+      "source": ".claude/rusty-idd-adapter.md",
+      "mirror": ".codex/mirror/.claude/rusty-idd-adapter.md",
+      "kind": "other",
+      "executable": false,
+      "bytes": 502,
+      "sourceSha256": "e3bc7c1b3504056fca9ac5267e3e67054849ecb6588d6620084224429d5e8012",
+      "mirrorSha256": "e3bc7c1b3504056fca9ac5267e3e67054849ecb6588d6620084224429d5e8012",
+      "symbols": {
+        "extension": "md",
+        "fileName": "rusty-idd-adapter.md",
+        "firstHeading": "Rusty IDD adapter — claude",
+        "pathSlug": "rusty-idd-adapter-md"
+      }
+    },
+    {
       "source": ".claude/ruvector-fast.sh",
       "mirror": ".codex/mirror/.claude/ruvector-fast.sh",
       "kind": "other",
@@ -5688,9 +5703,9 @@
       "mirror": ".codex/mirror/.claude/settings.json",
       "kind": "setting",
       "executable": false,
-      "bytes": 9235,
-      "sourceSha256": "5aabf28384d45ef42c270c158579970c9003088aa5888dfa82078a8c469592a0",
-      "mirrorSha256": "5aabf28384d45ef42c270c158579970c9003088aa5888dfa82078a8c469592a0",
+      "bytes": 9557,
+      "sourceSha256": "2e9c99e6200ce89eb68c7c85721d5b355b640f570dd47da3225f54fd9a103290",
+      "mirrorSha256": "2e9c99e6200ce89eb68c7c85721d5b355b640f570dd47da3225f54fd9a103290",
       "symbols": {
         "envKeys": [
           "BRAIN_API_KEY",

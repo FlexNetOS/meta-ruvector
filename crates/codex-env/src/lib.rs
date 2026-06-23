@@ -1,11 +1,15 @@
+use std::collections::BTreeSet;
 use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
+use std::process::{Command, Stdio};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use anyhow::{anyhow, Context, Result};
 use mlua::{Lua, Value};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::json;
+use serde_json::Value as JsonValue;
 use toml_edit::{value, DocumentMut, Item, Table};
 
 mod agent_roles;
@@ -62,6 +66,63 @@ pub struct PromptInstallReport {
     pub total_files: usize,
     pub changed_files: usize,
     pub verified_files: usize,
+    pub removed_files: Vec<PathBuf>,
+}
+
+#[derive(Debug, Clone)]
+pub struct CodexInventoryOptions {
+    pub repo_root: PathBuf,
+    pub lua_policy: Option<PathBuf>,
+    pub codex_home: PathBuf,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct CodexInventoryReport {
+    pub repo_root: PathBuf,
+    pub codex_home: PathBuf,
+    pub claude: CodexInventoryClaudeCounts,
+    pub codex: CodexInventoryCodexCounts,
+    pub expected: CodexInventoryExpectedCounts,
+    pub gaps: Vec<String>,
+    pub doctor: DoctorReport,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct CodexInventoryClaudeCounts {
+    pub command_files: usize,
+    pub agent_files: usize,
+    pub hook_files: usize,
+    pub helper_files: usize,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct CodexInventoryCodexCounts {
+    pub prompt_files: usize,
+    pub prompt_alias_files: usize,
+    pub installed_prompt_files: usize,
+    pub source_command_skills: usize,
+    pub skill_entrypoints: usize,
+    pub claude_agent_profiles: usize,
+    pub agent_profiles: usize,
+    pub hook_files: usize,
+    pub helper_files: usize,
+    pub helper_mirror_files: usize,
+    pub agent_teams: usize,
+    pub agent_team_members: usize,
+    pub mcp_servers: usize,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct CodexInventoryExpectedCounts {
+    pub command_prompt_files: usize,
+    pub workflow_prompt_files: usize,
+    pub prompt_files: usize,
+    pub source_command_skills: usize,
+    pub workflow_skills: usize,
+    pub copied_skill_files: usize,
+    pub claude_agent_profiles: usize,
+    pub hook_files: usize,
+    pub helper_mirror_files: usize,
 }
 
 #[derive(Debug, Clone)]
@@ -79,12 +140,115 @@ pub struct CodexInstallReport {
     pub doctor: DoctorReport,
 }
 
+#[derive(Debug, Clone)]
+pub struct CodexRunOptions {
+    pub repo_root: PathBuf,
+    pub lua_policy: Option<PathBuf>,
+    pub codex_home: PathBuf,
+    pub goal: Option<String>,
+    pub prompt_file: Option<PathBuf>,
+    pub output_dir: Option<PathBuf>,
+    pub dry_run: bool,
+    pub skip_install: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct CodexRunReport {
+    pub repo_root: PathBuf,
+    pub codex_home: PathBuf,
+    pub run_dir: PathBuf,
+    pub prompt_path: PathBuf,
+    pub events_path: PathBuf,
+    pub stderr_path: PathBuf,
+    pub last_message_path: PathBuf,
+    pub status_path: PathBuf,
+    pub dry_run: bool,
+    pub exit_code: Option<i32>,
+}
+
+#[derive(Debug, Clone)]
+pub struct CodexTeamRunOptions {
+    pub repo_root: PathBuf,
+    pub lua_policy: Option<PathBuf>,
+    pub codex_home: PathBuf,
+    pub team: String,
+    pub goal: Option<String>,
+    pub prompt_file: Option<PathBuf>,
+    pub output_dir: Option<PathBuf>,
+    pub member_sandbox_mode: String,
+    pub dry_run: bool,
+    pub skip_install: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct CodexTeamRunReport {
+    pub repo_root: PathBuf,
+    pub codex_home: PathBuf,
+    pub team: String,
+    pub strategy: String,
+    pub run_dir: PathBuf,
+    pub status_path: PathBuf,
+    pub consolidation_prompt_path: PathBuf,
+    pub consolidation_run: CodexRunReport,
+    pub member_sandbox_mode: String,
+    pub members: Vec<CodexTeamRunMemberReport>,
+    pub dry_run: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct CodexTeamRunMemberReport {
+    pub agent: String,
+    pub description: String,
+    pub model: String,
+    pub reasoning_effort: String,
+    pub sandbox_mode: String,
+    pub profile_path: PathBuf,
+    pub run: CodexRunReport,
+}
+
+#[derive(Debug, Clone)]
+pub struct CodexAutoLoopOptions {
+    pub repo_root: PathBuf,
+    pub lua_policy: Option<PathBuf>,
+    pub codex_home: PathBuf,
+    pub team: String,
+    pub goal: Option<String>,
+    pub prompt_file: Option<PathBuf>,
+    pub output_dir: Option<PathBuf>,
+    pub max_iterations: usize,
+    pub member_sandbox_mode: String,
+    pub dry_run: bool,
+    pub skip_install: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct CodexAutoLoopReport {
+    pub repo_root: PathBuf,
+    pub codex_home: PathBuf,
+    pub team: String,
+    pub run_dir: PathBuf,
+    pub status_path: PathBuf,
+    pub max_iterations: usize,
+    pub completed: bool,
+    pub completion_marker: Option<String>,
+    pub iterations: Vec<CodexAutoLoopIterationReport>,
+    pub dry_run: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct CodexAutoLoopIterationReport {
+    pub iteration: usize,
+    pub marker: Option<String>,
+    pub team_run: CodexTeamRunReport,
+}
+
 #[derive(Debug, Clone, Serialize)]
 pub struct CodexHomeSettingsReport {
     pub config_path: PathBuf,
     pub changed: bool,
     pub model: String,
     pub model_reasoning_effort: String,
+    pub model_catalog_json: String,
     pub approval_policy: String,
     pub approvals_reviewer: String,
     pub model_context_window: i64,
@@ -98,6 +262,7 @@ pub const REQUIRED_CODEX_REASONING_EFFORT: &str = "high";
 pub const REQUIRED_CODEX_APPROVAL_POLICY: &str = "on-request";
 pub const REQUIRED_CODEX_APPROVALS_REVIEWER: &str = "auto_review";
 pub const REQUIRED_CODEX_CONTEXT_WINDOW: i64 = 4_000_000;
+pub const REQUIRED_CODEX_MODEL_CATALOG: &str = "model-catalog.json";
 
 #[derive(Debug, Default)]
 struct LuaPolicy {
@@ -143,6 +308,11 @@ pub fn mirror_codex_surface(options: MirrorOptions) -> Result<MirrorReport> {
         executable: false,
     });
     planned.push(PlannedFile {
+        path: codex_dir.join(REQUIRED_CODEX_MODEL_CATALOG),
+        bytes: generated::codex_model_catalog_json().into_bytes(),
+        executable: false,
+    });
+    planned.push(PlannedFile {
         path: codex_dir.join("AGENTS.md"),
         bytes: codex_agents_md().into_bytes(),
         executable: false,
@@ -155,6 +325,10 @@ pub fn mirror_codex_surface(options: MirrorOptions) -> Result<MirrorReport> {
         &codex_dir,
         &agent_role_plan.roles,
     ));
+    planned.extend(copy_tree_plan(
+        &claude_dir.join("helpers"),
+        &codex_dir.join("helpers"),
+    )?);
     planned.extend(codex_prompt_helpers(&codex_dir));
     planned.push(PlannedFile {
         path: codex_dir.join("hooks.json"),
@@ -307,6 +481,8 @@ pub fn install_codex_prompts(options: PromptInstallOptions) -> Result<PromptInst
 
     let mut changed_files = 0;
     let mut verified_files = 0;
+    let planned_paths: BTreeSet<PathBuf> = planned.iter().map(|file| file.path.clone()).collect();
+    let stale_files = stale_installed_prompt_files(&target_dir, &planned_paths)?;
     for file in &planned {
         let exists_with_same_content = fs::read(&file.path).is_ok_and(|bytes| bytes == file.bytes);
         if exists_with_same_content {
@@ -318,10 +494,32 @@ pub fn install_codex_prompts(options: PromptInstallOptions) -> Result<PromptInst
             write_file(file)?;
         }
     }
+    if !options.check {
+        for path in &stale_files {
+            fs::remove_file(path).with_context(|| {
+                format!(
+                    "failed to remove stale Codex home prompt {}",
+                    path.display()
+                )
+            })?;
+        }
+    }
 
     if options.check && changed_files > 0 {
         return Err(anyhow!(
             "Codex home prompts are stale: {changed_files} prompt file(s) differ"
+        ));
+    }
+    if options.check && !stale_files.is_empty() {
+        return Err(anyhow!(
+            "Codex home prompts include {} stale file(s): {}",
+            stale_files.len(),
+            stale_files
+                .iter()
+                .take(5)
+                .map(|path| path.display().to_string())
+                .collect::<Vec<_>>()
+                .join(", ")
         ));
     }
 
@@ -332,6 +530,280 @@ pub fn install_codex_prompts(options: PromptInstallOptions) -> Result<PromptInst
         total_files: planned.len(),
         changed_files,
         verified_files,
+        removed_files: stale_files,
+    })
+}
+
+fn stale_installed_prompt_files(
+    target_dir: &Path,
+    planned_paths: &BTreeSet<PathBuf>,
+) -> Result<Vec<PathBuf>> {
+    let mut stale = Vec::new();
+    if !target_dir.exists() {
+        return Ok(stale);
+    }
+    for entry in fs::read_dir(target_dir)? {
+        let entry = entry?;
+        let path = entry.path();
+        if path.is_file()
+            && path.extension().and_then(|value| value.to_str()) == Some("md")
+            && !planned_paths.contains(&path)
+        {
+            stale.push(path);
+        }
+    }
+    stale.sort();
+    Ok(stale)
+}
+
+fn count_files_recursive(root: &Path) -> Result<usize> {
+    if !root.exists() {
+        return Ok(0);
+    }
+    let mut count = 0;
+    for entry in fs::read_dir(root)? {
+        let entry = entry?;
+        let path = entry.path();
+        if path.is_dir() {
+            count += count_files_recursive(&path)?;
+        } else if path.is_file() {
+            count += 1;
+        }
+    }
+    Ok(count)
+}
+
+fn count_files_with_extension(root: &Path, extension: &str) -> Result<usize> {
+    if !root.exists() {
+        return Ok(0);
+    }
+    let mut count = 0;
+    for entry in fs::read_dir(root)? {
+        let entry = entry?;
+        let path = entry.path();
+        if path.is_dir() {
+            count += count_files_with_extension(&path, extension)?;
+        } else if path.is_file()
+            && path.extension().and_then(|value| value.to_str()) == Some(extension)
+        {
+            count += 1;
+        }
+    }
+    Ok(count)
+}
+
+fn count_markdown_files(root: &Path) -> Result<usize> {
+    count_files_with_extension(root, "md")
+}
+
+fn count_skill_entrypoints(root: &Path) -> Result<usize> {
+    if !root.exists() {
+        return Ok(0);
+    }
+    let mut count = 0;
+    for entry in fs::read_dir(root)? {
+        let entry = entry?;
+        let path = entry.path();
+        if path.is_dir() {
+            count += count_skill_entrypoints(&path)?;
+        } else if path.file_name().and_then(|value| value.to_str()) == Some("SKILL.md") {
+            count += 1;
+        }
+    }
+    Ok(count)
+}
+
+fn count_source_command_skills(skills_dir: &Path) -> Result<usize> {
+    if !skills_dir.exists() {
+        return Ok(0);
+    }
+    let mut count = 0;
+    for entry in fs::read_dir(skills_dir)? {
+        let path = entry?.path();
+        if path.is_dir()
+            && path
+                .file_name()
+                .and_then(|value| value.to_str())
+                .is_some_and(|name| name.starts_with("source-command-"))
+            && path.join("SKILL.md").is_file()
+        {
+            count += 1;
+        }
+    }
+    Ok(count)
+}
+
+fn mismatched_planned_files(repo_root: &Path, planned: &[PlannedFile]) -> Result<Vec<PathBuf>> {
+    let mut mismatches = Vec::new();
+    for file in planned {
+        let Ok(actual) = fs::read(&file.path) else {
+            mismatches.push(strip_repo_prefix(repo_root, &file.path));
+            continue;
+        };
+        if actual != file.bytes || is_executable(&file.path)? != file.executable {
+            mismatches.push(strip_repo_prefix(repo_root, &file.path));
+        }
+    }
+    mismatches.sort();
+    Ok(mismatches)
+}
+
+pub fn inventory_codex_surface(options: CodexInventoryOptions) -> Result<CodexInventoryReport> {
+    let repo_root = options.repo_root.canonicalize().with_context(|| {
+        format!(
+            "failed to canonicalize repo root {}",
+            options.repo_root.display()
+        )
+    })?;
+    let claude_dir = locate_claude_dir(&repo_root)?;
+    let codex_dir = repo_root.join(".codex");
+    let skills_dir = repo_root.join(".agents/skills");
+    let agent_role_plan = claude_agent_role_plan(&claude_dir.join("agents"), &codex_dir)?;
+    let command_prompt_plan = command_prompt_plan(&claude_dir.join("commands"), &codex_dir)?;
+    let workflow_prompts = codex_native_workflow_prompts(&codex_dir, &agent_role_plan.roles);
+    let copied_skill_plan = copy_tree_plan(&claude_dir.join("skills"), &skills_dir)?;
+    let command_skill_plan = command_skill_plan(&claude_dir.join("commands"), &skills_dir, None)?;
+    let workflow_skills = codex_native_workflow_skills(&skills_dir, &agent_role_plan.roles);
+    let hook_plan = copy_tree_plan(&claude_dir.join("hooks"), &codex_dir.join("hooks"))?;
+    let helper_plan = copy_tree_plan(&claude_dir.join("helpers"), &codex_dir.join("helpers"))?;
+
+    let codex_home = options.codex_home;
+    let doctor = doctor_codex_surface(DoctorOptions {
+        repo_root: repo_root.clone(),
+        lua_policy: options.lua_policy,
+        codex_home: codex_home.clone(),
+    })?;
+
+    let mut skill_plan = copied_skill_plan;
+    skill_plan.extend(command_skill_plan);
+    skill_plan.extend(workflow_skills);
+
+    let mut gaps = Vec::new();
+    let command_prompt_files = command_prompt_plan.files.len();
+    let workflow_prompt_files = workflow_prompts.len();
+    let expected_prompt_files = command_prompt_files + workflow_prompt_files;
+    if doctor.prompt_files != expected_prompt_files {
+        gaps.push(format!(
+            "expected {expected_prompt_files} Codex prompt files but found {}",
+            doctor.prompt_files
+        ));
+    }
+    if doctor.installed_prompt_files != doctor.prompt_files {
+        gaps.push(format!(
+            "installed prompt count {} does not match generated prompt count {}",
+            doctor.installed_prompt_files, doctor.prompt_files
+        ));
+    }
+
+    let expected_source_command_skills = skill_plan
+        .iter()
+        .filter(|file| {
+            file.path
+                .parent()
+                .and_then(|path| path.file_name())
+                .and_then(|value| value.to_str())
+                .is_some_and(|name| name.starts_with("source-command-"))
+                && file.path.file_name().and_then(|value| value.to_str()) == Some("SKILL.md")
+        })
+        .count();
+    let source_command_skills = count_source_command_skills(&skills_dir)?;
+    if source_command_skills != expected_source_command_skills {
+        gaps.push(format!(
+            "expected {expected_source_command_skills} source-command skills but found {source_command_skills}"
+        ));
+    }
+
+    let skill_mismatches = mismatched_planned_files(&repo_root, &skill_plan)?;
+    if !skill_mismatches.is_empty() {
+        gaps.push(format!(
+            "skill mirror has {} missing or stale file(s); first: {}",
+            skill_mismatches.len(),
+            skill_mismatches[0].display()
+        ));
+    }
+
+    let hook_mismatches = mismatched_planned_files(&repo_root, &hook_plan)?;
+    if !hook_mismatches.is_empty() {
+        gaps.push(format!(
+            "hook mirror has {} missing or stale file(s); first: {}",
+            hook_mismatches.len(),
+            hook_mismatches[0].display()
+        ));
+    }
+
+    let helper_mismatches = mismatched_planned_files(&repo_root, &helper_plan)?;
+    if !helper_mismatches.is_empty() {
+        gaps.push(format!(
+            "helper mirror has {} missing or stale file(s); first: {}",
+            helper_mismatches.len(),
+            helper_mismatches[0].display()
+        ));
+    }
+
+    if doctor.agent_files != doctor.config_agent_entries {
+        gaps.push(format!(
+            "config has {} agent entries but {} agent files",
+            doctor.config_agent_entries, doctor.agent_files
+        ));
+    }
+    if doctor.agent_files < agent_role_plan.files.len() {
+        gaps.push(format!(
+            "expected at least {} Claude agent profiles but only {} agent files were verified",
+            agent_role_plan.files.len(),
+            doctor.agent_files
+        ));
+    }
+    if doctor.claude_helper_files != helper_plan.len() {
+        gaps.push(format!(
+            "expected {} helper mirror files but doctor verified {}",
+            helper_plan.len(),
+            doctor.claude_helper_files
+        ));
+    }
+
+    Ok(CodexInventoryReport {
+        repo_root: repo_root.clone(),
+        codex_home,
+        claude: CodexInventoryClaudeCounts {
+            command_files: count_markdown_files(&claude_dir.join("commands"))?,
+            agent_files: count_files_recursive(&claude_dir.join("agents"))?,
+            hook_files: hook_plan.len(),
+            helper_files: helper_plan.len(),
+        },
+        codex: CodexInventoryCodexCounts {
+            prompt_files: doctor.prompt_files,
+            prompt_alias_files: doctor.prompt_alias_files,
+            installed_prompt_files: doctor.installed_prompt_files,
+            source_command_skills,
+            skill_entrypoints: count_skill_entrypoints(&skills_dir)?,
+            claude_agent_profiles: count_files_with_extension(
+                &codex_dir.join("agents/claude"),
+                "toml",
+            )?,
+            agent_profiles: doctor.agent_files,
+            hook_files: count_files_recursive(&codex_dir.join("hooks"))?,
+            helper_files: count_files_recursive(&codex_dir.join("helpers"))?,
+            helper_mirror_files: doctor.claude_helper_files,
+            agent_teams: doctor.agent_teams,
+            agent_team_members: doctor.agent_team_members,
+            mcp_servers: doctor.config_mcp_servers.len(),
+        },
+        expected: CodexInventoryExpectedCounts {
+            command_prompt_files,
+            workflow_prompt_files,
+            prompt_files: expected_prompt_files,
+            source_command_skills: expected_source_command_skills,
+            workflow_skills: 3,
+            copied_skill_files: skill_plan
+                .len()
+                .saturating_sub(expected_source_command_skills)
+                .saturating_sub(3),
+            claude_agent_profiles: agent_role_plan.files.len(),
+            hook_files: hook_plan.len(),
+            helper_mirror_files: helper_plan.len(),
+        },
+        gaps,
+        doctor,
     })
 }
 
@@ -361,7 +833,373 @@ pub fn install_codex_env(options: CodexInstallOptions) -> Result<CodexInstallRep
     })
 }
 
+pub fn run_codex_task(options: CodexRunOptions) -> Result<CodexRunReport> {
+    let repo_root = options.repo_root.canonicalize().with_context(|| {
+        format!(
+            "failed to canonicalize repo root {}",
+            options.repo_root.display()
+        )
+    })?;
+    let codex_home = options.codex_home;
+    let goal = resolve_run_goal(options.goal.as_deref(), options.prompt_file.as_deref())?;
+
+    if options.skip_install {
+        doctor_codex_surface(DoctorOptions {
+            repo_root: repo_root.clone(),
+            lua_policy: options.lua_policy,
+            codex_home: codex_home.clone(),
+        })?;
+    } else {
+        install_codex_env(CodexInstallOptions {
+            repo_root: repo_root.clone(),
+            lua_policy: options.lua_policy,
+            codex_home: codex_home.clone(),
+        })?;
+    }
+
+    let run_dir = options
+        .output_dir
+        .unwrap_or_else(|| repo_root.join(".codex/harness/runs").join(run_id(&goal)));
+    fs::create_dir_all(&run_dir)
+        .with_context(|| format!("failed to create {}", run_dir.display()))?;
+
+    let prompt = codex_run_prompt(&goal);
+    let prompt_path = run_dir.join("prompt.md");
+    let events_path = run_dir.join("events.jsonl");
+    let stderr_path = run_dir.join("stderr.log");
+    let last_message_path = run_dir.join("last-message.md");
+    let status_path = run_dir.join("status.json");
+    fs::write(&prompt_path, &prompt)
+        .with_context(|| format!("failed to write {}", prompt_path.display()))?;
+
+    let mut report = CodexRunReport {
+        repo_root: repo_root.clone(),
+        codex_home: codex_home.clone(),
+        run_dir: run_dir.clone(),
+        prompt_path,
+        events_path,
+        stderr_path,
+        last_message_path,
+        status_path,
+        dry_run: options.dry_run,
+        exit_code: None,
+    };
+
+    if options.dry_run {
+        write_run_status(&report)?;
+        return Ok(report);
+    }
+
+    let events = fs::File::create(&report.events_path)
+        .with_context(|| format!("failed to create {}", report.events_path.display()))?;
+    let stderr = fs::File::create(&report.stderr_path)
+        .with_context(|| format!("failed to create {}", report.stderr_path.display()))?;
+    let mut child = Command::new("codex")
+        .arg("exec")
+        .arg("--json")
+        .arg("--cd")
+        .arg(&repo_root)
+        .arg("--sandbox")
+        .arg("workspace-write")
+        .arg("--config")
+        .arg("approval_policy=\"never\"")
+        .arg("--output-last-message")
+        .arg(&report.last_message_path)
+        .arg("-")
+        .env("CODEX_HOME", &codex_home)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::from(events))
+        .stderr(Stdio::from(stderr))
+        .spawn()
+        .with_context(|| "failed to spawn codex exec")?;
+    child
+        .stdin
+        .take()
+        .ok_or_else(|| anyhow!("failed to open codex exec stdin"))?
+        .write_all(prompt.as_bytes())
+        .with_context(|| "failed to write codex exec prompt")?;
+    let status = child
+        .wait()
+        .with_context(|| "failed to wait for codex exec")?;
+    report.exit_code = status.code();
+    write_run_status(&report)?;
+    if !status.success() {
+        return Err(anyhow!(
+            "codex-env run failed with exit code {}; see {} and {}",
+            status
+                .code()
+                .map_or_else(|| "signal".to_owned(), |code| code.to_string()),
+            report.events_path.display(),
+            report.stderr_path.display()
+        ));
+    }
+    Ok(report)
+}
+
+pub fn run_codex_team(options: CodexTeamRunOptions) -> Result<CodexTeamRunReport> {
+    let repo_root = options.repo_root.canonicalize().with_context(|| {
+        format!(
+            "failed to canonicalize repo root {}",
+            options.repo_root.display()
+        )
+    })?;
+    let codex_home = options.codex_home;
+    let goal = resolve_run_goal(options.goal.as_deref(), options.prompt_file.as_deref())?;
+
+    if options.skip_install {
+        doctor_codex_surface(DoctorOptions {
+            repo_root: repo_root.clone(),
+            lua_policy: options.lua_policy,
+            codex_home: codex_home.clone(),
+        })?;
+    } else {
+        install_codex_env(CodexInstallOptions {
+            repo_root: repo_root.clone(),
+            lua_policy: options.lua_policy,
+            codex_home: codex_home.clone(),
+        })?;
+    }
+
+    let codex_dir = repo_root.join(".codex");
+    let team = load_team(&codex_dir, &options.team)?;
+    let profiles = load_team_agent_profiles(&codex_dir, &team)?;
+    let member_sandbox_mode = validate_member_sandbox_mode(&options.member_sandbox_mode)?;
+    let run_dir = options.output_dir.unwrap_or_else(|| {
+        repo_root
+            .join(".codex/harness/runs")
+            .join(format!("{}-team-{}", run_id(&goal), team.name))
+    });
+    fs::create_dir_all(&run_dir)
+        .with_context(|| format!("failed to create {}", run_dir.display()))?;
+
+    let mut members = Vec::new();
+    let mut children = Vec::new();
+    for profile in profiles {
+        let agent_dir = run_dir.join("agents").join(&profile.name);
+        let prompt = codex_team_member_prompt(&goal, &team, &profile, &member_sandbox_mode);
+        let report =
+            prepared_run_report(&repo_root, &codex_home, agent_dir, prompt, options.dry_run)?;
+        let child = if options.dry_run {
+            None
+        } else {
+            Some(spawn_codex_exec(
+                &repo_root,
+                &codex_home,
+                &report,
+                &member_sandbox_mode,
+                &profile.model,
+                &profile.model_reasoning_effort,
+            )?)
+        };
+        let member = CodexTeamRunMemberReport {
+            agent: profile.name,
+            description: profile.description,
+            model: profile.model,
+            reasoning_effort: profile.model_reasoning_effort,
+            sandbox_mode: member_sandbox_mode.clone(),
+            profile_path: profile.path,
+            run: report.clone(),
+        };
+        if child.is_none() {
+            write_run_status(&report)?;
+        }
+        if let Some(child) = child {
+            children.push((members.len(), child));
+        }
+        members.push(member);
+    }
+
+    for (index, mut child) in children {
+        let status = child
+            .wait()
+            .with_context(|| "failed to wait for codex exec team member")?;
+        members[index].run.exit_code = status.code();
+        write_run_status(&members[index].run)?;
+        if !status.success() {
+            return Err(anyhow!(
+                "codex-env team-run member {} failed with exit code {}; see {} and {}",
+                members[index].agent,
+                status
+                    .code()
+                    .map_or_else(|| "signal".to_owned(), |code| code.to_string()),
+                members[index].run.events_path.display(),
+                members[index].run.stderr_path.display()
+            ));
+        }
+    }
+
+    let consolidation_prompt_path = run_dir.join("consolidation-prompt.md");
+    fs::write(
+        &consolidation_prompt_path,
+        codex_team_consolidation_prompt(&goal, &team, &members),
+    )
+    .with_context(|| format!("failed to write {}", consolidation_prompt_path.display()))?;
+    let consolidation_prompt = fs::read_to_string(&consolidation_prompt_path)
+        .with_context(|| format!("failed to read {}", consolidation_prompt_path.display()))?;
+    let mut consolidation_run = prepared_run_report(
+        &repo_root,
+        &codex_home,
+        run_dir.join("consolidation"),
+        consolidation_prompt,
+        options.dry_run,
+    )?;
+    if options.dry_run {
+        write_run_status(&consolidation_run)?;
+    } else {
+        let mut child = spawn_codex_exec(
+            &repo_root,
+            &codex_home,
+            &consolidation_run,
+            "workspace-write",
+            REQUIRED_CODEX_MODEL,
+            REQUIRED_CODEX_REASONING_EFFORT,
+        )?;
+        let status = child
+            .wait()
+            .with_context(|| "failed to wait for codex exec team consolidation")?;
+        consolidation_run.exit_code = status.code();
+        write_run_status(&consolidation_run)?;
+        if !status.success() {
+            return Err(anyhow!(
+                "codex-env team-run consolidation failed with exit code {}; see {} and {}",
+                status
+                    .code()
+                    .map_or_else(|| "signal".to_owned(), |code| code.to_string()),
+                consolidation_run.events_path.display(),
+                consolidation_run.stderr_path.display()
+            ));
+        }
+    }
+    let status_path = run_dir.join("team-status.json");
+    let report = CodexTeamRunReport {
+        repo_root,
+        codex_home,
+        team: team.name,
+        strategy: team.strategy,
+        run_dir,
+        status_path,
+        consolidation_prompt_path,
+        consolidation_run,
+        member_sandbox_mode,
+        members,
+        dry_run: options.dry_run,
+    };
+    write_team_run_status(&report)?;
+    Ok(report)
+}
+
+pub fn run_codex_auto_loop(options: CodexAutoLoopOptions) -> Result<CodexAutoLoopReport> {
+    if options.max_iterations == 0 || options.max_iterations > 20 {
+        return Err(anyhow!(
+            "codex-env auto-loop requires --max-iterations between 1 and 20"
+        ));
+    }
+    let repo_root = options.repo_root.canonicalize().with_context(|| {
+        format!(
+            "failed to canonicalize repo root {}",
+            options.repo_root.display()
+        )
+    })?;
+    let codex_home = options.codex_home;
+    let goal = resolve_run_goal(options.goal.as_deref(), options.prompt_file.as_deref())?;
+    let member_sandbox_mode = validate_member_sandbox_mode(&options.member_sandbox_mode)?;
+
+    if options.skip_install {
+        doctor_codex_surface(DoctorOptions {
+            repo_root: repo_root.clone(),
+            lua_policy: options.lua_policy.clone(),
+            codex_home: codex_home.clone(),
+        })?;
+    } else {
+        install_codex_env(CodexInstallOptions {
+            repo_root: repo_root.clone(),
+            lua_policy: options.lua_policy.clone(),
+            codex_home: codex_home.clone(),
+        })?;
+    }
+
+    let run_dir = options.output_dir.unwrap_or_else(|| {
+        repo_root
+            .join(".codex/harness/runs")
+            .join(format!("{}-auto-loop", run_id(&goal)))
+    });
+    fs::create_dir_all(&run_dir)
+        .with_context(|| format!("failed to create {}", run_dir.display()))?;
+
+    let iteration_count = if options.dry_run {
+        1
+    } else {
+        options.max_iterations
+    };
+    let mut iterations = Vec::new();
+    let mut completed = false;
+    let mut completion_marker = None;
+
+    for iteration in 1..=iteration_count {
+        let iteration_goal = codex_auto_loop_goal(&goal, iteration, options.max_iterations);
+        let team_run = run_codex_team(CodexTeamRunOptions {
+            repo_root: repo_root.clone(),
+            lua_policy: options.lua_policy.clone(),
+            codex_home: codex_home.clone(),
+            team: options.team.clone(),
+            goal: Some(iteration_goal),
+            prompt_file: None,
+            output_dir: Some(run_dir.join(format!("iteration-{iteration:02}"))),
+            member_sandbox_mode: member_sandbox_mode.clone(),
+            dry_run: options.dry_run,
+            skip_install: true,
+        })?;
+        let marker = if options.dry_run {
+            None
+        } else {
+            let last_message = fs::read_to_string(&team_run.consolidation_run.last_message_path)
+                .with_context(|| {
+                    format!(
+                        "failed to read {}",
+                        team_run.consolidation_run.last_message_path.display()
+                    )
+                })?;
+            parse_auto_loop_marker(&last_message)
+        };
+        if marker.as_deref() == Some("complete") {
+            completed = true;
+        }
+        completion_marker = marker.clone().or(completion_marker);
+        iterations.push(CodexAutoLoopIterationReport {
+            iteration,
+            marker,
+            team_run,
+        });
+        if completed || options.dry_run {
+            break;
+        }
+    }
+
+    let status_path = run_dir.join("auto-loop-status.json");
+    let report = CodexAutoLoopReport {
+        repo_root,
+        codex_home,
+        team: options.team,
+        run_dir,
+        status_path,
+        max_iterations: options.max_iterations,
+        completed,
+        completion_marker,
+        iterations,
+        dry_run: options.dry_run,
+    };
+    write_auto_loop_status(&report)?;
+    Ok(report)
+}
+
 pub fn ensure_codex_home_settings(codex_home: &Path) -> Result<CodexHomeSettingsReport> {
+    let catalog_path = codex_home.join(REQUIRED_CODEX_MODEL_CATALOG);
+    write_file(&PlannedFile {
+        path: catalog_path.clone(),
+        bytes: generated::codex_model_catalog_json().into_bytes(),
+        executable: false,
+    })?;
+
     let config_path = codex_home.join("config.toml");
     let original = if config_path.exists() {
         fs::read_to_string(&config_path)
@@ -378,6 +1216,11 @@ pub fn ensure_codex_home_settings(codex_home: &Path) -> Result<CodexHomeSettings
         &mut document,
         "model_reasoning_effort",
         REQUIRED_CODEX_REASONING_EFFORT,
+    );
+    set_root_string(
+        &mut document,
+        "model_catalog_json",
+        catalog_path.to_string_lossy().as_ref(),
     );
     set_root_string(
         &mut document,
@@ -428,6 +1271,7 @@ fn validate_codex_home_settings_at(
     let model = required_home_string(&parsed, "model", &config_path)?;
     let model_reasoning_effort =
         required_home_string(&parsed, "model_reasoning_effort", &config_path)?;
+    let model_catalog_json = required_home_string(&parsed, "model_catalog_json", &config_path)?;
     let approval_policy = required_home_string(&parsed, "approval_policy", &config_path)?;
     let approvals_reviewer = required_home_string(&parsed, "approvals_reviewer", &config_path)?;
     let model_context_window =
@@ -450,6 +1294,15 @@ fn validate_codex_home_settings_at(
             config_path.display()
         ));
     }
+    let expected_catalog = codex_home.join(REQUIRED_CODEX_MODEL_CATALOG);
+    if model_catalog_json != expected_catalog.to_string_lossy() {
+        return Err(anyhow!(
+            "{} must set model_catalog_json to {}, found {model_catalog_json}",
+            config_path.display(),
+            expected_catalog.display()
+        ));
+    }
+    validate_model_catalog(&expected_catalog)?;
     if approval_policy != REQUIRED_CODEX_APPROVAL_POLICY {
         return Err(anyhow!(
             "{} must set approval_policy to {REQUIRED_CODEX_APPROVAL_POLICY}, found {approval_policy}",
@@ -492,6 +1345,7 @@ fn validate_codex_home_settings_at(
         changed,
         model,
         model_reasoning_effort,
+        model_catalog_json,
         approval_policy,
         approvals_reviewer,
         model_context_window,
@@ -499,6 +1353,46 @@ fn validate_codex_home_settings_at(
         goals_enabled,
         include_skill_instructions,
     })
+}
+
+fn validate_model_catalog(path: &Path) -> Result<()> {
+    let catalog =
+        fs::read_to_string(path).with_context(|| format!("failed to read {}", path.display()))?;
+    let parsed = serde_json::from_str::<JsonValue>(&catalog)
+        .with_context(|| format!("failed to parse {}", path.display()))?;
+    let models = parsed
+        .get("models")
+        .and_then(JsonValue::as_array)
+        .ok_or_else(|| anyhow!("{} must contain a models array", path.display()))?;
+    let Some(model) = models
+        .iter()
+        .find(|model| model.get("slug").and_then(JsonValue::as_str) == Some(REQUIRED_CODEX_MODEL))
+    else {
+        return Err(anyhow!(
+            "{} must contain model {}",
+            path.display(),
+            REQUIRED_CODEX_MODEL
+        ));
+    };
+    let context_window = model
+        .get("context_window")
+        .and_then(JsonValue::as_i64)
+        .ok_or_else(|| anyhow!("{} model must set context_window", path.display()))?;
+    let max_context_window = model
+        .get("max_context_window")
+        .and_then(JsonValue::as_i64)
+        .ok_or_else(|| anyhow!("{} model must set max_context_window", path.display()))?;
+    if context_window < REQUIRED_CODEX_CONTEXT_WINDOW
+        || max_context_window < REQUIRED_CODEX_CONTEXT_WINDOW
+    {
+        return Err(anyhow!(
+            "{} model {} must set context_window and max_context_window >= {}, found {context_window}/{max_context_window}",
+            path.display(),
+            REQUIRED_CODEX_MODEL,
+            REQUIRED_CODEX_CONTEXT_WINDOW
+        ));
+    }
+    Ok(())
 }
 
 fn set_root_string(document: &mut DocumentMut, key: &str, expected: &str) {
@@ -645,6 +1539,423 @@ fn manifest_json(
     Ok(format!("{}\n", serde_json::to_string_pretty(&manifest)?))
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct RunAgentTeamsManifest {
+    teams: Vec<RunAgentTeam>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct RunAgentTeam {
+    name: String,
+    description: String,
+    strategy: String,
+    parallel: bool,
+    consolidation_owner: String,
+    agents: Vec<String>,
+}
+
+#[derive(Debug, Clone)]
+struct RunAgentProfile {
+    name: String,
+    description: String,
+    model: String,
+    model_reasoning_effort: String,
+    developer_instructions: String,
+    path: PathBuf,
+}
+
+fn load_team(codex_dir: &Path, team_name: &str) -> Result<RunAgentTeam> {
+    let path = codex_dir.join("agent-teams.json");
+    let manifest: RunAgentTeamsManifest = serde_json::from_slice(
+        &fs::read(&path).with_context(|| format!("failed to read {}", path.display()))?,
+    )
+    .with_context(|| format!("failed to parse {}", path.display()))?;
+    let Some(team) = manifest
+        .teams
+        .into_iter()
+        .find(|team| team.name == team_name)
+    else {
+        return Err(anyhow!("{} has no team named {team_name}", path.display()));
+    };
+    if !team.parallel {
+        return Err(anyhow!(
+            "{} team {team_name} must have parallel=true for team-run",
+            path.display()
+        ));
+    }
+    if team.consolidation_owner != "parent" {
+        return Err(anyhow!(
+            "{} team {team_name} must use parent consolidation",
+            path.display()
+        ));
+    }
+    Ok(team)
+}
+
+fn load_team_agent_profiles(codex_dir: &Path, team: &RunAgentTeam) -> Result<Vec<RunAgentProfile>> {
+    let config_path = codex_dir.join("config.toml");
+    let config = toml::from_str::<toml::Value>(
+        &fs::read_to_string(&config_path)
+            .with_context(|| format!("failed to read {}", config_path.display()))?,
+    )
+    .with_context(|| format!("failed to parse {}", config_path.display()))?;
+    let agents = config
+        .get("agents")
+        .and_then(toml::Value::as_table)
+        .ok_or_else(|| anyhow!("{} is missing agents table", config_path.display()))?;
+    let mut profiles = Vec::new();
+    for agent in &team.agents {
+        let table = agents
+            .get(agent)
+            .and_then(toml::Value::as_table)
+            .ok_or_else(|| {
+                anyhow!(
+                    "{} has no config entry for agent {agent}",
+                    config_path.display()
+                )
+            })?;
+        let config_file = table
+            .get("config_file")
+            .and_then(toml::Value::as_str)
+            .ok_or_else(|| anyhow!("{} agent {agent} has no config_file", config_path.display()))?;
+        let config_file = PathBuf::from(config_file);
+        if config_file.is_absolute()
+            || config_file
+                .components()
+                .any(|component| matches!(component, std::path::Component::ParentDir))
+        {
+            return Err(anyhow!(
+                "{} agent {agent} has unsafe config_file {}",
+                config_path.display(),
+                config_file.display()
+            ));
+        }
+        profiles.push(load_agent_profile(&codex_dir.join(config_file))?);
+    }
+    Ok(profiles)
+}
+
+fn load_agent_profile(path: &Path) -> Result<RunAgentProfile> {
+    let toml = toml::from_str::<toml::Value>(
+        &fs::read_to_string(path).with_context(|| format!("failed to read {}", path.display()))?,
+    )
+    .with_context(|| format!("failed to parse {}", path.display()))?;
+    let name = required_profile_string(&toml, "name", path)?;
+    let description = required_profile_string(&toml, "description", path)?;
+    let model = required_profile_string(&toml, "model", path)?;
+    let model_reasoning_effort = required_profile_string(&toml, "model_reasoning_effort", path)?;
+    let developer_instructions = required_profile_string(&toml, "developer_instructions", path)?;
+    Ok(RunAgentProfile {
+        name,
+        description,
+        model,
+        model_reasoning_effort,
+        developer_instructions,
+        path: path.to_path_buf(),
+    })
+}
+
+fn validate_member_sandbox_mode(value: &str) -> Result<String> {
+    let value = value.trim();
+    match value {
+        "read-only" | "workspace-write" => Ok(value.to_owned()),
+        _ => Err(anyhow!(
+            "team-run member sandbox must be read-only or workspace-write, found {value:?}"
+        )),
+    }
+}
+
+fn required_profile_string(toml: &toml::Value, key: &str, path: &Path) -> Result<String> {
+    toml.get(key)
+        .and_then(toml::Value::as_str)
+        .map(ToOwned::to_owned)
+        .filter(|value| !value.trim().is_empty())
+        .ok_or_else(|| anyhow!("{} is missing required key {key}", path.display()))
+}
+
+fn resolve_run_goal(goal: Option<&str>, prompt_file: Option<&Path>) -> Result<String> {
+    let mut parts = Vec::new();
+    if let Some(goal) = goal.map(str::trim).filter(|goal| !goal.is_empty()) {
+        parts.push(goal.to_owned());
+    }
+    if let Some(path) = prompt_file {
+        parts.push(
+            fs::read_to_string(path)
+                .with_context(|| format!("failed to read {}", path.display()))?,
+        );
+    }
+    let goal = parts.join("\n\n");
+    if goal.trim().is_empty() {
+        return Err(anyhow!(
+            "codex-env run requires a goal argument, --prompt-file, or both"
+        ));
+    }
+    Ok(goal)
+}
+
+fn codex_run_prompt(goal: &str) -> String {
+    normalize_generated_text(&format!(
+        r#"# codex-env Run
+
+You are running inside the repo-owned Codex harness. Do real work, not a plan.
+
+Operating rules:
+- Start by recalling ICM project memory and reading the closest AGENTS.md.
+- Inspect git/branch/PR state before editing.
+- Use the repo's generated `.codex` surface, installed prompts, skills, agents, hooks, and MCP settings as the local execution environment.
+- Keep edits scoped to the requested goal.
+- Run targeted verification plus `codex-env` mirror/doctor checks when the Codex surface changes.
+- Commit and push completed publishable work, then open or update the PR.
+- Store ICM memory after significant completed work.
+
+Goal:
+{goal}
+"#
+    ))
+}
+
+fn codex_auto_loop_goal(goal: &str, iteration: usize, max_iterations: usize) -> String {
+    normalize_generated_text(&format!(
+        r#"# codex-env Auto Loop
+
+You are executing iteration {iteration} of at most {max_iterations} in the repo-owned Codex auto-loop harness.
+
+Loop contract:
+- Recall ICM memory and read the closest AGENTS.md before relying on prior context.
+- Inspect current git/branch/PR/generated-surface state.
+- Use read-only team members for parallel evidence and parent consolidation for writes.
+- Implement only changes that move the requested final state closer to true.
+- Run targeted verification and Codex mirror/doctor checks for Codex-surface changes.
+- Commit, push, update the PR, and store ICM memory when publishable work is completed.
+- End the parent consolidation response with exactly one marker line:
+  - `CODEX_AUTO_LOOP_STATUS: complete` only when the full requested state is achieved and verified.
+  - `CODEX_AUTO_LOOP_STATUS: continue` when another iteration is needed, followed by the next concrete gap.
+
+Original goal:
+{goal}
+"#
+    ))
+}
+
+fn parse_auto_loop_marker(last_message: &str) -> Option<String> {
+    last_message.lines().find_map(|line| {
+        let marker = line.trim().strip_prefix("CODEX_AUTO_LOOP_STATUS:")?;
+        let marker = marker.trim();
+        if marker.eq_ignore_ascii_case("complete") {
+            Some("complete".to_owned())
+        } else if marker.eq_ignore_ascii_case("continue") {
+            Some("continue".to_owned())
+        } else {
+            None
+        }
+    })
+}
+
+fn codex_team_member_prompt(
+    goal: &str,
+    team: &RunAgentTeam,
+    profile: &RunAgentProfile,
+    member_sandbox_mode: &str,
+) -> String {
+    normalize_generated_text(&format!(
+        r#"# codex-env Team Member
+
+You are running as Codex agent `{}` in team `{}`.
+
+Team description: {}
+Team strategy: {}
+
+Agent description: {}
+Model route: {} / {}
+Execution sandbox: {}
+
+Use your agent instructions below as the role contract. Return concrete evidence, file paths, risks, and recommended edits. Parallel team members are evidence producers; do not modify files unless the parent explicitly selected a writable member sandbox for an isolated scope.
+
+## Agent Instructions
+
+{}
+
+## Goal
+
+{}
+"#,
+        profile.name,
+        team.name,
+        team.description,
+        team.strategy,
+        profile.description,
+        profile.model,
+        profile.model_reasoning_effort,
+        member_sandbox_mode,
+        profile.developer_instructions.trim(),
+        goal
+    ))
+}
+
+fn codex_team_consolidation_prompt(
+    goal: &str,
+    team: &RunAgentTeam,
+    members: &[CodexTeamRunMemberReport],
+) -> String {
+    let member_outputs = members
+        .iter()
+        .map(|member| {
+            format!(
+                "- {} ({} / {}, sandbox {}): {}",
+                member.agent,
+                member.model,
+                member.reasoning_effort,
+                member.sandbox_mode,
+                member.run.last_message_path.display()
+            )
+        })
+        .collect::<Vec<_>>()
+        .join("\n");
+    normalize_generated_text(&format!(
+        r#"# codex-env Team Consolidation
+
+Consolidate the completed Codex team run.
+
+Team: {}
+Strategy: {}
+Goal: {}
+
+Member outputs:
+{}
+
+Read every member output, reconcile conflicts, decide the implementation path, make parent-owned edits, verify, commit, push, and update the PR when publishing applies. Treat parallel member runs as evidence-only unless their status explicitly says they ran with `workspace-write` for an isolated scope.
+"#,
+        team.name, team.strategy, goal, member_outputs
+    ))
+}
+
+fn prepared_run_report(
+    repo_root: &Path,
+    codex_home: &Path,
+    run_dir: PathBuf,
+    prompt: String,
+    dry_run: bool,
+) -> Result<CodexRunReport> {
+    fs::create_dir_all(&run_dir)
+        .with_context(|| format!("failed to create {}", run_dir.display()))?;
+    let prompt_path = run_dir.join("prompt.md");
+    let events_path = run_dir.join("events.jsonl");
+    let stderr_path = run_dir.join("stderr.log");
+    let last_message_path = run_dir.join("last-message.md");
+    let status_path = run_dir.join("status.json");
+    fs::write(&prompt_path, prompt)
+        .with_context(|| format!("failed to write {}", prompt_path.display()))?;
+    Ok(CodexRunReport {
+        repo_root: repo_root.to_path_buf(),
+        codex_home: codex_home.to_path_buf(),
+        run_dir,
+        prompt_path,
+        events_path,
+        stderr_path,
+        last_message_path,
+        status_path,
+        dry_run,
+        exit_code: None,
+    })
+}
+
+fn spawn_codex_exec(
+    repo_root: &Path,
+    codex_home: &Path,
+    report: &CodexRunReport,
+    sandbox_mode: &str,
+    model: &str,
+    model_reasoning_effort: &str,
+) -> Result<std::process::Child> {
+    let events = fs::File::create(&report.events_path)
+        .with_context(|| format!("failed to create {}", report.events_path.display()))?;
+    let stderr = fs::File::create(&report.stderr_path)
+        .with_context(|| format!("failed to create {}", report.stderr_path.display()))?;
+    let prompt = fs::read(&report.prompt_path)
+        .with_context(|| format!("failed to read {}", report.prompt_path.display()))?;
+    let mut child = Command::new("codex")
+        .arg("exec")
+        .arg("--json")
+        .arg("--cd")
+        .arg(repo_root)
+        .arg("--sandbox")
+        .arg(sandbox_mode)
+        .arg("--model")
+        .arg(model)
+        .arg("--config")
+        .arg(format!(
+            "model_reasoning_effort=\"{model_reasoning_effort}\""
+        ))
+        .arg("--config")
+        .arg("approval_policy=\"never\"")
+        .arg("--output-last-message")
+        .arg(&report.last_message_path)
+        .arg("-")
+        .env("CODEX_HOME", codex_home)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::from(events))
+        .stderr(Stdio::from(stderr))
+        .spawn()
+        .with_context(|| "failed to spawn codex exec")?;
+    child
+        .stdin
+        .take()
+        .ok_or_else(|| anyhow!("failed to open codex exec stdin"))?
+        .write_all(&prompt)
+        .with_context(|| "failed to write codex exec prompt")?;
+    Ok(child)
+}
+
+fn run_id(goal: &str) -> String {
+    let seconds = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_or(0, |duration| duration.as_secs());
+    let slug = slugify(goal);
+    let slug = if slug.is_empty() {
+        "task".to_owned()
+    } else {
+        slug.chars().take(48).collect()
+    };
+    format!("{seconds}-{slug}")
+}
+
+fn write_run_status(report: &CodexRunReport) -> Result<()> {
+    let status = json!({
+        "repoRoot": report.repo_root,
+        "codexHome": report.codex_home,
+        "runDir": report.run_dir,
+        "promptPath": report.prompt_path,
+        "eventsPath": report.events_path,
+        "stderrPath": report.stderr_path,
+        "lastMessagePath": report.last_message_path,
+        "dryRun": report.dry_run,
+        "exitCode": report.exit_code,
+    });
+    fs::write(
+        &report.status_path,
+        format!("{}\n", serde_json::to_string_pretty(&status)?),
+    )
+    .with_context(|| format!("failed to write {}", report.status_path.display()))
+}
+
+fn write_team_run_status(report: &CodexTeamRunReport) -> Result<()> {
+    fs::write(
+        &report.status_path,
+        format!("{}\n", serde_json::to_string_pretty(report)?),
+    )
+    .with_context(|| format!("failed to write {}", report.status_path.display()))
+}
+
+fn write_auto_loop_status(report: &CodexAutoLoopReport) -> Result<()> {
+    fs::write(
+        &report.status_path,
+        format!("{}\n", serde_json::to_string_pretty(report)?),
+    )
+    .with_context(|| format!("failed to write {}", report.status_path.display()))
+}
+
 fn codex_prompt_helpers(codex_dir: &Path) -> Vec<PlannedFile> {
     vec![
         PlannedFile {
@@ -692,7 +2003,7 @@ case "${helper}" in
 esac
 
 export CLAUDE_PROJECT_DIR="${repo_root}"
-exec node "${repo_root}/.claude/helpers/${helper}" "$@"
+exec node "${repo_root}/.codex/helpers/${helper}" "$@"
 "#,
             )
             .into_bytes(),

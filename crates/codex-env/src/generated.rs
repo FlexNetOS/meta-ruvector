@@ -235,6 +235,7 @@ sandbox_mode = "workspace-write"
 web_search = "live"
 model = "gpt-5.5"
 model_reasoning_effort = "high"
+model_catalog_json = "model-catalog.json"
 model_context_window = 4000000
 
 [mcp_servers.github]
@@ -327,6 +328,124 @@ inherit = "core"
     toml
 }
 
+pub(super) fn codex_model_catalog_json() -> String {
+    serde_json::to_string_pretty(&json!({
+        "models": [
+            {
+                "slug": "gpt-5.5",
+                "display_name": "GPT-5.5",
+                "description": "Frontier model for complex coding, research, and real-world work.",
+                "default_reasoning_level": "medium",
+                "supported_reasoning_levels": [
+                    {
+                        "effort": "low",
+                        "description": "Fast responses with lighter reasoning"
+                    },
+                    {
+                        "effort": "medium",
+                        "description": "Balances speed and reasoning depth for everyday tasks"
+                    },
+                    {
+                        "effort": "high",
+                        "description": "Greater reasoning depth for complex problems"
+                    },
+                    {
+                        "effort": "xhigh",
+                        "description": "Extra high reasoning depth for complex problems"
+                    }
+                ],
+                "shell_type": "shell_command",
+                "visibility": "list",
+                "supported_in_api": true,
+                "priority": 0,
+                "additional_speed_tiers": ["fast"],
+                "service_tiers": [
+                    {
+                        "id": "priority",
+                        "name": "Fast",
+                        "description": "1.5x speed, increased usage"
+                    }
+                ],
+                "default_service_tier": null,
+                "availability_nux": {
+                    "message": "GPT-5.5 is configured for the local Codex harness."
+                },
+                "upgrade": null,
+                "base_instructions": "",
+                "supports_reasoning_summaries": true,
+                "default_reasoning_summary": "none",
+                "support_verbosity": true,
+                "default_verbosity": "low",
+                "apply_patch_tool_type": "freeform",
+                "web_search_tool_type": "text_and_image",
+                "truncation_policy": {
+                    "mode": "tokens",
+                    "limit": 10000
+                },
+                "supports_parallel_tool_calls": true,
+                "supports_image_detail_original": true,
+                "context_window": 4000000,
+                "max_context_window": 4000000,
+                "auto_compact_token_limit": null,
+                "effective_context_window_percent": 95,
+                "experimental_supported_tools": [],
+                "input_modalities": ["text", "image"],
+                "supports_search_tool": true
+            },
+            {
+                "slug": "gpt-5.4-mini",
+                "display_name": "GPT-5.4 mini",
+                "description": "Fast model for focused subagent work.",
+                "default_reasoning_level": "medium",
+                "supported_reasoning_levels": [
+                    {
+                        "effort": "low",
+                        "description": "Fast responses with lighter reasoning"
+                    },
+                    {
+                        "effort": "medium",
+                        "description": "Balances speed and reasoning depth for everyday tasks"
+                    },
+                    {
+                        "effort": "high",
+                        "description": "Greater reasoning depth for complex problems"
+                    }
+                ],
+                "shell_type": "shell_command",
+                "visibility": "list",
+                "supported_in_api": true,
+                "priority": 1,
+                "additional_speed_tiers": [],
+                "service_tiers": [],
+                "default_service_tier": null,
+                "availability_nux": null,
+                "upgrade": null,
+                "base_instructions": "",
+                "supports_reasoning_summaries": true,
+                "default_reasoning_summary": "none",
+                "support_verbosity": true,
+                "default_verbosity": "low",
+                "apply_patch_tool_type": "freeform",
+                "web_search_tool_type": "text_and_image",
+                "truncation_policy": {
+                    "mode": "tokens",
+                    "limit": 10000
+                },
+                "supports_parallel_tool_calls": true,
+                "supports_image_detail_original": true,
+                "context_window": 1000000,
+                "max_context_window": 1000000,
+                "auto_compact_token_limit": null,
+                "effective_context_window_percent": 95,
+                "experimental_supported_tools": [],
+                "input_modalities": ["text", "image"],
+                "supports_search_tool": true
+            }
+        ]
+    }))
+    .expect("static Codex model catalog JSON should serialize")
+}
+
 pub(super) fn codex_agents_md() -> String {
     String::from(
         r#"# Codex Mirror Surface
@@ -338,6 +457,9 @@ This directory is generated from the tracked `.claude` surface by the Rust
 
 ```bash
 cargo run -p codex-env -- install
+cargo run -p codex-env -- run --dry-run "inspect the Codex surface"
+cargo run -p codex-env -- team-run --dry-run --team rust "inspect Rust parity gaps"
+cargo run -p codex-env -- auto-loop --dry-run --team core "inspect autonomous loop wiring"
 cargo run -p codex-env -- mirror --check
 cargo run -p codex-env -- install-prompts --check
 cargo run -p codex-env -- doctor
@@ -374,6 +496,33 @@ installs `$CODEX_HOME/prompts`, and runs doctor validation in one pass. Restart
 Codex after installing. The Claude command mirrors then appear as Codex prompt
 commands such as `/prompts:sparc-code`, `/prompts:sparc:code`, and
 `/prompts:claude-flow-swarm`.
+
+## Run Actual Work
+
+Use the repo-owned runner when you want Codex to execute a bounded task from the
+validated local environment and leave artifacts:
+
+```bash
+cargo run -p codex-env -- run "fix the next Codex parity gap"
+cargo run -p codex-env -- team-run --team rust "trace and fix the next Rust harness gap"
+cargo run -p codex-env -- auto-loop --team core --max-iterations 3 "finish the Codex parity goal"
+```
+
+Each run refreshes/validates the Codex surface, then invokes `codex exec --json`
+with artifacts under `.codex/harness/runs/`: `prompt.md`, `events.jsonl`,
+`stderr.log`, `last-message.md`, and `status.json`. Use `--dry-run` to materialize
+the exact prompt and status without launching a nested Codex run. `team-run`
+loads `.codex/agent-teams.json` plus the referenced `.codex/agents/*.toml`
+profiles, starts every team member with its configured model and reasoning
+effort in a read-only sandbox by default, then runs a parent consolidation
+Codex pass that reads the member outputs, performs parent-owned edits, and
+writes its own artifacts. Use `--member-sandbox workspace-write` only for a
+deliberately isolated writable member scope.
+
+`auto-loop` wraps `team-run` in bounded iterations, records
+`auto-loop-status.json`, and stops early only when parent consolidation emits
+`CODEX_AUTO_LOOP_STATUS: complete`. Otherwise it continues until
+`--max-iterations` is reached.
 "#,
     )
 }
@@ -391,12 +540,18 @@ pub(super) fn codex_native_workflow_prompts(
             format!(
                 r#"Use Codex-native subagents for this goal: $ARGUMENTS
 
-Select the smallest effective team. Spawn the agents in parallel, wait for all results, then consolidate:
+Select the smallest effective team. Spawn the agents in parallel, wait for all results, then run parent consolidation:
 Use the configured custom agent TOMLs as the routing source: heavy agents run on `gpt-5.5`, lighter explorer/template agents run on `gpt-5.4-mini`, and each agent carries its own reasoning effort.
 
 {team_markdown}
 
-Give each subagent a bounded brief with concrete evidence to return. Do not let subagents modify the same file concurrently. After all results return, decide the implementation path, make the edits in the parent thread, verify, commit, push, and update the PR when publishing applies.
+Use the Rust harness when shell execution is appropriate:
+
+```bash
+cargo run -p codex-env -- team-run --team core "$ARGUMENTS"
+```
+
+The harness runs every team member with its configured model/reasoning effort in `read-only` mode by default, then launches a parent consolidation Codex pass. Give each subagent a bounded brief with concrete evidence to return. Do not let subagents modify files concurrently; use `--member-sandbox workspace-write` only for a deliberately isolated writable member scope. After all results return, the parent pass decides the implementation path, makes the edits, verifies, commits, pushes, and updates the PR when publishing applies.
 "#
             ),
         ),
@@ -406,15 +561,15 @@ Give each subagent a bounded brief with concrete evidence to return. Do not let 
             "[GOAL]",
             String::from(r#"Run the Codex autonomous loop for this goal: $ARGUMENTS
 
-1. Recall project memory and read the closest AGENTS.md instructions.
-2. Inspect current git, branch, PR, and generated-surface state before trusting prior context.
-3. Identify requirements and evidence that would prove completion.
-4. For broad work, spawn a focused Codex subagent team in parallel and wait for results.
-5. Implement the smallest complete upgrade that makes the requested end state more true.
-6. Regenerate deterministic surfaces with codex-env when source or generator changes require it.
-7. Run targeted tests plus mirror/install checks, then broader gates proportional to risk.
-8. Commit, push, and open or update the PR. Store ICM memory for significant completed work.
-9. Continue with the next gap unless the whole objective is proven complete.
+Use the Rust harness when shell execution is appropriate:
+
+```bash
+cargo run -p codex-env -- auto-loop --team core --max-iterations 3 "$ARGUMENTS"
+```
+
+The harness runs bounded team iterations, stores artifacts under
+`.codex/harness/runs/`, and requires the parent consolidation pass to emit
+`CODEX_AUTO_LOOP_STATUS: complete` before the loop stops early.
 "#),
         ),
         (
@@ -467,13 +622,19 @@ pub(super) fn codex_native_workflow_skills(
             format!(
                 r#"# Codex Agent Team
 
-Use Codex subagents explicitly. Pick the smallest effective team, spawn agents in parallel, wait for all results, then consolidate in the parent thread.
+Use Codex subagents explicitly. Pick the smallest effective team, spawn agents in parallel, wait for all results, then run parent consolidation.
 Use the configured custom agent TOMLs as the model-routing source: heavy agents run on `gpt-5.5`, lighter explorer/template agents run on `gpt-5.4-mini`, and each agent carries its own reasoning effort.
 
 Recommended teams:
 {team_markdown}
 
-Give each subagent a bounded brief and a required evidence format. Keep write ownership in the parent thread unless a subagent has an isolated file scope.
+When running from the shell, prefer the Rust harness:
+
+```bash
+cargo run -p codex-env -- team-run --team core "your goal"
+```
+
+The harness runs every team member with its configured model/reasoning effort in `read-only` mode by default, then launches a parent consolidation Codex pass. Give each subagent a bounded brief and a required evidence format. Keep write ownership in the parent pass; use `--member-sandbox workspace-write` only for a deliberately isolated writable member scope.
 "#
             ),
         ),
@@ -484,14 +645,16 @@ Give each subagent a bounded brief and a required evidence format. Keep write ow
 
 Run this loop until the requested end state is true or a real blocker is proven:
 
-1. Recall ICM memory and inspect the current repo/branch/PR state.
-2. Derive concrete requirements and completion evidence.
-3. Spawn focused Codex subagents for broad or uncertain work.
-4. Implement upgrades in the parent thread using repo patterns.
-5. Regenerate deterministic Codex surfaces with codex-env when needed.
-6. Run targeted gates, mirror checks, install checks, and risk-appropriate broader gates.
-7. Commit, push, update or open the PR, and store ICM memory for significant work.
-8. Continue to the next gap while the active objective remains incomplete.
+When running from the shell, prefer the Rust harness:
+
+```bash
+cargo run -p codex-env -- auto-loop --team core --max-iterations 3 "your goal"
+```
+
+The harness runs bounded team iterations, writes `auto-loop-status.json`, and
+stops early only when parent consolidation emits
+`CODEX_AUTO_LOOP_STATUS: complete`. Keep working while the marker is
+`continue` or absent.
 "#),
         ),
         (

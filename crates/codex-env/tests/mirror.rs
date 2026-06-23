@@ -3,7 +3,9 @@ use std::process::Command;
 
 use codex_env::{
     doctor_codex_surface, ensure_codex_home_settings, install_codex_env, install_codex_prompts,
-    mirror_codex_surface, CodexInstallOptions, DoctorOptions, MirrorOptions, PromptInstallOptions,
+    inventory_codex_surface, mirror_codex_surface, run_codex_task, CodexAutoLoopOptions,
+    CodexInstallOptions, CodexInventoryOptions, CodexRunOptions, CodexTeamRunOptions,
+    DoctorOptions, MirrorOptions, PromptInstallOptions,
 };
 
 #[test]
@@ -151,9 +153,27 @@ fn mirror_generates_codex_and_skill_files() {
     assert!(config.contains("approvals_reviewer = \"auto_review\""));
     assert!(config.contains("model = \"gpt-5.5\""));
     assert!(config.contains("model_reasoning_effort = \"high\""));
+    assert!(config.contains("model_catalog_json = \"model-catalog.json\""));
     assert!(config.contains("model_context_window = 4000000"));
+    let catalog = fs::read_to_string(root.join(".codex/model-catalog.json")).unwrap();
+    assert!(catalog.contains("\"slug\": \"gpt-5.5\""));
+    assert!(catalog.contains("\"context_window\": 4000000"));
+    assert!(catalog.contains("\"max_context_window\": 4000000"));
     assert!(config.contains("[features]\nmulti_agent = true\ngoals = true"));
     assert!(config.contains("[skills]\ninclude_instructions = true"));
+    for server in [
+        "github",
+        "context7",
+        "exa",
+        "memory",
+        "playwright",
+        "sequential-thinking",
+        "claude-flow",
+    ] {
+        assert!(config.contains(&format!("[mcp_servers.{server}]")));
+    }
+    assert!(config.contains("CLAUDE_FLOW_MODE = \"v3\""));
+    assert!(config.contains("CLAUDE_FLOW_TOPOLOGY = \"hierarchical-mesh\""));
     assert!(config.contains("[agents]\nmax_threads = 15\nmax_depth = 3"));
     assert!(config.contains("[agents.claude-browser-browser-agent]"));
     assert!(config.contains("config_file = \"agents/claude/claude-browser-browser-agent.toml\""));
@@ -208,6 +228,11 @@ fn mirror_generates_codex_and_skill_files() {
     assert!(browser_role.contains("description = \"Automates browsers\""));
     assert!(root.join(".codex/hooks/rust-check.sh").exists());
     assert!(root.join(".codex/helpers/run-claude-hook.sh").exists());
+    assert!(root.join(".codex/helpers/hook-handler.cjs").exists());
+    assert!(root.join(".codex/helpers/auto-memory-hook.mjs").exists());
+    let hook_shim = fs::read_to_string(root.join(".codex/helpers/run-claude-hook.sh")).unwrap();
+    assert!(hook_shim.contains(".codex/helpers/${helper}"));
+    assert!(!hook_shim.contains(".claude/helpers/${helper}"));
     let hooks: serde_json::Value =
         serde_json::from_slice(&fs::read(root.join(".codex/hooks.json")).unwrap()).unwrap();
     assert!(hooks["hooks"]["Notification"].is_null());
@@ -324,26 +349,53 @@ fn mirror_generates_codex_and_skill_files() {
     let doctor = doctor_codex_surface(DoctorOptions {
         repo_root: root.to_path_buf(),
         lua_policy: None,
-        codex_home,
+        codex_home: codex_home.clone(),
     })
     .unwrap();
     assert_eq!(doctor.config_model, "gpt-5.5");
     assert_eq!(doctor.config_reasoning_effort, "high");
+    assert_eq!(doctor.config_model_catalog_json, "model-catalog.json");
     assert_eq!(doctor.config_approval_policy, "on-request");
     assert_eq!(doctor.config_approvals_reviewer, "auto_review");
     assert!(doctor.config_goals_enabled);
     assert_eq!(doctor.codex_home_settings.model_context_window, 4_000_000);
     assert!(doctor.codex_home_settings.include_skill_instructions);
+    assert_eq!(doctor.config_mcp_servers.len(), 7);
+    assert!(doctor
+        .config_mcp_servers
+        .contains(&"claude-flow".to_owned()));
     assert_eq!(doctor.config_agent_entries, doctor.agent_files);
     assert_eq!(doctor.agent_teams, 6);
     assert!(doctor.agent_team_members >= 12);
     assert_eq!(doctor.prompt_files, 5);
     assert_eq!(doctor.prompt_alias_files, 1);
     assert_eq!(doctor.installed_prompt_files, 5);
+    assert_eq!(doctor.claude_helper_files, 2);
+    assert!(doctor.codex_helper_files >= doctor.claude_helper_files);
     assert!(doctor.agent_models.contains_key("gpt-5.5"));
     assert!(doctor.agent_models.contains_key("gpt-5.4-mini"));
     assert!(doctor.hook_events.contains(&"Stop".to_owned()));
     assert_eq!(doctor.hook_shim_handlers, 3);
+
+    let codex_inventory = inventory_codex_surface(CodexInventoryOptions {
+        repo_root: root.to_path_buf(),
+        lua_policy: None,
+        codex_home,
+    })
+    .unwrap();
+    assert!(codex_inventory.gaps.is_empty());
+    assert_eq!(codex_inventory.claude.command_files, 1);
+    assert_eq!(codex_inventory.codex.source_command_skills, 1);
+    assert_eq!(
+        codex_inventory.expected.prompt_files,
+        codex_inventory.codex.prompt_files
+    );
+    assert_eq!(codex_inventory.claude.helper_files, 2);
+    assert_eq!(codex_inventory.codex.helper_mirror_files, 2);
+    assert_eq!(
+        codex_inventory.expected.claude_agent_profiles,
+        codex_inventory.codex.claude_agent_profiles
+    );
 }
 
 #[test]
@@ -392,6 +444,10 @@ fn install_refreshes_mirror_prompts_and_doctor_in_one_step() {
     assert_eq!(report.doctor.prompt_alias_files, 0);
     assert!(report.home_settings.changed);
     assert_eq!(report.home_settings.approvals_reviewer, "auto_review");
+    assert_eq!(
+        report.home_settings.model_catalog_json,
+        codex_home.join("model-catalog.json").to_string_lossy()
+    );
     assert_eq!(report.home_settings.model_context_window, 4_000_000);
     assert!(report.home_settings.goals_enabled);
     assert!(report.home_settings.include_skill_instructions);
@@ -401,7 +457,27 @@ fn install_refreshes_mirror_prompts_and_doctor_in_one_step() {
     );
     assert_eq!(report.doctor.installed_prompt_files, 4);
     assert!(root.join(".codex/config.toml").exists());
+    assert!(root.join(".codex/model-catalog.json").exists());
+    assert!(codex_home.join("model-catalog.json").exists());
     assert!(codex_home.join("prompts/demo.md").exists());
+    fs::write(codex_home.join("prompts/stale-command.md"), "stale").unwrap();
+
+    let stale_doctor = doctor_codex_surface(DoctorOptions {
+        repo_root: root.clone(),
+        lua_policy: None,
+        codex_home: codex_home.clone(),
+    })
+    .unwrap_err();
+    assert!(stale_doctor.to_string().contains("stale file"));
+
+    let cleaned = install_codex_prompts(PromptInstallOptions {
+        repo_root: root.clone(),
+        codex_home: codex_home.clone(),
+        check: false,
+    })
+    .unwrap();
+    assert_eq!(cleaned.removed_files.len(), 1);
+    assert!(!codex_home.join("prompts/stale-command.md").exists());
 
     let checked = doctor_codex_surface(DoctorOptions {
         repo_root: root,
@@ -455,6 +531,10 @@ args = ["serve"]
     assert!(report.home_settings.changed);
     assert_eq!(report.home_settings.model, "gpt-5.5");
     assert_eq!(report.home_settings.model_reasoning_effort, "high");
+    assert_eq!(
+        report.home_settings.model_catalog_json,
+        codex_home.join("model-catalog.json").to_string_lossy()
+    );
     assert_eq!(report.home_settings.approval_policy, "on-request");
     assert_eq!(report.home_settings.approvals_reviewer, "auto_review");
     assert_eq!(report.home_settings.model_context_window, 4_000_000);
@@ -467,6 +547,10 @@ args = ["serve"]
     assert!(config.contains("command = \"/home/drdave/.local/bin/icm\""));
     assert!(config.contains("memories = true"));
     assert!(config.contains("model_context_window = 4000000"));
+    assert!(config.contains(&format!(
+        "model_catalog_json = \"{}\"",
+        codex_home.join("model-catalog.json").display()
+    )));
     assert!(config.contains("approvals_reviewer = \"auto_review\""));
     assert!(config.contains("goals = true"));
     assert!(config.contains("[skills]\ninclude_instructions = true"));
@@ -580,7 +664,7 @@ fn doctor_rejects_hook_shim_with_missing_claude_helper() {
     .unwrap_err();
     assert!(error
         .to_string()
-        .contains("references missing Claude helper"));
+        .contains("references missing Codex helper"));
 }
 
 #[test]
@@ -611,8 +695,28 @@ fn install_prompts_copies_generated_prompt_commands() {
     .unwrap();
     assert_eq!(report.total_files, 4);
     assert_eq!(report.changed_files, 4);
+    assert_eq!(report.removed_files.len(), 0);
     assert!(codex_home.join("prompts/demo.md").exists());
     assert!(codex_home.join("prompts/codex-auto-loop.md").exists());
+    fs::write(codex_home.join("prompts/stale-command.md"), "stale").unwrap();
+
+    let stale_check = install_codex_prompts(PromptInstallOptions {
+        repo_root: root.clone(),
+        codex_home: codex_home.clone(),
+        check: true,
+    })
+    .unwrap_err();
+    assert!(stale_check.to_string().contains("stale file"));
+
+    let cleaned = install_codex_prompts(PromptInstallOptions {
+        repo_root: root.clone(),
+        codex_home: codex_home.clone(),
+        check: false,
+    })
+    .unwrap();
+    assert_eq!(cleaned.changed_files, 0);
+    assert_eq!(cleaned.removed_files.len(), 1);
+    assert!(!codex_home.join("prompts/stale-command.md").exists());
 
     let check = install_codex_prompts(PromptInstallOptions {
         repo_root: root,
@@ -621,6 +725,178 @@ fn install_prompts_copies_generated_prompt_commands() {
     })
     .unwrap();
     assert_eq!(check.changed_files, 0);
+    assert_eq!(check.removed_files.len(), 0);
+}
+
+#[test]
+fn run_dry_run_materializes_bounded_codex_exec_artifacts() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path().join("repo");
+    let codex_home = temp.path().join("codex-home");
+    let run_dir = temp.path().join("run");
+    fs::create_dir_all(root.join(".claude/commands")).unwrap();
+    fs::write(
+        root.join(".claude/settings.json"),
+        r#"{
+          "hooks": {
+            "PreToolUse": [
+              {
+                "matcher": "Bash",
+                "hooks": [{"type": "command", "command": "echo pre", "timeout": 5}]
+              }
+            ]
+          },
+          "env": {}
+        }"#,
+    )
+    .unwrap();
+    fs::write(root.join(".claude/commands/demo.md"), "# Demo\n").unwrap();
+
+    let report = run_codex_task(CodexRunOptions {
+        repo_root: root,
+        lua_policy: None,
+        codex_home,
+        goal: Some("inspect the generated Codex surface".to_owned()),
+        prompt_file: None,
+        output_dir: Some(run_dir),
+        dry_run: true,
+        skip_install: false,
+    })
+    .unwrap();
+
+    assert!(report.dry_run);
+    assert_eq!(report.exit_code, None);
+    assert!(report.prompt_path.exists());
+    assert!(report.status_path.exists());
+    let prompt = fs::read_to_string(report.prompt_path).unwrap();
+    assert!(prompt.contains("Do real work, not a plan."));
+    assert!(prompt.contains("inspect the generated Codex surface"));
+    let status = fs::read_to_string(report.status_path).unwrap();
+    assert!(status.contains(r#""dryRun": true"#));
+}
+
+#[test]
+fn team_run_dry_run_materializes_parallel_agent_artifacts() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path().join("repo");
+    let codex_home = temp.path().join("codex-home");
+    let run_dir = temp.path().join("team-run");
+    fs::create_dir_all(root.join(".claude/commands")).unwrap();
+    fs::write(
+        root.join(".claude/settings.json"),
+        r#"{
+          "hooks": {
+            "PreToolUse": [
+              {
+                "matcher": "Bash",
+                "hooks": [{"type": "command", "command": "echo pre", "timeout": 5}]
+              }
+            ]
+          },
+          "env": {}
+        }"#,
+    )
+    .unwrap();
+    fs::write(root.join(".claude/commands/demo.md"), "# Demo\n").unwrap();
+
+    let report = codex_env::run_codex_team(CodexTeamRunOptions {
+        repo_root: root,
+        lua_policy: None,
+        codex_home,
+        team: "core".to_owned(),
+        goal: Some("map the generated Codex team runner".to_owned()),
+        prompt_file: None,
+        output_dir: Some(run_dir),
+        member_sandbox_mode: "read-only".to_owned(),
+        dry_run: true,
+        skip_install: false,
+    })
+    .unwrap();
+
+    assert!(report.dry_run);
+    assert_eq!(report.team, "core");
+    assert_eq!(report.member_sandbox_mode, "read-only");
+    assert!(report.members.len() >= 2);
+    assert!(report.consolidation_prompt_path.exists());
+    assert!(report.consolidation_run.prompt_path.exists());
+    assert!(report.consolidation_run.status_path.exists());
+    assert_eq!(report.consolidation_run.exit_code, None);
+    assert!(report.status_path.exists());
+    for member in &report.members {
+        assert!(member.run.prompt_path.exists());
+        let prompt = fs::read_to_string(&member.run.prompt_path).unwrap();
+        assert!(prompt.contains("codex-env Team Member"));
+        assert!(prompt.contains(&member.agent));
+        assert!(prompt.contains("Execution sandbox: read-only"));
+        assert!(prompt.contains("Parallel team members are evidence producers"));
+        assert_eq!(member.sandbox_mode, "read-only");
+        assert_eq!(member.run.exit_code, None);
+    }
+    let consolidation = fs::read_to_string(report.consolidation_prompt_path).unwrap();
+    assert!(consolidation.contains("Team: core"));
+    assert!(consolidation.contains("Member outputs:"));
+    assert!(consolidation.contains("sandbox read-only"));
+    assert!(consolidation.contains("parallel member runs as evidence-only"));
+    let consolidation_prompt = fs::read_to_string(report.consolidation_run.prompt_path).unwrap();
+    assert!(consolidation_prompt.contains("Consolidate the completed Codex team run."));
+    let consolidation_status = fs::read_to_string(report.consolidation_run.status_path).unwrap();
+    assert!(consolidation_status.contains(r#""dryRun": true"#));
+}
+
+#[test]
+fn auto_loop_dry_run_materializes_bounded_iteration_artifacts() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path().join("repo");
+    let codex_home = temp.path().join("codex-home");
+    let run_dir = temp.path().join("auto-loop");
+    fs::create_dir_all(root.join(".claude/commands")).unwrap();
+    fs::write(
+        root.join(".claude/settings.json"),
+        r#"{
+          "hooks": {
+            "PreToolUse": [
+              {
+                "matcher": "Bash",
+                "hooks": [{"type": "command", "command": "echo pre", "timeout": 5}]
+              }
+            ]
+          },
+          "env": {}
+        }"#,
+    )
+    .unwrap();
+    fs::write(root.join(".claude/commands/demo.md"), "# Demo\n").unwrap();
+
+    let report = codex_env::run_codex_auto_loop(CodexAutoLoopOptions {
+        repo_root: root,
+        lua_policy: None,
+        codex_home,
+        team: "core".to_owned(),
+        goal: Some("drive the Codex parity loop".to_owned()),
+        prompt_file: None,
+        output_dir: Some(run_dir),
+        max_iterations: 3,
+        member_sandbox_mode: "read-only".to_owned(),
+        dry_run: true,
+        skip_install: false,
+    })
+    .unwrap();
+
+    assert!(report.dry_run);
+    assert!(!report.completed);
+    assert_eq!(report.max_iterations, 3);
+    assert_eq!(report.iterations.len(), 1);
+    assert!(report.status_path.exists());
+    let team_run = &report.iterations[0].team_run;
+    assert!(team_run.run_dir.ends_with("iteration-01"));
+    assert!(team_run.consolidation_run.prompt_path.exists());
+    let prompt = fs::read_to_string(&team_run.consolidation_run.prompt_path).unwrap();
+    assert!(prompt.contains("codex-env Auto Loop"));
+    assert!(prompt.contains("CODEX_AUTO_LOOP_STATUS: complete"));
+    assert!(prompt.contains("CODEX_AUTO_LOOP_STATUS: continue"));
+    let status = fs::read_to_string(report.status_path).unwrap();
+    assert!(status.contains(r#""max_iterations": 3"#));
+    assert!(status.contains(r#""completed": false"#));
 }
 
 #[test]

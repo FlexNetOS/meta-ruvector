@@ -5,11 +5,13 @@ use std::process::{Command, Stdio};
 
 use anyhow::{anyhow, bail, Context, Result};
 use serde::{Deserialize, Serialize};
+use serde_json::Value as JsonValue;
 use walkdir::WalkDir;
 
 use super::{
-    install_codex_prompts, is_executable, mirror_codex_surface, strip_repo_prefix,
+    copy_tree_plan, install_codex_prompts, is_executable, mirror_codex_surface, strip_repo_prefix,
     validate_codex_home_settings, CodexHomeSettingsReport, MirrorOptions, PromptInstallOptions,
+    REQUIRED_CODEX_CONTEXT_WINDOW, REQUIRED_CODEX_MODEL, REQUIRED_CODEX_MODEL_CATALOG,
 };
 
 const SUPPORTED_HOOK_EVENTS: &[&str] = &[
@@ -33,8 +35,38 @@ const REQUIRED_WORKFLOW_PROMPTS: &[&str] = &[
 
 const REQUIRED_AGENT_TEAMS: &[&str] = &["core", "review", "rust", "security", "github", "swarm"];
 
+const REQUIRED_MCP_SERVERS: &[&str] = &[
+    "github",
+    "context7",
+    "exa",
+    "memory",
+    "playwright",
+    "sequential-thinking",
+    "claude-flow",
+];
+
+const REQUIRED_CLAUDE_FLOW_ENV: &[(&str, &str)] = &[
+    ("CLAUDE_FLOW_MODE", "v3"),
+    ("CLAUDE_FLOW_HOOKS_ENABLED", "true"),
+    ("CLAUDE_FLOW_TOPOLOGY", "hierarchical-mesh"),
+    ("CLAUDE_FLOW_MAX_AGENTS", "15"),
+    ("CLAUDE_FLOW_MEMORY_BACKEND", "hybrid"),
+];
+
 type ConfiguredAgents = BTreeMap<String, PathBuf>;
 type AgentCounts = (usize, BTreeMap<String, usize>, BTreeMap<String, usize>);
+
+#[derive(Debug, Clone)]
+struct ConfigValidationReport {
+    model: String,
+    reasoning_effort: String,
+    model_catalog_json: String,
+    approval_policy: String,
+    approvals_reviewer: String,
+    goals_enabled: bool,
+    mcp_servers: Vec<String>,
+    configured_agents: ConfiguredAgents,
+}
 
 #[derive(Debug, Clone)]
 struct HookValidationReport {
@@ -76,9 +108,11 @@ pub struct DoctorReport {
     pub codex_home_settings: CodexHomeSettingsReport,
     pub config_model: String,
     pub config_reasoning_effort: String,
+    pub config_model_catalog_json: String,
     pub config_approval_policy: String,
     pub config_approvals_reviewer: String,
     pub config_goals_enabled: bool,
+    pub config_mcp_servers: Vec<String>,
     pub config_agent_entries: usize,
     pub agent_files: usize,
     pub agent_models: BTreeMap<String, usize>,
@@ -88,6 +122,8 @@ pub struct DoctorReport {
     pub hook_events: Vec<String>,
     pub hook_handlers: usize,
     pub hook_shim_handlers: usize,
+    pub claude_helper_files: usize,
+    pub codex_helper_files: usize,
     pub prompt_files: usize,
     pub prompt_alias_files: usize,
     pub installed_prompt_files: usize,
@@ -116,19 +152,14 @@ pub fn doctor_codex_surface(options: DoctorOptions) -> Result<DoctorReport> {
         check: true,
     })?;
 
-    let (
-        config_model,
-        config_reasoning_effort,
-        config_approval_policy,
-        config_approvals_reviewer,
-        config_goals_enabled,
-        configured_agents,
-    ) = validate_config(&codex_dir)?;
-    let config_agent_entries = configured_agents.len();
+    let config_report = validate_config(&codex_dir)?;
+    let config_agent_entries = config_report.configured_agents.len();
     let (agent_files, agent_models, agent_efforts) =
-        validate_agents(&codex_dir, &configured_agents)?;
-    let (agent_teams, agent_team_members) = validate_agent_teams(&codex_dir, &configured_agents)?;
+        validate_agents(&codex_dir, &config_report.configured_agents)?;
+    let (agent_teams, agent_team_members) =
+        validate_agent_teams(&codex_dir, &config_report.configured_agents)?;
     let hook_report = validate_hooks(&codex_dir)?;
+    let (claude_helper_files, codex_helper_files) = validate_helper_mirror(&repo_root, &codex_dir)?;
     let (prompt_files, prompt_alias_files, installed_prompt_files, workflow_prompts) =
         validate_prompts(&repo_root, &codex_dir, &codex_home)?;
     let git_ignored_generated_files =
@@ -140,11 +171,13 @@ pub fn doctor_codex_surface(options: DoctorOptions) -> Result<DoctorReport> {
         codex_dir,
         codex_home,
         codex_home_settings,
-        config_model,
-        config_reasoning_effort,
-        config_approval_policy,
-        config_approvals_reviewer,
-        config_goals_enabled,
+        config_model: config_report.model,
+        config_reasoning_effort: config_report.reasoning_effort,
+        config_model_catalog_json: config_report.model_catalog_json,
+        config_approval_policy: config_report.approval_policy,
+        config_approvals_reviewer: config_report.approvals_reviewer,
+        config_goals_enabled: config_report.goals_enabled,
+        config_mcp_servers: config_report.mcp_servers,
         config_agent_entries,
         agent_files,
         agent_models,
@@ -154,6 +187,8 @@ pub fn doctor_codex_surface(options: DoctorOptions) -> Result<DoctorReport> {
         hook_events: hook_report.events,
         hook_handlers: hook_report.handlers,
         hook_shim_handlers: hook_report.shim_handlers,
+        claude_helper_files,
+        codex_helper_files,
         prompt_files,
         prompt_alias_files,
         installed_prompt_files,
@@ -162,13 +197,12 @@ pub fn doctor_codex_surface(options: DoctorOptions) -> Result<DoctorReport> {
     })
 }
 
-fn validate_config(
-    codex_dir: &Path,
-) -> Result<(String, String, String, String, bool, ConfiguredAgents)> {
+fn validate_config(codex_dir: &Path) -> Result<ConfigValidationReport> {
     let path = codex_dir.join("config.toml");
     let config = read_toml(&path)?;
     let model = required_toml_string(&config, "model", &path)?;
     let effort = required_toml_string(&config, "model_reasoning_effort", &path)?;
+    let model_catalog_json = required_toml_string(&config, "model_catalog_json", &path)?;
     let approval_policy = required_toml_string(&config, "approval_policy", &path)?;
     let approvals_reviewer = required_toml_string(&config, "approvals_reviewer", &path)?;
     let goals_enabled = required_toml_bool(&config, &["features", "goals"], &path)?;
@@ -184,6 +218,13 @@ fn validate_config(
             path.display()
         );
     }
+    if model_catalog_json != REQUIRED_CODEX_MODEL_CATALOG {
+        bail!(
+            "{} must set model_catalog_json to {REQUIRED_CODEX_MODEL_CATALOG}, found {model_catalog_json}",
+            path.display()
+        );
+    }
+    validate_repo_model_catalog(codex_dir)?;
     if approval_policy != "on-request" {
         bail!(
             "{} must set Codex approval_policy to on-request, found {approval_policy}",
@@ -202,15 +243,148 @@ fn validate_config(
             path.display()
         );
     }
+    let mcp_servers = validate_mcp_servers(&config, &path)?;
     let configured_agents = configured_agent_files(&config, codex_dir, &path)?;
-    Ok((
+    Ok(ConfigValidationReport {
         model,
-        effort,
+        reasoning_effort: effort,
+        model_catalog_json,
         approval_policy,
         approvals_reviewer,
         goals_enabled,
+        mcp_servers,
         configured_agents,
-    ))
+    })
+}
+
+fn validate_mcp_servers(config: &toml::Value, config_path: &Path) -> Result<Vec<String>> {
+    let servers = config
+        .get("mcp_servers")
+        .and_then(toml::Value::as_table)
+        .ok_or_else(|| {
+            anyhow!(
+                "{} is missing required mcp_servers table",
+                config_path.display()
+            )
+        })?;
+
+    for required in REQUIRED_MCP_SERVERS {
+        let Some(server) = servers.get(*required).and_then(toml::Value::as_table) else {
+            bail!(
+                "{} is missing required MCP server {required}",
+                config_path.display()
+            );
+        };
+        if *required == "exa" {
+            let url = server
+                .get("url")
+                .and_then(toml::Value::as_str)
+                .ok_or_else(|| {
+                    anyhow!(
+                        "{} MCP server {required} must define a url",
+                        config_path.display()
+                    )
+                })?;
+            if !url.starts_with("https://") {
+                bail!(
+                    "{} MCP server {required} must use an https URL, found {url}",
+                    config_path.display()
+                );
+            }
+        } else {
+            let command = server
+                .get("command")
+                .and_then(toml::Value::as_str)
+                .ok_or_else(|| {
+                    anyhow!(
+                        "{} MCP server {required} must define a command",
+                        config_path.display()
+                    )
+                })?;
+            if command.trim().is_empty() {
+                bail!(
+                    "{} MCP server {required} has an empty command",
+                    config_path.display()
+                );
+            }
+        }
+    }
+
+    let claude_flow = servers
+        .get("claude-flow")
+        .and_then(toml::Value::as_table)
+        .ok_or_else(|| {
+            anyhow!(
+                "{} is missing claude-flow MCP config",
+                config_path.display()
+            )
+        })?;
+    let env = claude_flow
+        .get("env")
+        .and_then(toml::Value::as_table)
+        .ok_or_else(|| {
+            anyhow!(
+                "{} MCP server claude-flow is missing required env table",
+                config_path.display()
+            )
+        })?;
+    for (key, expected) in REQUIRED_CLAUDE_FLOW_ENV {
+        let value = env.get(*key).and_then(toml::Value::as_str).ok_or_else(|| {
+            anyhow!(
+                "{} MCP server claude-flow env is missing {key}",
+                config_path.display()
+            )
+        })?;
+        if value != *expected {
+            bail!(
+                "{} MCP server claude-flow env {key} must be {expected}, found {value}",
+                config_path.display()
+            );
+        }
+    }
+
+    Ok(servers.keys().cloned().collect())
+}
+
+fn validate_repo_model_catalog(codex_dir: &Path) -> Result<()> {
+    let path = codex_dir.join(REQUIRED_CODEX_MODEL_CATALOG);
+    let catalog = serde_json::from_slice::<JsonValue>(
+        &fs::read(&path).with_context(|| format!("failed to read {}", path.display()))?,
+    )
+    .with_context(|| format!("failed to parse {}", path.display()))?;
+    let models = catalog
+        .get("models")
+        .and_then(JsonValue::as_array)
+        .ok_or_else(|| anyhow!("{} must contain a models array", path.display()))?;
+    let Some(model) = models
+        .iter()
+        .find(|model| model.get("slug").and_then(JsonValue::as_str) == Some(REQUIRED_CODEX_MODEL))
+    else {
+        bail!(
+            "{} must contain model {}",
+            path.display(),
+            REQUIRED_CODEX_MODEL
+        );
+    };
+    let context_window = model
+        .get("context_window")
+        .and_then(JsonValue::as_i64)
+        .ok_or_else(|| anyhow!("{} model must set context_window", path.display()))?;
+    let max_context_window = model
+        .get("max_context_window")
+        .and_then(JsonValue::as_i64)
+        .ok_or_else(|| anyhow!("{} model must set max_context_window", path.display()))?;
+    if context_window < REQUIRED_CODEX_CONTEXT_WINDOW
+        || max_context_window < REQUIRED_CODEX_CONTEXT_WINDOW
+    {
+        bail!(
+            "{} model {} must set context_window and max_context_window >= {}, found {context_window}/{max_context_window}",
+            path.display(),
+            REQUIRED_CODEX_MODEL,
+            REQUIRED_CODEX_CONTEXT_WINDOW
+        );
+    }
+    Ok(())
 }
 
 fn validate_agents(codex_dir: &Path, configured_agents: &ConfiguredAgents) -> Result<AgentCounts> {
@@ -591,17 +765,58 @@ fn validate_hook_shim_command(
         bail!("{} must be executable", shim_path.display());
     }
 
-    let repo_root = codex_dir.parent().unwrap_or(codex_dir);
-    let claude_helper = repo_root.join(".claude/helpers").join(helper);
-    if !claude_helper.is_file() {
+    let codex_helper = codex_dir.join("helpers").join(helper);
+    if !codex_helper.is_file() {
         bail!(
-            "{} hook event {event} references missing Claude helper {}",
+            "{} hook event {event} references missing Codex helper {}",
             path.display(),
-            claude_helper.display()
+            codex_helper.display()
         );
     }
 
     Ok(true)
+}
+
+fn validate_helper_mirror(repo_root: &Path, codex_dir: &Path) -> Result<(usize, usize)> {
+    let planned = copy_tree_plan(
+        &repo_root.join(".claude/helpers"),
+        &codex_dir.join("helpers"),
+    )?;
+    for file in &planned {
+        let actual = fs::read(&file.path).with_context(|| {
+            format!(
+                "missing Codex helper mirror {}",
+                strip_repo_prefix(repo_root, &file.path).display()
+            )
+        })?;
+        if actual != file.bytes {
+            bail!(
+                "Codex helper mirror {} differs from .claude source",
+                strip_repo_prefix(repo_root, &file.path).display()
+            );
+        }
+        if is_executable(&file.path)? != file.executable {
+            bail!(
+                "Codex helper mirror {} has stale executable bit",
+                strip_repo_prefix(repo_root, &file.path).display()
+            );
+        }
+    }
+
+    Ok((planned.len(), helper_files(&codex_dir.join("helpers"))?))
+}
+
+fn helper_files(root: &Path) -> Result<usize> {
+    if !root.exists() {
+        return Ok(0);
+    }
+    let mut count = 0;
+    for entry in fs::read_dir(root)? {
+        if entry?.path().is_file() {
+            count += 1;
+        }
+    }
+    Ok(count)
 }
 
 fn validate_prompts(
@@ -625,6 +840,14 @@ fn validate_prompts(
     }
 
     let mut installed_prompt_files = 0;
+    let expected_targets: BTreeSet<PathBuf> = source_prompts
+        .iter()
+        .map(|source| {
+            source
+                .strip_prefix(&source_dir)
+                .map(|relative| target_dir.join(relative))
+        })
+        .collect::<std::result::Result<_, _>>()?;
     for source in &source_prompts {
         let relative = source.strip_prefix(&source_dir)?;
         let target = target_dir.join(relative);
@@ -644,6 +867,18 @@ fn validate_prompts(
             );
         }
         installed_prompt_files += 1;
+    }
+    let installed_prompts = prompt_files(&target_dir)?;
+    let stale_targets: Vec<_> = installed_prompts
+        .into_iter()
+        .filter(|path| !expected_targets.contains(path))
+        .collect();
+    if !stale_targets.is_empty() {
+        bail!(
+            "installed Codex prompts include {} stale file(s); first: {}",
+            stale_targets.len(),
+            stale_targets[0].display()
+        );
     }
 
     Ok((
@@ -768,4 +1003,119 @@ fn required_toml_bool(value: &toml::Value, keys: &[&str], path: &Path) -> Result
             keys.join(".")
         )
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use std::fs;
+    use std::path::Path;
+
+    use super::{validate_mcp_servers, validate_repo_model_catalog};
+
+    fn valid_mcp_config() -> toml::Value {
+        toml::from_str(
+            r#"
+[mcp_servers.github]
+command = "npx"
+args = ["-y", "@modelcontextprotocol/server-github"]
+
+[mcp_servers.context7]
+command = "npx"
+args = ["-y", "@upstash/context7-mcp@latest"]
+
+[mcp_servers.exa]
+url = "https://mcp.exa.ai/mcp"
+
+[mcp_servers.memory]
+command = "npx"
+args = ["-y", "@modelcontextprotocol/server-memory"]
+
+[mcp_servers.playwright]
+command = "npx"
+args = ["-y", "@playwright/mcp@latest", "--extension"]
+
+[mcp_servers.sequential-thinking]
+command = "npx"
+args = ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+
+[mcp_servers.claude-flow]
+command = "npx"
+args = ["@claude-flow/cli@latest", "mcp", "start"]
+
+[mcp_servers.claude-flow.env]
+CLAUDE_FLOW_MODE = "v3"
+CLAUDE_FLOW_HOOKS_ENABLED = "true"
+CLAUDE_FLOW_TOPOLOGY = "hierarchical-mesh"
+CLAUDE_FLOW_MAX_AGENTS = "15"
+CLAUDE_FLOW_MEMORY_BACKEND = "hybrid"
+"#,
+        )
+        .unwrap()
+    }
+
+    #[test]
+    fn validate_mcp_servers_rejects_missing_required_server() {
+        let mut config = valid_mcp_config();
+        config
+            .get_mut("mcp_servers")
+            .unwrap()
+            .as_table_mut()
+            .unwrap()
+            .remove("github");
+
+        let error = validate_mcp_servers(&config, Path::new(".codex/config.toml")).unwrap_err();
+        assert!(error
+            .to_string()
+            .contains("missing required MCP server github"));
+    }
+
+    #[test]
+    fn validate_mcp_servers_rejects_claude_flow_env_drift() {
+        let mut config = valid_mcp_config();
+        config
+            .get_mut("mcp_servers")
+            .unwrap()
+            .get_mut("claude-flow")
+            .unwrap()
+            .get_mut("env")
+            .unwrap()
+            .as_table_mut()
+            .unwrap()
+            .insert(
+                "CLAUDE_FLOW_MODE".to_owned(),
+                toml::Value::String("v2".to_owned()),
+            );
+
+        let error = validate_mcp_servers(&config, Path::new(".codex/config.toml")).unwrap_err();
+        assert!(error
+            .to_string()
+            .contains("claude-flow env CLAUDE_FLOW_MODE must be v3"));
+    }
+
+    #[test]
+    fn validate_repo_model_catalog_rejects_fallback_context_window() {
+        let temp = tempfile::tempdir().unwrap();
+        let codex_dir = temp.path();
+        fs::write(
+            codex_dir.join("model-catalog.json"),
+            r#"{
+              "models": [
+                {
+                  "slug": "gpt-5.5",
+                  "context_window": 272000,
+                  "max_context_window": 272000
+                }
+              ]
+            }"#,
+        )
+        .unwrap();
+
+        let error = validate_repo_model_catalog(codex_dir).unwrap_err();
+        assert!(
+            error
+                .to_string()
+                .contains("must set context_window and max_context_window >= 4000000"),
+            "unexpected error: {error:?}"
+        );
+    }
 }

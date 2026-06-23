@@ -19,4 +19,4 @@ case "${helper}" in
 esac
 
 export CLAUDE_PROJECT_DIR="${repo_root}"
-exec node "${repo_root}/.claude/helpers/${helper}" "$@"
+exec node "${repo_root}/.codex/helpers/${helper}" "$@"
