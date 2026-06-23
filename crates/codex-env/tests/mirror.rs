@@ -1691,6 +1691,63 @@ fn tdd_audit_reports_missing_and_complete_os_requirements() {
 }
 
 #[test]
+fn tdd_os_persists_one_command_drive_and_audit_status() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path().join("repo");
+    let run_dir = root.join(".codex/harness/runs/001-tdd-cycle");
+    let os_dir = temp.path().join("tdd-os");
+    fs::create_dir_all(&run_dir).unwrap();
+    let status_path = run_dir.join("tdd-cycle-status.json");
+    let guidance_path = run_dir.join("tdd-cycle-guidance.md");
+    fs::write(&guidance_path, "# guidance\n").unwrap();
+    fs::write(
+        &status_path,
+        serde_json::to_vec_pretty(&serde_json::json!({
+            "cycle_state": "planned",
+            "guidance_path": guidance_path,
+            "workflow": {
+                "extraction_plan_path": run_dir.join("workflow/tdd-extraction-plan.json")
+            },
+            "phases": []
+        }))
+        .unwrap(),
+    )
+    .unwrap();
+
+    let report = codex_env::run_codex_tdd_os(codex_env::CodexTddOsOptions {
+        repo_root: root,
+        lua_policy: None,
+        codex_home: temp.path().join("codex-home"),
+        status_path: Some(status_path),
+        output_dir: Some(os_dir),
+        team: "core".to_owned(),
+        goal: Some("prove one command autonomous OS wrapper".to_owned()),
+        max_drive_steps: 2,
+        max_iterations: 3,
+        member_sandbox_mode: "read-only".to_owned(),
+        supervisor_guidance: vec!["Keep the extraction in crates/codex-env.".to_owned()],
+        dry_run: true,
+        run_handoff: false,
+        skip_install: false,
+        check: false,
+    })
+    .unwrap();
+
+    assert_eq!(report.os_state, "planned");
+    assert_eq!(report.drive_loop.loop_state, "planned");
+    assert_eq!(report.audit.audit_state, "incomplete");
+    assert!(report.status_path.ends_with("tdd-os-status.json"));
+    assert!(report.status_path.exists());
+    assert!(report.drive_loop.status_path.exists());
+    assert!(report.audit.audit_path.exists());
+    let status = fs::read_to_string(report.status_path).unwrap();
+    assert!(status.contains(r#""os_state": "planned""#));
+    assert!(status.contains("tdd-drive-loop-status.json"));
+    assert!(status.contains("tdd-os-audit.json"));
+    assert!(status.contains("Keep the extraction in crates/codex-env"));
+}
+
+#[test]
 fn doctor_rejects_gitignored_generated_surface_files() {
     let temp = tempfile::tempdir().unwrap();
     let root = temp.path();

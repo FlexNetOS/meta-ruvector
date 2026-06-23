@@ -84,6 +84,7 @@ cargo run -p codex-env -- tdd-supervise
 cargo run -p codex-env -- tdd-drive --dry-run
 cargo run -p codex-env -- tdd-drive-loop --dry-run
 cargo run -p codex-env -- tdd-audit
+cargo run -p codex-env -- tdd-os --check
 ```
 
 Each run refreshes/validates the Codex surface, then invokes `codex exec --json`
@@ -154,4 +155,8 @@ messages as its clock.
 requirement-by-requirement completion audit for the autonomous OS criteria:
 supervisor decisions, built-tool execution, does/why/belongs traces,
 crate-owned extraction, bounded looping, terminal closure, and vendor-harness
-rejection.
+rejection. `tdd-os` is the one-command Rust-owned front door for that
+autonomous operating-system loop: it runs the bounded drive-loop, immediately
+audits the resulting evidence, and writes `tdd-os-status.json` so completion is
+proved by crate-owned artifacts rather than owner messages or vendor harness
+narrative.
