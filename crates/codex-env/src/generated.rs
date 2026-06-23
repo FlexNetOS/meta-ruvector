@@ -1,6 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
 use serde_json::{json, Map};
@@ -19,7 +19,10 @@ struct CodexAgentTeam {
     strategy: &'static str,
     parallel: bool,
     consolidation_owner: &'static str,
-    agents: &'static [&'static str],
+    preferred_agents: &'static [&'static str],
+    selection_keywords: &'static [&'static str],
+    min_agents: usize,
+    max_agents: usize,
 }
 
 #[derive(Debug, Clone)]
@@ -40,13 +43,23 @@ fn codex_agent_teams() -> &'static [CodexAgentTeam] {
             strategy: "parallel-evidence-then-parent-implementation",
             parallel: true,
             consolidation_owner: "parent",
-            agents: &[
+            preferred_agents: &[
                 "claude-core-planner",
                 "claude-core-researcher",
                 "claude-core-coder",
                 "claude-core-tester",
                 "claude-core-reviewer",
             ],
+            selection_keywords: &[
+                "core",
+                "planner",
+                "researcher",
+                "coder",
+                "tester",
+                "reviewer",
+            ],
+            min_agents: 3,
+            max_agents: 6,
         },
         CodexAgentTeam {
             name: "review",
@@ -55,12 +68,22 @@ fn codex_agent_teams() -> &'static [CodexAgentTeam] {
             strategy: "parallel-review-then-parent-remediation",
             parallel: true,
             consolidation_owner: "parent",
-            agents: &[
+            preferred_agents: &[
                 "reviewer",
                 "claude-core-reviewer",
                 "claude-testing-production-validator",
                 "claude-v3-security-auditor",
             ],
+            selection_keywords: &[
+                "review",
+                "reviewer",
+                "validator",
+                "test",
+                "security",
+                "audit",
+            ],
+            min_agents: 3,
+            max_agents: 6,
         },
         CodexAgentTeam {
             name: "rust",
@@ -68,12 +91,22 @@ fn codex_agent_teams() -> &'static [CodexAgentTeam] {
             strategy: "parallel-rust-research-then-parent-patch",
             parallel: true,
             consolidation_owner: "parent",
-            agents: &[
+            preferred_agents: &[
                 "explorer",
                 "claude-core-coder",
                 "claude-core-tester",
                 "claude-v3-performance-engineer",
             ],
+            selection_keywords: &[
+                "rust",
+                "coder",
+                "tester",
+                "performance",
+                "optimizer",
+                "backend",
+            ],
+            min_agents: 3,
+            max_agents: 6,
         },
         CodexAgentTeam {
             name: "security",
@@ -82,12 +115,17 @@ fn codex_agent_teams() -> &'static [CodexAgentTeam] {
             strategy: "parallel-security-analysis-then-parent-remediation",
             parallel: true,
             consolidation_owner: "parent",
-            agents: &[
+            preferred_agents: &[
                 "claude-v3-security-architect",
                 "claude-v3-security-auditor",
                 "claude-v3-pii-detector",
                 "claude-v3-aidefence-guardian",
             ],
+            selection_keywords: &[
+                "security", "auditor", "pii", "defence", "defense", "guardian",
+            ],
+            min_agents: 2,
+            max_agents: 6,
         },
         CodexAgentTeam {
             name: "github",
@@ -96,11 +134,14 @@ fn codex_agent_teams() -> &'static [CodexAgentTeam] {
             strategy: "parallel-github-coordination-then-parent-publish",
             parallel: true,
             consolidation_owner: "parent",
-            agents: &[
+            preferred_agents: &[
                 "claude-github-pr-manager",
                 "claude-github-code-review-swarm",
                 "claude-github-workflow-automation",
             ],
+            selection_keywords: &["github", "pr", "release", "workflow", "issue"],
+            min_agents: 2,
+            max_agents: 5,
         },
         CodexAgentTeam {
             name: "swarm",
@@ -109,11 +150,14 @@ fn codex_agent_teams() -> &'static [CodexAgentTeam] {
             strategy: "parallel-swarm-coordination-then-parent-decision",
             parallel: true,
             consolidation_owner: "parent",
-            agents: &[
+            preferred_agents: &[
                 "claude-swarm-hierarchical-coordinator",
                 "claude-hive-mind-queen-coordinator",
                 "claude-v3-v3-queen-coordinator",
             ],
+            selection_keywords: &["swarm", "hive", "queen", "coordinator", "planner"],
+            min_agents: 2,
+            max_agents: 5,
         },
     ]
 }
@@ -142,12 +186,40 @@ fn codex_agent_team_plan(agent_roles: &[CodexAgentRole]) -> Vec<CodexAgentTeamPl
         .iter()
         .map(|team| {
             let mut agents = team
-                .agents
+                .preferred_agents
                 .iter()
                 .filter(|agent| available.contains(**agent))
                 .map(|agent| (*agent).to_owned())
                 .collect::<Vec<_>>();
-            if agents.len() < 2 {
+
+            for role in agent_roles {
+                if agents.len() >= team.max_agents {
+                    break;
+                }
+                let haystack =
+                    format!("{} {}", role.role_name, role.description).to_ascii_lowercase();
+                if team
+                    .selection_keywords
+                    .iter()
+                    .any(|keyword| haystack.contains(keyword))
+                    && !agents.contains(&role.role_name)
+                    && available.contains(&role.role_name)
+                {
+                    agents.push(role.role_name.clone());
+                }
+            }
+
+            if agents.len() < team.min_agents {
+                for agent in &fallback {
+                    if agents.len() >= team.min_agents {
+                        break;
+                    }
+                    if !agents.contains(agent) {
+                        agents.push(agent.clone());
+                    }
+                }
+            }
+            if agents.is_empty() {
                 agents = fallback.clone();
             }
             CodexAgentTeamPlan {
@@ -184,6 +256,8 @@ pub(super) fn codex_agent_teams_json(
                 "parallel": team.parallel,
                 "consolidationOwner": team.consolidation_owner,
                 "agents": team.agents,
+                "members": team.agents,
+                "source": "codex-env automation extraction",
             })
         })
         .collect::<Vec<_>>();
@@ -199,6 +273,151 @@ pub(super) fn codex_agent_teams_json(
         bytes: text.into_bytes(),
         executable: false,
     })
+}
+
+pub(super) fn codex_automation_graph_json(
+    codex_dir: &Path,
+    claude_dir: &Path,
+    claude_files: &[PathBuf],
+    agent_roles: &[CodexAgentRole],
+) -> Result<PlannedFile> {
+    let mut source_counts = BTreeMap::new();
+    for file in claude_files {
+        *source_counts
+            .entry(automation_source_kind(file).to_owned())
+            .or_insert(0usize) += 1;
+    }
+
+    let settings_path = claude_dir.join("settings.json");
+    let settings: serde_json::Value = serde_json::from_slice(
+        &fs::read(&settings_path)
+            .with_context(|| format!("failed to read {}", settings_path.display()))?,
+    )?;
+    let mut hook_events = settings
+        .get("hooks")
+        .and_then(serde_json::Value::as_object)
+        .map(|hooks| hooks.keys().cloned().collect::<Vec<_>>())
+        .unwrap_or_default();
+    hook_events.sort();
+    let mut env_keys = settings
+        .get("env")
+        .and_then(serde_json::Value::as_object)
+        .map(|env| env.keys().cloned().collect::<Vec<_>>())
+        .unwrap_or_default();
+    env_keys.sort();
+
+    let teams = codex_agent_team_plan(agent_roles)
+        .into_iter()
+        .map(|team| {
+            json!({
+                "name": team.name,
+                "description": team.description,
+                "strategy": team.strategy,
+                "parallel": team.parallel,
+                "consolidationOwner": team.consolidation_owner,
+                "members": team.agents,
+            })
+        })
+        .collect::<Vec<_>>();
+
+    let team_member_references = teams
+        .iter()
+        .filter_map(|team| team.get("members").and_then(serde_json::Value::as_array))
+        .map(Vec::len)
+        .sum::<usize>();
+    let source_agent_count = *source_counts.get("agent").unwrap_or(&0);
+    let team_coverage_percent = if source_agent_count == 0 {
+        100.0
+    } else {
+        (team_member_references as f64 / source_agent_count as f64) * 100.0
+    };
+
+    let output = json!({
+        "schemaVersion": 1,
+        "generatedBy": "codex-env",
+        "sourceRoot": ".claude",
+        "rawMirrorRoot": ".codex/mirror/.claude",
+        "runtimeRoot": ".codex",
+        "ownership": {
+            "sourceMaterial": ".claude",
+            "rawEvidence": ".codex/mirror/.claude",
+            "rustExtractor": "crates/codex-env",
+            "runtimeTarget": "crate-owned Codex automation",
+            "notTarget": "vendor harness"
+        },
+        "sourceCounts": source_counts,
+        "tokenLoadControls": {
+            "primaryIndex": ".codex/automation-graph.json",
+            "rawMirrorPolicy": "evidence-only; do not load bulk mirrored source unless needed",
+            "skillActivationPolicy": "on-demand by task, not all skills by default",
+            "teamCoveragePercent": team_coverage_percent
+        },
+        "agents": {
+            "configuredCount": agent_roles.len(),
+            "rolesPath": ".codex/agents",
+            "teamsPath": ".codex/agent-teams.json",
+            "teams": teams
+        },
+        "commands": {
+            "sourceRoot": ".claude/commands",
+            "promptRoot": ".codex/prompts",
+            "routeCount": source_counts.get("command").copied().unwrap_or(0)
+        },
+        "skills": {
+            "sourceRoot": ".claude/skills",
+            "generatedRoot": ".agents/skills",
+            "activation": "on-demand",
+            "sourceCount": source_counts.get("skill").copied().unwrap_or(0)
+        },
+        "hooks": {
+            "source": ".claude/settings.json",
+            "runtime": ".codex/hooks.json",
+            "scriptRoot": ".codex/hooks",
+            "events": hook_events,
+            "absoluteWorkspacePathPolicy": "generated runtime hooks must resolve repo root dynamically"
+        },
+        "mcp": {
+            "source": ".claude/settings.json and .codex/config.toml",
+            "runtime": ".codex/config.toml",
+            "policy": "declare only runtime MCP servers needed by Codex; do not treat MCP sprawl as success"
+        },
+        "rustyIdd": {
+            "sessionStartHook": true,
+            "adapterSource": ".claude/rusty-idd-adapter.md",
+            "adapterRuntime": ".codex/rusty-idd-adapter.md"
+        },
+        "environment": {
+            "envKeys": env_keys
+        }
+    });
+    let mut text = serde_json::to_string_pretty(&output)?;
+    text.push('\n');
+    Ok(PlannedFile {
+        path: codex_dir.join("automation-graph.json"),
+        bytes: text.into_bytes(),
+        executable: false,
+    })
+}
+
+fn automation_source_kind(relative_source: &Path) -> &'static str {
+    let path = relative_source.to_string_lossy();
+    if path == ".claude/settings.json" || path.ends_with("/settings.json") {
+        "setting"
+    } else if path.starts_with(".claude/agents/") {
+        "agent"
+    } else if path.starts_with(".claude/commands/") {
+        "command"
+    } else if path.starts_with(".claude/hooks/") {
+        "hook"
+    } else if path.starts_with(".claude/helpers/") {
+        "helper"
+    } else if path.starts_with(".claude/skills/") {
+        "skill"
+    } else if path.starts_with(".claude/intelligence/") {
+        "intelligence"
+    } else {
+        "other"
+    }
 }
 
 pub(super) fn read_claude_env(claude_dir: &Path) -> Result<BTreeMap<String, String>> {
@@ -448,10 +667,18 @@ pub(super) fn codex_model_catalog_json() -> String {
 
 pub(super) fn codex_agents_md() -> String {
     String::from(
-        r#"# Codex Mirror Surface
+        r#"# Codex Automation Extraction Surface
 
-This directory is generated from the tracked `.claude` surface by the Rust
-`codex-env` harness.
+This directory is generated from tracked `.claude` source material by the Rust
+`codex-env` harness. It is the Rust automation extraction frontier for this
+repository, not a vendor harness and not a user-global prompt dump.
+
+`.claude` remains source material. `.codex/mirror/.claude` is byte-for-byte
+evidence/debug material. The crate-owned runtime target is the compact,
+deterministic automation layer generated under `.codex`, especially
+`.codex/automation-graph.json`, `.codex/agent-teams.json`,
+`.codex/hooks.json`, `.codex/hooks/`, `.codex/prompts/`, and
+`.codex/agents/`.
 
 ## Refresh
 
@@ -468,12 +695,13 @@ cargo run -p codex-env -- doctor
 ## Mirrored Surfaces
 
 - `.claude/**` -> `.codex/mirror/.claude/**` byte-for-byte
-- `.claude/**` -> `.codex/mirror-symbols.json` deterministic file/symbol inventory
+- `.claude/**` -> `.codex/mirror-symbols.json` deterministic file/symbol evidence inventory
+- `.claude/**` -> `.codex/automation-graph.json` compact crate-owned capability graph
 - `.claude/settings.json` -> `.codex/hooks.json` and shell environment defaults
-- `.claude/hooks/` -> `.codex/hooks/`
+- `.claude/hooks/` -> normalized `.codex/hooks/` runtime scripts
 - `.claude/skills/` -> `.agents/skills/`
 - `.claude/commands/**/*.md` -> `.agents/skills/source-command-*`
-- `.claude/commands/**/*.md` -> `.codex/prompts/*.md` for `/prompts:*`,
+- `.claude/commands/**/*.md` -> repo-local `.codex/prompts/*.md` for `/prompts:*`,
   including Claude namespace aliases such as `/prompts:sparc:code`
 - Codex-native workflow upgrades -> `.agents/skills/codex-*` and
   `.codex/prompts/codex-*`
@@ -482,20 +710,30 @@ Use `--lua-policy <path>` when a repo-local transformation is needed. The Lua
 script receives a `mirror` table with `repo_root` and `claude_dir`, and may
 return `{ config_footer = "...", skill_prelude = "..." }`.
 
-## Install Prompt Commands
+## Prompt Commands
 
-Codex loads custom prompts from `$CODEX_HOME/prompts`, not directly from a
-repository. Refresh the mirror and install the generated prompt commands with:
+Prompt commands generated for this repository stay in this repository's
+`.codex/prompts`; do not copy meta-ruvector prompts into user-global
+`~/.codex/prompts` or the meta root prompt set. Refresh and verify with:
 
 ```bash
 .codex/helpers/install-prompts.sh
 ```
 
-That helper runs `cargo run -p codex-env -- install`, which mirrors `.claude`,
-installs `$CODEX_HOME/prompts`, and runs doctor validation in one pass. Restart
-Codex after installing. The Claude command mirrors then appear as Codex prompt
-commands such as `/prompts:sparc-code`, `/prompts:sparc:code`, and
-`/prompts:claude-flow-swarm`.
+That helper runs `cargo run -p codex-env -- install`, which mirrors `.claude`
+into repo-local Codex surfaces and runs doctor validation in one pass. Restart
+Codex from this repository after refreshing. The Claude command mirrors then
+appear as Codex prompt commands such as `/prompts:sparc-code`,
+`/prompts:sparc:code`, and `/prompts:claude-flow-swarm`.
+
+## Automation Ownership
+
+Use `.codex/automation-graph.json` as the low-token routing and capability
+index before loading bulk mirrored Markdown. Agent teams are generated from
+actual configured Codex agent roles and expose both `agents` and `members` for
+runtime consumers. Generated runtime hooks must resolve the repository root
+dynamically; stale absolute paths such as `/workspaces/ruvector` are rejected by
+doctor checks. Do not move this automation into a vendor harness.
 
 ## Run Actual Work
 
@@ -578,9 +816,9 @@ The harness runs bounded team iterations, stores artifacts under
             "[SURFACE=hooks|agents|skills|prompts|all] [GOAL]",
             String::from(r#"Run a deep current-state gap hunt for this Codex surface: $ARGUMENTS
 
-Compare the actual repo state against Codex-native behavior, not Claude assumptions:
+Compare the actual repo state against Codex-native behavior, not Claude assumptions. Start from `.codex/automation-graph.json` before loading bulk mirrored Markdown.
 
-- commands and prompts: .claude/commands, .agents/skills/source-command-*, .codex/prompts, CODEX_HOME/prompts
+- commands and prompts: .claude/commands, .agents/skills/source-command-*, repo-local .codex/prompts
 - agents and teams: .claude/agents, .codex/agents, custom-agent schema, explicit subagent workflows
 - hooks and helpers: .claude/settings.json, .codex/hooks.json, .codex/hooks, .codex/helpers, supported Codex hook events
 - settings and MCP: .codex/config.toml, active MCP servers, features, model and sandbox defaults
@@ -662,9 +900,9 @@ stops early only when parent consolidation emits
             "Use when auditing Codex parity gaps across hooks, helpers, prompts, skills, custom agents, subagents, settings, MCP, and auto-loop workflows.",
             String::from(r#"# Codex Gap Hunt
 
-Audit from current evidence, not memory. Compare source and generated surfaces:
+Audit from current evidence, not memory. Start from `.codex/automation-graph.json`, then compare source and generated surfaces only as needed:
 
-- .claude/commands -> .agents/skills/source-command-* and .codex/prompts -> CODEX_HOME/prompts
+- .claude/commands -> .agents/skills/source-command-* and repo-local .codex/prompts
 - .claude/agents -> .codex/agents custom-agent TOML schema and explicit subagent workflows
 - .claude/settings.json -> .codex/config.toml and .codex/hooks.json using supported Codex hook events
 - .claude/hooks and helpers -> .codex/hooks and .codex/helpers
@@ -904,6 +1142,42 @@ pub(super) fn copy_tree_plan(source: &Path, target: &Path) -> Result<Vec<Planned
     }
     files.sort_by(|a, b| a.path.cmp(&b.path));
     Ok(files)
+}
+
+pub(super) fn codex_runtime_hook_plan(source: &Path, target: &Path) -> Result<Vec<PlannedFile>> {
+    let mut files = copy_tree_plan(source, target)?;
+    for file in &mut files {
+        let Ok(text) = String::from_utf8(file.bytes.clone()) else {
+            continue;
+        };
+        file.bytes = normalize_generated_text(&normalize_runtime_hook_paths(&text)).into_bytes();
+    }
+    Ok(files)
+}
+
+fn normalize_runtime_hook_paths(text: &str) -> String {
+    if !text.contains("/workspaces/ruvector") {
+        return text.to_owned();
+    }
+
+    let mut output = String::with_capacity(text.len() + 160);
+    let mut inserted_repo_root = false;
+    for line in text.lines() {
+        output.push_str(line);
+        output.push('\n');
+        if !inserted_repo_root && line.trim_start().starts_with("set -e") {
+            output.push_str(
+                "repo_root=\"${CODEX_REPO_ROOT:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}\"\n",
+            );
+            inserted_repo_root = true;
+        }
+    }
+    if !inserted_repo_root {
+        output = format!(
+            "repo_root=\"${{CODEX_REPO_ROOT:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}}\"\n{output}"
+        );
+    }
+    output.replace("/workspaces/ruvector", "${repo_root}")
 }
 
 pub(super) fn command_skill_plan(

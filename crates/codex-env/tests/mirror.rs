@@ -92,7 +92,7 @@ fn mirror_generates_codex_and_skill_files() {
     .unwrap();
     fs::write(
         root.join(".claude/hooks/rust-check.sh"),
-        "#!/bin/sh\necho exact   \n",
+        "#!/bin/sh\nset -e\ncd /workspaces/ruvector\necho exact   \n",
     )
     .unwrap();
     fs::write(
@@ -293,6 +293,13 @@ fn mirror_generates_codex_and_skill_files() {
         .unwrap()
         .iter()
         .any(|agent| agent == "claude-core-coder"));
+    assert_eq!(core_team["members"], core_team["agents"]);
+    for team in teams["teams"].as_array().unwrap() {
+        assert!(team["members"].as_array().unwrap().len() >= 2);
+    }
+    let runtime_hook = fs::read_to_string(root.join(".codex/hooks/rust-check.sh")).unwrap();
+    assert!(runtime_hook.contains("CODEX_REPO_ROOT"));
+    assert!(!runtime_hook.contains("/workspaces/ruvector"));
     assert!(root.join(".codex/helpers/install-prompts.sh").exists());
     let install_helper =
         fs::read_to_string(root.join(".codex/helpers/install-prompts.sh")).unwrap();
@@ -309,6 +316,27 @@ fn mirror_generates_codex_and_skill_files() {
         serde_json::from_slice(&fs::read(root.join(".codex/mirror-symbols.json")).unwrap())
             .unwrap();
     assert_eq!(inventory["sourceFileCount"], 13);
+    let automation_graph: serde_json::Value =
+        serde_json::from_slice(&fs::read(root.join(".codex/automation-graph.json")).unwrap())
+            .unwrap();
+    assert_eq!(automation_graph["generatedBy"], "codex-env");
+    assert_eq!(
+        automation_graph["ownership"]["rustExtractor"],
+        "crates/codex-env"
+    );
+    assert_eq!(automation_graph["ownership"]["notTarget"], "vendor harness");
+    assert_eq!(automation_graph["sourceCounts"]["agent"], 7);
+    assert_eq!(
+        automation_graph["agents"]["teams"]
+            .as_array()
+            .unwrap()
+            .len(),
+        6
+    );
+    assert!(automation_graph["tokenLoadControls"]["rawMirrorPolicy"]
+        .as_str()
+        .unwrap()
+        .contains("evidence-only"));
     let command_entry = inventory["entries"]
         .as_array()
         .unwrap()
@@ -324,6 +352,11 @@ fn mirror_generates_codex_and_skill_files() {
         serde_json::from_slice(&fs::read(root.join(".codex/mirror-manifest.json")).unwrap())
             .unwrap();
     assert_eq!(manifest["fileCount"], report.total_files);
+    assert!(manifest["files"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|file| file == ".codex/automation-graph.json"));
     assert!(manifest["files"]
         .as_array()
         .unwrap()
@@ -459,25 +492,8 @@ fn install_refreshes_mirror_prompts_and_doctor_in_one_step() {
     assert!(root.join(".codex/config.toml").exists());
     assert!(root.join(".codex/model-catalog.json").exists());
     assert!(codex_home.join("model-catalog.json").exists());
-    assert!(codex_home.join("prompts/demo.md").exists());
-    fs::write(codex_home.join("prompts/stale-command.md"), "stale").unwrap();
-
-    let stale_doctor = doctor_codex_surface(DoctorOptions {
-        repo_root: root.clone(),
-        lua_policy: None,
-        codex_home: codex_home.clone(),
-    })
-    .unwrap_err();
-    assert!(stale_doctor.to_string().contains("stale file"));
-
-    let cleaned = install_codex_prompts(PromptInstallOptions {
-        repo_root: root.clone(),
-        codex_home: codex_home.clone(),
-        check: false,
-    })
-    .unwrap();
-    assert_eq!(cleaned.removed_files.len(), 1);
-    assert!(!codex_home.join("prompts/stale-command.md").exists());
+    assert!(root.join(".codex/prompts/demo.md").exists());
+    assert!(!codex_home.join("prompts/demo.md").exists());
 
     let checked = doctor_codex_surface(DoctorOptions {
         repo_root: root,
@@ -668,7 +684,7 @@ fn doctor_rejects_hook_shim_with_missing_claude_helper() {
 }
 
 #[test]
-fn install_prompts_copies_generated_prompt_commands() {
+fn install_prompts_verifies_repo_local_prompt_commands() {
     let temp = tempfile::tempdir().unwrap();
     let root = temp.path().join("repo");
     let codex_home = temp.path().join("codex-home");
@@ -694,29 +710,12 @@ fn install_prompts_copies_generated_prompt_commands() {
     })
     .unwrap();
     assert_eq!(report.total_files, 4);
-    assert_eq!(report.changed_files, 4);
+    assert_eq!(report.changed_files, 0);
     assert_eq!(report.removed_files.len(), 0);
-    assert!(codex_home.join("prompts/demo.md").exists());
-    assert!(codex_home.join("prompts/codex-auto-loop.md").exists());
-    fs::write(codex_home.join("prompts/stale-command.md"), "stale").unwrap();
-
-    let stale_check = install_codex_prompts(PromptInstallOptions {
-        repo_root: root.clone(),
-        codex_home: codex_home.clone(),
-        check: true,
-    })
-    .unwrap_err();
-    assert!(stale_check.to_string().contains("stale file"));
-
-    let cleaned = install_codex_prompts(PromptInstallOptions {
-        repo_root: root.clone(),
-        codex_home: codex_home.clone(),
-        check: false,
-    })
-    .unwrap();
-    assert_eq!(cleaned.changed_files, 0);
-    assert_eq!(cleaned.removed_files.len(), 1);
-    assert!(!codex_home.join("prompts/stale-command.md").exists());
+    assert!(root.join(".codex/prompts/demo.md").exists());
+    assert!(root.join(".codex/prompts/codex-auto-loop.md").exists());
+    assert!(!codex_home.join("prompts/demo.md").exists());
+    assert!(!codex_home.join("prompts/codex-auto-loop.md").exists());
 
     let check = install_codex_prompts(PromptInstallOptions {
         repo_root: root,

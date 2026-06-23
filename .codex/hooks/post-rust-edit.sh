@@ -3,6 +3,7 @@
 # Runs format check, clippy, and optional benchmarks
 
 set -e
+repo_root="${CODEX_REPO_ROOT:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
 
 FILE="$1"
 RUN_BENCH="${2:-false}"
@@ -17,7 +18,7 @@ if [ "$EXT" != "rs" ]; then
     exit 0  # Not a Rust file
 fi
 
-cd /workspaces/ruvector
+cd ${repo_root}
 
 # Detect crate
 CRATE_DIR=$(echo "$FILE" | grep -oP "crates/[^/]+" | head -1 || echo "")
@@ -87,7 +88,7 @@ if [ "$RUN_BENCH" = "true" ]; then
 fi
 
 # Store metrics
-METRICS_DIR="/workspaces/ruvector/.claude-flow/metrics"
+METRICS_DIR="${repo_root}/.claude-flow/metrics"
 mkdir -p "$METRICS_DIR"
 
 # Record edit in metrics

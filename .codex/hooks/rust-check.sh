@@ -3,6 +3,7 @@
 # Runs cargo check, clippy hints, and detects crate context
 
 set -e
+repo_root="${CODEX_REPO_ROOT:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
 
 FILE="$1"
 if [ -z "$FILE" ]; then
@@ -15,7 +16,7 @@ if [ "$EXT" != "rs" ]; then
     exit 0  # Not a Rust file
 fi
 
-cd /workspaces/ruvector
+cd ${repo_root}
 
 # Detect which crate this file belongs to
 CRATE_DIR=$(echo "$FILE" | grep -oP "crates/[^/]+" | head -1 || echo "")
