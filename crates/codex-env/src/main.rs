@@ -5,11 +5,11 @@ use clap::{Parser, Subcommand};
 use codex_env::{
     codex_tdd_next_action, codex_tdd_supervise, doctor_codex_surface, install_codex_env,
     install_codex_prompts, inventory_codex_surface, mirror_codex_surface, run_codex_auto_loop,
-    run_codex_task, run_codex_tdd_auto_loop, run_codex_tdd_cycle, run_codex_team,
-    CodexAutoLoopOptions, CodexInstallOptions, CodexInventoryOptions, CodexRunOptions,
-    CodexTddAutoLoopOptions, CodexTddCycleOptions, CodexTddNextActionOptions,
-    CodexTddSuperviseOptions, CodexTddWorkflowOptions, CodexTeamRunOptions, DoctorOptions,
-    MirrorOptions, PromptInstallOptions,
+    run_codex_task, run_codex_tdd_auto_loop, run_codex_tdd_cycle, run_codex_tdd_drive,
+    run_codex_team, CodexAutoLoopOptions, CodexInstallOptions, CodexInventoryOptions,
+    CodexRunOptions, CodexTddAutoLoopOptions, CodexTddCycleOptions, CodexTddDriveOptions,
+    CodexTddNextActionOptions, CodexTddSuperviseOptions, CodexTddWorkflowOptions,
+    CodexTeamRunOptions, DoctorOptions, MirrorOptions, PromptInstallOptions,
 };
 
 #[derive(Parser)]
@@ -318,6 +318,56 @@ enum Commands {
         /// Fail if the cycle requires guidance before proceeding.
         #[arg(long)]
         check: bool,
+    },
+
+    /// Inspect the supervisor decision and drive the next safe TDD action.
+    TddDrive {
+        /// Path to tdd-cycle-status.json. Defaults to the newest TDD cycle run.
+        #[arg(long)]
+        status: Option<PathBuf>,
+
+        /// Team name from .codex/agent-teams.json.
+        #[arg(long, default_value = "core")]
+        team: String,
+
+        /// Goal to use when the decision launches a new TDD cycle.
+        goal: Option<String>,
+
+        /// Codex home directory. Defaults to this repo's .codex.
+        #[arg(long)]
+        codex_home: Option<PathBuf>,
+
+        /// Directory for drive artifacts. Defaults under .codex/harness/runs.
+        #[arg(long)]
+        output_dir: Option<PathBuf>,
+
+        /// Maximum non-dry-run auto-loop iterations before stopping.
+        #[arg(long, default_value_t = 3)]
+        max_iterations: usize,
+
+        /// Sandbox for parallel team members. Defaults to read-only; parent consolidation owns writes.
+        #[arg(long, default_value = "read-only")]
+        member_sandbox: String,
+
+        /// Only write tdd-drive-status.json; do not execute the selected next action.
+        #[arg(long)]
+        dry_run: bool,
+
+        /// Launch the handoff auto-loop when the supervision decision reaches prepared handoff state.
+        #[arg(long)]
+        run_handoff: bool,
+
+        /// Supervisor guidance note to inject when a driven action launches a handoff prompt. Repeatable.
+        #[arg(long = "supervisor-note")]
+        supervisor_notes: Vec<String>,
+
+        /// File containing supervisor guidance to inject when a driven action launches a handoff prompt. Repeatable.
+        #[arg(long = "supervisor-note-file")]
+        supervisor_note_files: Vec<PathBuf>,
+
+        /// Skip install and only run doctor before launching nested Codex.
+        #[arg(long)]
+        skip_install: bool,
     },
 }
 
@@ -759,6 +809,48 @@ fn main() -> Result<()> {
                     report.next_command.unwrap_or_else(|| "none".to_owned())
                 );
             }
+        }
+        Commands::TddDrive {
+            status,
+            team,
+            goal,
+            codex_home,
+            output_dir,
+            max_iterations,
+            member_sandbox,
+            dry_run,
+            run_handoff,
+            supervisor_notes,
+            supervisor_note_files,
+            skip_install,
+        } => {
+            let codex_home = codex_home.unwrap_or_else(|| default_codex_home(&repo_root));
+            let supervisor_guidance =
+                read_supervisor_guidance(supervisor_notes, supervisor_note_files)?;
+            let report = run_codex_tdd_drive(CodexTddDriveOptions {
+                repo_root,
+                lua_policy: cli.lua_policy,
+                codex_home,
+                status_path: status,
+                output_dir,
+                team,
+                goal,
+                max_iterations,
+                member_sandbox_mode: member_sandbox,
+                supervisor_guidance,
+                dry_run,
+                run_handoff,
+                skip_install,
+            })?;
+            println!(
+                "codex-env tdd-drive {}: state={}, decision={}, run_dir={}, status={}, next_action={}",
+                if report.dry_run { "planned" } else { "ok" },
+                report.drive_state,
+                report.supervision.decision,
+                report.run_dir.display(),
+                report.status_path.display(),
+                report.supervision.next_action
+            );
         }
     }
 

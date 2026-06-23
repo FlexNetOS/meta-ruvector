@@ -41,4 +41,7 @@ follow-up guidance into the bounded handoff prompt when the supervisor has
 inspected evidence and needs to steer the worker.
 Run `cargo run -p codex-env -- tdd-supervise` after a cycle to persist the
 supervisor proceed/guide/stop decision before launching or closing a worker.
+Use `cargo run -p codex-env -- tdd-drive --dry-run` to inspect what the
+supervisor would do next, then remove `--dry-run` when Codex should execute the
+next safe Rust-owned step.
 Do not move this automation into a vendor harness.

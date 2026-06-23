@@ -39,3 +39,5 @@ Use `--supervisor-note` or `--supervisor-note-file` to pass follow-up guidance
 into the next bounded handoff.
 Run `codex-env tdd-supervise` to turn the latest cycle status into an explicit
 proceed, guide, or stop decision before launching or closing a worker.
+Run `codex-env tdd-drive --dry-run` to materialize the next supervisor action,
+or without `--dry-run` to let Codex advance the next safe Rust-owned step.
