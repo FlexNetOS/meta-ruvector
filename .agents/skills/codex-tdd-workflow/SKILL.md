@@ -29,4 +29,4 @@ latest plan, reject vendor-harness routing, and select the next Rust-owned
 action for autonomous continuation. Run `codex-env tdd-auto-loop --dry-run` to
 turn that validated plan into bounded auto-loop artifacts before allowing a real
 autonomous continuation; inspect `tdd-auto-loop-status.json` as the durable
-handoff status.
+handoff status with supervision events and start/end timestamps.

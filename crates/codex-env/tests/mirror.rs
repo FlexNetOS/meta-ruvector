@@ -1224,6 +1224,16 @@ fn tdd_auto_loop_materializes_plan_driven_autonomous_handoff() {
     assert!(report.handoff_goal.contains("vendor harness"));
     assert!(report.auto_loop.dry_run);
     assert_eq!(report.auto_loop.iterations.len(), 1);
+    assert_eq!(report.handoff_state, "prepared");
+    assert!(report.ended_unix_seconds >= report.started_unix_seconds);
+    assert!(report
+        .supervision_events
+        .iter()
+        .any(|event| event.contains("validated TDD extraction plan")));
+    assert!(report
+        .supervision_events
+        .iter()
+        .any(|event| event.contains("closed the handoff terminal")));
     assert!(report.status_path.exists());
     assert!(report.status_path.ends_with("tdd-auto-loop-status.json"));
     let status = fs::read_to_string(&report.status_path).unwrap();
@@ -1231,6 +1241,9 @@ fn tdd_auto_loop_materializes_plan_driven_autonomous_handoff() {
     assert!(status.contains(r#""target_crate": "crates/codex-env""#));
     assert!(status.contains(r#""forbidden_target": "vendor harness""#));
     assert!(status.contains(r#""dry_run": true"#));
+    assert!(status.contains(r#""handoff_state": "prepared""#));
+    assert!(status.contains("validated TDD extraction plan"));
+    assert!(status.contains("closed the handoff terminal"));
     let prompt = fs::read_to_string(
         &report.auto_loop.iterations[0]
             .team_run

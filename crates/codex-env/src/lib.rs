@@ -332,6 +332,10 @@ pub struct CodexTddAutoLoopReport {
     pub next_action: CodexTddNextActionReport,
     pub auto_loop: CodexAutoLoopReport,
     pub handoff_goal: String,
+    pub handoff_state: String,
+    pub supervision_events: Vec<String>,
+    pub started_unix_seconds: u64,
+    pub ended_unix_seconds: u64,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -1517,12 +1521,21 @@ pub fn codex_tdd_next_action(
 }
 
 pub fn run_codex_tdd_auto_loop(options: CodexTddAutoLoopOptions) -> Result<CodexTddAutoLoopReport> {
+    let started_unix_seconds = unix_seconds_now();
     let next_action = codex_tdd_next_action(CodexTddNextActionOptions {
         repo_root: options.repo_root.clone(),
         plan_path: options.plan_path.clone(),
         check: true,
     })?;
+    let mut supervision_events = vec![format!(
+        "started: Codex-as-human supervisor validated TDD extraction plan {} for autonomous handoff",
+        next_action.plan_path.display()
+    )];
     let handoff_goal = codex_tdd_auto_loop_goal(&next_action);
+    supervision_events.push(
+        "handoff: supervisor converted selected extraction actions into a bounded auto-loop goal"
+            .to_owned(),
+    );
     let auto_loop = run_codex_auto_loop(CodexAutoLoopOptions {
         repo_root: options.repo_root,
         lua_policy: options.lua_policy,
@@ -1536,12 +1549,28 @@ pub fn run_codex_tdd_auto_loop(options: CodexTddAutoLoopOptions) -> Result<Codex
         dry_run: options.dry_run,
         skip_install: options.skip_install,
     })?;
+    let handoff_state = if auto_loop.dry_run {
+        "prepared"
+    } else if auto_loop.completed {
+        "completed"
+    } else {
+        "ended"
+    }
+    .to_owned();
+    supervision_events.push(format!(
+        "{handoff_state}: supervisor captured auto-loop artifacts at {} and closed the handoff terminal",
+        auto_loop.run_dir.display()
+    ));
     let status_path = auto_loop.run_dir.join("tdd-auto-loop-status.json");
     let report = CodexTddAutoLoopReport {
         status_path,
         next_action,
         auto_loop,
         handoff_goal,
+        handoff_state,
+        supervision_events,
+        started_unix_seconds,
+        ended_unix_seconds: unix_seconds_now(),
     };
     write_tdd_auto_loop_status(&report)?;
     Ok(report)

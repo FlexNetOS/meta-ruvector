@@ -119,3 +119,6 @@ the next autonomous loop handoff. `tdd-auto-loop` feeds that validated plan
 directly into the bounded `auto-loop` harness so the next Codex run continues
 from supervised evidence instead of reinterpreting token-heavy reports, and
 writes `tdd-auto-loop-status.json` beside the auto-loop artifacts.
+That status records the handoff state, supervision events, and start/end
+timestamps so Codex can supervise the handoff like a background terminal rather
+than waiting blind.
