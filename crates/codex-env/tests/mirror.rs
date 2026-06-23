@@ -1539,6 +1539,107 @@ fn tdd_drive_loop_persists_bounded_supervisor_loop_without_owner_clock() {
 }
 
 #[test]
+fn tdd_audit_reports_missing_and_complete_os_requirements() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path().join("repo");
+    let run_dir = root.join(".codex/harness/runs/001-tdd-drive-loop");
+    fs::create_dir_all(&run_dir).unwrap();
+    let drive_loop_status = run_dir.join("tdd-drive-loop-status.json");
+    let cycle_status = run_dir.join("step-1/cycle/tdd-cycle-status.json");
+    fs::create_dir_all(cycle_status.parent().unwrap()).unwrap();
+
+    fs::write(
+        &drive_loop_status,
+        serde_json::to_vec_pretty(&serde_json::json!({
+            "loop_state": "planned",
+            "status_path": drive_loop_status,
+            "dry_run": true,
+            "max_drive_steps": 3,
+            "steps": [
+                {
+                    "status_path": run_dir.join("step-1/tdd-drive-status.json"),
+                    "drive_state": "planned",
+                    "supervision": {
+                        "decision": "proceed",
+                        "next_action": "Run tdd-cycle without --dry-run."
+                    }
+                }
+            ]
+        }))
+        .unwrap(),
+    )
+    .unwrap();
+
+    let missing = codex_env::audit_codex_tdd_os(codex_env::CodexTddAuditOptions {
+        repo_root: root.clone(),
+        drive_loop_status_path: Some(drive_loop_status.clone()),
+        check: false,
+    })
+    .unwrap();
+    assert_eq!(missing.audit_state, "incomplete");
+    assert!(missing
+        .requirements
+        .iter()
+        .any(
+            |requirement| requirement.requirement == "built-tool-cycle-executed"
+                && requirement.status == "missing"
+        ));
+    assert!(missing.audit_path.exists());
+
+    fs::write(
+        &drive_loop_status,
+        serde_json::to_vec_pretty(&serde_json::json!({
+            "loop_state": "prepared",
+            "status_path": drive_loop_status,
+            "dry_run": false,
+            "max_drive_steps": 3,
+            "final_cycle_status_path": cycle_status,
+            "steps": [
+                {
+                    "status_path": run_dir.join("step-1/tdd-drive-status.json"),
+                    "drive_state": "prepared",
+                    "supervision": {
+                        "decision": "proceed",
+                        "next_action": "Review tdd-cycle-guidance.md."
+                    },
+                    "cycle": {
+                        "status_path": cycle_status,
+                        "workflow": {
+                            "steps": [
+                                {
+                                    "name": "mirror-check",
+                                    "does": "recomputes extraction",
+                                    "why": "reject stale generated files",
+                                    "belongs_in": "crates/codex-env",
+                                    "extraction_target": "Rust-owned .claude to .codex extractor/compiler in crates/codex-env"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        }))
+        .unwrap(),
+    )
+    .unwrap();
+
+    let complete = codex_env::audit_codex_tdd_os(codex_env::CodexTddAuditOptions {
+        repo_root: root,
+        drive_loop_status_path: Some(drive_loop_status),
+        check: true,
+    })
+    .unwrap();
+    assert_eq!(complete.audit_state, "complete");
+    assert!(complete
+        .requirements
+        .iter()
+        .all(|requirement| requirement.status == "ok"));
+    let audit = fs::read_to_string(complete.audit_path).unwrap();
+    assert!(audit.contains(r#""audit_state": "complete""#));
+    assert!(audit.contains("vendor-harness-rejected"));
+}
+
+#[test]
 fn doctor_rejects_gitignored_generated_surface_files() {
     let temp = tempfile::tempdir().unwrap();
     let root = temp.path();
