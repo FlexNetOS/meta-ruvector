@@ -4,8 +4,8 @@ use std::process::Command;
 use codex_env::{
     doctor_codex_surface, ensure_codex_home_settings, install_codex_env, install_codex_prompts,
     inventory_codex_surface, mirror_codex_surface, run_codex_task, CodexAutoLoopOptions,
-    CodexInstallOptions, CodexInventoryOptions, CodexRunOptions, CodexTeamRunOptions,
-    DoctorOptions, MirrorOptions, PromptInstallOptions,
+    CodexInstallOptions, CodexInventoryOptions, CodexRunOptions, CodexTddWorkflowOptions,
+    CodexTeamRunOptions, DoctorOptions, MirrorOptions, PromptInstallOptions,
 };
 
 #[test]
@@ -278,6 +278,7 @@ fn mirror_generates_codex_and_skill_files() {
     assert!(root.join(".codex/prompts/codex-agent-team.md").exists());
     assert!(root.join(".codex/prompts/codex-auto-loop.md").exists());
     assert!(root.join(".codex/prompts/codex-gap-hunt.md").exists());
+    assert!(root.join(".codex/prompts/codex-tdd-workflow.md").exists());
     let teams: serde_json::Value =
         serde_json::from_slice(&fs::read(root.join(".codex/agent-teams.json")).unwrap()).unwrap();
     assert_eq!(teams["schemaVersion"], 1);
@@ -311,6 +312,9 @@ fn mirror_generates_codex_and_skill_files() {
         .join(".agents/skills/codex-auto-loop/SKILL.md")
         .exists());
     assert!(root.join(".agents/skills/codex-gap-hunt/SKILL.md").exists());
+    assert!(root
+        .join(".agents/skills/codex-tdd-workflow/SKILL.md")
+        .exists());
 
     let inventory: serde_json::Value =
         serde_json::from_slice(&fs::read(root.join(".codex/mirror-symbols.json")).unwrap())
@@ -400,9 +404,9 @@ fn mirror_generates_codex_and_skill_files() {
     assert_eq!(doctor.config_agent_entries, doctor.agent_files);
     assert_eq!(doctor.agent_teams, 6);
     assert!(doctor.agent_team_members >= 12);
-    assert_eq!(doctor.prompt_files, 5);
+    assert_eq!(doctor.prompt_files, 6);
     assert_eq!(doctor.prompt_alias_files, 1);
-    assert_eq!(doctor.installed_prompt_files, 5);
+    assert_eq!(doctor.installed_prompt_files, 6);
     assert_eq!(doctor.claude_helper_files, 2);
     assert!(doctor.codex_helper_files >= doctor.claude_helper_files);
     assert!(doctor.agent_models.contains_key("gpt-5.5"));
@@ -472,8 +476,8 @@ fn install_refreshes_mirror_prompts_and_doctor_in_one_step() {
     .unwrap();
 
     assert!(report.mirror.changed_files > 0);
-    assert_eq!(report.prompts.total_files, 4);
-    assert_eq!(report.doctor.prompt_files, 4);
+    assert_eq!(report.prompts.total_files, 5);
+    assert_eq!(report.doctor.prompt_files, 5);
     assert_eq!(report.doctor.prompt_alias_files, 0);
     assert!(report.home_settings.changed);
     assert_eq!(report.home_settings.approvals_reviewer, "auto_review");
@@ -488,7 +492,7 @@ fn install_refreshes_mirror_prompts_and_doctor_in_one_step() {
         report.doctor.config_agent_entries,
         report.doctor.agent_files
     );
-    assert_eq!(report.doctor.installed_prompt_files, 4);
+    assert_eq!(report.doctor.installed_prompt_files, 5);
     assert!(root.join(".codex/config.toml").exists());
     assert!(root.join(".codex/model-catalog.json").exists());
     assert!(codex_home.join("model-catalog.json").exists());
@@ -501,7 +505,7 @@ fn install_refreshes_mirror_prompts_and_doctor_in_one_step() {
         codex_home,
     })
     .unwrap();
-    assert_eq!(checked.installed_prompt_files, 4);
+    assert_eq!(checked.installed_prompt_files, 5);
 }
 
 #[test]
@@ -709,13 +713,15 @@ fn install_prompts_verifies_repo_local_prompt_commands() {
         check: false,
     })
     .unwrap();
-    assert_eq!(report.total_files, 4);
+    assert_eq!(report.total_files, 5);
     assert_eq!(report.changed_files, 0);
     assert_eq!(report.removed_files.len(), 0);
     assert!(root.join(".codex/prompts/demo.md").exists());
     assert!(root.join(".codex/prompts/codex-auto-loop.md").exists());
+    assert!(root.join(".codex/prompts/codex-tdd-workflow.md").exists());
     assert!(!codex_home.join("prompts/demo.md").exists());
     assert!(!codex_home.join("prompts/codex-auto-loop.md").exists());
+    assert!(!codex_home.join("prompts/codex-tdd-workflow.md").exists());
 
     let check = install_codex_prompts(PromptInstallOptions {
         repo_root: root,
@@ -896,6 +902,77 @@ fn auto_loop_dry_run_materializes_bounded_iteration_artifacts() {
     let status = fs::read_to_string(report.status_path).unwrap();
     assert!(status.contains(r#""max_iterations": 3"#));
     assert!(status.contains(r#""completed": false"#));
+}
+
+#[test]
+fn tdd_workflow_dry_run_materializes_codex_tool_execution_plan() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path().join("repo");
+    let codex_home = temp.path().join("codex-home");
+    let run_dir = temp.path().join("tdd-workflow");
+    fs::create_dir_all(root.join(".claude/commands")).unwrap();
+    fs::write(
+        root.join(".claude/settings.json"),
+        r#"{
+          "hooks": {
+            "PreToolUse": [
+              {
+                "matcher": "Bash",
+                "hooks": [{"type": "command", "command": "echo pre", "timeout": 5}]
+              }
+            ]
+          },
+          "env": {}
+        }"#,
+    )
+    .unwrap();
+    fs::write(root.join(".claude/commands/demo.md"), "# Demo\n").unwrap();
+
+    let report = codex_env::run_codex_tdd_workflow(CodexTddWorkflowOptions {
+        repo_root: root,
+        lua_policy: None,
+        codex_home,
+        output_dir: Some(run_dir),
+        team: "core".to_owned(),
+        goal: Some("trace Codex Rust tool ownership through TDD".to_owned()),
+        dry_run: true,
+    })
+    .unwrap();
+
+    assert!(report.dry_run);
+    assert_eq!(report.operator_role, "codex-as-human-in-loop");
+    assert_eq!(report.steps.len(), 8);
+    assert!(report.status_path.exists());
+    assert!(report.steps[0]
+        .command
+        .ends_with("cargo build -p codex-env"));
+    for expected in [
+        "mirror --check",
+        "install-prompts --check",
+        "doctor",
+        "inventory --check",
+        "run --dry-run",
+        "team-run --dry-run",
+        "auto-loop --dry-run",
+    ] {
+        assert!(
+            report
+                .steps
+                .iter()
+                .any(|step| step.command.contains(expected)),
+            "missing workflow step containing {expected}"
+        );
+    }
+    for step in &report.steps {
+        assert_eq!(step.status, "planned");
+        assert_eq!(step.crate_owner, "crates/codex-env");
+        assert!(!step.rationale.trim().is_empty());
+        assert_eq!(step.exit_code, None);
+    }
+    let status = fs::read_to_string(report.status_path).unwrap();
+    assert!(status.contains("codex-as-human-in-loop"));
+    assert!(status.contains("background terminal"));
+    assert!(status.contains("vendor harness"));
 }
 
 #[test]

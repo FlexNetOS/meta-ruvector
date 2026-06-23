@@ -1,5 +1,5 @@
 {
-  "fileCount": 992,
+  "fileCount": 994,
   "files": [
     ".codex/mirror/.claude/agentic-flow-fast.sh",
     ".codex/mirror/.claude/agents/analysis/analyze-code-quality.md",
@@ -766,6 +766,7 @@
     ".codex/prompts/codex-agent-team.md",
     ".codex/prompts/codex-auto-loop.md",
     ".codex/prompts/codex-gap-hunt.md",
+    ".codex/prompts/codex-tdd-workflow.md",
     ".codex/helpers/README.md",
     ".codex/helpers/adr-compliance.sh",
     ".codex/helpers/auto-commit.sh",
@@ -991,6 +992,7 @@
     ".agents/skills/codex-agent-team/SKILL.md",
     ".agents/skills/codex-auto-loop/SKILL.md",
     ".agents/skills/codex-gap-hunt/SKILL.md",
+    ".agents/skills/codex-tdd-workflow/SKILL.md",
     ".codex/mirror-symbols.json",
     ".codex/mirror-manifest.json"
   ],

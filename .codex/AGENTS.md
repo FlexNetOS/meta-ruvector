@@ -18,6 +18,7 @@ cargo run -p codex-env -- install
 cargo run -p codex-env -- run --dry-run "inspect the Codex surface"
 cargo run -p codex-env -- team-run --dry-run --team rust "inspect Rust parity gaps"
 cargo run -p codex-env -- auto-loop --dry-run --team core "inspect autonomous loop wiring"
+cargo run -p codex-env -- tdd-workflow --dry-run "trace Codex Rust tool ownership"
 cargo run -p codex-env -- mirror --check
 cargo run -p codex-env -- install-prompts --check
 cargo run -p codex-env -- doctor
@@ -75,6 +76,7 @@ validated local environment and leave artifacts:
 cargo run -p codex-env -- run "fix the next Codex parity gap"
 cargo run -p codex-env -- team-run --team rust "trace and fix the next Rust harness gap"
 cargo run -p codex-env -- auto-loop --team core --max-iterations 3 "finish the Codex parity goal"
+cargo run -p codex-env -- tdd-workflow "build, verify, and trace the Codex Rust tools"
 ```
 
 Each run refreshes/validates the Codex surface, then invokes `codex exec --json`
@@ -92,3 +94,12 @@ deliberately isolated writable member scope.
 `auto-loop-status.json`, and stops early only when parent consolidation emits
 `CODEX_AUTO_LOOP_STATUS: complete`. Otherwise it continues until
 `--max-iterations` is reached.
+
+`tdd-workflow` is the supervised red/green harness for the Rust-owned Codex
+toolchain. It builds `codex-env`, then executes the built binary through
+`mirror --check`, `install-prompts --check`, `doctor`, `inventory --check`,
+and bounded dry-run `run`/`team-run`/`auto-loop` probes. Codex is the
+human-in-loop operator for this workflow: start the background terminal
+equivalent, supervise status/artifacts, provide follow-up guidance when the
+trace exposes a gap, end the worker session, and extract durable behavior into
+the owning Rust crates rather than a vendor harness.
