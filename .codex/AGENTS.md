@@ -98,8 +98,11 @@ deliberately isolated writable member scope.
 `tdd-workflow` is the supervised red/green harness for the Rust-owned Codex
 toolchain. It builds `codex-env`, then executes the built binary through
 `mirror --check`, `install-prompts --check`, `doctor`, `inventory --check`,
-and bounded dry-run `run`/`team-run`/`auto-loop` probes. Codex is the
-human-in-loop operator for this workflow: start the background terminal
-equivalent, supervise status/artifacts, provide follow-up guidance when the
-trace exposes a gap, end the worker session, and extract durable behavior into
-the owning Rust crates rather than a vendor harness.
+and bounded dry-run `run`/`team-run`/`auto-loop` probes. Each status entry
+records what the tool does, why it runs, where the behavior belongs, what Rust
+extraction target owns it, and how Codex should supervise the background
+terminal equivalent. Codex is the human-in-loop operator for this workflow:
+start the background terminal equivalent, supervise status/artifacts, provide
+follow-up guidance when the trace exposes a gap, end the worker session, and
+extract durable behavior into the owning Rust crates rather than a vendor
+harness.

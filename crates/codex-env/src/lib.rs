@@ -270,7 +270,12 @@ pub struct CodexTddWorkflowStepReport {
     pub name: String,
     pub command: String,
     pub rationale: String,
+    pub does: String,
+    pub why: String,
     pub crate_owner: String,
+    pub belongs_in: String,
+    pub extraction_target: String,
+    pub supervision_action: String,
     pub status: String,
     pub exit_code: Option<i32>,
 }
@@ -2170,15 +2175,68 @@ fn codex_tdd_workflow_steps(
         ),
     ]
     .into_iter()
-    .map(|(name, command, rationale)| CodexTddWorkflowStepReport {
-        name: name.to_owned(),
-        command,
-        rationale: rationale.to_owned(),
-        crate_owner: "crates/codex-env".to_owned(),
-        status: "planned".to_owned(),
-        exit_code: None,
+    .map(|(name, command, rationale)| {
+        let (does, why, extraction_target, supervision_action) =
+            codex_tdd_step_semantics(name, rationale);
+        CodexTddWorkflowStepReport {
+            name: name.to_owned(),
+            command,
+            rationale: rationale.to_owned(),
+            does,
+            why,
+            crate_owner: "crates/codex-env".to_owned(),
+            belongs_in: "crates/codex-env".to_owned(),
+            extraction_target,
+            supervision_action,
+            status: "planned".to_owned(),
+            exit_code: None,
+        }
     })
     .collect()
+}
+
+fn codex_tdd_step_semantics(name: &str, rationale: &str) -> (String, String, String, String) {
+    let does = match name {
+        "build-codex-env" => "compiles the Rust-owned Codex automation binary before any generated surface is treated as executable",
+        "mirror-check" => "recomputes the .claude to .codex extraction plan and rejects stale generated files",
+        "install-prompts-check" => "verifies repo-local prompt commands stay inside this repository's .codex/prompts surface",
+        "doctor" => "validates runtime Codex config, MCP declarations, hooks, prompt installation, agent profiles, and nonempty teams",
+        "inventory-check" => "compares source Claude assets against generated Codex runtime assets and fails on parity gaps",
+        "single-run-dry-run" => "materializes the parent-owned codex exec prompt and status artifacts without launching a nested writer",
+        "team-run-dry-run" => "materializes parallel evidence-agent prompts and parent consolidation artifacts with read-only members",
+        "auto-loop-dry-run" => "materializes the bounded autonomous loop contract and completion-marker protocol",
+        _ => "executes a Codex Rust tool workflow step",
+    };
+    let extraction_target = match name {
+        "build-codex-env" => "Rust-owned build/test gate for crates/codex-env",
+        "mirror-check" => "Rust-owned .claude to .codex extractor/compiler in crates/codex-env",
+        "install-prompts-check" => {
+            "Rust-owned repo-local prompt installer/verifier in crates/codex-env"
+        }
+        "doctor" => "Rust-owned runtime health checker in crates/codex-env",
+        "inventory-check" => "Rust-owned parity inventory and gap detector in crates/codex-env",
+        "single-run-dry-run" => "Rust-owned parent execution harness in crates/codex-env",
+        "team-run-dry-run" => "Rust-owned team orchestration harness in crates/codex-env",
+        "auto-loop-dry-run" => "Rust-owned autonomous loop harness in crates/codex-env",
+        _ => "Rust-owned Codex automation in crates/codex-env",
+    };
+    let supervision_action = match name {
+        "build-codex-env" => "supervise the background terminal until the binary is built or the compiler error is captured",
+        "mirror-check" => "supervise freshness output and guide extraction fixes if the generated mirror is stale",
+        "install-prompts-check" => "supervise prompt locality output and stop if user-global prompt pollution appears",
+        "doctor" => "supervise doctor output and route failed health checks back into crate-owned Rust code",
+        "inventory-check" => "supervise parity gaps and convert real gaps into Rust extractor/compiler work",
+        "single-run-dry-run" => "supervise generated prompt/status artifacts before allowing a real parent writer run",
+        "team-run-dry-run" => "supervise member prompt/status artifacts before allowing parallel background agents",
+        "auto-loop-dry-run" => "supervise loop prompt/status artifacts before allowing bounded autonomous iterations",
+        _ => "supervise the background terminal and capture tool evidence",
+    };
+    (
+        does.to_owned(),
+        rationale.to_owned(),
+        extraction_target.to_owned(),
+        supervision_action.to_owned(),
+    )
 }
 
 fn run_tdd_step(
