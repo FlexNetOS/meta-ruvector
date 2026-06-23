@@ -1408,6 +1408,67 @@ fn tdd_supervise_emits_next_background_terminal_decision() {
 }
 
 #[test]
+fn tdd_drive_materializes_supervisor_decision_without_waiting_blind() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path().join("repo");
+    let run_dir = root.join(".codex/harness/runs/001-tdd-cycle");
+    let drive_dir = temp.path().join("tdd-drive");
+    fs::create_dir_all(&run_dir).unwrap();
+    let status_path = run_dir.join("tdd-cycle-status.json");
+    let guidance_path = run_dir.join("tdd-cycle-guidance.md");
+    fs::write(&guidance_path, "# guidance\n").unwrap();
+    fs::write(
+        &status_path,
+        serde_json::to_vec_pretty(&serde_json::json!({
+            "cycle_state": "planned",
+            "guidance_path": guidance_path,
+            "workflow": {
+                "extraction_plan_path": run_dir.join("workflow/tdd-extraction-plan.json")
+            },
+            "phases": [
+                {
+                    "phase": "tdd-workflow",
+                    "status": "planned",
+                    "evidence_path": "workflow/tdd-workflow-status.json",
+                    "next_action": "Run tdd-cycle without --dry-run."
+                }
+            ]
+        }))
+        .unwrap(),
+    )
+    .unwrap();
+
+    let report = codex_env::run_codex_tdd_drive(codex_env::CodexTddDriveOptions {
+        repo_root: root,
+        lua_policy: None,
+        codex_home: temp.path().join("codex-home"),
+        status_path: Some(status_path.clone()),
+        output_dir: Some(drive_dir),
+        team: "core".to_owned(),
+        goal: Some("drive planned TDD cycle".to_owned()),
+        max_iterations: 3,
+        member_sandbox_mode: "read-only".to_owned(),
+        supervisor_guidance: vec!["Stay in crates/codex-env.".to_owned()],
+        dry_run: true,
+        run_handoff: false,
+        skip_install: false,
+    })
+    .unwrap();
+
+    assert!(report.dry_run);
+    assert_eq!(report.drive_state, "planned");
+    assert_eq!(report.supervision.decision, "proceed");
+    assert_eq!(report.supervision.cycle_state, "planned");
+    assert!(report.cycle.is_none());
+    assert!(report.auto_loop.is_none());
+    assert!(report.status_path.exists());
+    let status = fs::read_to_string(report.status_path).unwrap();
+    assert!(status.contains(r#""drive_state": "planned""#));
+    assert!(status.contains(r#""decision": "proceed""#));
+    assert!(status.contains("Stay in crates/codex-env"));
+}
+
+#[test]
 fn doctor_rejects_gitignored_generated_surface_files() {
     let temp = tempfile::tempdir().unwrap();
     let root = temp.path();

@@ -750,6 +750,7 @@ cargo run -p codex-env -- tdd-next --check
 cargo run -p codex-env -- tdd-auto-loop --dry-run
 cargo run -p codex-env -- tdd-cycle --dry-run "supervise the full Codex TDD cycle"
 cargo run -p codex-env -- tdd-supervise
+cargo run -p codex-env -- tdd-drive --dry-run
 ```
 
 Each run refreshes/validates the Codex surface, then invokes `codex exec --json`
@@ -808,6 +809,9 @@ follow-up guidance into the handoff prompt after inspecting evidence.
 `tdd-supervise` reads the newest cycle status, writes
 `tdd-supervision-decision.json`, and tells Codex whether to proceed, guide, or
 stop the background terminal based on Rust-owned evidence.
+`tdd-drive` consumes that decision and either materializes the chosen next action
+or executes the next safe Rust-owned cycle step, so Codex can carry the
+human-in-loop loop forward without handing the clock back to the owner.
 "#,
     )
 }
@@ -916,6 +920,9 @@ follow-up guidance into the bounded handoff prompt when the supervisor has
 inspected evidence and needs to steer the worker.
 Run `cargo run -p codex-env -- tdd-supervise` after a cycle to persist the
 supervisor proceed/guide/stop decision before launching or closing a worker.
+Use `cargo run -p codex-env -- tdd-drive --dry-run` to inspect what the
+supervisor would do next, then remove `--dry-run` when Codex should execute the
+next safe Rust-owned step.
 Do not move this automation into a vendor harness.
 "#),
         ),
@@ -1042,6 +1049,8 @@ Use `--supervisor-note` or `--supervisor-note-file` to pass follow-up guidance
 into the next bounded handoff.
 Run `codex-env tdd-supervise` to turn the latest cycle status into an explicit
 proceed, guide, or stop decision before launching or closing a worker.
+Run `codex-env tdd-drive --dry-run` to materialize the next supervisor action,
+or without `--dry-run` to let Codex advance the next safe Rust-owned step.
 "#),
         ),
     ]
