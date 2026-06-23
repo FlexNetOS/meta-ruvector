@@ -23,5 +23,7 @@ and supervision events before deciding whether to proceed, guide, or stop the
 worker. Then read `tdd-extraction-plan.json` first as the low-token
 machine-readable next-action handoff, using `tdd-extraction-report.md` as the
 human-readable evidence summary. Run `cargo run -p codex-env -- tdd-next
---check` to fail closed before handing the plan to the next autonomous loop. Do
-not move this automation into a vendor harness.
+--check` to fail closed before handing the plan to the next autonomous loop, or
+`cargo run -p codex-env -- tdd-auto-loop --dry-run` to materialize the bounded
+auto-loop handoff from the validated plan. Do not move this automation into a
+vendor harness.

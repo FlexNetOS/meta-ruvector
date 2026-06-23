@@ -34,3 +34,13 @@ The Codex TDD workflow SHALL provide a Rust-native consumer for extraction plans
 - **GIVEN** a TDD extraction plan with an action belonging to `vendor harness`
 - **WHEN** `codex-env tdd-next` reads the plan
 - **THEN** it fails before handing the action to the autonomous loop
+
+### Requirement: Codex TDD autonomous handoff SHALL feed validated plans into auto-loop
+The Codex TDD workflow SHALL provide a Rust-native handoff from a validated extraction plan into the bounded autonomous loop so Codex can continue from supervised evidence without reinterpreting token-heavy reports.
+
+#### Scenario: Dry-run handoff materializes auto-loop artifacts
+- **GIVEN** a completed TDD extraction plan whose actions belong to `crates/codex-env`
+- **WHEN** `codex-env tdd-auto-loop --dry-run` consumes the plan
+- **THEN** it creates bounded `auto-loop` artifacts using a handoff goal derived from the plan
+- **AND** the handoff goal includes the selected extraction actions and evidence paths
+- **AND** the handoff goal keeps `vendor harness` as a forbidden target

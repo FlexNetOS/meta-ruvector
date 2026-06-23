@@ -312,6 +312,27 @@ pub struct CodexTddNextActionReport {
     pub status_summary: Vec<String>,
 }
 
+#[derive(Debug, Clone)]
+pub struct CodexTddAutoLoopOptions {
+    pub repo_root: PathBuf,
+    pub lua_policy: Option<PathBuf>,
+    pub codex_home: PathBuf,
+    pub plan_path: Option<PathBuf>,
+    pub team: String,
+    pub output_dir: Option<PathBuf>,
+    pub max_iterations: usize,
+    pub member_sandbox_mode: String,
+    pub dry_run: bool,
+    pub skip_install: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct CodexTddAutoLoopReport {
+    pub next_action: CodexTddNextActionReport,
+    pub auto_loop: CodexAutoLoopReport,
+    pub handoff_goal: String,
+}
+
 #[derive(Debug, Clone, Serialize)]
 pub struct CodexTddWorkflowStepReport {
     pub name: String,
@@ -1494,6 +1515,33 @@ pub fn codex_tdd_next_action(
     Ok(report)
 }
 
+pub fn run_codex_tdd_auto_loop(options: CodexTddAutoLoopOptions) -> Result<CodexTddAutoLoopReport> {
+    let next_action = codex_tdd_next_action(CodexTddNextActionOptions {
+        repo_root: options.repo_root.clone(),
+        plan_path: options.plan_path.clone(),
+        check: true,
+    })?;
+    let handoff_goal = codex_tdd_auto_loop_goal(&next_action);
+    let auto_loop = run_codex_auto_loop(CodexAutoLoopOptions {
+        repo_root: options.repo_root,
+        lua_policy: options.lua_policy,
+        codex_home: options.codex_home,
+        team: options.team,
+        goal: Some(handoff_goal.clone()),
+        prompt_file: None,
+        output_dir: options.output_dir,
+        max_iterations: options.max_iterations,
+        member_sandbox_mode: options.member_sandbox_mode,
+        dry_run: options.dry_run,
+        skip_install: options.skip_install,
+    })?;
+    Ok(CodexTddAutoLoopReport {
+        next_action,
+        auto_loop,
+        handoff_goal,
+    })
+}
+
 pub fn ensure_codex_home_settings(codex_home: &Path) -> Result<CodexHomeSettingsReport> {
     let catalog_path = codex_home.join(REQUIRED_CODEX_MODEL_CATALOG);
     write_file(&PlannedFile {
@@ -2049,6 +2097,56 @@ Loop contract:
 Original goal:
 {goal}
 "#
+    ))
+}
+
+fn codex_tdd_auto_loop_goal(next_action: &CodexTddNextActionReport) -> String {
+    let selected_actions = next_action
+        .selected_actions
+        .iter()
+        .map(|action| {
+            format!(
+                "- {} [{}]: {} | evidence: {}, {}",
+                action.step,
+                action.status,
+                action.next_action,
+                action.evidence_stdout.display(),
+                action.evidence_stderr.display()
+            )
+        })
+        .collect::<Vec<_>>()
+        .join("\n");
+    normalize_generated_text(&format!(
+        r#"# Codex TDD Autonomous Handoff
+
+Consume the validated TDD extraction plan and continue the Rust-owned autonomous loop.
+
+Plan: {}
+Target crate: {}
+Forbidden target: {}
+Ready for autonomous loop: {}
+
+Next crate-owned action:
+{}
+
+Selected extraction actions:
+{}
+
+Rules:
+- Treat this as the continuation after Codex-as-human supervised the background terminal trace.
+- Inspect stdout/stderr evidence only when needed; the JSON plan is the low-token routing artifact.
+- Apply durable behavior into `{}` or adjacent project-owned Rust crates.
+- Do not move this automation into `{}`.
+- End parent consolidation with `CODEX_AUTO_LOOP_STATUS: complete` only when this handoff is fully implemented and verified; otherwise use `continue` with the next concrete Rust-owned gap.
+"#,
+        next_action.plan_path.display(),
+        next_action.target_crate,
+        next_action.forbidden_target,
+        next_action.ready_for_autonomous_loop,
+        next_action.next_action,
+        selected_actions,
+        next_action.target_crate,
+        next_action.forbidden_target
     ))
 }
 
