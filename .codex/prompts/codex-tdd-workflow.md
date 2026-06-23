@@ -18,5 +18,6 @@ each tool does, why it runs, where the behavior belongs, and the Rust extraction
 target. Treat Codex as the human-in-loop operator supervising a background
 terminal: launch the workflow, watch status artifacts, give follow-up guidance
 if the trace exposes a gap, end the worker session, then extract durable
-automation into Rust-owned crates. Do not move this automation into a vendor
-harness.
+automation into Rust-owned crates. Inspect each step's stdout/stderr log paths
+and supervision events before deciding whether to proceed, guide, or stop the
+worker. Do not move this automation into a vendor harness.

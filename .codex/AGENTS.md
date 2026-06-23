@@ -105,4 +105,6 @@ terminal equivalent. Codex is the human-in-loop operator for this workflow:
 start the background terminal equivalent, supervise status/artifacts, provide
 follow-up guidance when the trace exposes a gap, end the worker session, and
 extract durable behavior into the owning Rust crates rather than a vendor
-harness.
+harness. Non-dry-run workflow steps also write per-step stdout/stderr logs
+under the workflow run directory so the supervising Codex session can inspect
+what the background worker actually did before deciding the next extraction.

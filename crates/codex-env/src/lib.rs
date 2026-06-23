@@ -276,6 +276,12 @@ pub struct CodexTddWorkflowStepReport {
     pub belongs_in: String,
     pub extraction_target: String,
     pub supervision_action: String,
+    pub worker_state: String,
+    pub stdout_path: PathBuf,
+    pub stderr_path: PathBuf,
+    pub supervision_events: Vec<String>,
+    pub started_unix_seconds: Option<u64>,
+    pub ended_unix_seconds: Option<u64>,
     pub status: String,
     pub exit_code: Option<i32>,
 }
@@ -1255,6 +1261,8 @@ pub fn run_codex_tdd_workflow(options: CodexTddWorkflowOptions) -> Result<CodexT
     });
     fs::create_dir_all(&run_dir)
         .with_context(|| format!("failed to create {}", run_dir.display()))?;
+    fs::create_dir_all(run_dir.join("steps"))
+        .with_context(|| format!("failed to create {}", run_dir.join("steps").display()))?;
     let status_path = run_dir.join("tdd-workflow-status.json");
     let binary = repo_root.join("target/debug/codex-env");
     let repo_arg = repo_root.display().to_string();
@@ -1263,6 +1271,7 @@ pub fn run_codex_tdd_workflow(options: CodexTddWorkflowOptions) -> Result<CodexT
         &repo_arg,
         &codex_home_arg,
         &binary.display().to_string(),
+        &run_dir,
         &options.team,
         &goal,
     );
@@ -1281,14 +1290,53 @@ pub fn run_codex_tdd_workflow(options: CodexTddWorkflowOptions) -> Result<CodexT
         return Ok(report);
     }
 
-    for step in &mut steps {
+    for index in 0..steps.len() {
+        let step = &mut steps[index];
         step.status = "running".to_owned();
-        let status = run_tdd_step(&repo_root, &codex_home, &binary, &options.team, &goal, step)?;
-        step.exit_code = status.code();
-        if status.success() {
+        step.worker_state = "running".to_owned();
+        step.started_unix_seconds = Some(unix_seconds_now());
+        step.supervision_events.push(format!(
+            "running: Codex-as-human supervisor started background terminal step {}",
+            step.name
+        ));
+        let step_for_run = step.clone();
+        write_tdd_workflow_status(&tdd_workflow_snapshot(
+            &repo_root,
+            &codex_home,
+            &run_dir,
+            &status_path,
+            false,
+            &steps,
+        ))?;
+        let output = run_tdd_step(
+            &repo_root,
+            &codex_home,
+            &binary,
+            &options.team,
+            &goal,
+            &step_for_run,
+        )?;
+        let step = &mut steps[index];
+        step.exit_code = output.status.code();
+        step.ended_unix_seconds = Some(unix_seconds_now());
+        fs::write(&step.stdout_path, &output.stdout)
+            .with_context(|| format!("failed to write {}", step.stdout_path.display()))?;
+        fs::write(&step.stderr_path, &output.stderr)
+            .with_context(|| format!("failed to write {}", step.stderr_path.display()))?;
+        if output.status.success() {
             step.status = "ok".to_owned();
+            step.worker_state = "ended".to_owned();
+            step.supervision_events.push(format!(
+                "ended: Codex-as-human supervisor captured logs and closed background terminal step {}",
+                step.name
+            ));
         } else {
             step.status = "failed".to_owned();
+            step.worker_state = "failed".to_owned();
+            step.supervision_events.push(format!(
+                "failed: Codex-as-human supervisor captured logs and stopped background terminal step {}",
+                step.name
+            ));
             let report = CodexTddWorkflowReport {
                 repo_root,
                 codex_home,
@@ -2127,11 +2175,12 @@ fn codex_tdd_workflow_steps(
     repo: &str,
     codex_home: &str,
     binary: &str,
+    run_dir: &Path,
     team: &str,
     goal: &str,
 ) -> Vec<CodexTddWorkflowStepReport> {
     let tool_goal = shell_quote(goal);
-    let run_dir = ".codex/harness/runs/tdd-workflow";
+    let tool_run_dir = ".codex/harness/runs/tdd-workflow";
     [
         (
             "build-codex-env",
@@ -2160,17 +2209,17 @@ fn codex_tdd_workflow_steps(
         ),
         (
             "single-run-dry-run",
-            format!("{binary} --repo {repo} run --codex-home {codex_home} --output-dir {run_dir}/run --dry-run {tool_goal}"),
+            format!("{binary} --repo {repo} run --codex-home {codex_home} --output-dir {tool_run_dir}/run --dry-run {tool_goal}"),
             "Materialize the exact non-interactive Codex prompt and artifacts for one parent-owned work pass.",
         ),
         (
             "team-run-dry-run",
-            format!("{binary} --repo {repo} team-run --codex-home {codex_home} --team {team} --output-dir {run_dir}/team-run --dry-run {tool_goal}"),
+            format!("{binary} --repo {repo} team-run --codex-home {codex_home} --team {team} --output-dir {tool_run_dir}/team-run --dry-run {tool_goal}"),
             "Materialize the parallel background-agent prompts while keeping member writes disabled by default.",
         ),
         (
             "auto-loop-dry-run",
-            format!("{binary} --repo {repo} auto-loop --codex-home {codex_home} --team {team} --max-iterations 3 --output-dir {run_dir}/auto-loop --dry-run {tool_goal}"),
+            format!("{binary} --repo {repo} auto-loop --codex-home {codex_home} --team {team} --max-iterations 3 --output-dir {tool_run_dir}/auto-loop --dry-run {tool_goal}"),
             "Materialize the bounded autonomous loop contract that Codex supervises as the human-in-loop operator.",
         ),
     ]
@@ -2188,6 +2237,14 @@ fn codex_tdd_workflow_steps(
             belongs_in: "crates/codex-env".to_owned(),
             extraction_target,
             supervision_action,
+            worker_state: "planned".to_owned(),
+            stdout_path: run_dir.join("steps").join(format!("{name}.stdout.log")),
+            stderr_path: run_dir.join("steps").join(format!("{name}.stderr.log")),
+            supervision_events: vec![format!(
+                "planned: Codex-as-human supervisor queued background terminal step {name}"
+            )],
+            started_unix_seconds: None,
+            ended_unix_seconds: None,
             status: "planned".to_owned(),
             exit_code: None,
         }
@@ -2239,6 +2296,26 @@ fn codex_tdd_step_semantics(name: &str, rationale: &str) -> (String, String, Str
     )
 }
 
+fn tdd_workflow_snapshot(
+    repo_root: &Path,
+    codex_home: &Path,
+    run_dir: &Path,
+    status_path: &Path,
+    dry_run: bool,
+    steps: &[CodexTddWorkflowStepReport],
+) -> CodexTddWorkflowReport {
+    CodexTddWorkflowReport {
+        repo_root: repo_root.to_path_buf(),
+        codex_home: codex_home.to_path_buf(),
+        run_dir: run_dir.to_path_buf(),
+        status_path: status_path.to_path_buf(),
+        operator_role: "codex-as-human-in-loop".to_owned(),
+        supervision_protocol: codex_tdd_supervision_protocol(),
+        dry_run,
+        steps: steps.to_vec(),
+    }
+}
+
 fn run_tdd_step(
     repo_root: &Path,
     codex_home: &Path,
@@ -2246,14 +2323,14 @@ fn run_tdd_step(
     team: &str,
     goal: &str,
     step: &CodexTddWorkflowStepReport,
-) -> Result<std::process::ExitStatus> {
+) -> Result<std::process::Output> {
     if step.name == "build-codex-env" {
         return Command::new("cargo")
             .arg("build")
             .arg("-p")
             .arg("codex-env")
             .current_dir(repo_root)
-            .status()
+            .output()
             .with_context(|| "failed to spawn cargo build -p codex-env");
     }
     let mut command = Command::new(binary);
@@ -2319,8 +2396,14 @@ fn run_tdd_step(
     }
     command
         .current_dir(repo_root)
-        .status()
+        .output()
         .with_context(|| format!("failed to spawn {}", step.name))
+}
+
+fn unix_seconds_now() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_or(0, |duration| duration.as_secs())
 }
 
 fn shell_quote(value: &str) -> String {
