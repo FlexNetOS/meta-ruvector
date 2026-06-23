@@ -70,6 +70,62 @@ pub struct PromptInstallReport {
 }
 
 #[derive(Debug, Clone)]
+pub struct CodexInventoryOptions {
+    pub repo_root: PathBuf,
+    pub lua_policy: Option<PathBuf>,
+    pub codex_home: PathBuf,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct CodexInventoryReport {
+    pub repo_root: PathBuf,
+    pub codex_home: PathBuf,
+    pub claude: CodexInventoryClaudeCounts,
+    pub codex: CodexInventoryCodexCounts,
+    pub expected: CodexInventoryExpectedCounts,
+    pub gaps: Vec<String>,
+    pub doctor: DoctorReport,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct CodexInventoryClaudeCounts {
+    pub command_files: usize,
+    pub agent_files: usize,
+    pub hook_files: usize,
+    pub helper_files: usize,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct CodexInventoryCodexCounts {
+    pub prompt_files: usize,
+    pub prompt_alias_files: usize,
+    pub installed_prompt_files: usize,
+    pub source_command_skills: usize,
+    pub skill_entrypoints: usize,
+    pub claude_agent_profiles: usize,
+    pub agent_profiles: usize,
+    pub hook_files: usize,
+    pub helper_files: usize,
+    pub helper_mirror_files: usize,
+    pub agent_teams: usize,
+    pub agent_team_members: usize,
+    pub mcp_servers: usize,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct CodexInventoryExpectedCounts {
+    pub command_prompt_files: usize,
+    pub workflow_prompt_files: usize,
+    pub prompt_files: usize,
+    pub source_command_skills: usize,
+    pub workflow_skills: usize,
+    pub copied_skill_files: usize,
+    pub claude_agent_profiles: usize,
+    pub hook_files: usize,
+    pub helper_mirror_files: usize,
+}
+
+#[derive(Debug, Clone)]
 pub struct CodexInstallOptions {
     pub repo_root: PathBuf,
     pub lua_policy: Option<PathBuf>,
@@ -269,6 +325,10 @@ pub fn mirror_codex_surface(options: MirrorOptions) -> Result<MirrorReport> {
         &codex_dir,
         &agent_role_plan.roles,
     ));
+    planned.extend(copy_tree_plan(
+        &claude_dir.join("helpers"),
+        &codex_dir.join("helpers"),
+    )?);
     planned.extend(codex_prompt_helpers(&codex_dir));
     planned.push(PlannedFile {
         path: codex_dir.join("hooks.json"),
@@ -494,6 +554,257 @@ fn stale_installed_prompt_files(
     }
     stale.sort();
     Ok(stale)
+}
+
+fn count_files_recursive(root: &Path) -> Result<usize> {
+    if !root.exists() {
+        return Ok(0);
+    }
+    let mut count = 0;
+    for entry in fs::read_dir(root)? {
+        let entry = entry?;
+        let path = entry.path();
+        if path.is_dir() {
+            count += count_files_recursive(&path)?;
+        } else if path.is_file() {
+            count += 1;
+        }
+    }
+    Ok(count)
+}
+
+fn count_files_with_extension(root: &Path, extension: &str) -> Result<usize> {
+    if !root.exists() {
+        return Ok(0);
+    }
+    let mut count = 0;
+    for entry in fs::read_dir(root)? {
+        let entry = entry?;
+        let path = entry.path();
+        if path.is_dir() {
+            count += count_files_with_extension(&path, extension)?;
+        } else if path.is_file()
+            && path.extension().and_then(|value| value.to_str()) == Some(extension)
+        {
+            count += 1;
+        }
+    }
+    Ok(count)
+}
+
+fn count_markdown_files(root: &Path) -> Result<usize> {
+    count_files_with_extension(root, "md")
+}
+
+fn count_skill_entrypoints(root: &Path) -> Result<usize> {
+    if !root.exists() {
+        return Ok(0);
+    }
+    let mut count = 0;
+    for entry in fs::read_dir(root)? {
+        let entry = entry?;
+        let path = entry.path();
+        if path.is_dir() {
+            count += count_skill_entrypoints(&path)?;
+        } else if path.file_name().and_then(|value| value.to_str()) == Some("SKILL.md") {
+            count += 1;
+        }
+    }
+    Ok(count)
+}
+
+fn count_source_command_skills(skills_dir: &Path) -> Result<usize> {
+    if !skills_dir.exists() {
+        return Ok(0);
+    }
+    let mut count = 0;
+    for entry in fs::read_dir(skills_dir)? {
+        let path = entry?.path();
+        if path.is_dir()
+            && path
+                .file_name()
+                .and_then(|value| value.to_str())
+                .is_some_and(|name| name.starts_with("source-command-"))
+            && path.join("SKILL.md").is_file()
+        {
+            count += 1;
+        }
+    }
+    Ok(count)
+}
+
+fn mismatched_planned_files(repo_root: &Path, planned: &[PlannedFile]) -> Result<Vec<PathBuf>> {
+    let mut mismatches = Vec::new();
+    for file in planned {
+        let Ok(actual) = fs::read(&file.path) else {
+            mismatches.push(strip_repo_prefix(repo_root, &file.path));
+            continue;
+        };
+        if actual != file.bytes || is_executable(&file.path)? != file.executable {
+            mismatches.push(strip_repo_prefix(repo_root, &file.path));
+        }
+    }
+    mismatches.sort();
+    Ok(mismatches)
+}
+
+pub fn inventory_codex_surface(options: CodexInventoryOptions) -> Result<CodexInventoryReport> {
+    let repo_root = options.repo_root.canonicalize().with_context(|| {
+        format!(
+            "failed to canonicalize repo root {}",
+            options.repo_root.display()
+        )
+    })?;
+    let claude_dir = locate_claude_dir(&repo_root)?;
+    let codex_dir = repo_root.join(".codex");
+    let skills_dir = repo_root.join(".agents/skills");
+    let agent_role_plan = claude_agent_role_plan(&claude_dir.join("agents"), &codex_dir)?;
+    let command_prompt_plan = command_prompt_plan(&claude_dir.join("commands"), &codex_dir)?;
+    let workflow_prompts = codex_native_workflow_prompts(&codex_dir, &agent_role_plan.roles);
+    let copied_skill_plan = copy_tree_plan(&claude_dir.join("skills"), &skills_dir)?;
+    let command_skill_plan = command_skill_plan(&claude_dir.join("commands"), &skills_dir, None)?;
+    let workflow_skills = codex_native_workflow_skills(&skills_dir, &agent_role_plan.roles);
+    let hook_plan = copy_tree_plan(&claude_dir.join("hooks"), &codex_dir.join("hooks"))?;
+    let helper_plan = copy_tree_plan(&claude_dir.join("helpers"), &codex_dir.join("helpers"))?;
+
+    let codex_home = options.codex_home;
+    let doctor = doctor_codex_surface(DoctorOptions {
+        repo_root: repo_root.clone(),
+        lua_policy: options.lua_policy,
+        codex_home: codex_home.clone(),
+    })?;
+
+    let mut skill_plan = copied_skill_plan;
+    skill_plan.extend(command_skill_plan);
+    skill_plan.extend(workflow_skills);
+
+    let mut gaps = Vec::new();
+    let command_prompt_files = command_prompt_plan.files.len();
+    let workflow_prompt_files = workflow_prompts.len();
+    let expected_prompt_files = command_prompt_files + workflow_prompt_files;
+    if doctor.prompt_files != expected_prompt_files {
+        gaps.push(format!(
+            "expected {expected_prompt_files} Codex prompt files but found {}",
+            doctor.prompt_files
+        ));
+    }
+    if doctor.installed_prompt_files != doctor.prompt_files {
+        gaps.push(format!(
+            "installed prompt count {} does not match generated prompt count {}",
+            doctor.installed_prompt_files, doctor.prompt_files
+        ));
+    }
+
+    let expected_source_command_skills = skill_plan
+        .iter()
+        .filter(|file| {
+            file.path
+                .parent()
+                .and_then(|path| path.file_name())
+                .and_then(|value| value.to_str())
+                .is_some_and(|name| name.starts_with("source-command-"))
+                && file.path.file_name().and_then(|value| value.to_str()) == Some("SKILL.md")
+        })
+        .count();
+    let source_command_skills = count_source_command_skills(&skills_dir)?;
+    if source_command_skills != expected_source_command_skills {
+        gaps.push(format!(
+            "expected {expected_source_command_skills} source-command skills but found {source_command_skills}"
+        ));
+    }
+
+    let skill_mismatches = mismatched_planned_files(&repo_root, &skill_plan)?;
+    if !skill_mismatches.is_empty() {
+        gaps.push(format!(
+            "skill mirror has {} missing or stale file(s); first: {}",
+            skill_mismatches.len(),
+            skill_mismatches[0].display()
+        ));
+    }
+
+    let hook_mismatches = mismatched_planned_files(&repo_root, &hook_plan)?;
+    if !hook_mismatches.is_empty() {
+        gaps.push(format!(
+            "hook mirror has {} missing or stale file(s); first: {}",
+            hook_mismatches.len(),
+            hook_mismatches[0].display()
+        ));
+    }
+
+    let helper_mismatches = mismatched_planned_files(&repo_root, &helper_plan)?;
+    if !helper_mismatches.is_empty() {
+        gaps.push(format!(
+            "helper mirror has {} missing or stale file(s); first: {}",
+            helper_mismatches.len(),
+            helper_mismatches[0].display()
+        ));
+    }
+
+    if doctor.agent_files != doctor.config_agent_entries {
+        gaps.push(format!(
+            "config has {} agent entries but {} agent files",
+            doctor.config_agent_entries, doctor.agent_files
+        ));
+    }
+    if doctor.agent_files < agent_role_plan.files.len() {
+        gaps.push(format!(
+            "expected at least {} Claude agent profiles but only {} agent files were verified",
+            agent_role_plan.files.len(),
+            doctor.agent_files
+        ));
+    }
+    if doctor.claude_helper_files != helper_plan.len() {
+        gaps.push(format!(
+            "expected {} helper mirror files but doctor verified {}",
+            helper_plan.len(),
+            doctor.claude_helper_files
+        ));
+    }
+
+    Ok(CodexInventoryReport {
+        repo_root: repo_root.clone(),
+        codex_home,
+        claude: CodexInventoryClaudeCounts {
+            command_files: count_markdown_files(&claude_dir.join("commands"))?,
+            agent_files: count_files_recursive(&claude_dir.join("agents"))?,
+            hook_files: hook_plan.len(),
+            helper_files: helper_plan.len(),
+        },
+        codex: CodexInventoryCodexCounts {
+            prompt_files: doctor.prompt_files,
+            prompt_alias_files: doctor.prompt_alias_files,
+            installed_prompt_files: doctor.installed_prompt_files,
+            source_command_skills,
+            skill_entrypoints: count_skill_entrypoints(&skills_dir)?,
+            claude_agent_profiles: count_files_with_extension(
+                &codex_dir.join("agents/claude"),
+                "toml",
+            )?,
+            agent_profiles: doctor.agent_files,
+            hook_files: count_files_recursive(&codex_dir.join("hooks"))?,
+            helper_files: count_files_recursive(&codex_dir.join("helpers"))?,
+            helper_mirror_files: doctor.claude_helper_files,
+            agent_teams: doctor.agent_teams,
+            agent_team_members: doctor.agent_team_members,
+            mcp_servers: doctor.config_mcp_servers.len(),
+        },
+        expected: CodexInventoryExpectedCounts {
+            command_prompt_files,
+            workflow_prompt_files,
+            prompt_files: expected_prompt_files,
+            source_command_skills: expected_source_command_skills,
+            workflow_skills: 3,
+            copied_skill_files: skill_plan
+                .len()
+                .saturating_sub(expected_source_command_skills)
+                .saturating_sub(3),
+            claude_agent_profiles: agent_role_plan.files.len(),
+            hook_files: hook_plan.len(),
+            helper_mirror_files: helper_plan.len(),
+        },
+        gaps,
+        doctor,
+    })
 }
 
 pub fn install_codex_env(options: CodexInstallOptions) -> Result<CodexInstallReport> {
@@ -1692,7 +2003,7 @@ case "${helper}" in
 esac
 
 export CLAUDE_PROJECT_DIR="${repo_root}"
-exec node "${repo_root}/.claude/helpers/${helper}" "$@"
+exec node "${repo_root}/.codex/helpers/${helper}" "$@"
 "#,
             )
             .into_bytes(),

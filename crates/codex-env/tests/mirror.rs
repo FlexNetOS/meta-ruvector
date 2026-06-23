@@ -3,8 +3,9 @@ use std::process::Command;
 
 use codex_env::{
     doctor_codex_surface, ensure_codex_home_settings, install_codex_env, install_codex_prompts,
-    mirror_codex_surface, run_codex_task, CodexAutoLoopOptions, CodexInstallOptions,
-    CodexRunOptions, CodexTeamRunOptions, DoctorOptions, MirrorOptions, PromptInstallOptions,
+    inventory_codex_surface, mirror_codex_surface, run_codex_task, CodexAutoLoopOptions,
+    CodexInstallOptions, CodexInventoryOptions, CodexRunOptions, CodexTeamRunOptions,
+    DoctorOptions, MirrorOptions, PromptInstallOptions,
 };
 
 #[test]
@@ -227,6 +228,11 @@ fn mirror_generates_codex_and_skill_files() {
     assert!(browser_role.contains("description = \"Automates browsers\""));
     assert!(root.join(".codex/hooks/rust-check.sh").exists());
     assert!(root.join(".codex/helpers/run-claude-hook.sh").exists());
+    assert!(root.join(".codex/helpers/hook-handler.cjs").exists());
+    assert!(root.join(".codex/helpers/auto-memory-hook.mjs").exists());
+    let hook_shim = fs::read_to_string(root.join(".codex/helpers/run-claude-hook.sh")).unwrap();
+    assert!(hook_shim.contains(".codex/helpers/${helper}"));
+    assert!(!hook_shim.contains(".claude/helpers/${helper}"));
     let hooks: serde_json::Value =
         serde_json::from_slice(&fs::read(root.join(".codex/hooks.json")).unwrap()).unwrap();
     assert!(hooks["hooks"]["Notification"].is_null());
@@ -343,7 +349,7 @@ fn mirror_generates_codex_and_skill_files() {
     let doctor = doctor_codex_surface(DoctorOptions {
         repo_root: root.to_path_buf(),
         lua_policy: None,
-        codex_home,
+        codex_home: codex_home.clone(),
     })
     .unwrap();
     assert_eq!(doctor.config_model, "gpt-5.5");
@@ -364,10 +370,32 @@ fn mirror_generates_codex_and_skill_files() {
     assert_eq!(doctor.prompt_files, 5);
     assert_eq!(doctor.prompt_alias_files, 1);
     assert_eq!(doctor.installed_prompt_files, 5);
+    assert_eq!(doctor.claude_helper_files, 2);
+    assert!(doctor.codex_helper_files >= doctor.claude_helper_files);
     assert!(doctor.agent_models.contains_key("gpt-5.5"));
     assert!(doctor.agent_models.contains_key("gpt-5.4-mini"));
     assert!(doctor.hook_events.contains(&"Stop".to_owned()));
     assert_eq!(doctor.hook_shim_handlers, 3);
+
+    let codex_inventory = inventory_codex_surface(CodexInventoryOptions {
+        repo_root: root.to_path_buf(),
+        lua_policy: None,
+        codex_home,
+    })
+    .unwrap();
+    assert!(codex_inventory.gaps.is_empty());
+    assert_eq!(codex_inventory.claude.command_files, 1);
+    assert_eq!(codex_inventory.codex.source_command_skills, 1);
+    assert_eq!(
+        codex_inventory.expected.prompt_files,
+        codex_inventory.codex.prompt_files
+    );
+    assert_eq!(codex_inventory.claude.helper_files, 2);
+    assert_eq!(codex_inventory.codex.helper_mirror_files, 2);
+    assert_eq!(
+        codex_inventory.expected.claude_agent_profiles,
+        codex_inventory.codex.claude_agent_profiles
+    );
 }
 
 #[test]
@@ -636,7 +664,7 @@ fn doctor_rejects_hook_shim_with_missing_claude_helper() {
     .unwrap_err();
     assert!(error
         .to_string()
-        .contains("references missing Claude helper"));
+        .contains("references missing Codex helper"));
 }
 
 #[test]

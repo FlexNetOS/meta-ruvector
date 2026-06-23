@@ -1,11 +1,12 @@
 use std::path::PathBuf;
 
-use anyhow::Result;
+use anyhow::{bail, Result};
 use clap::{Parser, Subcommand};
 use codex_env::{
-    doctor_codex_surface, install_codex_env, install_codex_prompts, mirror_codex_surface,
-    run_codex_auto_loop, run_codex_task, run_codex_team, CodexAutoLoopOptions, CodexInstallOptions,
-    CodexRunOptions, CodexTeamRunOptions, DoctorOptions, MirrorOptions, PromptInstallOptions,
+    doctor_codex_surface, install_codex_env, install_codex_prompts, inventory_codex_surface,
+    mirror_codex_surface, run_codex_auto_loop, run_codex_task, run_codex_team,
+    CodexAutoLoopOptions, CodexInstallOptions, CodexInventoryOptions, CodexRunOptions,
+    CodexTeamRunOptions, DoctorOptions, MirrorOptions, PromptInstallOptions,
 };
 
 #[derive(Parser)]
@@ -60,6 +61,21 @@ enum Commands {
         /// Emit the doctor report as JSON.
         #[arg(long)]
         json: bool,
+    },
+
+    /// Inventory Claude-to-Codex parity coverage and fail on detected gaps.
+    Inventory {
+        /// Codex home directory. Defaults to CODEX_HOME or ~/.codex.
+        #[arg(long)]
+        codex_home: Option<PathBuf>,
+
+        /// Emit the inventory report as JSON.
+        #[arg(long)]
+        json: bool,
+
+        /// Fail if the inventory contains any parity gaps.
+        #[arg(long)]
+        check: bool,
     },
 
     /// Refresh the Codex env, then run codex exec with JSONL artifacts.
@@ -174,7 +190,7 @@ fn main() -> Result<()> {
                 codex_home,
             })?;
             println!(
-                "codex-env install ok: mirrored {} files ({} changed), installed {} prompts ({} changed), home settings {} at {}, doctor verified config {}/{}, {} MCP server(s), {} agents ({} config entries), {} team(s), {} team member reference(s), {} hook handler(s), {} shim-backed hook handler(s), {} prompts ({} aliases) in {}",
+                "codex-env install ok: mirrored {} files ({} changed), installed {} prompts ({} changed), home settings {} at {}, doctor verified config {}/{}, {} MCP server(s), {} agents ({} config entries), {} team(s), {} team member reference(s), {} hook handler(s), {} shim-backed hook handler(s), {} helper mirrors, {} prompts ({} aliases) in {}",
                 report.mirror.total_files,
                 report.mirror.changed_files,
                 report.prompts.total_files,
@@ -194,6 +210,7 @@ fn main() -> Result<()> {
                 report.doctor.agent_team_members,
                 report.doctor.hook_handlers,
                 report.doctor.hook_shim_handlers,
+                report.doctor.claude_helper_files,
                 report.doctor.installed_prompt_files,
                 report.doctor.prompt_alias_files,
                 report.doctor.codex_home.join("prompts").display()
@@ -240,7 +257,7 @@ fn main() -> Result<()> {
                 println!("{}", serde_json::to_string_pretty(&report)?);
             } else {
                 println!(
-                    "codex-env doctor ok: config {}/{}, approvals {}/{}, goals {}, home context {}, skills {}, {} MCP server(s), {} agents ({} config entries; {}), {} team(s), {} team member reference(s), {} hook event(s), {} hook handler(s), {} shim-backed hook handler(s), {} prompts ({} aliases) installed into {}",
+                    "codex-env doctor ok: config {}/{}, approvals {}/{}, goals {}, home context {}, skills {}, {} MCP server(s), {} agents ({} config entries; {}), {} team(s), {} team member reference(s), {} hook event(s), {} hook handler(s), {} shim-backed hook handler(s), {} helper mirrors, {} prompts ({} aliases) installed into {}",
                     report.config_model,
                     report.config_reasoning_effort,
                     report.config_approval_policy,
@@ -257,9 +274,56 @@ fn main() -> Result<()> {
                     report.hook_events.len(),
                     report.hook_handlers,
                     report.hook_shim_handlers,
+                    report.claude_helper_files,
                     report.installed_prompt_files,
                     report.prompt_alias_files,
                     report.codex_home.join("prompts").display()
+                );
+            }
+        }
+        Commands::Inventory {
+            codex_home,
+            json,
+            check,
+        } => {
+            let codex_home = codex_home.unwrap_or_else(default_codex_home);
+            let report = inventory_codex_surface(CodexInventoryOptions {
+                repo_root,
+                lua_policy: cli.lua_policy,
+                codex_home,
+            })?;
+            if json {
+                println!("{}", serde_json::to_string_pretty(&report)?);
+            } else {
+                println!(
+                    "codex-env inventory: commands {} -> {} prompts ({} aliases, {} installed), agents {} -> {} Claude profiles / {} total, helpers {} -> {} mirrored ({} helper files), hooks {} -> {}, skills {} source-command / {} total, teams {} ({} members), MCP {}, gaps {}",
+                    report.claude.command_files,
+                    report.codex.prompt_files,
+                    report.codex.prompt_alias_files,
+                    report.codex.installed_prompt_files,
+                    report.claude.agent_files,
+                    report.codex.claude_agent_profiles,
+                    report.codex.agent_profiles,
+                    report.claude.helper_files,
+                    report.codex.helper_mirror_files,
+                    report.codex.helper_files,
+                    report.claude.hook_files,
+                    report.codex.hook_files,
+                    report.codex.source_command_skills,
+                    report.codex.skill_entrypoints,
+                    report.codex.agent_teams,
+                    report.codex.agent_team_members,
+                    report.codex.mcp_servers,
+                    report.gaps.len()
+                );
+                for gap in &report.gaps {
+                    println!("gap: {gap}");
+                }
+            }
+            if check && !report.gaps.is_empty() {
+                bail!(
+                    "codex-env inventory found {} parity gap(s)",
+                    report.gaps.len()
                 );
             }
         }

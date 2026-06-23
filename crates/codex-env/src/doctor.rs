@@ -9,7 +9,7 @@ use serde_json::Value as JsonValue;
 use walkdir::WalkDir;
 
 use super::{
-    install_codex_prompts, is_executable, mirror_codex_surface, strip_repo_prefix,
+    copy_tree_plan, install_codex_prompts, is_executable, mirror_codex_surface, strip_repo_prefix,
     validate_codex_home_settings, CodexHomeSettingsReport, MirrorOptions, PromptInstallOptions,
     REQUIRED_CODEX_CONTEXT_WINDOW, REQUIRED_CODEX_MODEL, REQUIRED_CODEX_MODEL_CATALOG,
 };
@@ -122,6 +122,8 @@ pub struct DoctorReport {
     pub hook_events: Vec<String>,
     pub hook_handlers: usize,
     pub hook_shim_handlers: usize,
+    pub claude_helper_files: usize,
+    pub codex_helper_files: usize,
     pub prompt_files: usize,
     pub prompt_alias_files: usize,
     pub installed_prompt_files: usize,
@@ -157,6 +159,7 @@ pub fn doctor_codex_surface(options: DoctorOptions) -> Result<DoctorReport> {
     let (agent_teams, agent_team_members) =
         validate_agent_teams(&codex_dir, &config_report.configured_agents)?;
     let hook_report = validate_hooks(&codex_dir)?;
+    let (claude_helper_files, codex_helper_files) = validate_helper_mirror(&repo_root, &codex_dir)?;
     let (prompt_files, prompt_alias_files, installed_prompt_files, workflow_prompts) =
         validate_prompts(&repo_root, &codex_dir, &codex_home)?;
     let git_ignored_generated_files =
@@ -184,6 +187,8 @@ pub fn doctor_codex_surface(options: DoctorOptions) -> Result<DoctorReport> {
         hook_events: hook_report.events,
         hook_handlers: hook_report.handlers,
         hook_shim_handlers: hook_report.shim_handlers,
+        claude_helper_files,
+        codex_helper_files,
         prompt_files,
         prompt_alias_files,
         installed_prompt_files,
@@ -760,17 +765,58 @@ fn validate_hook_shim_command(
         bail!("{} must be executable", shim_path.display());
     }
 
-    let repo_root = codex_dir.parent().unwrap_or(codex_dir);
-    let claude_helper = repo_root.join(".claude/helpers").join(helper);
-    if !claude_helper.is_file() {
+    let codex_helper = codex_dir.join("helpers").join(helper);
+    if !codex_helper.is_file() {
         bail!(
-            "{} hook event {event} references missing Claude helper {}",
+            "{} hook event {event} references missing Codex helper {}",
             path.display(),
-            claude_helper.display()
+            codex_helper.display()
         );
     }
 
     Ok(true)
+}
+
+fn validate_helper_mirror(repo_root: &Path, codex_dir: &Path) -> Result<(usize, usize)> {
+    let planned = copy_tree_plan(
+        &repo_root.join(".claude/helpers"),
+        &codex_dir.join("helpers"),
+    )?;
+    for file in &planned {
+        let actual = fs::read(&file.path).with_context(|| {
+            format!(
+                "missing Codex helper mirror {}",
+                strip_repo_prefix(repo_root, &file.path).display()
+            )
+        })?;
+        if actual != file.bytes {
+            bail!(
+                "Codex helper mirror {} differs from .claude source",
+                strip_repo_prefix(repo_root, &file.path).display()
+            );
+        }
+        if is_executable(&file.path)? != file.executable {
+            bail!(
+                "Codex helper mirror {} has stale executable bit",
+                strip_repo_prefix(repo_root, &file.path).display()
+            );
+        }
+    }
+
+    Ok((planned.len(), helper_files(&codex_dir.join("helpers"))?))
+}
+
+fn helper_files(root: &Path) -> Result<usize> {
+    if !root.exists() {
+        return Ok(0);
+    }
+    let mut count = 0;
+    for entry in fs::read_dir(root)? {
+        if entry?.path().is_file() {
+            count += 1;
+        }
+    }
+    Ok(count)
 }
 
 fn validate_prompts(
