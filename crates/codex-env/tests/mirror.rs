@@ -972,6 +972,19 @@ fn tdd_workflow_dry_run_materializes_codex_tool_execution_plan() {
         assert_eq!(step.belongs_in, "crates/codex-env");
         assert!(step.extraction_target.contains("Rust-owned"));
         assert!(step.supervision_action.contains("supervise"));
+        assert_eq!(step.worker_state, "planned");
+        assert!(step
+            .stdout_path
+            .ends_with(format!("{}.stdout.log", step.name)));
+        assert!(step
+            .stderr_path
+            .ends_with(format!("{}.stderr.log", step.name)));
+        assert!(step
+            .supervision_events
+            .iter()
+            .any(|event| event.contains("planned")));
+        assert_eq!(step.started_unix_seconds, None);
+        assert_eq!(step.ended_unix_seconds, None);
         assert_eq!(step.exit_code, None);
     }
     let status = fs::read_to_string(report.status_path).unwrap();
