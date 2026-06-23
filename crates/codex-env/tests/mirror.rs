@@ -1305,7 +1305,9 @@ fn tdd_cycle_dry_run_materializes_supervised_cycle_status() {
     assert!(report.phases[0].next_action.contains("without --dry-run"));
     assert!(report.run_dir.ends_with("tdd-cycle"));
     assert!(report.status_path.ends_with("tdd-cycle-status.json"));
+    assert!(report.guidance_path.ends_with("tdd-cycle-guidance.md"));
     assert!(report.status_path.exists());
+    assert!(report.guidance_path.exists());
     assert!(report.workflow.run_dir.ends_with("workflow"));
     assert!(report.workflow.status_path.exists());
     assert!(report.workflow.extraction_plan_path.exists());
@@ -1327,6 +1329,12 @@ fn tdd_cycle_dry_run_materializes_supervised_cycle_status() {
     assert!(status.contains("tdd-workflow-status.json"));
     assert!(status.contains("tdd-extraction-plan.json"));
     assert!(status.contains("opened TDD cycle terminal"));
+    let guidance = fs::read_to_string(report.guidance_path).unwrap();
+    assert!(guidance.contains("# Codex TDD Cycle Guidance"));
+    assert!(guidance.contains("## Phase guidance"));
+    assert!(guidance.contains("tdd-workflow"));
+    assert!(guidance.contains("Run tdd-cycle without --dry-run"));
+    assert!(guidance.contains("Do not move this automation into a vendor harness"));
 }
 
 #[test]

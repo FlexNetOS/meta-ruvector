@@ -33,5 +33,7 @@ need a single cycle status before executing nested workers. The handoff and
 cycle statuses record supervision events and timestamps for the terminal
 handoff. The cycle status also records explicit phase checkpoints with evidence
 paths and next actions so a resumed Codex session can continue from source truth
-instead of reloading token-heavy mirrored material.
+instead of reloading token-heavy mirrored material. Read
+`tdd-cycle-guidance.md` for the concise human-in-loop guidance artifact before
+opening per-step logs.
 Do not move this automation into a vendor harness.

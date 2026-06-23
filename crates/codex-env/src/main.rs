@@ -675,11 +675,12 @@ fn main() -> Result<()> {
                 skip_install,
             })?;
             println!(
-                "codex-env tdd-cycle {}: state={}, run_dir={}, status={}, workflow_status={}, extraction_plan={}, next_ready={}, auto_loop_status={}",
+                "codex-env tdd-cycle {}: state={}, run_dir={}, status={}, guidance={}, workflow_status={}, extraction_plan={}, next_ready={}, auto_loop_status={}",
                 if report.dry_run { "planned" } else { "ok" },
                 report.cycle_state,
                 report.run_dir.display(),
                 report.status_path.display(),
+                report.guidance_path.display(),
                 report.workflow.status_path.display(),
                 report.workflow.extraction_plan_path.display(),
                 report
