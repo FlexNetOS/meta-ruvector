@@ -4,9 +4,9 @@ use std::process::Command;
 use codex_env::{
     doctor_codex_surface, ensure_codex_home_settings, install_codex_env, install_codex_prompts,
     inventory_codex_surface, mirror_codex_surface, run_codex_task, CodexAutoLoopOptions,
-    CodexInstallOptions, CodexInventoryOptions, CodexRunOptions, CodexTddNextActionOptions,
-    CodexTddWorkflowOptions, CodexTeamRunOptions, DoctorOptions, MirrorOptions,
-    PromptInstallOptions,
+    CodexInstallOptions, CodexInventoryOptions, CodexRunOptions, CodexTddAutoLoopOptions,
+    CodexTddNextActionOptions, CodexTddWorkflowOptions, CodexTeamRunOptions, DoctorOptions,
+    MirrorOptions, PromptInstallOptions,
 };
 
 #[test]
@@ -1147,6 +1147,93 @@ fn tdd_next_action_rejects_vendor_harness_routing() {
     .to_string();
 
     assert!(err.contains("forbidden target vendor harness"));
+}
+
+#[test]
+fn tdd_auto_loop_materializes_plan_driven_autonomous_handoff() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path().join("repo");
+    let codex_home = temp.path().join("codex-home");
+    let run_dir = temp.path().join("tdd-auto-loop");
+    let tdd_run_dir = root.join(".codex/harness/runs/001-tdd-workflow");
+    fs::create_dir_all(root.join(".claude/commands")).unwrap();
+    fs::create_dir_all(&tdd_run_dir).unwrap();
+    fs::write(
+        root.join(".claude/settings.json"),
+        r#"{
+          "hooks": {
+            "PreToolUse": [
+              {
+                "matcher": "Bash",
+                "hooks": [{"type": "command", "command": "echo pre", "timeout": 5}]
+              }
+            ]
+          },
+          "env": {}
+        }"#,
+    )
+    .unwrap();
+    fs::write(root.join(".claude/commands/demo.md"), "# Demo\n").unwrap();
+    let plan_path = tdd_run_dir.join("tdd-extraction-plan.json");
+    fs::write(
+        &plan_path,
+        serde_json::to_vec_pretty(&serde_json::json!({
+            "schema_version": 1,
+            "generated_by": "codex-env tdd-workflow",
+            "goal": "promote the next automation action",
+            "target_crate": "crates/codex-env",
+            "forbidden_target": "vendor harness",
+            "source_material": ".claude and generated .codex evidence",
+            "runtime_representation": "machine-readable Rust-owned extraction plan",
+            "next_action": "Promote the next uncovered automation behavior into crates/codex-env; do not move it into a vendor harness.",
+            "actions": [
+                {
+                    "step": "auto-loop-dry-run",
+                    "status": "ok",
+                    "worker_state": "ended",
+                    "crate_owner": "crates/codex-env",
+                    "belongs_in": "crates/codex-env",
+                    "extraction_target": "Rust-owned autonomous loop harness in crates/codex-env",
+                    "next_action": "Use this passing evidence as the crate-owned guard; keep it out of the vendor harness.",
+                    "evidence_stdout": "steps/auto-loop-dry-run.stdout.log",
+                    "evidence_stderr": "steps/auto-loop-dry-run.stderr.log"
+                }
+            ]
+        }))
+        .unwrap(),
+    )
+    .unwrap();
+
+    let report = codex_env::run_codex_tdd_auto_loop(CodexTddAutoLoopOptions {
+        repo_root: root,
+        lua_policy: None,
+        codex_home,
+        plan_path: Some(plan_path.clone()),
+        team: "core".to_owned(),
+        output_dir: Some(run_dir),
+        max_iterations: 3,
+        member_sandbox_mode: "read-only".to_owned(),
+        dry_run: true,
+        skip_install: false,
+    })
+    .unwrap();
+
+    assert_eq!(report.next_action.plan_path, plan_path);
+    assert!(report.handoff_goal.contains("Codex TDD Autonomous Handoff"));
+    assert!(report.handoff_goal.contains("crates/codex-env"));
+    assert!(report.handoff_goal.contains("vendor harness"));
+    assert!(report.auto_loop.dry_run);
+    assert_eq!(report.auto_loop.iterations.len(), 1);
+    let prompt = fs::read_to_string(
+        &report.auto_loop.iterations[0]
+            .team_run
+            .consolidation_run
+            .prompt_path,
+    )
+    .unwrap();
+    assert!(prompt.contains("Codex TDD Autonomous Handoff"));
+    assert!(prompt.contains("Selected extraction actions"));
+    assert!(prompt.contains("CODEX_AUTO_LOOP_STATUS: complete"));
 }
 
 #[test]

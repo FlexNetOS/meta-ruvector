@@ -5,9 +5,10 @@ use clap::{Parser, Subcommand};
 use codex_env::{
     codex_tdd_next_action, doctor_codex_surface, install_codex_env, install_codex_prompts,
     inventory_codex_surface, mirror_codex_surface, run_codex_auto_loop, run_codex_task,
-    run_codex_team, CodexAutoLoopOptions, CodexInstallOptions, CodexInventoryOptions,
-    CodexRunOptions, CodexTddNextActionOptions, CodexTddWorkflowOptions, CodexTeamRunOptions,
-    DoctorOptions, MirrorOptions, PromptInstallOptions,
+    run_codex_tdd_auto_loop, run_codex_team, CodexAutoLoopOptions, CodexInstallOptions,
+    CodexInventoryOptions, CodexRunOptions, CodexTddAutoLoopOptions, CodexTddNextActionOptions,
+    CodexTddWorkflowOptions, CodexTeamRunOptions, DoctorOptions, MirrorOptions,
+    PromptInstallOptions,
 };
 
 #[derive(Parser)]
@@ -212,6 +213,41 @@ enum Commands {
         /// Fail unless the plan is ready for autonomous loop handoff.
         #[arg(long)]
         check: bool,
+    },
+
+    /// Consume a TDD extraction plan and start the autonomous auto-loop handoff.
+    TddAutoLoop {
+        /// Path to tdd-extraction-plan.json. Defaults to the newest TDD workflow run.
+        #[arg(long)]
+        plan: Option<PathBuf>,
+
+        /// Team name from .codex/agent-teams.json.
+        #[arg(long, default_value = "core")]
+        team: String,
+
+        /// Codex home directory. Defaults to this repo's .codex.
+        #[arg(long)]
+        codex_home: Option<PathBuf>,
+
+        /// Directory for auto-loop artifacts. Defaults under .codex/harness/runs.
+        #[arg(long)]
+        output_dir: Option<PathBuf>,
+
+        /// Maximum non-dry-run iterations before stopping.
+        #[arg(long, default_value_t = 3)]
+        max_iterations: usize,
+
+        /// Sandbox for parallel team members. Defaults to read-only; parent consolidation owns writes.
+        #[arg(long, default_value = "read-only")]
+        member_sandbox: String,
+
+        /// Materialize the first autonomous handoff iteration without launching codex exec.
+        #[arg(long)]
+        dry_run: bool,
+
+        /// Skip install and only run doctor before launching.
+        #[arg(long)]
+        skip_install: bool,
     },
 }
 
@@ -537,6 +573,41 @@ fn main() -> Result<()> {
                     );
                 }
             }
+        }
+        Commands::TddAutoLoop {
+            plan,
+            team,
+            codex_home,
+            output_dir,
+            max_iterations,
+            member_sandbox,
+            dry_run,
+            skip_install,
+        } => {
+            let codex_home = codex_home.unwrap_or_else(|| default_codex_home(&repo_root));
+            let report = run_codex_tdd_auto_loop(CodexTddAutoLoopOptions {
+                repo_root,
+                lua_policy: cli.lua_policy,
+                codex_home,
+                plan_path: plan,
+                team,
+                output_dir,
+                max_iterations,
+                member_sandbox_mode: member_sandbox,
+                dry_run,
+                skip_install,
+            })?;
+            println!(
+                "codex-env tdd-auto-loop {}: plan={}, target={}, auto_loop_run_dir={}, iterations={}/{}, completed={}, next_action={}",
+                if report.auto_loop.dry_run { "prepared" } else { "ok" },
+                report.next_action.plan_path.display(),
+                report.next_action.target_crate,
+                report.auto_loop.run_dir.display(),
+                report.auto_loop.iterations.len(),
+                report.auto_loop.max_iterations,
+                report.auto_loop.completed,
+                report.next_action.next_action
+            );
         }
     }
 

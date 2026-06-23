@@ -9,3 +9,7 @@
 - [x] Add a Rust-native `tdd-next` consumer for `tdd-extraction-plan.json`.
 - [x] Fail closed when an extraction plan routes ownership to a vendor harness or outside `crates/codex-env`.
 - [x] Verify `tdd-next --check` against a real supervised TDD workflow run.
+
+- [x] Add a Rust-native `tdd-auto-loop` handoff from validated TDD extraction plans into `auto-loop`.
+- [x] Ensure the handoff prompt preserves Codex-as-human supervision evidence and forbids vendor harness routing.
+- [x] Verify `tdd-auto-loop --dry-run` against a real supervised TDD plan.
