@@ -107,6 +107,3 @@ path = "examples/local_swarm.rs"
 name = "distributed_learning"
 path = "examples/distributed_learning.rs"
 
-[profile.release]
-opt-level = 3
-lto = "thin"

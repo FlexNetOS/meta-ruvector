@@ -57,18 +57,3 @@ esp_idf_logger = "0.1"
 [build-dependencies]
 embuild = { version = "0.32", features = ["espidf"] }
 
-[profile.release]
-opt-level = "s"
-lto = true
-debug = false
-
-[profile.dev]
-opt-level = 1
-debug = true
-
-[profile.release-esp32]
-inherits = "release"
-opt-level = "z"       # Maximum size optimization for ESP32
-lto = "fat"
-codegen-units = 1
-panic = "abort"

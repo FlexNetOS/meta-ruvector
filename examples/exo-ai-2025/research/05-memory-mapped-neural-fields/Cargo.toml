@@ -44,29 +44,3 @@ harness = false
 name = "prefetch_bench"
 harness = false
 
-[profile.release]
-opt-level = 3
-lto = true
-codegen-units = 1
-strip = true
-
-[profile.bench]
-opt-level = 3
-lto = true
-codegen-units = 1
-
-[lib]
-name = "demand_paged_cognition"
-path = "src/lib.rs"
-
-[[example]]
-name = "basic_usage"
-path = "examples/basic_usage.rs"
-
-[[example]]
-name = "petabyte_scale"
-path = "examples/petabyte_scale.rs"
-
-[package.metadata.docs.rs]
-all-features = true
-rustdoc-args = ["--cfg", "docsrs"]

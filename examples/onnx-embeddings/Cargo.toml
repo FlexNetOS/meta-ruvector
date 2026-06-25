@@ -103,7 +103,3 @@ gpu = ["dep:wgpu", "dep:bytemuck"]
 cuda-wasm = ["gpu"]  # CUDA-WASM transpilation (requires gpu)
 webgpu = ["gpu"]     # WebGPU backend alias
 
-[profile.release]
-opt-level = 3
-lto = "thin"
-codegen-units = 1

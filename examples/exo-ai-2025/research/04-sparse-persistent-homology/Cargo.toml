@@ -25,14 +25,3 @@ path = "src/lib.rs"
 name = "sparse_homology_bench"
 harness = false
 
-[profile.release]
-opt-level = 3
-lto = "fat"
-codegen-units = 1
-
-[profile.bench]
-inherits = "release"
-
-[features]
-default = []
-simd = []

@@ -24,10 +24,3 @@ criterion = { version = "0.5", features = ["html_reports"] }
 [workspace]
 # This allows the crate to be compiled standalone
 
-[profile.release]
-opt-level = 3
-lto = "thin"
-codegen-units = 1
-
-[profile.bench]
-inherits = "release"

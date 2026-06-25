@@ -25,11 +25,3 @@ simd = []  # SIMD acceleration
 name = "consciousness_bench"
 harness = false
 
-[profile.release]
-opt-level = 3
-lto = true
-codegen-units = 1
-
-[profile.bench]
-opt-level = 3
-lto = true

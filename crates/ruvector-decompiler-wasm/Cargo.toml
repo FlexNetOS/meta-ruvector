@@ -21,9 +21,3 @@ serde_json = { workspace = true }
 console_error_panic_hook = "0.1"
 getrandom = { version = "0.2", features = ["js"] }
 
-[profile.release]
-opt-level = "s"
-lto = true
-
-[package.metadata.wasm-pack.profile.release]
-wasm-opt = false

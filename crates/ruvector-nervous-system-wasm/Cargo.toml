@@ -32,16 +32,3 @@ wasm-bindgen-test = "0.3"
 [features]
 default = ["console_error_panic_hook"]
 
-[profile.release]
-# Optimize for size (<100KB target)
-opt-level = "z"
-lto = true
-codegen-units = 1
-panic = "abort"
-strip = true
-
-[profile.release.package."*"]
-opt-level = "z"
-
-[package.metadata.wasm-pack.profile.release]
-wasm-opt = false

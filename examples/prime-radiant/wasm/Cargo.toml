@@ -52,15 +52,3 @@ wasm-bindgen-rayon = { version = "1.2", optional = true }
 [dev-dependencies]
 wasm-bindgen-test = "0.3"
 
-[profile.release]
-# Optimize for small binary size
-opt-level = "s"
-lto = true
-codegen-units = 1
-panic = "abort"
-
-[package.metadata.wasm-pack.profile.release]
-wasm-opt = ["-Os", "--enable-mutable-globals"]
-
-# Exclude from parent workspace
-[workspace]

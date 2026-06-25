@@ -151,20 +151,3 @@ ai-ml = [
 # Memory tracking for debugging
 memory-tracking = []
 
-[profile.release]
-lto = true
-codegen-units = 1
-opt-level = "s"
-
-[profile.bench]
-opt-level = 3
-lto = "thin"
-codegen-units = 1
-debug = false
-
-[package.metadata.docs.rs]
-all-features = true
-rustdoc-args = ["--cfg", "docsrs"]
-
-[package.metadata.wasm-pack.profile.release]
-wasm-opt = ["-O4"]

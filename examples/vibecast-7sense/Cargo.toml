@@ -85,23 +85,3 @@ sevensense-analysis = { path = "crates/sevensense-analysis", version = "0.1.0" }
 sevensense-interpretation = { path = "crates/sevensense-interpretation", version = "0.1.0" }
 sevensense-api = { path = "crates/sevensense-api", version = "0.1.0" }
 
-[profile.release]
-lto = true
-codegen-units = 1
-panic = "abort"
-strip = true
-
-[profile.dev]
-opt-level = 0
-debug = true
-
-[profile.test]
-opt-level = 1
-debug = true
-
-# Benchmark profile - optimized for performance measurement
-[profile.bench]
-opt-level = 3
-debug = false
-lto = "thin"
-codegen-units = 1

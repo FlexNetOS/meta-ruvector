@@ -33,27 +33,3 @@ harness = false
 path = "benches/hyperbolic_ops.rs"
 required-features = []
 
-[profile.release]
-opt-level = 3
-lto = "fat"
-codegen-units = 1
-
-# Enable SIMD optimizations
-[target.'cfg(target_arch = "x86_64")'.dependencies]
-
-[target.'cfg(target_arch = "aarch64")'.dependencies]
-
-[features]
-default = []
-
-# SIMD optimizations (enabled by default on supported platforms)
-simd = []
-
-# Linear attention (O(n) complexity)
-linear-attention = []
-
-# Multi-curvature product spaces
-multi-curvature = []
-
-# Full feature set
-full = ["simd", "linear-attention", "multi-curvature"]

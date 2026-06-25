@@ -77,10 +77,3 @@ path = "tests/syscall_tests.rs"
 name = "deterministic_replay"
 path = "tests/deterministic_replay.rs"
 
-[profile.release]
-opt-level = 3
-lto = true
-codegen-units = 1
-
-[profile.test]
-opt-level = 1
