@@ -183,6 +183,7 @@ pub struct RvLite {
     cypher_engine: cypher::CypherEngine,
     sql_engine: sql::SqlEngine,
     triple_store: sparql::TripleStore,
+    #[allow(dead_code)]
     storage: Option<storage::IndexedDBStorage>,
 }
 

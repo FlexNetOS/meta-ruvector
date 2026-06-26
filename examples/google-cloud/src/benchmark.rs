@@ -149,6 +149,7 @@ impl LatencyStats {
             .fold(f64::NEG_INFINITY, f64::max)
     }
 
+    #[allow(dead_code)]
     pub fn count(&self) -> usize {
         self.times_ms.len()
     }
@@ -817,7 +818,7 @@ fn benchmark_quantization(dims: usize, num_vectors: usize) -> Result<BenchmarkRe
     // Benchmark scalar quantization (INT8)
     let start = Instant::now();
 
-    let quantized: Vec<Vec<i8>> = vectors
+    let _quantized: Vec<Vec<i8>> = vectors
         .iter()
         .map(|v| {
             let max_val = v.iter().map(|x| x.abs()).fold(0.0f32, f32::max);

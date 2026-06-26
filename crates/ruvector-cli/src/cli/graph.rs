@@ -1,8 +1,8 @@
 //! Graph database command implementations
 
-use crate::cli::{format_error, format_info, format_success, ProgressTracker};
+use crate::cli::{format_error, format_info, format_success};
 use crate::config::Config;
-use anyhow::{Context, Result};
+use anyhow::Result;
 use colored::*;
 use std::io::{self, BufRead, Write};
 use std::path::Path;
@@ -149,7 +149,7 @@ pub enum GraphCommands {
 }
 
 /// Create a new graph database
-pub fn create_graph(path: &str, name: &str, indexed: bool, config: &Config) -> Result<()> {
+pub fn create_graph(path: &str, name: &str, indexed: bool, _config: &Config) -> Result<()> {
     println!(
         "{}",
         format_success(&format!("Creating graph database at: {}", path))
@@ -179,11 +179,11 @@ pub fn create_graph(path: &str, name: &str, indexed: bool, config: &Config) -> R
 
 /// Execute a Cypher query
 pub fn execute_query(
-    db_path: &str,
+    _db_path: &str,
     cypher: &str,
     format: &str,
     explain: bool,
-    config: &Config,
+    _config: &Config,
 ) -> Result<()> {
     if explain {
         println!("{}", "Query Execution Plan:".bold().cyan());
@@ -296,12 +296,12 @@ pub fn run_shell(db_path: &str, multiline: bool, config: &Config) -> Result<()> 
 
 /// Import graph data from file
 pub fn import_graph(
-    db_path: &str,
+    _db_path: &str,
     input_file: &str,
     format: &str,
     graph_name: &str,
     skip_errors: bool,
-    config: &Config,
+    _config: &Config,
 ) -> Result<()> {
     println!(
         "{}",
@@ -351,11 +351,11 @@ pub fn import_graph(
 
 /// Export graph data to file
 pub fn export_graph(
-    db_path: &str,
+    _db_path: &str,
     output_file: &str,
     format: &str,
     graph_name: &str,
-    config: &Config,
+    _config: &Config,
 ) -> Result<()> {
     println!(
         "{}",
@@ -400,7 +400,7 @@ pub fn export_graph(
 }
 
 /// Show graph database information
-pub fn show_graph_info(db_path: &str, detailed: bool, config: &Config) -> Result<()> {
+pub fn show_graph_info(db_path: &str, detailed: bool, _config: &Config) -> Result<()> {
     println!("\n{}", "Graph Database Statistics".bold().green());
 
     // TODO: Integrate with ruvector-neo4j to get actual statistics
@@ -426,10 +426,10 @@ pub fn show_graph_info(db_path: &str, detailed: bool, config: &Config) -> Result
 
 /// Run graph benchmarks
 pub fn run_graph_benchmark(
-    db_path: &str,
+    _db_path: &str,
     num_queries: usize,
     bench_type: &str,
-    config: &Config,
+    _config: &Config,
 ) -> Result<()> {
     println!("{}", "Running graph benchmark...".bold().green());
     println!("  Benchmark type: {}", bench_type.cyan());
@@ -473,7 +473,7 @@ pub fn serve_graph(
     http_port: u16,
     grpc_port: u16,
     enable_graphql: bool,
-    config: &Config,
+    _config: &Config,
 ) -> Result<()> {
     println!("{}", "Starting RuVector Graph Server...".bold().green());
     println!("  Database: {}", db_path.cyan());
@@ -531,7 +531,7 @@ fn format_graph_results_json(results: &[serde_json::Value]) -> Result<String> {
         .map_err(|e| anyhow::anyhow!("Failed to serialize results: {}", e))
 }
 
-fn format_graph_results_csv(results: &[serde_json::Value]) -> Result<String> {
+fn format_graph_results_csv(_results: &[serde_json::Value]) -> Result<String> {
     // TODO: Implement CSV formatting
     Ok(String::new())
 }

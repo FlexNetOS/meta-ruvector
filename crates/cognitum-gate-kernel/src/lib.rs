@@ -1,4 +1,6 @@
 //! Cognitum Gate Kernel
+#![allow(dead_code, unused_imports, unused_variables)]
+#![allow(static_mut_refs, mutable_transmutes)] // FFI single-threaded WASM pattern
 //!
 //! A no_std WASM kernel for worker tiles in a 256-tile coherence gate fabric.
 //! Each tile maintains a local graph shard, accumulates evidence for sequential
@@ -538,18 +540,17 @@ pub unsafe extern "C" fn init_tile(tile_id: u8) {
 #[must_use]
 pub unsafe extern "C" fn ingest_delta(ptr: *const u8, len: usize) -> i32 {
     unsafe {
-        match TILE_STATE.as_mut() {
-            Some(tile) => {
-                if tile.ingest_delta_raw(ptr, len) {
-                    1
-                } else {
-                    0
-                }
+        TILE_STATE.as_mut().map_or(0, |tile| {
+            if tile.ingest_delta_raw(ptr, len) {
+                1
+            } else {
+                0
             }
-            None => 0,
-        }
+        })
     }
 }
+
+/// Ingest a delta from raw memory (legacy, assumes 16 bytes).
 
 /// Ingest a delta from raw memory (legacy, assumes 16 bytes).
 ///
@@ -584,17 +585,13 @@ pub unsafe extern "C" fn ingest_delta_unchecked(ptr: *const u8) -> i32 {
 #[no_mangle]
 pub unsafe extern "C" fn tick(tick_number: u32, report_ptr: *mut u8) -> i32 {
     unsafe {
-        match TILE_STATE.as_mut() {
-            Some(tile) => {
-                let report = tile.tick(tick_number);
-                // Copy report to output buffer
-                let report_bytes =
-                    core::slice::from_raw_parts(&report as *const TileReport as *const u8, 64);
-                core::ptr::copy_nonoverlapping(report_bytes.as_ptr(), report_ptr, 64);
-                1
-            }
-            None => 0,
-        }
+        TILE_STATE.as_mut().map_or(0, |tile| {
+            let report = tile.tick(tick_number);
+            let report_bytes =
+                core::slice::from_raw_parts(&report as *const TileReport as *const u8, 64);
+            core::ptr::copy_nonoverlapping(report_bytes.as_ptr(), report_ptr, 64);
+            1
+        })
     }
 }
 
@@ -609,18 +606,13 @@ pub unsafe extern "C" fn tick(tick_number: u32, report_ptr: *mut u8) -> i32 {
 #[no_mangle]
 pub unsafe extern "C" fn get_witness_fragment(fragment_ptr: *mut u8) -> i32 {
     unsafe {
-        match TILE_STATE.as_ref() {
-            Some(tile) => {
-                let fragment = tile.get_witness_fragment();
-                let fragment_bytes = core::slice::from_raw_parts(
-                    &fragment as *const WitnessFragment as *const u8,
-                    16,
-                );
-                core::ptr::copy_nonoverlapping(fragment_bytes.as_ptr(), fragment_ptr, 16);
-                1
-            }
-            None => 0,
-        }
+        TILE_STATE.as_ref().map_or(0, |tile| {
+            let fragment = tile.get_witness_fragment();
+            let fragment_bytes =
+                core::slice::from_raw_parts(&fragment as *const WitnessFragment as *const u8, 16);
+            core::ptr::copy_nonoverlapping(fragment_bytes.as_ptr(), fragment_ptr, 16);
+            1
+        })
     }
 }
 
@@ -633,12 +625,7 @@ pub unsafe extern "C" fn get_witness_fragment(fragment_ptr: *mut u8) -> i32 {
 /// Returns status byte, or 0xFF if not initialized.
 #[no_mangle]
 pub unsafe extern "C" fn get_status() -> u8 {
-    unsafe {
-        match TILE_STATE.as_ref() {
-            Some(tile) => tile.status,
-            None => 0xFF,
-        }
-    }
+    unsafe { TILE_STATE.as_ref().map_or(0xFF, |tile| tile.status) }
 }
 
 /// Reset the tile state
@@ -649,9 +636,7 @@ pub unsafe extern "C" fn get_status() -> u8 {
 #[no_mangle]
 pub unsafe extern "C" fn reset_tile() {
     unsafe {
-        if let Some(tile) = TILE_STATE.as_mut() {
-            tile.reset();
-        }
+        TILE_STATE.as_mut().map(|tile| tile.reset());
     }
 }
 

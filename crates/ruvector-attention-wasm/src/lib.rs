@@ -1,3 +1,4 @@
+#![allow(dead_code, unused_imports, unused_variables)]
 use wasm_bindgen::prelude::*;
 
 pub mod attention;

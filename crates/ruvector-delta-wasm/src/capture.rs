@@ -2,7 +2,7 @@
 //!
 //! Provides optimized routines for capturing deltas from vector pairs.
 
-use ruvector_delta_core::{Delta, DeltaOp, DeltaValue, VectorDelta};
+use ruvector_delta_core::{DeltaOp, VectorDelta};
 use smallvec::SmallVec;
 
 /// Configuration for delta capture

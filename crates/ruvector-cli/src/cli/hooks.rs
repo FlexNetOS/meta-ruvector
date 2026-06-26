@@ -9,7 +9,7 @@
 //! See: https://docs.anthropic.com/en/docs/claude-code/hooks
 
 use crate::config::Config;
-use anyhow::{Context, Result};
+use anyhow::Result;
 use colored::*;
 use flate2::read::GzDecoder;
 use flate2::write::GzEncoder;
@@ -819,7 +819,7 @@ impl Intelligence {
     /// Route to best agent
     pub fn route(
         &self,
-        task: &str,
+        _task: &str,
         file: Option<&str>,
         crate_name: Option<&str>,
         operation: &str,
@@ -865,7 +865,7 @@ impl Intelligence {
     // === Error Pattern Learning ===
 
     /// Record error pattern
-    pub fn record_error(&mut self, command: &str, stderr: &str) -> Vec<String> {
+    pub fn record_error(&mut self, _command: &str, stderr: &str) -> Vec<String> {
         let mut recorded = Vec::new();
 
         // Parse Rust errors

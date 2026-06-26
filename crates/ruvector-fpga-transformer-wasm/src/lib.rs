@@ -36,8 +36,9 @@ pub use ruvector_fpga_transformer::ffi::wasm_bindgen::{
 #[wasm_bindgen(start)]
 pub fn init() {
     // Set up panic hook for better error messages
-    #[cfg(feature = "console_error_panic_hook")]
-    console_error_panic_hook::set_once();
+    // panic hook intentionally disabled in wasm builds; add feature if needed
+    // #[cfg(feature = "console_error_panic_hook")]
+    // console_error_panic_hook::set_once();
 }
 
 /// Get the crate version

@@ -39,7 +39,7 @@ pub fn scaled_dot_attention(
     query: &[f32],
     keys: JsValue,
     values: JsValue,
-    scale: Option<f32>,
+    #[allow(unused_variables)] scale: Option<f32>,
 ) -> Result<Vec<f32>, JsError> {
     let keys_vec: Vec<Vec<f32>> = serde_wasm_bindgen::from_value(keys)
         .map_err(|e| JsError::new(&format!("Failed to parse keys: {}", e)))?;

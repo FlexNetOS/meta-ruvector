@@ -1,6 +1,7 @@
 //! WASM bindings for ruvector-cnn
 //!
 //! Provides WebAssembly bindings for image embedding extraction plus
+#![allow(dead_code, unused_imports, unused_variables)]
 //! contrastive-learning losses and a few SIMD-backed tensor ops.
 //!
 //! ## Features

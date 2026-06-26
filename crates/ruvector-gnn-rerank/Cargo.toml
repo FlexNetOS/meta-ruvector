@@ -17,7 +17,7 @@ rand_distr = { workspace = true }
 thiserror = { workspace = true }
 
 [[bin]]
-name = "benchmark"
+name = "gnn-benchmark"
 path = "src/main.rs"
 
 [lib]

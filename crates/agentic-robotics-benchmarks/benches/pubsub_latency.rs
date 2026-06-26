@@ -1,8 +1,8 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId};
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use ros3_core::message::RobotState;
 use ros3_core::publisher::Publisher;
-use ros3_core::subscriber::Subscriber;
 use ros3_core::serialization::Serializer;
+use ros3_core::subscriber::Subscriber;
 use std::time::{Duration, Instant};
 
 fn benchmark_publisher_creation(c: &mut Criterion) {
@@ -10,10 +10,8 @@ fn benchmark_publisher_creation(c: &mut Criterion) {
 
     group.bench_function("create_publisher", |b| {
         b.iter(|| {
-            let publisher = Publisher::<RobotState>::new(
-                black_box("test_topic".to_string()),
-                Serializer::Cdr,
-            );
+            let publisher =
+                Publisher::<RobotState>::new(black_box("test_topic".to_string()), Serializer::Cdr);
             black_box(publisher)
         })
     });
@@ -26,10 +24,8 @@ fn benchmark_subscriber_creation(c: &mut Criterion) {
 
     group.bench_function("create_subscriber", |b| {
         b.iter(|| {
-            let subscriber = Subscriber::<RobotState>::new(
-                black_box("test_topic".to_string()),
-                Serializer::Cdr,
-            );
+            let subscriber =
+                Subscriber::<RobotState>::new(black_box("test_topic".to_string()), Serializer::Cdr);
             black_box(subscriber)
         })
     });
@@ -94,8 +90,10 @@ fn benchmark_end_to_end_latency(c: &mut Criterion) {
     // Measure full publish-subscribe round trip
     group.bench_function("pubsub_roundtrip", |b| {
         b.iter_custom(|iters| {
-            let publisher = Publisher::<RobotState>::new("latency_topic".to_string(), Serializer::Cdr);
-            let _subscriber = Subscriber::<RobotState>::new("latency_topic".to_string(), Serializer::Cdr);
+            let publisher =
+                Publisher::<RobotState>::new("latency_topic".to_string(), Serializer::Cdr);
+            let _subscriber =
+                Subscriber::<RobotState>::new("latency_topic".to_string(), Serializer::Cdr);
 
             let start = Instant::now();
 
@@ -156,10 +154,7 @@ fn benchmark_concurrent_publishers(c: &mut Criterion) {
                 b.iter(|| {
                     let publishers: Vec<_> = (0..count)
                         .map(|i| {
-                            Publisher::<RobotState>::new(
-                                format!("topic_{}", i),
-                                Serializer::Cdr,
-                            )
+                            Publisher::<RobotState>::new(format!("topic_{}", i), Serializer::Cdr)
                         })
                         .collect();
 
