@@ -1,9 +1,9 @@
 //! Flash command - write kernel images to target devices
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result};
 use clap::Args;
 use colored::Colorize;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 /// Arguments for the flash command
 #[derive(Args, Debug)]
@@ -193,7 +193,7 @@ fn validate_inputs(args: &FlashArgs) -> Result<()> {
     Ok(())
 }
 
-fn check_device(device: &PathBuf) -> Result<()> {
+fn check_device(device: &Path) -> Result<()> {
     println!(
         "  {} Checking device: {}",
         "[stub]".yellow(),
@@ -213,7 +213,7 @@ fn check_device(device: &PathBuf) -> Result<()> {
     Ok(())
 }
 
-fn confirm_flash(device: &PathBuf) -> Result<bool> {
+fn confirm_flash(device: &Path) -> Result<bool> {
     println!(
         "\n  {} All data on {} will be ERASED!",
         "WARNING".red().bold(),

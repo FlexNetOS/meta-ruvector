@@ -7,6 +7,10 @@ use crate::error::NetResult;
 use crate::ethernet::MacAddress;
 
 /// Network device capabilities.
+///
+/// The boolean fields each report an independent hardware offload capability, so
+/// a struct of booleans is the natural representation (not bitflags or an enum).
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct DeviceCapabilities {
     /// Maximum transmission unit (bytes).
@@ -171,15 +175,27 @@ pub trait NetworkDevice {
     fn receive(&mut self, buf: &mut [u8]) -> NetResult<Option<usize>>;
 
     /// Sets the device into promiscuous mode.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`NetError`](crate::NetError) if the device rejects the mode change.
     fn set_promiscuous(&mut self, enabled: bool) -> NetResult<()>;
 
     /// Enables or disables the device.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`NetError`](crate::NetError) if the device cannot change state.
     fn set_enabled(&mut self, enabled: bool) -> NetResult<()>;
 
     /// Returns true if the device is enabled.
     fn is_enabled(&self) -> bool;
 
     /// Resets the device.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`NetError`](crate::NetError) if the device reset fails.
     fn reset(&mut self) -> NetResult<()>;
 }
 

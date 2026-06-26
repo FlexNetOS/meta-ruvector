@@ -19,8 +19,8 @@ use std::fs;
 use std::os::unix::fs::PermissionsExt;
 use std::path::PathBuf;
 
-use cognitum_rs::error::Error;
-use cognitum_rs::seed::{Discovery, TailscaleDiscovery};
+use cognitum_one::error::Error;
+use cognitum_one::seed::{Discovery, TailscaleDiscovery};
 
 const FIXTURE_STATUS: &str = r#"{
     "Self": {
@@ -51,13 +51,14 @@ const FIXTURE_STATUS: &str = r#"{
 /// returns the given exit code. Returns the path to the executable.
 fn write_stub_script(name: &str, stdout: &str, exit: i32) -> PathBuf {
     let mut path = std::env::temp_dir();
-    path.push(format!("cognitum-tailscale-stub-{name}-{}.sh", std::process::id()));
+    path.push(format!(
+        "cognitum-tailscale-stub-{name}-{}.sh",
+        std::process::id()
+    ));
     // Heredoc-free single-line cat using printf + shell quoting; we want
     // the fixture literal so JSON quotes don't confuse the outer shell.
     let escaped = stdout.replace('\'', "'\\''");
-    let script = format!(
-        "#!/bin/sh\nprintf '%s' '{escaped}'\nexit {exit}\n"
-    );
+    let script = format!("#!/bin/sh\nprintf '%s' '{escaped}'\nexit {exit}\n");
     fs::write(&path, script).expect("write stub");
     let mut perms = fs::metadata(&path).expect("stat").permissions();
     perms.set_mode(0o755);
@@ -95,7 +96,11 @@ async fn tailscale_discovery_respects_custom_port() {
         .with_port(18443);
     let peers = provider.discover().await.expect("discover");
     for p in &peers {
-        assert!(p.url.ends_with(":18443"), "url {} must use override port", p.url);
+        assert!(
+            p.url.ends_with(":18443"),
+            "url {} must use override port",
+            p.url
+        );
     }
     fs::remove_file(&stub).ok();
 }
@@ -103,7 +108,10 @@ async fn tailscale_discovery_respects_custom_port() {
 #[tokio::test]
 async fn tailscale_discovery_reports_missing_binary() {
     let provider = TailscaleDiscovery::new().with_command("/nonexistent/tailscale-xyz");
-    let err = provider.discover().await.expect_err("missing binary must fail");
+    let err = provider
+        .discover()
+        .await
+        .expect_err("missing binary must fail");
     assert!(
         matches!(err, Error::Validation(ref m) if m.contains("not found on PATH")),
         "got: {err:?}"

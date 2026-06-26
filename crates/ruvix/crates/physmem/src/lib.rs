@@ -1,7 +1,7 @@
-//! # RuVix Physical Memory Allocator
+//! # `RuVix` Physical Memory Allocator
 //!
 //! This crate provides a buddy allocator for physical page frame allocation
-//! as part of the RuVix Cognition Kernel (ADR-087).
+//! as part of the `RuVix` Cognition Kernel (ADR-087).
 //!
 //! ## Overview
 //!
@@ -61,6 +61,16 @@
 #![deny(clippy::all)]
 #![warn(clippy::pedantic)]
 #![allow(clippy::module_name_repetitions)]
+// Bare-metal physical-memory math: physical addresses are u64 and the target is
+// 64-bit (aarch64), so page-count/address casts to usize are lossless on this
+// platform; the truncation warning only applies to hypothetical 32-bit targets.
+#![allow(clippy::cast_possible_truncation)]
+// Statistics math uses f64 for ratio/average display; page and operation counters
+// are small enough to be represented exactly, so the precision-loss warning is moot.
+#![allow(clippy::cast_precision_loss)]
+// No-std, no-alloc allocator: free lists are fixed-size inline arrays (no heap),
+// so the allocator is intentionally a large stack value, not an oversight.
+#![allow(clippy::large_stack_arrays)]
 
 #[cfg(feature = "alloc")]
 extern crate alloc;
@@ -86,7 +96,7 @@ pub use ruvix_types::KernelError;
 /// Page size in bytes (4KB).
 pub const PAGE_SIZE: usize = 4096;
 
-/// Page size shift (log2(PAGE_SIZE)).
+/// Page size shift (`log2(PAGE_SIZE)`).
 pub const PAGE_SHIFT: usize = 12;
 
 /// Maximum order for buddy allocation (2^9 = 512 pages = 2MB).
@@ -127,10 +137,9 @@ pub const fn pages_to_order(pages: usize) -> usize {
     let leading_zeros = (pages - 1).leading_zeros() as usize;
     let bits = core::mem::size_of::<usize>() * 8;
 
-    if leading_zeros >= bits {
-        0
-    } else {
-        bits - leading_zeros
+    match bits.checked_sub(leading_zeros) {
+        Some(order) => order,
+        None => 0,
     }
 }
 

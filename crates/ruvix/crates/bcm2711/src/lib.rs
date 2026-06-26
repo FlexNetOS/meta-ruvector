@@ -67,6 +67,12 @@
 #![no_std]
 #![warn(missing_docs)]
 #![warn(clippy::all)]
+// Hardware register map: the per-peripheral modules define the complete BCM2711/BCM2712
+// register offset tables (GPFSELn, GPIO_PUP_PDN_CNTRL_REGn, IRQ banks, mailbox tags, etc.)
+// for spec parity. Not every register is wired up by the current driver surface, but the
+// definitions are kept for completeness and documentation of the hardware. These are not
+// dead logic — they are the authoritative register map.
+#![allow(dead_code)]
 
 pub mod gpio;
 pub mod interrupt;

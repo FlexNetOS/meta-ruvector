@@ -1,15 +1,15 @@
-//! # RuVix Filesystem Layer
+//! # `RuVix` Filesystem Layer
 //!
-//! This crate provides a minimal filesystem abstraction for the RuVix Cognition Kernel
+//! This crate provides a minimal filesystem abstraction for the `RuVix` Cognition Kernel
 //! as specified in ADR-087 Phase E. It implements a VFS layer with pluggable filesystem
-//! backends including FAT32 (read-only) and RamFS (read-write).
+//! backends including FAT32 (read-only) and `RamFS` (read-write).
 //!
 //! ## Architecture
 //!
 //! The filesystem layer is designed around these core abstractions:
 //!
 //! - **`BlockDevice`**: Hardware abstraction for block-level I/O
-//! - **`FileSystem`**: Filesystem implementation (FAT32, RamFS, etc.)
+//! - **`FileSystem`**: Filesystem implementation (FAT32, `RamFS`, etc.)
 //! - **`Inode`**: File/directory representation with read/write operations
 //! - **`VfsMountPoint`**: Mount point management for the VFS tree
 //!
@@ -43,6 +43,17 @@
 #![deny(clippy::all)]
 #![warn(clippy::pedantic)]
 #![allow(clippy::module_name_repetitions)]
+// Bare-metal kernel filesystem: FAT32 on-disk structures, block/sector addressing, and
+// file-offset arithmetic use spec-fixed integer widths. The width/sign casts below are
+// intentional and bounded by the on-disk format and device geometry (e.g. u64 sector index
+// -> usize, u32 cluster -> u64 LBA, sign-guarded i64 file offsets -> u64). They are not lossy
+// bugs, so the pedantic cast lints are allowed crate-wide rather than peppering call sites.
+#![allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    clippy::cast_possible_wrap,
+    clippy::cast_lossless
+)]
 
 #[cfg(feature = "alloc")]
 extern crate alloc;
@@ -76,7 +87,7 @@ pub use vfs::{
 #[cfg(feature = "alloc")]
 pub use vfs::{OpenFileTable, VfsMountPoint, VfsMountTable};
 
-/// Maximum path length in bytes (POSIX PATH_MAX equivalent).
+/// Maximum path length in bytes (POSIX `PATH_MAX` equivalent).
 pub const MAX_PATH_LEN: usize = 4096;
 
 /// Maximum filename length in bytes.

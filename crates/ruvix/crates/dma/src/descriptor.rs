@@ -3,6 +3,10 @@
 use crate::{DmaError, DmaResult, MAX_DESCRIPTOR_CHAIN_LENGTH};
 
 /// Flags for DMA descriptors.
+///
+/// Each field is an independent hardware descriptor attribute, so a struct of
+/// booleans is the natural representation (not bitflags or an enum).
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct DmaDescriptorFlags {
     /// This descriptor is the last in the chain.
@@ -363,13 +367,15 @@ impl DmaDescriptorChain {
         self.count > 0
             && self.descriptors[..self.count]
                 .iter()
-                .all(|d| d.is_completed())
+                .all(DmaDescriptor::is_completed)
     }
 
     /// Check if any descriptor has an error.
     #[must_use]
     pub fn has_error(&self) -> bool {
-        self.descriptors[..self.count].iter().any(|d| d.has_error())
+        self.descriptors[..self.count]
+            .iter()
+            .any(DmaDescriptor::has_error)
     }
 
     /// Validate the entire chain.

@@ -68,7 +68,7 @@ fn bench_sequential_alloc(c: &mut Criterion) {
                         allocator.dealloc_pages(*addr, 1);
                     }
 
-                    black_box(&addrs)
+                    black_box(addrs)
                 });
             },
         );
@@ -107,7 +107,7 @@ fn bench_fragmentation_pattern(c: &mut Criterion) {
                 allocator.dealloc_pages(*addr, 1);
             }
 
-            black_box(&addrs)
+            black_box(addrs)
         });
     });
 }

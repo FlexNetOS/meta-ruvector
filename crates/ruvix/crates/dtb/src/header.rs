@@ -166,6 +166,12 @@ impl FdtHeader {
     }
 
     /// Get a string from the strings block by offset.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`DtbError::InvalidPropertyNameOffset`] if `offset` lies outside the
+    /// strings block, and [`DtbError::InvalidString`] if the bytes are not a valid
+    /// null-terminated UTF-8 string.
     pub fn get_string<'a>(&self, blob: &'a [u8], offset: u32) -> DtbResult<&'a str> {
         let strings = self.strings_block(blob);
         let start = offset as usize;

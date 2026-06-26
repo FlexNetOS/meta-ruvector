@@ -332,6 +332,11 @@ impl<'a> IcmpEcho<'a> {
     }
 
     /// Parses an Echo message from header and payload.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`NetError`](crate::NetError) if the header is not an Echo
+    /// request/reply or the payload is malformed.
     #[inline]
     pub fn parse(header: &IcmpHeader, payload: &'a [u8]) -> NetResult<Self> {
         if !matches!(
@@ -354,6 +359,10 @@ impl<'a> IcmpEcho<'a> {
     /// Serializes the Echo message (header + data) into a buffer.
     ///
     /// Computes and fills in the checksum automatically.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`NetError::BufferTooSmall`] if `buf` cannot hold the header and data.
     pub fn serialize(&self, is_request: bool, buf: &mut [u8]) -> NetResult<usize> {
         let total_len = ICMP_HEADER_SIZE + self.data.len();
         if buf.len() < total_len {
@@ -393,7 +402,7 @@ impl<'a> IcmpEcho<'a> {
 pub struct IcmpDestUnreachable<'a> {
     /// Unreachable code.
     pub code: DestUnreachableCode,
-    /// Next-hop MTU (for FragmentationNeeded).
+    /// Next-hop MTU (for `FragmentationNeeded`).
     pub next_hop_mtu: u16,
     /// Original IP header + first 8 bytes of original datagram.
     pub original_data: &'a [u8],
@@ -423,6 +432,11 @@ impl<'a> IcmpDestUnreachable<'a> {
     }
 
     /// Parses from header and payload.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`NetError::InvalidIcmpHeader`] if the header is not a
+    /// Destination Unreachable message.
     #[inline]
     pub fn parse(header: &IcmpHeader, payload: &'a [u8]) -> NetResult<Self> {
         if header.icmp_type != IcmpType::DestinationUnreachable {
@@ -468,6 +482,11 @@ impl<'a> IcmpTimeExceeded<'a> {
     }
 
     /// Parses from header and payload.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`NetError::InvalidIcmpHeader`] if the header is not a
+    /// Time Exceeded message.
     #[inline]
     pub fn parse(header: &IcmpHeader, payload: &'a [u8]) -> NetResult<Self> {
         if header.icmp_type != IcmpType::TimeExceeded {
@@ -572,13 +591,13 @@ mod tests {
 
     #[test]
     fn test_icmp_echo_to_reply() {
-        let (req_header, req_echo) = IcmpEcho::request(1, 2, b"test");
-        let (rep_header, rep_echo) = req_echo.to_reply();
+        let (request_header, request_echo) = IcmpEcho::request(1, 2, b"test");
+        let (reply_header, reply_echo) = request_echo.to_reply();
 
-        assert_eq!(req_header.icmp_type, IcmpType::EchoRequest);
-        assert_eq!(rep_header.icmp_type, IcmpType::EchoReply);
-        assert_eq!(req_echo.identifier, rep_echo.identifier);
-        assert_eq!(req_echo.sequence, rep_echo.sequence);
+        assert_eq!(request_header.icmp_type, IcmpType::EchoRequest);
+        assert_eq!(reply_header.icmp_type, IcmpType::EchoReply);
+        assert_eq!(request_echo.identifier, reply_echo.identifier);
+        assert_eq!(request_echo.sequence, reply_echo.sequence);
     }
 
     #[test]

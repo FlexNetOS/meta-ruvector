@@ -3,6 +3,10 @@
 use crate::{DmaError, DmaResult, DMA_BUFFER_ALIGNMENT};
 
 /// Flags controlling DMA buffer behavior.
+///
+/// Each field maps to an independent hardware buffer property, so a struct of
+/// booleans is the natural representation here (not an enum or bitflags newtype).
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct DmaBufferFlags {
     /// Buffer is cache-coherent (no explicit cache operations needed).
@@ -312,6 +316,7 @@ pub struct DmaBufferChunks<'a> {
 
 impl<'a> DmaBufferChunks<'a> {
     /// Create a new chunk iterator.
+    #[must_use]
     pub fn new(buffer: &'a DmaBuffer, chunk_size: usize) -> Self {
         Self {
             buffer,

@@ -89,6 +89,10 @@ impl MacAddress {
     }
 
     /// Parses a MAC address from a byte slice.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`NetError::PacketTooShort`] if `bytes` is shorter than 6 bytes.
     #[inline]
     pub fn parse(bytes: &[u8]) -> NetResult<Self> {
         if bytes.len() < 6 {
@@ -102,7 +106,7 @@ impl MacAddress {
 
 /// Ethernet frame type identifiers.
 ///
-/// EtherType indicates which protocol is encapsulated in the payload.
+/// `EtherType` indicates which protocol is encapsulated in the payload.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(u16)]
 pub enum EtherType {
@@ -155,7 +159,7 @@ pub struct EthernetFrame<'a> {
     pub dest_mac: MacAddress,
     /// Source MAC address.
     pub src_mac: MacAddress,
-    /// EtherType indicating payload protocol.
+    /// `EtherType` indicating payload protocol.
     pub ether_type: EtherType,
     /// Frame payload (protocol data unit).
     pub payload: &'a [u8],
@@ -280,7 +284,7 @@ impl EthernetFrameBuilder {
         self
     }
 
-    /// Sets the EtherType.
+    /// Sets the `EtherType`.
     #[inline]
     #[must_use]
     pub const fn ether_type(mut self, etype: EtherType) -> Self {
@@ -291,7 +295,7 @@ impl EthernetFrameBuilder {
     /// Builds the frame with the given payload.
     #[inline]
     #[must_use]
-    pub const fn build<'a>(self, payload: &'a [u8]) -> EthernetFrame<'a> {
+    pub const fn build(self, payload: &[u8]) -> EthernetFrame<'_> {
         EthernetFrame {
             dest_mac: self.dest_mac,
             src_mac: self.src_mac,
@@ -303,6 +307,11 @@ impl EthernetFrameBuilder {
     /// Serializes the frame header into a buffer (without payload).
     ///
     /// Returns the number of bytes written (always 14 on success).
+    ///
+    /// # Errors
+    ///
+    /// Returns [`NetError::BufferTooSmall`] if `buf` is smaller than the
+    /// Ethernet header size.
     #[inline]
     pub fn serialize_header(&self, buf: &mut [u8]) -> NetResult<usize> {
         if buf.len() < ETHERNET_HEADER_SIZE {

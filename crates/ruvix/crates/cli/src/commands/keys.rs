@@ -4,6 +4,7 @@
 //! using the ed25519-dalek library for RuVix secure boot operations.
 
 use anyhow::{bail, Context, Result};
+use base64::{engine::general_purpose::STANDARD, Engine as _};
 use clap::Subcommand;
 use colored::Colorize;
 use ed25519_dalek::{
@@ -12,10 +13,8 @@ use ed25519_dalek::{
 };
 use rand::rngs::OsRng;
 use sha2::{Digest, Sha256, Sha384, Sha512};
-use std::fs::{self, File};
-use std::io::{Read, Write};
+use std::fs;
 use std::path::PathBuf;
-use zeroize::Zeroize;
 
 /// Key management actions
 #[derive(Subcommand, Debug)]
@@ -1015,7 +1014,7 @@ fn compute_fingerprint(key_bytes: &[u8]) -> String {
     let mut hasher = Sha256::new();
     hasher.update(key_bytes);
     let hash = hasher.finalize();
-    format!("SHA256:{}", base64::encode(&hash[..12]))
+    format!("SHA256:{}", STANDARD.encode(&hash[..12]))
 }
 
 #[cfg(test)]

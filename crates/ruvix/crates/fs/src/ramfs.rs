@@ -1,4 +1,4 @@
-//! In-memory filesystem (RamFS) implementation for RuVix.
+//! In-memory filesystem (`RamFS`) implementation for `RuVix`.
 //!
 //! This module provides a fully read-write in-memory filesystem suitable
 //! for `/tmp` and other temporary storage needs. All data is lost on unmount.
@@ -12,13 +12,13 @@ use core::cell::RefCell;
 #[cfg(feature = "alloc")]
 use alloc::{collections::BTreeMap, string::String, vec::Vec};
 
-/// Maximum file size in RamFS (64 MB default).
+/// Maximum file size in `RamFS` (64 MB default).
 const MAX_FILE_SIZE: u64 = 64 * 1024 * 1024;
 
-/// Maximum number of inodes in RamFS.
+/// Maximum number of inodes in `RamFS`.
 const MAX_INODES: usize = 65536;
 
-/// Type of RamFS inode.
+/// Type of `RamFS` inode.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RamInodeType {
     /// Regular file.
@@ -42,7 +42,6 @@ impl From<RamInodeType> for FileType {
 impl From<FileType> for RamInodeType {
     fn from(t: FileType) -> Self {
         match t {
-            FileType::Regular => RamInodeType::File,
             FileType::Directory => RamInodeType::Directory,
             FileType::Symlink => RamInodeType::Symlink,
             _ => RamInodeType::File,
@@ -50,7 +49,7 @@ impl From<FileType> for RamInodeType {
     }
 }
 
-/// A RamFS inode representing a file, directory, or symlink.
+/// A `RamFS` inode representing a file, directory, or symlink.
 #[cfg(feature = "alloc")]
 #[derive(Debug, Clone)]
 pub struct RamInode {
@@ -177,6 +176,10 @@ impl RamInode {
     }
 
     /// Read data from the inode.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`FsError::IsADirectory`] if this inode is a directory.
     pub fn read(&self, offset: u64, buf: &mut [u8]) -> FsResult<usize> {
         if self.inode_type == RamInodeType::Directory {
             return Err(FsError::IsADirectory);
@@ -195,6 +198,11 @@ impl RamInode {
     }
 
     /// Write data to the inode.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`FsError::IsADirectory`] if this inode is a directory.
+    /// Returns [`FsError::FileTooLarge`] if the write would exceed the maximum file size.
     pub fn write(&mut self, offset: u64, buf: &[u8]) -> FsResult<usize> {
         if self.inode_type == RamInodeType::Directory {
             return Err(FsError::IsADirectory);
@@ -217,6 +225,11 @@ impl RamInode {
     }
 
     /// Truncate the file to the specified size.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`FsError::IsADirectory`] if this inode is a directory.
+    /// Returns [`FsError::FileTooLarge`] if `size` exceeds the maximum file size.
     pub fn truncate(&mut self, size: u64) -> FsResult<()> {
         if self.inode_type == RamInodeType::Directory {
             return Err(FsError::IsADirectory);
@@ -356,13 +369,13 @@ pub struct RamFs {
 
 #[cfg(feature = "alloc")]
 impl RamFs {
-    /// Create a new RamFS with default settings.
+    /// Create a new `RamFS` with default settings.
     #[must_use]
     pub fn new() -> Self {
         Self::with_max_size(64 * 1024 * 1024) // 64 MB default
     }
 
-    /// Create a new RamFS with a specified maximum size.
+    /// Create a new `RamFS` with a specified maximum size.
     #[must_use]
     pub fn with_max_size(max_size: u64) -> Self {
         let root_inode = InodeId(1);
@@ -476,7 +489,7 @@ impl FileSystem for RamFs {
         Ok(self.root_inode)
     }
 
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "ramfs"
     }
 
@@ -552,7 +565,7 @@ impl FileSystem for RamFs {
             mtime: ram_inode.mtime,
             ctime: ram_inode.ctime,
             blksize: 4096,
-            blocks: (ram_inode.size() + 511) / 512,
+            blocks: ram_inode.size().div_ceil(512),
         })
     }
 
@@ -896,7 +909,7 @@ mod tests {
         // Should have . and .. plus our 3 entries
         assert!(entries.len() >= 5);
 
-        let names: Vec<_> = entries.iter().map(|e| e.name()).collect();
+        let names: Vec<_> = entries.iter().map(DirEntry::name).collect();
         assert!(names.contains(&"a.txt"));
         assert!(names.contains(&"b.txt"));
         assert!(names.contains(&"c_dir"));

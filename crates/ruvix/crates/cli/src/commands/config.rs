@@ -1,11 +1,11 @@
 //! Config command - manage RuVix kernel configuration
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use clap::Subcommand;
 use colored::Colorize;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 /// Configuration actions
 #[derive(Subcommand, Debug)]
@@ -161,7 +161,11 @@ pub enum ListFormat {
     Toml,
 }
 
-/// Sample configuration structure
+/// Sample configuration structure.
+///
+/// This documents the on-disk RuVix configuration schema and is (de)serialized
+/// once config load/save is wired up. Retained to keep the schema authoritative.
+#[allow(dead_code)]
 #[derive(Debug, Serialize, Deserialize)]
 struct RuvixConfig {
     kernel: KernelConfig,
@@ -170,6 +174,7 @@ struct RuvixConfig {
     boot: BootConfig,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Serialize, Deserialize)]
 struct KernelConfig {
     memory_size: String,
@@ -178,6 +183,7 @@ struct KernelConfig {
     heap_size: String,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Serialize, Deserialize)]
 struct FeatureConfig {
     smp: bool,
@@ -186,6 +192,7 @@ struct FeatureConfig {
     secure_boot: bool,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Serialize, Deserialize)]
 struct MemoryConfig {
     kernel_base: String,
@@ -193,6 +200,7 @@ struct MemoryConfig {
     stack_top: String,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Serialize, Deserialize)]
 struct BootConfig {
     uart_baud: u32,
@@ -231,7 +239,7 @@ pub fn execute(action: ConfigAction, verbose: bool) -> Result<()> {
     }
 }
 
-fn execute_get(key: &str, default: Option<&str>, config: &PathBuf, verbose: bool) -> Result<()> {
+fn execute_get(key: &str, default: Option<&str>, config: &Path, verbose: bool) -> Result<()> {
     if verbose {
         println!(
             "{} Reading key '{}' from {}",
@@ -259,7 +267,7 @@ fn execute_set(
     key: &str,
     value: &str,
     value_type: ValueType,
-    config: &PathBuf,
+    config: &Path,
     create: bool,
     verbose: bool,
 ) -> Result<()> {
@@ -295,7 +303,7 @@ fn execute_set(
 }
 
 fn execute_list(
-    config: &PathBuf,
+    config: &Path,
     section: Option<&str>,
     format: ListFormat,
     show_defaults: bool,
@@ -360,7 +368,7 @@ fn execute_list(
 }
 
 fn execute_init(
-    config: &PathBuf,
+    config: &Path,
     target: &str,
     interactive: bool,
     force: bool,
@@ -488,7 +496,7 @@ verbose = false
     Ok(())
 }
 
-fn execute_validate(config: &PathBuf, strict: bool, verbose: bool) -> Result<()> {
+fn execute_validate(config: &Path, strict: bool, verbose: bool) -> Result<()> {
     if verbose {
         println!(
             "{} Validating configuration at {}",

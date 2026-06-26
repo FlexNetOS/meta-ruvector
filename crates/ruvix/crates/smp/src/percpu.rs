@@ -45,7 +45,7 @@ use core::ops::{Index, IndexMut};
 /// # Type Parameters
 ///
 /// * `T` - The type of data to store per-CPU. Must be `Send` to allow
-///         initialization from any CPU.
+///   initialization from any CPU.
 ///
 /// # Example
 ///
@@ -63,7 +63,7 @@ use core::ops::{Index, IndexMut};
 pub struct PerCpu<T> {
     /// The per-CPU data array
     ///
-    /// Using UnsafeCell because we need interior mutability for
+    /// Using `UnsafeCell` because we need interior mutability for
     /// the static mut pattern. Safety is ensured by the protocol:
     /// each CPU only accesses its own slot.
     data: UnsafeCell<[T; MAX_CPUS]>,

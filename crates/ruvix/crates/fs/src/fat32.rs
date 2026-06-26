@@ -1,4 +1,4 @@
-//! FAT32 filesystem implementation for RuVix.
+//! FAT32 filesystem implementation for `RuVix`.
 //!
 //! This module provides a read-only FAT32 filesystem implementation that can
 //! be used to access FAT32 formatted storage devices.
@@ -38,6 +38,8 @@ const ATTR_HIDDEN: u8 = 0x02;
 const ATTR_SYSTEM: u8 = 0x04;
 const ATTR_VOLUME_ID: u8 = 0x08;
 const ATTR_DIRECTORY: u8 = 0x10;
+/// FAT32 archive attribute flag (spec parity; not used by the read-only driver yet).
+#[allow(dead_code)]
 const ATTR_ARCHIVE: u8 = 0x20;
 const ATTR_LONG_NAME: u8 = ATTR_READ_ONLY | ATTR_HIDDEN | ATTR_SYSTEM | ATTR_VOLUME_ID;
 
@@ -75,6 +77,12 @@ pub struct Fat32BootSector {
 
 impl Fat32BootSector {
     /// Parse a boot sector from raw bytes.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`FsError::InvalidBootSector`] if `data` is shorter than 512 bytes or
+    /// the boot signature (`0x55AA`) is missing. Returns [`FsError::InvalidFilesystem`]
+    /// if the root entry count is non-zero or the filesystem type string is not `"FAT32"`.
     pub fn parse(data: &[u8]) -> FsResult<Self> {
         if data.len() < 512 {
             return Err(FsError::InvalidBootSector);
@@ -213,6 +221,11 @@ pub struct Fat32DirEntry {
 
 impl Fat32DirEntry {
     /// Parse a directory entry from raw bytes.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`FsError::InvalidArgument`] if `data` is shorter than
+    /// [`DIR_ENTRY_SIZE`] (32) bytes.
     pub fn parse(data: &[u8]) -> FsResult<Self> {
         if data.len() < DIR_ENTRY_SIZE {
             return Err(FsError::InvalidArgument);
@@ -312,7 +325,7 @@ impl Fat32DirEntry {
         let name_str = String::from_utf8_lossy(&name_bytes);
         if ext_end > 0 {
             let ext_str = String::from_utf8_lossy(&self.name[8..8 + ext_end]);
-            alloc::format!("{}.{}", name_str, ext_str)
+            alloc::format!("{name_str}.{ext_str}")
         } else {
             name_str.into_owned()
         }
@@ -515,7 +528,8 @@ pub struct Fat32Fs<B: BlockDevice> {
     boot_sector: Fat32BootSector,
     /// Cached FAT sectors.
     fat_cache: Vec<(u32, Vec<u8>)>,
-    /// Maximum FAT cache entries.
+    /// Maximum FAT cache entries; configures the FAT cache bound and is retained for completeness.
+    #[allow(dead_code)]
     fat_cache_max: usize,
     /// Is the filesystem mounted?
     mounted: bool,
@@ -524,6 +538,12 @@ pub struct Fat32Fs<B: BlockDevice> {
 #[cfg(feature = "alloc")]
 impl<B: BlockDevice> Fat32Fs<B> {
     /// Create a new FAT32 filesystem from a block device.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`FsError::InvalidArgument`] if the device block size does not match
+    /// [`FAT32_SECTOR_SIZE`]. Propagates block-device read errors from reading the boot
+    /// sector and any errors returned by [`Fat32BootSector::parse`].
     pub fn new(device: B) -> FsResult<Self> {
         let block_size = device.block_size();
         if block_size != FAT32_SECTOR_SIZE {
@@ -552,6 +572,11 @@ impl<B: BlockDevice> Fat32Fs<B> {
     }
 
     /// Read a cluster's data into a buffer.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`FsError::InvalidArgument`] if `buf` is smaller than the cluster size.
+    /// Propagates block-device read errors from the underlying device.
     pub fn read_cluster(&self, cluster: u32, buf: &mut [u8]) -> FsResult<()> {
         let bytes_per_cluster = self.boot_sector.bytes_per_cluster() as usize;
         if buf.len() < bytes_per_cluster {
@@ -573,6 +598,11 @@ impl<B: BlockDevice> Fat32Fs<B> {
     }
 
     /// Read a FAT entry for a cluster.
+    ///
+    /// # Errors
+    ///
+    /// Propagates block-device read errors when the FAT sector is not cached and
+    /// must be read from the underlying device.
     pub fn read_fat_entry(&self, cluster: u32) -> FsResult<u32> {
         let fat_sector = self.boot_sector.fat_sector_for_cluster(cluster);
         let offset = self.boot_sector.fat_offset_for_cluster(cluster);
@@ -605,6 +635,12 @@ impl<B: BlockDevice> Fat32Fs<B> {
     }
 
     /// Follow a cluster chain and return all clusters.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`FsError::InvalidClusterChain`] if a bad cluster marker is
+    /// encountered in the chain or the chain length exceeds the filesystem's
+    /// total cluster count. Propagates errors from [`Self::read_fat_entry`].
     pub fn follow_cluster_chain(&self, start: u32) -> FsResult<Vec<u32>> {
         let mut clusters = Vec::new();
         let mut current = start;
@@ -613,7 +649,7 @@ impl<B: BlockDevice> Fat32Fs<B> {
         let max_clusters =
             (self.boot_sector.total_sectors / self.boot_sector.sectors_per_cluster as u32) as usize;
 
-        while current >= 2 && current < FAT32_EOC_MIN && clusters.len() < max_clusters {
+        while (2..FAT32_EOC_MIN).contains(&current) && clusters.len() < max_clusters {
             clusters.push(current);
             current = self.read_fat_entry(current)?;
 
@@ -632,6 +668,11 @@ impl<B: BlockDevice> Fat32Fs<B> {
     }
 
     /// Read directory entries from a directory cluster.
+    ///
+    /// # Errors
+    ///
+    /// Propagates errors from [`Self::follow_cluster_chain`], [`Self::read_cluster`],
+    /// and [`Fat32DirEntry::parse`] (e.g. block-device errors or an invalid cluster chain).
     pub fn read_directory(&self, first_cluster: u32) -> FsResult<Vec<(Fat32DirEntry, String)>> {
         let clusters = self.follow_cluster_chain(first_cluster)?;
         let bytes_per_cluster = self.boot_sector.bytes_per_cluster() as usize;
@@ -707,6 +748,11 @@ impl<B: BlockDevice> Fat32Fs<B> {
     }
 
     /// Find an entry in a directory by name.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`FsError::NotFound`] if no entry with the given `name` exists in
+    /// the directory. Propagates errors from [`Self::read_directory`].
     pub fn find_entry(&self, dir_cluster: u32, name: &str) -> FsResult<Fat32DirEntry> {
         let entries = self.read_directory(dir_cluster)?;
 
@@ -721,6 +767,11 @@ impl<B: BlockDevice> Fat32Fs<B> {
     }
 
     /// Read file data.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`FsError::IsADirectory`] if the inode represents a directory.
+    /// Propagates errors from [`Self::follow_cluster_chain`] and [`Self::read_cluster`].
     pub fn read_file(&self, inode: &Fat32Inode, offset: u64, buf: &mut [u8]) -> FsResult<usize> {
         if inode.file_type == FileType::Directory {
             return Err(FsError::IsADirectory);
@@ -790,7 +841,7 @@ impl<B: BlockDevice> FileSystem for Fat32Fs<B> {
         Ok(InodeId(1))
     }
 
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "fat32"
     }
 
@@ -1000,12 +1051,12 @@ mod tests {
             sectors_per_cluster: 8,
             reserved_sectors: 32,
             num_fats: 2,
-            total_sectors: 2097152,
+            total_sectors: 2_097_152,
             sectors_per_fat: 2048,
             root_cluster: 2,
             fsinfo_sector: 1,
             backup_boot_sector: 6,
-            volume_serial: 0x12345678,
+            volume_serial: 0x1234_5678,
             volume_label: *b"TEST       ",
             fs_type: *b"FAT32   ",
         };
@@ -1040,7 +1091,7 @@ mod tests {
 
     #[test]
     fn test_fat32_special_clusters() {
-        assert!(FAT32_EOC_MIN > FAT32_BAD_CLUSTER);
+        const _: () = assert!(FAT32_EOC_MIN > FAT32_BAD_CLUSTER);
         assert_eq!(FAT32_FREE_CLUSTER, 0);
     }
 }
