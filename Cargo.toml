@@ -338,8 +338,19 @@ members = [
     "crates/agentic-robotics-mcp",
     "crates/agentic-robotics-embedded",
     "crates/agentic-robotics-benchmarks",
-    # Vibecast/sevensense migration — internal path deps require own workspace; pending separate PR.
-    # All external deps added to [workspace.dependencies] for when migration happens.
+        "examples/vibecast-7sense/crates/sevensense-core",
+    "examples/vibecast-7sense/crates/sevensense-audio",
+    "examples/vibecast-7sense/crates/sevensense-embedding",
+    "examples/vibecast-7sense/crates/sevensense-vector",
+    "examples/vibecast-7sense/crates/sevensense-learning",
+    "examples/vibecast-7sense/crates/sevensense-analysis",
+    "examples/vibecast-7sense/crates/sevensense-interpretation",
+    "examples/vibecast-7sense/crates/sevensense-api",
+    "examples/vibecast-7sense/crates/sevensense-benches",
+    # Vibecast migration — internal path deps for sevensense-* crates defined below.
+    # All external deps wired; internal cross-deps use `sevensense-*-workspace = true`.
+    "examples/vibecast-7sense/tests",  # vibecast-tests: integration test suite (direct-version specs)
+    "examples/vibecast-7sense/scripts",  # performance-report: CLI tools (direct-version specs)
     "vendor/cognitum-one",
 ]
 resolver = "2"
@@ -454,7 +465,16 @@ dashmap = "6.1"
 parking_lot = "0.12"
 once_cell = "1.20"
 
-# Vibecast/sevensense deps
+# Vibecast/sevensense internal deps (path for local dev)
+sevensense-core = { path = "examples/vibecast-7sense/crates/sevensense-core" }
+sevensense-audio = { path = "examples/vibecast-7sense/crates/sevensense-audio" }
+sevensense-embedding = { path = "examples/vibecast-7sense/crates/sevensense-embedding" }
+sevensense-vector = { path = "examples/vibecast-7sense/crates/sevensense-vector" }
+sevensense-learning = { path = "examples/vibecast-7sense/crates/sevensense-learning" }
+sevensense-analysis = { path = "examples/vibecast-7sense/crates/sevensense-analysis" }
+sevensense-interpretation = { path = "examples/vibecast-7sense/crates/sevensense-interpretation" }
+sevensense-api = { path = "examples/vibecast-7sense/crates/sevensense-api" }
+# Vibecast/sevensense external deps (all required by sevensense-* crates)
 async-trait = "0.1"
 config = "0.14"
 dotenvy = "0.15"
@@ -474,6 +494,22 @@ opentelemetry = "0.23"
 opentelemetry_sdk = "0.23"
 half = "2.4"
 test-case = "3.3"
+# Missing external deps needed by sevensense-* crates
+petgraph = "0.6"
+ndarray-rand = "0.14"
+instant-distance = "0.6"
+hashbrown = { version = "0.14", features = ["serde"] }
+smallvec = { version = "1.13", features = ["serde"] }
+ordered-float = "4.2"
+realfft = "3.3"
+async-stream = "0.3"
+bytes = "1.5"
+mime = "0.3"
+num_cpus = "1.16"
+pretty_assertions = "1.4"
+tower = "0.4"
+tempfile = "3.10"
+sevensense-benches = { path = "examples/vibecast-7sense/crates/sevensense-benches" }
 
 # Edge-net / crypto deps
 ed25519-dalek = { version = "2.1", features = ["rand_core"] }
