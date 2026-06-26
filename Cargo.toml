@@ -299,8 +299,6 @@ members = [
     "crates/ruvector-bet4-ivf-bench",
     # spiking-network: event-driven SNN for ASIC neuromorphic computing
     "examples/spiking-network",
-    # agentic-robotics-core: robotics substrate (stubbed, no external deps)
-    "crates/agentic-robotics-core",
 ]
 resolver = "2"
 
