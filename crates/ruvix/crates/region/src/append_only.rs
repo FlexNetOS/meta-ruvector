@@ -21,12 +21,18 @@ use ruvix_types::KernelError;
 /// monotonically increases until max_size is reached.
 pub struct AppendOnlyRegion<B: MemoryBacking> {
     /// Memory backing store.
+    // RAII: owns the underlying allocation; dropping this frees `data_ptr`'s
+    // memory, so the field must outlive the region even if never read directly.
+    #[allow(dead_code)]
     backing: B,
     /// Pointer to the data area.
     data_ptr: *mut u8,
     /// Maximum size in bytes.
     max_size: usize,
     /// Actual allocated size (may be >= max_size due to alignment).
+    // Recorded at allocation time for diagnostics/accounting; retained for
+    // parity with the backing's reported size even though it is not read back.
+    #[allow(dead_code)]
     allocated_size: usize,
     /// Current write cursor position.
     write_cursor: usize,

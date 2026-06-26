@@ -89,6 +89,9 @@ impl Default for SlotHandle {
 /// use-after-free detection.
 pub struct SlabAllocator<B: MemoryBacking> {
     /// Memory backing store.
+    // RAII: owns the underlying allocation; dropping this frees `data_ptr`'s
+    // memory, so the field must outlive the allocator even if never read.
+    #[allow(dead_code)]
     backing: B,
     /// Pointer to the slot data area.
     data_ptr: *mut u8,
@@ -108,6 +111,11 @@ pub struct SlabAllocator<B: MemoryBacking> {
 ///
 /// Uses a fixed-size array for no_std compatibility, with dynamic
 /// allocation available when std is enabled.
+// The inline `Static`/`Inline` array variants are intentional: this crate is
+// no_std (no heap available without the `std` feature), so slot metadata must
+// live inline within the enum rather than behind a `Box`. The size disparity
+// is by design.
+#[allow(clippy::large_enum_variant)]
 enum SlabMetaStorage {
     /// Static storage for small slabs.
     Static([SlotMeta; 256]),

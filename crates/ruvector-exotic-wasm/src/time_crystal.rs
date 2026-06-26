@@ -246,7 +246,7 @@ impl TimeCrystal {
     /// Generate coordination pattern as byte array
     fn generate_pattern(&self) -> Vec<u8> {
         let n = self.oscillators.len();
-        let num_bytes = (n + 7) / 8;
+        let num_bytes = n.div_ceil(8);
         let mut pattern = vec![0u8; num_bytes];
 
         for (i, osc) in self.oscillators.iter().enumerate() {
@@ -542,7 +542,7 @@ mod tests {
         for _ in 0..100 {
             crystal.tick();
             let order = crystal.order_parameter();
-            assert!(order >= 0.0 && order <= 1.0);
+            assert!((0.0..=1.0).contains(&order));
         }
     }
 
@@ -628,7 +628,7 @@ mod tests {
         }
 
         let robustness = crystal.robustness();
-        assert!(robustness >= 0.0 && robustness <= 1.0);
+        assert!((0.0..=1.0).contains(&robustness));
         assert!(
             robustness > 0.0,
             "Crystallized system should have positive robustness"
@@ -640,7 +640,7 @@ mod tests {
         let crystal = TimeCrystal::synchronized(10, 100);
 
         let spin = crystal.collective_spin();
-        assert!(spin >= -1.0 && spin <= 1.0);
+        assert!((-1.0..=1.0).contains(&spin));
     }
 
     #[test]

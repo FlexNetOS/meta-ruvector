@@ -340,15 +340,16 @@ impl SpikingNetwork {
         Ok(())
     }
 
+    /// Current delivered by a single injected input spike (in the same units
+    /// as synaptic current). Sized to be reliably suprathreshold for the
+    /// default LIF parameters so that external stimuli actually drive activity.
+    pub const INPUT_SPIKE_CURRENT: f32 = 50.0;
+
     /// Inject external input spikes.
     pub fn inject_spikes(&mut self, spikes: &SparseSpikes) {
         for event in &spikes.events {
             if (event.source as usize) < self.config.num_neurons {
-                self.schedule_event(
-                    event.source as usize,
-                    event.time,
-                    1.0, // Unit current for input spikes
-                );
+                self.schedule_event(event.source as usize, event.time, Self::INPUT_SPIKE_CURRENT);
             }
         }
     }

@@ -60,8 +60,10 @@ impl RegionConfig {
 
 /// Entry in the region table.
 /// Uses Box to heap-allocate regions and avoid stack overflow.
+#[derive(Default)]
 enum RegionEntry {
     /// Empty slot.
+    #[default]
     Empty,
     /// Immutable region.
     Immutable {
@@ -78,12 +80,6 @@ enum RegionEntry {
         region: Box<SlabRegion<HeapBacking>>,
         generation: u32,
     },
-}
-
-impl Default for RegionEntry {
-    fn default() -> Self {
-        Self::Empty
-    }
 }
 
 /// Manages memory regions for the RuVix kernel.

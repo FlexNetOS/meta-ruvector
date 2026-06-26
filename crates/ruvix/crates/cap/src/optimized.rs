@@ -210,7 +210,9 @@ impl<const N: usize> OptimizedCapTable<N> {
 
         // Initialize with all slots free (all bits set to 1)
         let mut free_bitmap = [0u64; MAX_BITMAP_CHUNKS];
-        for i in 0..MAX_BITMAP_CHUNKS {
+        // Only the chunks actually backing N slots need bits set; higher chunks
+        // stay zero-initialized (no slots map to them).
+        for i in 0..Self::BITMAP_CHUNKS {
             let remaining = N.saturating_sub(i * 64);
             if remaining >= 64 {
                 free_bitmap[i] = u64::MAX;

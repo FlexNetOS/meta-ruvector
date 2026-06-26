@@ -415,13 +415,21 @@ mod tests {
 
     #[test]
     fn test_subthreshold_dynamics() {
-        let mut neuron = IzhikevichNeuron::regular_spiking();
+        // Weak input should not cause an immediate spike, and it should
+        // depolarize the neuron relative to receiving no input. (For the
+        // Izhikevich model the resting equilibrium sits slightly below `c`,
+        // so we compare against an unstimulated control rather than against
+        // `c` directly.)
+        let mut stimulated = IzhikevichNeuron::regular_spiking();
+        let mut control = IzhikevichNeuron::regular_spiking();
 
-        // Weak input should not cause immediate spike
-        neuron.receive_input(2.0);
-        assert!(!neuron.update(1.0));
+        stimulated.receive_input(2.0);
+        assert!(!stimulated.update(1.0), "weak input must not spike");
+        control.update(1.0);
 
-        // Voltage should rise but not spike
-        assert!(neuron.membrane_potential() > neuron.params.c);
+        // Stays subthreshold...
+        assert!(stimulated.membrane_potential() < stimulated.params.threshold);
+        // ...but is more depolarized than the unstimulated control.
+        assert!(stimulated.membrane_potential() > control.membrane_potential());
     }
 }

@@ -387,7 +387,7 @@ impl CreditLedger {
         earned_keys.sort();
         for key in earned_keys {
             hasher.update(key.as_bytes());
-            hasher.update(&self.earned[key].to_le_bytes());
+            hasher.update(self.earned[key].to_le_bytes());
         }
 
         // Hash spent entries (sorted for determinism)
@@ -396,12 +396,12 @@ impl CreditLedger {
         for key in spent_keys {
             let (pos, neg) = self.spent[key];
             hasher.update(key.as_bytes());
-            hasher.update(&pos.to_le_bytes());
-            hasher.update(&neg.to_le_bytes());
+            hasher.update(pos.to_le_bytes());
+            hasher.update(neg.to_le_bytes());
         }
 
         // Hash staked amount
-        hasher.update(&self.staked.to_le_bytes());
+        hasher.update(self.staked.to_le_bytes());
 
         // Finalize
         self.state_root = hasher.finalize().into();

@@ -521,13 +521,12 @@ impl TpuInfo {
         }
 
         // Also check for libtpu
-        if std::path::Path::new("/lib/libtpu.so").exists()
-            || std::path::Path::new("/usr/lib/libtpu.so").exists()
+        if (std::path::Path::new("/lib/libtpu.so").exists()
+            || std::path::Path::new("/usr/lib/libtpu.so").exists())
+            && !info.available
         {
-            if !info.available {
-                info.available = true;
-                info.name = "TPU (libtpu detected)".to_string();
-            }
+            info.available = true;
+            info.name = "TPU (libtpu detected)".to_string();
         }
 
         info

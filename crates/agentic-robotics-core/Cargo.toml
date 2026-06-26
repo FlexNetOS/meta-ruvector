@@ -28,7 +28,7 @@ parking_lot = { workspace = true }
 crossbeam = { workspace = true }
 
 [dev-dependencies]
-criterion = { workspace = true }
+criterion = { workspace = true, features = ["async_tokio"] }
 hdrhistogram = { workspace = true }
 
 [[bench]]
