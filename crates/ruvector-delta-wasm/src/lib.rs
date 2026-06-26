@@ -38,15 +38,17 @@ pub use capture::*;
 pub use memory::*;
 pub use simd::*;
 
-use js_sys::{Array, Float32Array, Object, Reflect, Uint8Array};
-use parking_lot::RwLock;
+use js_sys::Float32Array;
+// Array/Object/Reflect/Uint8Array: used via pub use re-exports
+#[allow(unused_imports)] use js_sys::{Array, Object, Reflect, Uint8Array};
+// RwLock removed: not used directly in this module
 use ruvector_delta_core::{
-    Delta, DeltaEncoding, DeltaOp, DeltaStream, DeltaValue, DeltaWindow, HybridEncoding,
-    SparseEncoding, VectorDelta, WindowConfig, WindowType,
+    Delta, DeltaEncoding, DeltaOp, DeltaStream, DeltaValue, DeltaWindow, HybridEncoding, SparseEncoding,
+    VectorDelta, WindowConfig, WindowType,
 };
+// SparseEncoding/WindowConfig/WindowType: re-exported below via pub use
 use serde::{Deserialize, Serialize};
 use serde_wasm_bindgen::{from_value, to_value};
-use std::sync::Arc;
 use wasm_bindgen::prelude::*;
 
 /// Initialize panic hook for better error messages

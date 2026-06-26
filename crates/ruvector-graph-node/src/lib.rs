@@ -5,6 +5,7 @@
 
 #![allow(clippy::all)]
 #![allow(clippy::pedantic)]
+#![allow(dead_code)]
 
 use napi::bindgen_prelude::*;
 use napi_derive::napi;
@@ -12,7 +13,7 @@ use ruvector_core::advanced::hypergraph::{
     CausalMemory as CoreCausalMemory, Hyperedge as CoreHyperedge,
     HypergraphIndex as CoreHypergraphIndex,
 };
-use ruvector_core::DistanceMetric;
+use ruvector_core::DistanceMetric; // for JsDistanceMetric conversion
 use ruvector_graph::cypher::{parse_cypher, Statement};
 use ruvector_graph::node::NodeBuilder;
 use ruvector_graph::storage::GraphStorage;
@@ -36,10 +37,12 @@ pub use types::{
 #[napi]
 pub struct GraphDatabase {
     hypergraph: Arc<RwLock<CoreHypergraphIndex>>,
+    #[allow(dead_code)]
     causal_memory: Arc<RwLock<CoreCausalMemory>>,
     transaction_manager: Arc<RwLock<transactions::TransactionManager>>,
     /// Property graph database with Cypher support
     graph_db: Arc<RwLock<GraphDB>>,
+    #[allow(dead_code)]
     /// Persistent storage backend (optional)
     storage: Option<Arc<RwLock<GraphStorage>>>,
     /// Path to storage file (if persisted)
@@ -150,7 +153,7 @@ impl GraphDatabase {
             hg.add_entity(id.clone(), embedding);
 
             // Add to property graph
-            let mut gdb = graph_db.write().expect("RwLock poisoned");
+            let gdb = graph_db.write().expect("RwLock poisoned");
             let mut builder = NodeBuilder::new().id(&id);
 
             // Add labels if provided
@@ -270,7 +273,7 @@ impl GraphDatabase {
             let hg = hypergraph.read().expect("RwLock poisoned");
 
             let mut result_nodes: Vec<JsNodeResult> = Vec::new();
-            let mut result_edges: Vec<JsEdgeResult> = Vec::new();
+            let result_edges: Vec<JsEdgeResult> = Vec::new();
 
             // Execute each statement
             for statement in &parsed.statements {
@@ -307,7 +310,7 @@ impl GraphDatabase {
                             }
                         }
                     }
-                    Statement::Create(create_clause) => {
+                    Statement::Create(_create_clause) => {
                         // Handle CREATE - but we need mutable access, so skip in query
                     }
                     Statement::Return(_) => {
@@ -340,7 +343,7 @@ impl GraphDatabase {
     /// const results = db.querySync('MATCH (n) RETURN n LIMIT 10');
     /// ```
     #[napi]
-    pub fn query_sync(&self, cypher: String) -> Result<JsQueryResult> {
+    pub fn query_sync(&self, _cypher: String) -> Result<JsQueryResult> {
         let hg = self.hypergraph.read().expect("RwLock poisoned");
         let stats = hg.stats();
 
@@ -642,7 +645,7 @@ impl GraphDatabase {
     /// });
     /// ```
     #[napi]
-    pub fn subscribe(&self, callback: JsFunction) -> Result<()> {
+    pub fn subscribe(&self, _callback: JsFunction) -> Result<()> {
         // Placeholder for event emitter pattern
         // In a real implementation, this would set up a change listener
         Ok(())

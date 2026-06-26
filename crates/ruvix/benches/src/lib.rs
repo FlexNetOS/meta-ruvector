@@ -31,6 +31,7 @@
 //! | task_spawn | fork/clone | 4x |
 //! | vector_put_proved | write+fsync | Variable |
 
+#![allow(dead_code, unused_imports, unused_variables)]
 #![deny(unsafe_op_in_unsafe_fn)]
 
 use std::time::Duration;

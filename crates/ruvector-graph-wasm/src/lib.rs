@@ -11,13 +11,12 @@
 //! - Async query execution with streaming results
 //! - IndexedDB persistence (planned)
 
-use js_sys::{Array, Object, Promise, Reflect};
+#![allow(dead_code)]
+use js_sys::{Object, Reflect};
 use parking_lot::Mutex;
-use ruvector_core::advanced::hypergraph::{
-    Hyperedge as CoreHyperedge, HypergraphIndex, TemporalGranularity, TemporalHyperedge,
-};
+use ruvector_core::advanced::hypergraph::{Hyperedge as CoreHyperedge, HypergraphIndex};
 use ruvector_core::types::DistanceMetric;
-use serde_wasm_bindgen::{from_value, to_value};
+#[allow(unused_imports)] use serde_wasm_bindgen::{from_value, to_value};
 use std::collections::HashMap;
 use std::sync::Arc;
 use uuid::Uuid;
@@ -389,7 +388,7 @@ impl GraphDB {
         let mut cypher = String::new();
 
         // Export nodes
-        for (id, node) in self.nodes.lock().iter() {
+        for (_id, node) in self.nodes.lock().iter() {
             let labels = if node.labels.is_empty() {
                 String::new()
             } else {
@@ -413,7 +412,7 @@ impl GraphDB {
         }
 
         // Export edges
-        for (id, edge) in self.edges.lock().iter() {
+        for (_id, edge) in self.edges.lock().iter() {
             let props = if edge.properties.is_empty() {
                 String::new()
             } else {

@@ -4,6 +4,8 @@
 //! adaptive neural architectures with reinforcement learning,
 //! online learning, and meta-learning capabilities.
 
+#![allow(dead_code, unused_imports, unused_variables)]
+
 use anyhow::Result;
 use rand::Rng;
 use std::collections::HashMap;
@@ -13,8 +15,9 @@ use std::time::Instant;
 // Import RuVector crates
 use ruvector_attention::{
     traits::Attention, HyperbolicAttention, HyperbolicAttentionConfig, MoEAttention, MoEConfig,
-    MultiHeadAttention, ScaledDotProductAttention,
+    MultiHeadAttention,
 };
+#[allow(unused_imports)] use ruvector_attention::ScaledDotProductAttention;
 use ruvector_gnn::{
     ewc::ElasticWeightConsolidation,
     layer::RuvectorLayer,

@@ -21,7 +21,8 @@
 //! - 1 multiplication for recovery
 //! - ~150-200 gates in digital implementation
 
-use super::{NeuronParams, NeuronState, SpikingNeuron, EnergyModel};
+use super::{NeuronParams, NeuronState, SpikingNeuron};
+use crate::neuron::traits::EnergyModel;
 use serde::{Deserialize, Serialize};
 
 /// Pre-defined Izhikevich neuron types with biological parameters.

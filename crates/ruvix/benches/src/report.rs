@@ -3,7 +3,8 @@
 //! Generates markdown reports and console output for benchmark results.
 
 use crate::comparison::ComparisonSummary;
-use crate::targets::{TargetSummary, TargetVerification};
+// TargetVerification: kept for API compat
+#[allow(unused_imports)] use crate::targets::{TargetSummary, TargetVerification};
 use crate::{BenchmarkResult, Comparison, MemoryComparison};
 use std::fmt::Write;
 use tabled::{Table, Tabled};

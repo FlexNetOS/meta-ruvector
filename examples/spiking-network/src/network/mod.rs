@@ -91,16 +91,16 @@ impl NetworkStats {
 
         self.total_spikes = self.spikes_per_step.iter().sum();
 
-        let num_neurons = if !self.active_neurons_per_step.is_empty() {
+        let _num_neurons = if !self.active_neurons_per_step.is_empty() {
             self.active_neurons_per_step.iter().max().copied().unwrap_or(1)
         } else {
             1
         };
 
         // Calculate average firing rate
-        if self.simulation_time > 0.0 && num_neurons > 0 {
+        if self.simulation_time > 0.0 && _num_neurons > 0 {
             self.avg_firing_rate = (self.total_spikes as f32)
-                / (num_neurons as f32)
+                / (_num_neurons as f32)
                 / self.simulation_time
                 * 1000.0;
         }
@@ -211,7 +211,7 @@ impl SpikingNetwork {
     /// Build network topology from configuration.
     pub fn build_topology(&mut self) -> Result<()> {
         let pattern = self.config.topology.pattern.clone();
-        let num_neurons = self.config.num_neurons;
+        let _num_neurons = self.config.num_neurons;
 
         match pattern {
             ConnectionPattern::AllToAll { probability } => {
@@ -418,9 +418,12 @@ impl SpikingNetwork {
             }
 
             // Schedule postsynaptic events
-            for &(target, ref synapse) in &self.connections[src] {
-                let arrival_time = self.current_time + synapse.delay;
-                let current = synapse.weight * synapse.sign();
+            let targets: Vec<_> = self.connections[src]
+                .iter()
+                .map(|&(t, ref s)| (t, s.delay, s.weight * s.sign()))
+                .collect();
+            for (target, delay, current) in targets {
+                let arrival_time = self.current_time + delay;
                 self.schedule_event(target, arrival_time, current);
             }
         }

@@ -11,7 +11,7 @@ use axum::{
     Router,
 };
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+#[allow(unused_imports)] use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 

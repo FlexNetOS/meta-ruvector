@@ -511,8 +511,7 @@ impl EvidenceAccumulator {
             *self.window.get_unchecked_mut(idx) = ObsRecord { obs, tick };
         }
         // OPTIMIZATION: Bit mask for power-of-2 wrap (64 = 0x40, mask = 0x3F)
-        self.window_head = ((self.window_head + 1) & (WINDOW_SIZE as u16 - 1));
-        if (self.window_count as usize) < WINDOW_SIZE {
+        self.window_head = (self.window_head + 1) & (WINDOW_SIZE as u16 - 1);        if (self.window_count as usize) < WINDOW_SIZE {
             self.window_count += 1;
         }
 

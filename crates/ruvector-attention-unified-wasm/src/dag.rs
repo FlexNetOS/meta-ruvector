@@ -1,4 +1,5 @@
 //! DAG Attention Mechanisms (from ruvector-dag)
+#![allow(dead_code, unused_imports, unused_variables)]
 //!
 //! Re-exports the 7 DAG-specific attention mechanisms:
 //! - Topological Attention
@@ -465,7 +466,7 @@ impl WasmHierarchicalLorentzAttention {
         }
 
         let depths = dag.inner.compute_depths();
-        let max_depth = depths.values().max().copied().unwrap_or(0);
+        let _max_depth = depths.values().max().copied().unwrap_or(0);
 
         // Compute hyperbolic distances from origin
         let mut distances: Vec<f32> = Vec::with_capacity(n);

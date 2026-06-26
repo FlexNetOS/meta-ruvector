@@ -249,7 +249,6 @@ impl CognitivePipeline {
         }
 
         let batch_size = self.config.batch_size;
-        let mut processed = 0;
 
         // 1. Generate sensor events
         let sensor_processed = self
@@ -282,7 +281,7 @@ impl CognitivePipeline {
         }
 
         // 5. Process in reasoning engine
-        let (engine_processed, mutations) = self
+        let (engine_processed, _mutations) = self
             .reasoning_engine
             .process_batch(&mut self.kernel, batch_size)?;
 
@@ -298,14 +297,14 @@ impl CognitivePipeline {
         }
 
         // 7. Process attestations
-        let attested = self.attestor.process_batch(&mut self.kernel, batch_size)?;
+        let _attested = self.attestor.process_batch(&mut self.kernel, batch_size)?;
 
         // 8. Timer coordination
         if self.coordinator.stats().timer_waits < config::TIMER_WAITS as u64 {
             self.coordinator.wait_timer(&mut self.kernel)?;
         }
 
-        processed = sensor_processed
+        let processed = sensor_processed
             .max(extractor_processed)
             .max(engine_processed);
         self.events_processed += processed as u64;

@@ -1,4 +1,6 @@
 //! Model Context Protocol (MCP) Server for Agentic Robotics
+#![allow(dead_code)]
+#![allow(unused_imports, unused_variables)]
 //!
 //! Provides MCP 2025-11 compliant server with stdio and SSE transports
 //! for exposing robot capabilities to AI assistants.
@@ -61,9 +63,10 @@ pub struct ToolResult {
     pub is_error: Option<bool>,
 }
 
-/// Content item in response
+/// Content item in response (serde field names match MCP protocol spec).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type")]
+#[allow(non_snake_case)]
 pub enum ContentItem {
     #[serde(rename = "text")]
     Text { text: String },

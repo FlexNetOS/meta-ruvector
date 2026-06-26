@@ -3,12 +3,14 @@
 //! Uses web-sys bindings to interact with the browser's IndexedDB API
 //! for persistent storage of RvLite state.
 
+#![allow(dead_code, unused_imports)]
+
 use super::state::RvLiteState;
 use js_sys::{Object, Reflect};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
-use wasm_bindgen_futures::JsFuture;
-use web_sys::{IdbDatabase, IdbObjectStore, IdbRequest, IdbTransaction, IdbTransactionMode};
+#[allow(unused_imports)] use wasm_bindgen_futures::JsFuture;
+#[allow(unused_imports)] use web_sys::{IdbDatabase, IdbObjectStore, IdbRequest, IdbTransaction, IdbTransactionMode};
 
 const DB_NAME: &str = "rvlite_db";
 const DB_VERSION: u32 = 1;

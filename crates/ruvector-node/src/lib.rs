@@ -1,6 +1,7 @@
 //! Node.js bindings for Ruvector via NAPI-RS
 //!
 //! High-performance Rust vector database with zero-copy buffer sharing,
+#![allow(dead_code, unused_imports, unused_variables)]
 //! async/await support, and complete TypeScript type definitions.
 
 #![allow(clippy::all)]

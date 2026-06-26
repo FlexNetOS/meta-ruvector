@@ -40,7 +40,8 @@ pub struct Coordinator {
     name: &'static str,
 
     /// Timer capability.
-    timer_cap: CapHandle,
+    #[allow(dead_code)]
+    pub(super) timer_cap: CapHandle,
 
     /// Spawned task handles.
     tasks: Vec<TaskHandle>,
@@ -163,7 +164,7 @@ impl Coordinator {
         let mut handles = Vec::with_capacity(component_types.len());
 
         for (i, _comp_type) in component_types.iter().enumerate() {
-            let entry = RvfComponentId::new(self.rvf_mount, i as u32);
+            let _entry = RvfComponentId::new(self.rvf_mount, i as u32);
 
             // In a real kernel, we would pass entry point info
             // For simulation, we just spawn with empty caps

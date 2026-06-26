@@ -12,7 +12,8 @@
 //! - 2-3 comparisons per update
 //! - ~100 gates in digital implementation
 
-use super::{NeuronParams, NeuronState, SpikingNeuron, EnergyModel};
+use super::{NeuronParams, NeuronState, SpikingNeuron};
+use crate::neuron::traits::EnergyModel;
 use serde::{Deserialize, Serialize};
 
 /// Parameters for LIF neuron.
