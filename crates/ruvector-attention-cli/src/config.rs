@@ -101,6 +101,7 @@ pub fn load_config(path: Option<&Path>) -> anyhow::Result<Config> {
 }
 
 impl Config {
+    #[allow(dead_code)]
     pub fn save(&self, path: &Path) -> anyhow::Result<()> {
         let content = toml::to_string_pretty(self)?;
         std::fs::write(path, content)?;

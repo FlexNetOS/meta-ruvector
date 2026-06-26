@@ -188,7 +188,7 @@ fn test_small_curvature_stability() {
     let y = vec![0.1, 0.4];
 
     let d_small_c = poincare_distance(&x, &y, 0.01);
-    let d_euclidean: f32 = x.iter().zip(y.iter())
+    let _d_euclidean: f32 = x.iter().zip(y.iter())
         .map(|(a, b)| (a - b) * (a - b))
         .sum::<f32>()
         .sqrt();
@@ -218,7 +218,7 @@ fn test_large_curvature_stability() {
 #[test]
 fn test_frechet_mean_single_point() {
     // Frechet mean of single point is that point
-    let points = vec![vec![0.3, 0.2]];
+    let points = [vec![0.3, 0.2]];
     let point_refs: Vec<&[f32]> = points.iter().map(|p| p.as_slice()).collect();
     let config = PoincareConfig::default();
 
@@ -232,10 +232,7 @@ fn test_frechet_mean_single_point() {
 #[test]
 fn test_frechet_mean_symmetric() {
     // Mean of symmetric points should be near origin
-    let points = vec![
-        vec![0.3, 0.0],
-        vec![-0.3, 0.0],
-    ];
+    let points = [vec![0.3, 0.0], vec![-0.3, 0.0]];
     let point_refs: Vec<&[f32]> = points.iter().map(|p| p.as_slice()).collect();
     let config = PoincareConfig::default();
 

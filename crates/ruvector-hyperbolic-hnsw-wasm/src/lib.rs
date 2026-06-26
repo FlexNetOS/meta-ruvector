@@ -205,9 +205,11 @@ impl HyperbolicIndex {
     /// @param curvature - Curvature parameter for Poincaré ball (default: 1.0)
     #[wasm_bindgen(constructor)]
     pub fn new(ef_search: Option<usize>, curvature: Option<f32>) -> Self {
-        let mut config = HyperbolicHnswConfig::default();
-        config.ef_search = ef_search.unwrap_or(50);
-        config.curvature = curvature.unwrap_or(DEFAULT_CURVATURE);
+        let config = HyperbolicHnswConfig {
+            ef_search: ef_search.unwrap_or(50),
+            curvature: curvature.unwrap_or(DEFAULT_CURVATURE),
+            ..Default::default()
+        };
 
         Self {
             inner: HyperbolicHnsw::new(config),
@@ -553,6 +555,12 @@ impl WasmTangentCache {
     #[wasm_bindgen]
     pub fn len(&self) -> usize {
         self.inner.len()
+    }
+
+    /// Check if the cache is empty
+    #[wasm_bindgen(js_name = isEmpty)]
+    pub fn is_empty(&self) -> bool {
+        self.inner.len() == 0
     }
 
     /// Get dimension

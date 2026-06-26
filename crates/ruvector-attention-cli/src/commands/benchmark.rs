@@ -2,9 +2,10 @@ use clap::Args;
 use crate::{config::Config, output::{print_benchmark_results, BenchmarkRow}};
 use ruvector_attention::{
     attention::{ScaledDotProductAttention, MultiHeadAttention},
-    hyperbolic::HyperbolicAttention,
+    hyperbolic::{HyperbolicAttention, HyperbolicAttentionConfig},
     sparse::{FlashAttention, LinearAttention},
-    moe::MoEAttention,
+    moe::{MoEAttention, MoEConfig},
+    traits::Attention,
 };
 use indicatif::{ProgressBar, ProgressStyle};
 use std::time::Instant;
@@ -89,7 +90,7 @@ pub async fn run(args: BenchmarkArgs, config: &Config) -> anyhow::Result<()> {
                 .map(|&x| (x - mean).powi(2))
                 .sum::<f64>() / timings.len() as f64;
             let std_dev = variance.sqrt();
-            let throughput = 1000.0 / mean; // operations per second
+            let throughput = 1000.0 / mean;
 
             results.push(BenchmarkRow {
                 attention_type: attention_type.clone(),
@@ -144,7 +145,6 @@ fn benchmark_attention(
     iterations: usize,
     warmup: usize,
 ) -> anyhow::Result<Vec<f64>> {
-    // Generate random test data
     let query: Vec<Vec<f32>> = (0..seq_length)
         .map(|_| (0..dim).map(|_| rand::random::<f32>()).collect())
         .collect();
@@ -158,12 +158,10 @@ fn benchmark_attention(
     let keys_refs: Vec<&[f32]> = keys.iter().map(|k| k.as_slice()).collect();
     let values_refs: Vec<&[f32]> = values.iter().map(|v| v.as_slice()).collect();
 
-    // Warmup
     for _ in 0..warmup {
         run_attention(attention_type, dim, &query, &keys_refs, &values_refs)?;
     }
 
-    // Actual benchmark
     let mut timings = Vec::new();
     for _ in 0..iterations {
         let start = Instant::now();
@@ -184,28 +182,46 @@ fn run_attention(
 ) -> anyhow::Result<Vec<Vec<f32>>> {
     match attention_type {
         "scaled_dot" => {
-            let attention = ScaledDotProductAttention::new(dim, None);
-            attention.compute(query, keys, values)
+            let attention = ScaledDotProductAttention::new(dim);
+            query.iter()
+                .map(|q| attention.compute(q, keys, values).map_err(anyhow::Error::from))
+                .collect()
         }
         "multi_head" => {
-            let attention = MultiHeadAttention::new(dim, 8)?;
-            attention.compute(query, keys, values)
+            let attention = MultiHeadAttention::new(dim, 8);
+            query.iter()
+                .map(|q| attention.compute(q, keys, values).map_err(anyhow::Error::from))
+                .collect()
         }
         "hyperbolic" => {
-            let attention = HyperbolicAttention::new(dim, 1.0)?;
-            attention.compute(query, keys, values)
+            let attention = HyperbolicAttention::new(HyperbolicAttentionConfig {
+                dim,
+                curvature: -1.0,
+                ..Default::default()
+            });
+            query.iter()
+                .map(|q| attention.compute(q, keys, values).map_err(anyhow::Error::from))
+                .collect()
         }
         "flash" => {
-            let attention = FlashAttention::new(dim, 64)?;
-            attention.compute(query, keys, values)
+            let attention = FlashAttention::new(dim, 64);
+            query.iter()
+                .map(|q| attention.compute(q, keys, values).map_err(anyhow::Error::from))
+                .collect()
         }
         "linear" => {
-            let attention = LinearAttention::new(dim)?;
-            attention.compute(query, keys, values)
+            let attention = LinearAttention::new(dim, 64);
+            query.iter()
+                .map(|q| attention.compute(q, keys, values).map_err(anyhow::Error::from))
+                .collect()
         }
         "moe" => {
-            let attention = MoEAttention::new(dim, 4, 2)?;
-            attention.compute(query, keys, values)
+            let attention = MoEAttention::new(
+                MoEConfig::builder().dim(dim).num_experts(4).top_k(2).build(),
+            );
+            query.iter()
+                .map(|q| attention.compute(q, keys, values).map_err(anyhow::Error::from))
+                .collect()
         }
         _ => Err(anyhow::anyhow!("Unknown attention type: {}", attention_type)),
     }

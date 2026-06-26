@@ -11,12 +11,9 @@
 //! - Dual-space search (Euclidean fallback)
 
 use crate::error::{HyperbolicError, HyperbolicResult};
-use crate::poincare::{fused_norms, norm_squared, poincare_distance, poincare_distance_from_norms, project_to_ball, EPS};
+use crate::poincare::{fused_norms, poincare_distance_from_norms, project_to_ball, EPS};
 use crate::tangent::TangentCache;
 use serde::{Deserialize, Serialize};
-
-#[cfg(feature = "parallel")]
-use rayon::prelude::*;
 
 /// Distance metric type
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -112,7 +109,7 @@ impl Eq for SearchResult {}
 
 impl PartialOrd for SearchResult {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        self.distance.partial_cmp(&other.distance)
+        Some(self.cmp(other))
     }
 }
 
@@ -201,18 +198,6 @@ impl HyperbolicHnsw {
                 let norm_prod = (norm_a_sq * norm_b_sq).sqrt();
                 1.0 - dot_ab / (norm_prod + EPS)
             }
-        }
-    }
-
-    /// Compute distance with pre-computed query norm (for batch search)
-    #[inline]
-    fn distance_with_query_norm(&self, query: &[f32], query_norm_sq: f32, point: &[f32]) -> f32 {
-        match self.config.metric {
-            DistanceMetric::Poincare | DistanceMetric::Hybrid => {
-                let (diff_sq, _, point_norm_sq) = fused_norms(query, point);
-                poincare_distance_from_norms(diff_sq, query_norm_sq, point_norm_sq, self.config.curvature)
-            }
-            _ => self.distance(query, point)
         }
     }
 
@@ -548,12 +533,16 @@ pub struct DualSpaceIndex {
 impl DualSpaceIndex {
     /// Create a new dual-space index
     pub fn new(curvature: f32, fusion_weight: f32) -> Self {
-        let mut hyp_config = HyperbolicHnswConfig::default();
-        hyp_config.curvature = curvature;
-        hyp_config.metric = DistanceMetric::Poincare;
+        let hyp_config = HyperbolicHnswConfig {
+            curvature,
+            metric: DistanceMetric::Poincare,
+            ..Default::default()
+        };
 
-        let mut euc_config = HyperbolicHnswConfig::default();
-        euc_config.metric = DistanceMetric::Euclidean;
+        let euc_config = HyperbolicHnswConfig {
+            metric: DistanceMetric::Euclidean,
+            ..Default::default()
+        };
 
         Self {
             hyperbolic: HyperbolicHnsw::new(hyp_config),

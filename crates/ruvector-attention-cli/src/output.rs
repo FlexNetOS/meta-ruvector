@@ -36,7 +36,7 @@ pub struct OutputMetadata {
     pub num_parameters: usize,
 }
 
-#[derive(Debug, Clone, Tabled)]
+#[derive(Debug, Clone, Tabled, Serialize)]
 pub struct BenchmarkRow {
     pub attention_type: String,
     pub dimension: usize,
@@ -103,24 +103,24 @@ impl Output {
     fn to_pretty(&self) -> Result<String> {
         let mut output = String::new();
         output.push_str(&format!("Attention Type: {}\n", self.data.attention_type));
-        output.push_str(&format!("Dimensions:\n"));
+        output.push_str("Dimensions:\n");
         output.push_str(&format!("  Batch Size: {}\n", self.data.dimensions.batch_size));
         output.push_str(&format!("  Num Heads: {}\n", self.data.dimensions.num_heads));
         output.push_str(&format!("  Sequence Length: {}\n", self.data.dimensions.seq_length));
         output.push_str(&format!("  Embedding Dim: {}\n", self.data.dimensions.embedding_dim));
-        output.push_str(&format!("\nMetadata:\n"));
+        output.push_str("\nMetadata:\n");
         output.push_str(&format!("  Compute Time: {:.2}ms\n", self.data.metadata.compute_time_ms));
         output.push_str(&format!("  Memory Usage: {} bytes\n", self.data.metadata.memory_bytes));
         output.push_str(&format!("  Parameters: {}\n", self.data.metadata.num_parameters));
 
         if !self.data.scores.is_empty() {
-            output.push_str(&format!("\nAttention Scores (first 5x5):\n"));
+            output.push_str("\nAttention Scores (first 5x5):\n");
             for (i, row) in self.data.scores.iter().take(5).enumerate() {
                 output.push_str(&format!("  Row {}: ", i));
                 for val in row.iter().take(5) {
                     output.push_str(&format!("{:.4} ", val));
                 }
-                output.push_str("\n");
+                output.push('\n');
             }
         }
 

@@ -12,13 +12,10 @@
 
 use crate::error::{HyperbolicError, HyperbolicResult};
 use crate::hnsw::{HyperbolicHnsw, HyperbolicHnswConfig, SearchResult};
-use crate::poincare::{frechet_mean, poincare_distance, project_to_ball, PoincareConfig, EPS};
+use crate::poincare::poincare_distance;
 use crate::tangent::TangentCache;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-
-#[cfg(feature = "parallel")]
-use rayon::prelude::*;
 
 /// Curvature configuration for a shard
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -50,8 +47,8 @@ impl Default for ShardCurvature {
 impl ShardCurvature {
     /// Get the effective curvature (considering canary traffic)
     pub fn effective(&self, use_canary: bool) -> f32 {
-        if use_canary && self.canary.is_some() && self.canary_traffic > 0 {
-            self.canary.unwrap()
+        if use_canary && self.canary_traffic > 0 {
+            self.canary.unwrap_or(self.current)
         } else {
             self.current
         }
@@ -178,8 +175,10 @@ pub struct HyperbolicShard {
 impl HyperbolicShard {
     /// Create a new shard
     pub fn new(id: String, curvature: f32) -> Self {
-        let mut config = HyperbolicHnswConfig::default();
-        config.curvature = curvature;
+        let config = HyperbolicHnswConfig {
+            curvature,
+            ..Default::default()
+        };
 
         Self {
             id,
@@ -257,22 +256,17 @@ pub struct ShardedHyperbolicHnsw {
 }
 
 /// Strategy for assigning vectors to shards
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum ShardStrategy {
     /// Assign by hash
     Hash,
     /// Assign by hierarchy depth
     Depth,
     /// Assign by radius (distance from origin)
+    #[default]
     Radius,
     /// Round-robin
     RoundRobin,
-}
-
-impl Default for ShardStrategy {
-    fn default() -> Self {
-        Self::Radius
-    }
 }
 
 impl ShardedHyperbolicHnsw {

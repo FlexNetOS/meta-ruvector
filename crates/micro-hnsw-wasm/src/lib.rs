@@ -22,7 +22,7 @@
 //! - **Winner-Take-All Circuits**: Competitive neural selection
 //! - **Dendritic Computation**: Non-linear local processing
 
-#![no_std]
+#![cfg_attr(target_family = "wasm", no_std)]
 
 // ============ Configuration ============
 const MAX_VECTORS: usize = 32;       // Per core (256 × 32 = 8K total)
@@ -37,6 +37,7 @@ const V_RESET: f32 = 0.0;            // Reset potential
 const V_REST: f32 = 0.0;             // Resting potential
 const STDP_A_PLUS: f32 = 0.01;       // STDP potentiation magnitude
 const STDP_A_MINUS: f32 = 0.012;     // STDP depression magnitude
+#[allow(dead_code)]
 const TAU_STDP: f32 = 20.0;          // STDP time constant
 const INV_TAU_STDP: f32 = 0.05;      // Pre-computed 1/TAU_STDP for optimization
 const INV_255: f32 = 0.00392157;     // Pre-computed 1/255 for weight normalization
@@ -228,22 +229,22 @@ pub extern "C" fn init(dims: u8, metric: u8, core_id: u8) {
 #[no_mangle]
 // SAFETY: Returns pointer to INSERT static mut; valid for the lifetime of the WASM instance.
 // Caller (host JS) must not hold this pointer across calls that mutate INSERT.
-pub extern "C" fn get_insert_ptr() -> *mut f32 { unsafe { INSERT.as_mut_ptr() } }
+pub extern "C" fn get_insert_ptr() -> *mut f32 { core::ptr::addr_of_mut!(INSERT) as *mut f32 }
 
 #[no_mangle]
 // SAFETY: Returns pointer to QUERY static mut; valid for the lifetime of the WASM instance.
 // Caller (host JS) must not hold this pointer across calls that mutate QUERY.
-pub extern "C" fn get_query_ptr() -> *mut f32 { unsafe { QUERY.as_mut_ptr() } }
+pub extern "C" fn get_query_ptr() -> *mut f32 { core::ptr::addr_of_mut!(QUERY) as *mut f32 }
 
 #[no_mangle]
 // SAFETY: Returns read-only pointer to RESULTS static mut; valid for WASM instance lifetime.
 // Caller must not read through this pointer while a search is in progress.
-pub extern "C" fn get_result_ptr() -> *const SearchResult { unsafe { RESULTS.as_ptr() } }
+pub extern "C" fn get_result_ptr() -> *const SearchResult { core::ptr::addr_of!(RESULTS) as *const SearchResult }
 
 #[no_mangle]
 // SAFETY: Returns read-only pointer to GLOBAL static mut; valid for WASM instance lifetime.
 // Caller must not read through this pointer while a merge is in progress.
-pub extern "C" fn get_global_ptr() -> *const SearchResult { unsafe { GLOBAL.as_ptr() } }
+pub extern "C" fn get_global_ptr() -> *const SearchResult { core::ptr::addr_of!(GLOBAL) as *const SearchResult }
 
 /// Insert vector from INSERT buffer, returns index or 255 if full
 #[no_mangle]
@@ -384,7 +385,7 @@ pub extern "C" fn search(k: u8) -> u8 {
                 b += 1;
             }
 
-            beam = nb; beam_d = nd; bs = ns;
+            beam = nb; let _ = nd; bs = ns;
             iter += 1;
         }
 
@@ -396,6 +397,7 @@ pub extern "C" fn search(k: u8) -> u8 {
 
 /// Merge results from another core into global buffer
 #[no_mangle]
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
 pub extern "C" fn merge(ptr: *const SearchResult, cnt: u8) -> u8 {
     // SAFETY: Mutates GLOBAL static mut; single-threaded WASM guarantees exclusive access.
     // `ptr` must point to a valid array of at least `cnt` SearchResult elements; the host
@@ -543,7 +545,7 @@ pub extern "C" fn aggregate_neighbors(idx: u8) {
 /// Get delta buffer pointer for reading aggregated values
 #[no_mangle]
 // SAFETY: Returns read-only pointer to DELTA static mut; valid for WASM instance lifetime.
-pub extern "C" fn get_delta_ptr() -> *const f32 { unsafe { DELTA.as_ptr() } }
+pub extern "C" fn get_delta_ptr() -> *const f32 { core::ptr::addr_of!(DELTA) as *const f32 }
 
 /// Update vector: v = v + alpha * delta (in-place)
 #[no_mangle]
@@ -562,7 +564,7 @@ pub extern "C" fn update_vector(idx: u8, alpha: f32) {
 #[no_mangle]
 // SAFETY: Returns mutable pointer to DELTA static mut; valid for WASM instance lifetime.
 // Caller (host JS) must not hold this pointer across calls that mutate DELTA.
-pub extern "C" fn set_delta_ptr() -> *mut f32 { unsafe { DELTA.as_mut_ptr() } }
+pub extern "C" fn set_delta_ptr() -> *mut f32 { core::ptr::addr_of_mut!(DELTA) as *mut f32 }
 
 /// Combined HNSW-SNN cycle: search → convert to currents → inject
 /// Useful for linking vector similarity to neural activation
@@ -902,8 +904,7 @@ pub extern "C" fn homeostatic_update(dt: f32) {
             THRESHOLD[idx] += rate_error * alpha;
 
             // Clamp threshold to reasonable range
-            if THRESHOLD[idx] < 0.1 { THRESHOLD[idx] = 0.1; }
-            if THRESHOLD[idx] > 10.0 { THRESHOLD[idx] = 10.0; }
+            THRESHOLD[idx] = THRESHOLD[idx].clamp(0.1, 10.0);
 
             i += 1;
         }
@@ -927,9 +928,9 @@ pub extern "C" fn oscillator_step(dt: f32) {
     // SAFETY: Mutates OSCILLATOR_PHASE static mut; single-threaded WASM.
     unsafe {
         // Phase advances with time: ω = 2πf
-        let omega = 6.28318 * OSCILLATOR_FREQ / 1000.0; // Convert Hz to rad/ms
+        let omega = core::f32::consts::TAU * OSCILLATOR_FREQ / 1000.0; // Convert Hz to rad/ms
         OSCILLATOR_PHASE += omega * dt;
-        if OSCILLATOR_PHASE > 6.28318 { OSCILLATOR_PHASE -= 6.28318; }
+        if OSCILLATOR_PHASE > core::f32::consts::TAU { OSCILLATOR_PHASE -= core::f32::consts::TAU; }
     }
 }
 
@@ -949,12 +950,12 @@ pub extern "C" fn compute_resonance(idx: u8) -> f32 {
         let i = idx as usize;
 
         // Each neuron has preferred phase based on its index
-        let preferred_phase = (idx as f32 / MAX_VECTORS as f32) * 6.28318;
+        let preferred_phase = (idx as f32 / MAX_VECTORS as f32) * core::f32::consts::TAU;
         let phase_diff = (OSCILLATOR_PHASE - preferred_phase).abs();
-        let min_diff = if phase_diff > 3.14159 { 6.28318 - phase_diff } else { phase_diff };
+        let min_diff = if phase_diff > core::f32::consts::PI { core::f32::consts::TAU - phase_diff } else { phase_diff };
 
         // Resonance is high when phase matches
-        RESONANCE[i] = 1.0 - min_diff / 3.14159;
+        RESONANCE[i] = 1.0 - min_diff / core::f32::consts::PI;
         RESONANCE[i]
     }
 }
@@ -986,9 +987,8 @@ pub extern "C" fn resonance_search(k: u8, phase_weight: f32) -> u8 {
             let mut j = i + 1;
             while j < found as usize {
                 if RESULTS[j].distance < RESULTS[i].distance {
-                    let tmp = RESULTS[i];
-                    RESULTS[i] = RESULTS[j];
-                    RESULTS[j] = tmp;
+                    let base = core::ptr::addr_of_mut!(RESULTS) as *mut SearchResult;
+                    core::ptr::swap(base.add(i), base.add(j));
                 }
                 j += 1;
             }
@@ -1361,6 +1361,6 @@ pub extern "C" fn get_network_activity() -> f32 {
     }
 }
 
-#[cfg(not(test))]
+#[cfg(all(target_family = "wasm", not(test)))]
 #[panic_handler]
 fn panic(_: &core::panic::PanicInfo) -> ! { loop {} }

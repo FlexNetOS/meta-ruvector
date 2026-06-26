@@ -11,9 +11,10 @@ use std::sync::Arc;
 use tower_http::cors::CorsLayer;
 use ruvector_attention::{
     attention::{ScaledDotProductAttention, MultiHeadAttention},
-    hyperbolic::HyperbolicAttention,
+    hyperbolic::{HyperbolicAttention, HyperbolicAttentionConfig},
     sparse::{FlashAttention, LinearAttention},
-    moe::MoEAttention,
+    moe::{MoEAttention, MoEConfig},
+    traits::Attention,
 };
 
 #[derive(Args)]
@@ -32,7 +33,7 @@ pub struct ServeArgs {
 }
 
 struct ServerState {
-    config: Config,
+    _config: Config,
 }
 
 #[derive(Debug, Deserialize)]
@@ -70,7 +71,7 @@ struct ErrorResponse {
 
 pub async fn run(args: ServeArgs, config: &Config) -> anyhow::Result<()> {
     let state = Arc::new(ServerState {
-        config: config.clone(),
+        _config: config.clone(),
     });
 
     let mut app = Router::new()
@@ -111,12 +112,14 @@ async fn scaled_dot_attention(
     let start = std::time::Instant::now();
 
     let dim = req.query.first().map(|q| q.len()).unwrap_or(0);
-    let attention = ScaledDotProductAttention::new(dim, None);
+    let attention = ScaledDotProductAttention::new(dim);
 
     let keys_refs: Vec<&[f32]> = req.keys.iter().map(|k| k.as_slice()).collect();
     let values_refs: Vec<&[f32]> = req.values.iter().map(|v| v.as_slice()).collect();
 
-    let result = attention.compute(&req.query, &keys_refs, &values_refs)
+    let result: Vec<Vec<f32>> = req.query.iter()
+        .map(|q| attention.compute(q, &keys_refs, &values_refs))
+        .collect::<Result<Vec<_>, _>>()
         .map_err(|e| error_response(e.to_string()))?;
 
     let elapsed = start.elapsed();
@@ -139,13 +142,23 @@ async fn multi_head_attention(
 
     let dim = req.query.first().map(|q| q.len()).unwrap_or(0);
     let num_heads = req.num_heads.unwrap_or(8);
-    let attention = MultiHeadAttention::new(dim, num_heads)
-        .map_err(|e| error_response(e.to_string()))?;
+
+    // Validate before creating (constructor panics on invalid config)
+    if dim > 0 && dim % num_heads != 0 {
+        return Err(error_response(format!(
+            "dim {} must be divisible by num_heads {}",
+            dim, num_heads
+        )));
+    }
+
+    let attention = MultiHeadAttention::new(dim, num_heads);
 
     let keys_refs: Vec<&[f32]> = req.keys.iter().map(|k| k.as_slice()).collect();
     let values_refs: Vec<&[f32]> = req.values.iter().map(|v| v.as_slice()).collect();
 
-    let result = attention.compute(&req.query, &keys_refs, &values_refs)
+    let result: Vec<Vec<f32>> = req.query.iter()
+        .map(|q| attention.compute(q, &keys_refs, &values_refs))
+        .collect::<Result<Vec<_>, _>>()
         .map_err(|e| error_response(e.to_string()))?;
 
     let elapsed = start.elapsed();
@@ -168,13 +181,18 @@ async fn hyperbolic_attention(
 
     let dim = req.query.first().map(|q| q.len()).unwrap_or(0);
     let curvature = req.curvature.unwrap_or(1.0);
-    let attention = HyperbolicAttention::new(dim, curvature)
-        .map_err(|e| error_response(e.to_string()))?;
+    let attention = HyperbolicAttention::new(HyperbolicAttentionConfig {
+        dim,
+        curvature,
+        ..Default::default()
+    });
 
     let keys_refs: Vec<&[f32]> = req.keys.iter().map(|k| k.as_slice()).collect();
     let values_refs: Vec<&[f32]> = req.values.iter().map(|v| v.as_slice()).collect();
 
-    let result = attention.compute(&req.query, &keys_refs, &values_refs)
+    let result: Vec<Vec<f32>> = req.query.iter()
+        .map(|q| attention.compute(q, &keys_refs, &values_refs))
+        .collect::<Result<Vec<_>, _>>()
         .map_err(|e| error_response(e.to_string()))?;
 
     let elapsed = start.elapsed();
@@ -196,13 +214,14 @@ async fn flash_attention(
     let start = std::time::Instant::now();
 
     let dim = req.query.first().map(|q| q.len()).unwrap_or(0);
-    let attention = FlashAttention::new(dim, 64)
-        .map_err(|e| error_response(e.to_string()))?;
+    let attention = FlashAttention::new(dim, 64);
 
     let keys_refs: Vec<&[f32]> = req.keys.iter().map(|k| k.as_slice()).collect();
     let values_refs: Vec<&[f32]> = req.values.iter().map(|v| v.as_slice()).collect();
 
-    let result = attention.compute(&req.query, &keys_refs, &values_refs)
+    let result: Vec<Vec<f32>> = req.query.iter()
+        .map(|q| attention.compute(q, &keys_refs, &values_refs))
+        .collect::<Result<Vec<_>, _>>()
         .map_err(|e| error_response(e.to_string()))?;
 
     let elapsed = start.elapsed();
@@ -224,13 +243,14 @@ async fn linear_attention(
     let start = std::time::Instant::now();
 
     let dim = req.query.first().map(|q| q.len()).unwrap_or(0);
-    let attention = LinearAttention::new(dim)
-        .map_err(|e| error_response(e.to_string()))?;
+    let attention = LinearAttention::new(dim, 64);
 
     let keys_refs: Vec<&[f32]> = req.keys.iter().map(|k| k.as_slice()).collect();
     let values_refs: Vec<&[f32]> = req.values.iter().map(|v| v.as_slice()).collect();
 
-    let result = attention.compute(&req.query, &keys_refs, &values_refs)
+    let result: Vec<Vec<f32>> = req.query.iter()
+        .map(|q| attention.compute(q, &keys_refs, &values_refs))
+        .collect::<Result<Vec<_>, _>>()
         .map_err(|e| error_response(e.to_string()))?;
 
     let elapsed = start.elapsed();
@@ -254,13 +274,20 @@ async fn moe_attention(
     let dim = req.query.first().map(|q| q.len()).unwrap_or(0);
     let num_experts = req.num_experts.unwrap_or(4);
     let top_k = req.top_k.unwrap_or(2);
-    let attention = MoEAttention::new(dim, num_experts, top_k)
-        .map_err(|e| error_response(e.to_string()))?;
+    let attention = MoEAttention::new(
+        MoEConfig::builder()
+            .dim(dim)
+            .num_experts(num_experts)
+            .top_k(top_k)
+            .build(),
+    );
 
     let keys_refs: Vec<&[f32]> = req.keys.iter().map(|k| k.as_slice()).collect();
     let values_refs: Vec<&[f32]> = req.values.iter().map(|v| v.as_slice()).collect();
 
-    let result = attention.compute(&req.query, &keys_refs, &values_refs)
+    let result: Vec<Vec<f32>> = req.query.iter()
+        .map(|q| attention.compute(q, &keys_refs, &values_refs))
+        .collect::<Result<Vec<_>, _>>()
         .map_err(|e| error_response(e.to_string()))?;
 
     let elapsed = start.elapsed();

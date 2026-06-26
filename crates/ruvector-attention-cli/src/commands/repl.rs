@@ -3,9 +3,10 @@ use crate::config::Config;
 use rustyline::{Editor, error::ReadlineError, history::DefaultHistory};
 use ruvector_attention::{
     attention::{ScaledDotProductAttention, MultiHeadAttention},
-    hyperbolic::HyperbolicAttention,
+    hyperbolic::{HyperbolicAttention, HyperbolicAttentionConfig},
     sparse::{FlashAttention, LinearAttention},
-    moe::MoEAttention,
+    moe::{MoEAttention, MoEConfig},
+    traits::Attention,
 };
 
 #[derive(Args)]
@@ -54,7 +55,7 @@ impl ReplState {
     }
 
     fn load(&mut self, path: &str) -> anyhow::Result<()> {
-        let data = super::load_input(&std::path::Path::new(path))?;
+        let data = super::load_input(std::path::Path::new(path))?;
         self.last_query = Some(data.query);
         self.last_keys = Some(data.keys);
         self.last_values = Some(data.values);
@@ -69,28 +70,46 @@ impl ReplState {
 
         match self.attention_type.as_str() {
             "scaled_dot" => {
-                let attention = ScaledDotProductAttention::new(self.dim, None);
-                attention.compute(&args.query, &keys_refs, &values_refs)
+                let attention = ScaledDotProductAttention::new(self.dim);
+                args.query.iter()
+                    .map(|q| attention.compute(q, &keys_refs, &values_refs).map_err(anyhow::Error::from))
+                    .collect()
             }
             "multi_head" => {
-                let attention = MultiHeadAttention::new(self.dim, self.config.attention.default_heads)?;
-                attention.compute(&args.query, &keys_refs, &values_refs)
+                let attention = MultiHeadAttention::new(self.dim, self.config.attention.default_heads);
+                args.query.iter()
+                    .map(|q| attention.compute(q, &keys_refs, &values_refs).map_err(anyhow::Error::from))
+                    .collect()
             }
             "hyperbolic" => {
-                let attention = HyperbolicAttention::new(self.dim, 1.0)?;
-                attention.compute(&args.query, &keys_refs, &values_refs)
+                let attention = HyperbolicAttention::new(HyperbolicAttentionConfig {
+                    dim: self.dim,
+                    curvature: -1.0,
+                    ..Default::default()
+                });
+                args.query.iter()
+                    .map(|q| attention.compute(q, &keys_refs, &values_refs).map_err(anyhow::Error::from))
+                    .collect()
             }
             "flash" => {
-                let attention = FlashAttention::new(self.dim, 64)?;
-                attention.compute(&args.query, &keys_refs, &values_refs)
+                let attention = FlashAttention::new(self.dim, 64);
+                args.query.iter()
+                    .map(|q| attention.compute(q, &keys_refs, &values_refs).map_err(anyhow::Error::from))
+                    .collect()
             }
             "linear" => {
-                let attention = LinearAttention::new(self.dim)?;
-                attention.compute(&args.query, &keys_refs, &values_refs)
+                let attention = LinearAttention::new(self.dim, 64);
+                args.query.iter()
+                    .map(|q| attention.compute(q, &keys_refs, &values_refs).map_err(anyhow::Error::from))
+                    .collect()
             }
             "moe" => {
-                let attention = MoEAttention::new(self.dim, 4, 2)?;
-                attention.compute(&args.query, &keys_refs, &values_refs)
+                let attention = MoEAttention::new(
+                    MoEConfig::builder().dim(self.dim).num_experts(4).top_k(2).build(),
+                );
+                args.query.iter()
+                    .map(|q| attention.compute(q, &keys_refs, &values_refs).map_err(anyhow::Error::from))
+                    .collect()
             }
             _ => Err(anyhow::anyhow!("Unknown attention type: {}", self.attention_type)),
         }
@@ -135,8 +154,8 @@ pub async fn run(args: ReplArgs, config: &Config) -> anyhow::Result<()> {
                             eprintln!("Error loading file: {}", e);
                         }
                     }
-                    Command::Compute(args) => {
-                        match state.compute(&args) {
+                    Command::Compute(compute_args) => {
+                        match state.compute(&compute_args) {
                             Ok(result) => {
                                 println!("Result shape: {}x{}", result.len(), result.first().map(|r| r.len()).unwrap_or(0));
                                 println!("First row (first 5 values): {:?}",
@@ -162,7 +181,7 @@ pub async fn run(args: ReplArgs, config: &Config) -> anyhow::Result<()> {
 }
 
 fn parse_command(line: &str) -> Command {
-    let parts: Vec<&str> = line.trim().split_whitespace().collect();
+    let parts: Vec<&str> = line.split_whitespace().collect();
 
     if parts.is_empty() {
         return Command::Unknown(String::new());
@@ -178,7 +197,6 @@ fn parse_command(line: &str) -> Command {
             }
         }
         "compute" => {
-            // For simplicity, use random data
             let query = vec![vec![0.1, 0.2, 0.3]];
             let keys = vec![vec![0.1, 0.2, 0.3], vec![0.4, 0.5, 0.6]];
             let values = vec![vec![0.7, 0.8, 0.9], vec![1.0, 1.1, 1.2]];

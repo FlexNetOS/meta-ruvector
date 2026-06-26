@@ -1,10 +1,11 @@
 [package]
 name = "ruvector-hnsw-repair"
-version.workspace = true
-edition.workspace = true
-authors.workspace = true
-license.workspace = true
-repository.workspace = true
+version = "2.2.3"
+edition = "2021"
+rust-version = "1.77"
+authors = ["Ruvector Team"]
+license = "MIT"
+repository = "https://github.com/FlexNetOS/ruvector"
 description = "Online HNSW graph repair after vector deletions — three deletion strategies with measured recall recovery"
 
 [[bin]]
@@ -12,7 +13,7 @@ name = "benchmark"
 path = "src/benchmark.rs"
 
 [dependencies]
-rand = { workspace = true }
+rand = "0.8"
 
 [lints.rust]
 dead_code = "allow"

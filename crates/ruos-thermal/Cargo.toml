@@ -8,9 +8,6 @@ repository = "https://github.com/FlexNetOS/ruvector"
 keywords = ["ruos", "pi-5", "thermal", "overclock", "edge-ai"]
 categories = ["hardware-support", "embedded"]
 
-# Standalone — joins the workspace once a stable API lands.
-[workspace]
-
 [dependencies]
 # Pure-Rust, zero deps for the skeleton; only stdlib + clap-style arg
 # parsing inline. Adds tokio/serde when the Unix socket budget protocol
