@@ -50,8 +50,6 @@ extern crate alloc;
 extern crate std;
 
 // With std feature, provide Vec compatibility
-#[cfg(feature = "std")]
-use std::vec::Vec;
 
 mod attestation;
 mod cache;

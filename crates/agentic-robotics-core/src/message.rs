@@ -55,6 +55,7 @@ pub struct Point3D {
 
 /// Point cloud message
 #[derive(Debug, Clone, Serialize, Deserialize, Archive, RkyvSerialize, RkyvDeserialize)]
+#[derive(Default)]
 pub struct PointCloud {
     pub points: Vec<Point3D>,
     pub intensities: Vec<f32>,
@@ -67,15 +68,6 @@ impl Message for PointCloud {
     }
 }
 
-impl Default for PointCloud {
-    fn default() -> Self {
-        Self {
-            points: Vec::new(),
-            intensities: Vec::new(),
-            timestamp: 0,
-        }
-    }
-}
 
 /// Pose message
 #[derive(Debug, Clone, Serialize, Deserialize, Archive, RkyvSerialize, RkyvDeserialize)]

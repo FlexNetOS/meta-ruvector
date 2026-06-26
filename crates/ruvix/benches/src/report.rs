@@ -43,7 +43,7 @@ impl From<&BenchmarkResult> for SyscallRow {
 
         let target = result
             .target_ns
-            .map(|t| format_ns(t))
+            .map(&format_ns)
             .unwrap_or_else(|| "-".to_string());
         let status = if result.meets_target { "PASS" } else { "FAIL" };
 

@@ -221,7 +221,7 @@ impl ReasoningEngine {
                 let proof = kernel.generate_proof(mutation_hash, ProofTier::Standard);
 
                 // Apply the graph mutation
-                kernel.graph_apply_proved(self.graph, mutation.mutation.clone(), proof)?;
+                kernel.graph_apply_proved(self.graph, mutation.mutation, proof)?;
 
                 self.mutations_applied += 1;
                 result_mutation = Some(mutation);
@@ -427,7 +427,7 @@ mod tests {
 
         // Queue vectors
         for i in 0..10 {
-            engine.queue_vector(VectorKey::new(i), i as u64, 0.8);
+            engine.queue_vector(VectorKey::new(i), i, 0.8);
         }
 
         // Process batch

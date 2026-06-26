@@ -614,9 +614,7 @@ impl CanonicalPartition {
         for i in 0..32 {
             self.side[i] = !self.side[i];
         }
-        let tmp = self.cardinality_a;
-        self.cardinality_a = self.cardinality_b;
-        self.cardinality_b = tmp;
+        std::mem::swap(&mut self.cardinality_a, &mut self.cardinality_b);
     }
 
     /// Recount cardinalities from the bitset.

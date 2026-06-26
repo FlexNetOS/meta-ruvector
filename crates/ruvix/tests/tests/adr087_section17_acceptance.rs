@@ -486,7 +486,7 @@ fn test_section17_criterion_2_perception_event() {
     }
 
     // Verify events were recorded
-    assert!(region.len() > 0);
+    assert!(!region.is_empty());
     assert_eq!(queue.len(), 10);
 }
 

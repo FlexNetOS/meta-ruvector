@@ -118,9 +118,9 @@ impl TripleStore {
             let mut spo_index = self.spo_index.write().unwrap();
             spo_index
                 .entry(subject_key.clone())
-                .or_insert_with(HashMap::new)
+                .or_default()
                 .entry(predicate_key.clone())
-                .or_insert_with(HashSet::new)
+                .or_default()
                 .insert(id);
         }
 
@@ -129,9 +129,9 @@ impl TripleStore {
             let mut pos_index = self.pos_index.write().unwrap();
             pos_index
                 .entry(predicate_key.clone())
-                .or_insert_with(HashMap::new)
+                .or_default()
                 .entry(object_key.clone())
-                .or_insert_with(HashSet::new)
+                .or_default()
                 .insert(id);
         }
 
@@ -140,9 +140,9 @@ impl TripleStore {
             let mut osp_index = self.osp_index.write().unwrap();
             osp_index
                 .entry(object_key)
-                .or_insert_with(HashMap::new)
+                .or_default()
                 .entry(subject_key)
-                .or_insert_with(HashSet::new)
+                .or_default()
                 .insert(id);
         }
 
@@ -151,7 +151,7 @@ impl TripleStore {
             let mut graphs = self.graphs.write().unwrap();
             graphs
                 .entry(graph_iri.to_string())
-                .or_insert_with(HashSet::new)
+                .or_default()
                 .insert(id);
         } else {
             let mut default_graph = self.default_graph.write().unwrap();

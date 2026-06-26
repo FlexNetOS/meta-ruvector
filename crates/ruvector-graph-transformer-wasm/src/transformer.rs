@@ -825,7 +825,7 @@ impl CoreGraphTransformer {
         }
         let n = a.len();
         let n_spaces = curvatures.len();
-        let chunk_size = (n + n_spaces - 1) / n_spaces;
+        let chunk_size = n.div_ceil(n_spaces);
 
         let mut total_dist_sq = 0.0;
 
@@ -867,7 +867,7 @@ impl CoreGraphTransformer {
     ) -> ManifoldOutput {
         let dim = features.len();
         let n_spaces = curvatures.len().max(1);
-        let chunk_size = (dim + n_spaces - 1) / n_spaces;
+        let chunk_size = dim.div_ceil(n_spaces);
 
         // Compute manifold distances from each edge
         let mut distances = Vec::new();

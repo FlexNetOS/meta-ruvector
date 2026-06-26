@@ -636,7 +636,7 @@ pub unsafe extern "C" fn get_status() -> u8 {
 #[no_mangle]
 pub unsafe extern "C" fn reset_tile() {
     unsafe {
-        TILE_STATE.as_mut().map(|tile| tile.reset());
+        if let Some(tile) = TILE_STATE.as_mut() { tile.reset() }
     }
 }
 

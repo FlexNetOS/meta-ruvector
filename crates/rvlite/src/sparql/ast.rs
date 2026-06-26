@@ -169,6 +169,7 @@ impl Default for AskQuery {
 
 /// DESCRIBE query
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct DescribeQuery {
     /// Resources to describe
     pub resources: Vec<VarOrIri>,
@@ -178,15 +179,6 @@ pub struct DescribeQuery {
     pub where_clause: Option<GraphPattern>,
 }
 
-impl Default for DescribeQuery {
-    fn default() -> Self {
-        Self {
-            resources: Vec::new(),
-            dataset: Vec::new(),
-            where_clause: None,
-        }
-    }
-}
 
 /// Dataset clause (FROM / FROM NAMED)
 #[derive(Debug, Clone, Serialize, Deserialize)]

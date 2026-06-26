@@ -71,7 +71,7 @@ impl CapTableEntry {
         generation: u32,
         owner: TaskHandle,
         depth: u8,
-        parent: CapHandle,
+        _parent: CapHandle,
     ) -> Self {
         Self {
             capability,

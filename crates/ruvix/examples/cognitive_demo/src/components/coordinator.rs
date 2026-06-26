@@ -192,7 +192,7 @@ impl Coordinator {
         // Each component needs specific capabilities
 
         // SensorAdapter (task 0): sensor cap, output queue cap
-        if self.tasks.len() > 0 {
+        if !self.tasks.is_empty() {
             let cap1 = kernel.cap_grant(self.tasks[0], self.timer_cap, CapRights::READ)?;
             granted.push(cap1);
             self.caps_granted += 1;

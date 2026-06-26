@@ -192,7 +192,7 @@ impl RvLite {
     /// Create a new RvLite database
     #[wasm_bindgen(constructor)]
     pub fn new(config: RvLiteConfig) -> Result<RvLite, JsValue> {
-        let db = VectorDB::new(config.to_db_options()).map_err(|e| RvLiteError::from(e))?;
+        let db = VectorDB::new(config.to_db_options()).map_err(RvLiteError::from)?;
 
         Ok(RvLite {
             db,
@@ -372,7 +372,7 @@ impl RvLite {
             metadata: metadata_map,
         };
 
-        self.db.insert(entry).map_err(|e| RvLiteError::from(e))?;
+        self.db.insert(entry).map_err(RvLiteError::from)?;
 
         Ok(())
     }
@@ -386,7 +386,7 @@ impl RvLite {
             ef_search: None,
         };
 
-        let results = self.db.search(query).map_err(|e| RvLiteError::from(e))?;
+        let results = self.db.search(query).map_err(RvLiteError::from)?;
 
         serde_wasm_bindgen::to_value(&results).map_err(|e| {
             RvLiteError {
@@ -419,7 +419,7 @@ impl RvLite {
             ef_search: None,
         };
 
-        let results = self.db.search(query).map_err(|e| RvLiteError::from(e))?;
+        let results = self.db.search(query).map_err(RvLiteError::from)?;
 
         serde_wasm_bindgen::to_value(&results).map_err(|e| {
             RvLiteError {
@@ -432,7 +432,7 @@ impl RvLite {
 
     /// Get a vector by ID
     pub fn get(&self, id: String) -> Result<JsValue, JsValue> {
-        let entry = self.db.get(&id).map_err(|e| RvLiteError::from(e))?;
+        let entry = self.db.get(&id).map_err(RvLiteError::from)?;
 
         serde_wasm_bindgen::to_value(&entry).map_err(|e| {
             RvLiteError {
@@ -553,7 +553,7 @@ impl RvLite {
         })?;
 
         let result = sparql::execute_sparql(&self.triple_store, &parsed)
-            .map_err(|e| RvLiteError::from(e))?;
+            .map_err(RvLiteError::from)?;
 
         // Convert result to serializable format
         let serializable = convert_sparql_result(&result);
@@ -665,7 +665,7 @@ impl RvLite {
             };
             self.db
                 .insert(vector_entry)
-                .map_err(|e| RvLiteError::from(e))?;
+                .map_err(RvLiteError::from)?;
         }
 
         // Import graph
