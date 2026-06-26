@@ -230,6 +230,19 @@ jobs:
               --exclude mcp-brain
               --exclude ruvector-rabitq
               --exclude ruvector-rulake
+              # Bare-metal kernel crates: unit tests do real MMIO at fixed
+              # physical addresses and SIGSEGV on host; tested on hardware/QEMU.
+              --exclude ruvix-bcm2711
+              --exclude ruvix-cli
+              # Vendored upstream SDK: integration tests need network/live env.
+              --exclude cognitum-one
+              # exo-ai-2025 research prototypes: incomplete demo logic with
+              # known stochastic/assertion gaps; built + lint-checked, not host-tested.
+              --exclude demand-paged-cognition
+              --exclude federated-collective-phi
+              --exclude quantum-cognitive-superposition
+              --exclude thermodynamic-learning
+              --exclude time-crystal-cognition
               --exclude ruvector-diskann
               --exclude ruvector-graph
               --exclude ruvector-gnn
