@@ -3,6 +3,7 @@
 pub mod flat;
 #[cfg(feature = "hnsw")]
 pub mod hnsw;
+pub mod quantized_flat;
 
 use crate::error::Result;
 use crate::types::{SearchResult, VectorId};
