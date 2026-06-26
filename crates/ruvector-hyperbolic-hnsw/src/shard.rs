@@ -205,12 +205,7 @@ impl HyperbolicShard {
             return Ok(());
         }
 
-        let vectors: Vec<Vec<f32>> = self
-            .index
-            .vectors()
-            .iter()
-            .map(|v| v.to_vec())
-            .collect();
+        let vectors: Vec<Vec<f32>> = self.index.vectors().iter().map(|v| v.to_vec()).collect();
         let indices: Vec<usize> = (0..vectors.len()).collect();
 
         self.tangent_cache = Some(TangentCache::new(
@@ -330,11 +325,7 @@ impl ShardedHyperbolicHnsw {
     }
 
     /// Insert into specific shard
-    pub fn insert_to_shard(
-        &mut self,
-        shard_id: &str,
-        vector: Vec<f32>,
-    ) -> HyperbolicResult<usize> {
+    pub fn insert_to_shard(&mut self, shard_id: &str, vector: Vec<f32>) -> HyperbolicResult<usize> {
         let shard = self.get_or_create_shard(shard_id);
         let local_id = shard.insert(vector)?;
 
@@ -352,7 +343,12 @@ impl ShardedHyperbolicHnsw {
             let results = shard.search(query, k)?;
             for result in results {
                 // Map local ID to global ID
-                if let Some((global_id, _)) = self.id_to_shard.iter().enumerate().find(|(_, (s, l))| s == shard_id && *l == result.id) {
+                if let Some((global_id, _)) = self
+                    .id_to_shard
+                    .iter()
+                    .enumerate()
+                    .find(|(_, (s, l))| s == shard_id && *l == result.id)
+                {
                     all_results.push((global_id, result));
                 }
             }
@@ -469,7 +465,7 @@ impl HierarchyMetrics {
             radius_depth_correlation,
             distance_distortion,
             ancestor_auprc: 0.0, // Requires ground truth
-            mean_rank: 0.0,     // Requires ground truth
+            mean_rank: 0.0,      // Requires ground truth
             ndcg: HashMap::new(),
         })
     }

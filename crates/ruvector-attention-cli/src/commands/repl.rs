@@ -1,11 +1,11 @@
-use clap::Args;
 use crate::config::Config;
-use rustyline::{Editor, error::ReadlineError, history::DefaultHistory};
+use clap::Args;
+use rustyline::{error::ReadlineError, history::DefaultHistory, Editor};
 use ruvector_attention::{
-    attention::{ScaledDotProductAttention, MultiHeadAttention},
+    attention::{MultiHeadAttention, ScaledDotProductAttention},
     hyperbolic::{HyperbolicAttention, HyperbolicAttentionConfig},
-    sparse::{FlashAttention, LinearAttention},
     moe::{MoEAttention, MoEConfig},
+    sparse::{FlashAttention, LinearAttention},
     traits::Attention,
 };
 
@@ -71,14 +71,25 @@ impl ReplState {
         match self.attention_type.as_str() {
             "scaled_dot" => {
                 let attention = ScaledDotProductAttention::new(self.dim);
-                args.query.iter()
-                    .map(|q| attention.compute(q, &keys_refs, &values_refs).map_err(anyhow::Error::from))
+                args.query
+                    .iter()
+                    .map(|q| {
+                        attention
+                            .compute(q, &keys_refs, &values_refs)
+                            .map_err(anyhow::Error::from)
+                    })
                     .collect()
             }
             "multi_head" => {
-                let attention = MultiHeadAttention::new(self.dim, self.config.attention.default_heads);
-                args.query.iter()
-                    .map(|q| attention.compute(q, &keys_refs, &values_refs).map_err(anyhow::Error::from))
+                let attention =
+                    MultiHeadAttention::new(self.dim, self.config.attention.default_heads);
+                args.query
+                    .iter()
+                    .map(|q| {
+                        attention
+                            .compute(q, &keys_refs, &values_refs)
+                            .map_err(anyhow::Error::from)
+                    })
                     .collect()
             }
             "hyperbolic" => {
@@ -87,31 +98,58 @@ impl ReplState {
                     curvature: -1.0,
                     ..Default::default()
                 });
-                args.query.iter()
-                    .map(|q| attention.compute(q, &keys_refs, &values_refs).map_err(anyhow::Error::from))
+                args.query
+                    .iter()
+                    .map(|q| {
+                        attention
+                            .compute(q, &keys_refs, &values_refs)
+                            .map_err(anyhow::Error::from)
+                    })
                     .collect()
             }
             "flash" => {
                 let attention = FlashAttention::new(self.dim, 64);
-                args.query.iter()
-                    .map(|q| attention.compute(q, &keys_refs, &values_refs).map_err(anyhow::Error::from))
+                args.query
+                    .iter()
+                    .map(|q| {
+                        attention
+                            .compute(q, &keys_refs, &values_refs)
+                            .map_err(anyhow::Error::from)
+                    })
                     .collect()
             }
             "linear" => {
                 let attention = LinearAttention::new(self.dim, 64);
-                args.query.iter()
-                    .map(|q| attention.compute(q, &keys_refs, &values_refs).map_err(anyhow::Error::from))
+                args.query
+                    .iter()
+                    .map(|q| {
+                        attention
+                            .compute(q, &keys_refs, &values_refs)
+                            .map_err(anyhow::Error::from)
+                    })
                     .collect()
             }
             "moe" => {
                 let attention = MoEAttention::new(
-                    MoEConfig::builder().dim(self.dim).num_experts(4).top_k(2).build(),
+                    MoEConfig::builder()
+                        .dim(self.dim)
+                        .num_experts(4)
+                        .top_k(2)
+                        .build(),
                 );
-                args.query.iter()
-                    .map(|q| attention.compute(q, &keys_refs, &values_refs).map_err(anyhow::Error::from))
+                args.query
+                    .iter()
+                    .map(|q| {
+                        attention
+                            .compute(q, &keys_refs, &values_refs)
+                            .map_err(anyhow::Error::from)
+                    })
                     .collect()
             }
-            _ => Err(anyhow::anyhow!("Unknown attention type: {}", self.attention_type)),
+            _ => Err(anyhow::anyhow!(
+                "Unknown attention type: {}",
+                self.attention_type
+            )),
         }
     }
 
@@ -154,21 +192,28 @@ pub async fn run(args: ReplArgs, config: &Config) -> anyhow::Result<()> {
                             eprintln!("Error loading file: {}", e);
                         }
                     }
-                    Command::Compute(compute_args) => {
-                        match state.compute(&compute_args) {
-                            Ok(result) => {
-                                println!("Result shape: {}x{}", result.len(), result.first().map(|r| r.len()).unwrap_or(0));
-                                println!("First row (first 5 values): {:?}",
-                                    result.first().map(|r| &r[..5.min(r.len())]));
-                            }
-                            Err(e) => eprintln!("Error computing attention: {}", e),
+                    Command::Compute(compute_args) => match state.compute(&compute_args) {
+                        Ok(result) => {
+                            println!(
+                                "Result shape: {}x{}",
+                                result.len(),
+                                result.first().map(|r| r.len()).unwrap_or(0)
+                            );
+                            println!(
+                                "First row (first 5 values): {:?}",
+                                result.first().map(|r| &r[..5.min(r.len())])
+                            );
                         }
-                    }
+                        Err(e) => eprintln!("Error computing attention: {}", e),
+                    },
                     Command::SetType(t) => state.set_attention_type(t),
                     Command::SetDim(d) => state.set_dim(d),
                     Command::Config => println!("{:#?}", state.config()),
                     Command::Quit => break,
-                    Command::Unknown(cmd) => println!("Unknown command: '{}'. Type 'help' for available commands.", cmd),
+                    Command::Unknown(cmd) => println!(
+                        "Unknown command: '{}'. Type 'help' for available commands.",
+                        cmd
+                    ),
                 }
             }
             Err(ReadlineError::Interrupted) | Err(ReadlineError::Eof) => break,
@@ -200,7 +245,11 @@ fn parse_command(line: &str) -> Command {
             let query = vec![vec![0.1, 0.2, 0.3]];
             let keys = vec![vec![0.1, 0.2, 0.3], vec![0.4, 0.5, 0.6]];
             let values = vec![vec![0.7, 0.8, 0.9], vec![1.0, 1.1, 1.2]];
-            Command::Compute(ComputeArgs { query, keys, values })
+            Command::Compute(ComputeArgs {
+                query,
+                keys,
+                values,
+            })
         }
         "type" => {
             if parts.len() > 1 {

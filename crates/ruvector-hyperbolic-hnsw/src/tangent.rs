@@ -253,8 +253,11 @@ impl TangentPruner {
         // Phase 2: Exact Poincaré distance for finalists
         for candidate in &mut candidates {
             if candidate.index < points.len() {
-                candidate.exact_dist =
-                    Some(poincare_distance(query, &points[candidate.index], curvature));
+                candidate.exact_dist = Some(poincare_distance(
+                    query,
+                    &points[candidate.index],
+                    curvature,
+                ));
             }
         }
 

@@ -54,8 +54,9 @@ pub struct Point3D {
 }
 
 /// Point cloud message
-#[derive(Debug, Clone, Serialize, Deserialize, Archive, RkyvSerialize, RkyvDeserialize)]
-#[derive(Default)]
+#[derive(
+    Debug, Clone, Serialize, Deserialize, Archive, RkyvSerialize, RkyvDeserialize, Default,
+)]
 pub struct PointCloud {
     pub points: Vec<Point3D>,
     pub intensities: Vec<f32>,
@@ -67,7 +68,6 @@ impl Message for PointCloud {
         "ros3_msgs/PointCloud"
     }
 }
-
 
 /// Pose message
 #[derive(Debug, Clone, Serialize, Deserialize, Archive, RkyvSerialize, RkyvDeserialize)]

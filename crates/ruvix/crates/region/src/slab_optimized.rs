@@ -185,12 +185,12 @@ impl<B: MemoryBacking, const N: usize> OptimizedSlabAllocator<B, N> {
 
         // Initialize free bitmap with all slots free (all bits set to 1)
         let mut free_bitmap = [0u64; MAX_BITMAP_CHUNKS];
-        for i in 0..MAX_BITMAP_CHUNKS {
+        for (i, chunk) in free_bitmap.iter_mut().enumerate() {
             let remaining = N.saturating_sub(i * BITS_PER_CHUNK);
             if remaining >= BITS_PER_CHUNK {
-                free_bitmap[i] = u64::MAX; // All 64 slots free
+                *chunk = u64::MAX; // All 64 slots free
             } else if remaining > 0 {
-                free_bitmap[i] = (1u64 << remaining) - 1; // Partial chunk
+                *chunk = (1u64 << remaining) - 1; // Partial chunk
             }
         }
 

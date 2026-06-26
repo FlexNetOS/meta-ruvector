@@ -188,8 +188,8 @@ pub fn pairwise_distances(vectors: JsValue) -> Result<Vec<f32>, JsError> {
                 distances[i * n + j] = 0.0;
             } else {
                 let mut dist = 0.0;
-                for k in 0..vecs[i].len() {
-                    let diff = vecs[i][k] - vecs[j][k];
+                for (vi, vj) in vecs[i].iter().zip(vecs[j].iter()) {
+                    let diff = vi - vj;
                     dist += diff * diff;
                 }
                 distances[i * n + j] = dist.sqrt();

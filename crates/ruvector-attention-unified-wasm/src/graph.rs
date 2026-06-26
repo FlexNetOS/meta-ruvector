@@ -197,6 +197,12 @@ impl WasmTensorCompress {
     }
 }
 
+impl Default for WasmTensorCompress {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 // ============================================================================
 // Search Configuration
 // ============================================================================

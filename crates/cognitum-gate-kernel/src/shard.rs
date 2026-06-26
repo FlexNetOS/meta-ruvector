@@ -196,7 +196,7 @@ pub struct AdjEntry {
 /// - Vertex entries: 256 * 8 = 2KB
 /// - Edge storage: 1024 * 8 = 8KB
 /// - Adjacency lists: 256 * 32 * 4 = 32KB
-/// Total: ~42KB (fits in 64KB tile budget with room for other state)
+///   Total: ~42KB (fits in 64KB tile budget with room for other state)
 ///
 /// OPTIMIZATION: Cache-line aligned (64 bytes) for efficient CPU cache usage.
 /// Hot fields (num_vertices, num_edges, status) are grouped together.
@@ -569,8 +569,8 @@ impl CompactGraph {
 
         // Initialize parent array
         // OPTIMIZATION: Unrolled initialization
-        for i in 0..MAX_SHARD_VERTICES {
-            parent[i] = i as u16;
+        for (i, p) in parent.iter_mut().enumerate() {
+            *p = i as u16;
         }
 
         // Find with iterative path compression (no recursion overhead)

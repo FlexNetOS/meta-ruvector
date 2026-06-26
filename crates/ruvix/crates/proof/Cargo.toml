@@ -36,3 +36,6 @@ metrics = ["alloc"]
 # Enable audit logging for proof operations
 audit-log = ["alloc"]
 
+# Enable formal-verification bridge (experimental; see integration.rs)
+verified = []
+

@@ -4,7 +4,7 @@
 
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use ruvix_nucleus::{
-    CapHandle, CapRights, GraphMutation, Kernel, KernelConfig, MsgPriority, ProofTier, QueueHandle,
+    CapRights, GraphMutation, Kernel, KernelConfig, MsgPriority, ProofTier, QueueHandle,
     RegionPolicy, RvfComponentId, RvfMountHandle, SensorDescriptor, Syscall, TaskPriority,
     TimerSpec, VectorKey, VectorStoreConfig,
 };
@@ -174,7 +174,7 @@ fn bench_vector_put_proved(c: &mut Criterion) {
 
             kernel.dispatch(black_box(Syscall::VectorPutProved {
                 store,
-                key: VectorKey::new((nonce % 100) as u64),
+                key: VectorKey::new(nonce % 100),
                 data: vec![1.0, 2.0, 3.0, 4.0],
                 proof,
             }))
@@ -252,7 +252,7 @@ fn bench_proof_tiers(c: &mut Criterion) {
 
                     kernel.dispatch(black_box(Syscall::VectorPutProved {
                         store,
-                        key: VectorKey::new((nonce % 100) as u64),
+                        key: VectorKey::new(nonce % 100),
                         data: vec![1.0, 2.0, 3.0, 4.0],
                         proof,
                     }))
@@ -287,7 +287,7 @@ fn bench_vector_dimensions(c: &mut Criterion) {
 
                 kernel.dispatch(black_box(Syscall::VectorPutProved {
                     store,
-                    key: VectorKey::new((nonce % 100) as u64),
+                    key: VectorKey::new(nonce % 100),
                     data: data.clone(),
                     proof,
                 }))

@@ -1,21 +1,22 @@
-use clap::Args;
 use crate::config::Config;
 use axum::{
-    routing::{get, post},
-    Router, Json, extract::State,
+    extract::State,
     http::StatusCode,
     response::IntoResponse,
+    routing::{get, post},
+    Json, Router,
+};
+use clap::Args;
+use ruvector_attention::{
+    attention::{MultiHeadAttention, ScaledDotProductAttention},
+    hyperbolic::{HyperbolicAttention, HyperbolicAttentionConfig},
+    moe::{MoEAttention, MoEConfig},
+    sparse::{FlashAttention, LinearAttention},
+    traits::Attention,
 };
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tower_http::cors::CorsLayer;
-use ruvector_attention::{
-    attention::{ScaledDotProductAttention, MultiHeadAttention},
-    hyperbolic::{HyperbolicAttention, HyperbolicAttentionConfig},
-    sparse::{FlashAttention, LinearAttention},
-    moe::{MoEAttention, MoEConfig},
-    traits::Attention,
-};
 
 #[derive(Args)]
 pub struct ServeArgs {
@@ -117,7 +118,9 @@ async fn scaled_dot_attention(
     let keys_refs: Vec<&[f32]> = req.keys.iter().map(|k| k.as_slice()).collect();
     let values_refs: Vec<&[f32]> = req.values.iter().map(|v| v.as_slice()).collect();
 
-    let result: Vec<Vec<f32>> = req.query.iter()
+    let result: Vec<Vec<f32>> = req
+        .query
+        .iter()
         .map(|q| attention.compute(q, &keys_refs, &values_refs))
         .collect::<Result<Vec<_>, _>>()
         .map_err(|e| error_response(e.to_string()))?;
@@ -156,7 +159,9 @@ async fn multi_head_attention(
     let keys_refs: Vec<&[f32]> = req.keys.iter().map(|k| k.as_slice()).collect();
     let values_refs: Vec<&[f32]> = req.values.iter().map(|v| v.as_slice()).collect();
 
-    let result: Vec<Vec<f32>> = req.query.iter()
+    let result: Vec<Vec<f32>> = req
+        .query
+        .iter()
         .map(|q| attention.compute(q, &keys_refs, &values_refs))
         .collect::<Result<Vec<_>, _>>()
         .map_err(|e| error_response(e.to_string()))?;
@@ -190,7 +195,9 @@ async fn hyperbolic_attention(
     let keys_refs: Vec<&[f32]> = req.keys.iter().map(|k| k.as_slice()).collect();
     let values_refs: Vec<&[f32]> = req.values.iter().map(|v| v.as_slice()).collect();
 
-    let result: Vec<Vec<f32>> = req.query.iter()
+    let result: Vec<Vec<f32>> = req
+        .query
+        .iter()
         .map(|q| attention.compute(q, &keys_refs, &values_refs))
         .collect::<Result<Vec<_>, _>>()
         .map_err(|e| error_response(e.to_string()))?;
@@ -219,7 +226,9 @@ async fn flash_attention(
     let keys_refs: Vec<&[f32]> = req.keys.iter().map(|k| k.as_slice()).collect();
     let values_refs: Vec<&[f32]> = req.values.iter().map(|v| v.as_slice()).collect();
 
-    let result: Vec<Vec<f32>> = req.query.iter()
+    let result: Vec<Vec<f32>> = req
+        .query
+        .iter()
         .map(|q| attention.compute(q, &keys_refs, &values_refs))
         .collect::<Result<Vec<_>, _>>()
         .map_err(|e| error_response(e.to_string()))?;
@@ -248,7 +257,9 @@ async fn linear_attention(
     let keys_refs: Vec<&[f32]> = req.keys.iter().map(|k| k.as_slice()).collect();
     let values_refs: Vec<&[f32]> = req.values.iter().map(|v| v.as_slice()).collect();
 
-    let result: Vec<Vec<f32>> = req.query.iter()
+    let result: Vec<Vec<f32>> = req
+        .query
+        .iter()
         .map(|q| attention.compute(q, &keys_refs, &values_refs))
         .collect::<Result<Vec<_>, _>>()
         .map_err(|e| error_response(e.to_string()))?;
@@ -285,7 +296,9 @@ async fn moe_attention(
     let keys_refs: Vec<&[f32]> = req.keys.iter().map(|k| k.as_slice()).collect();
     let values_refs: Vec<&[f32]> = req.values.iter().map(|v| v.as_slice()).collect();
 
-    let result: Vec<Vec<f32>> = req.query.iter()
+    let result: Vec<Vec<f32>> = req
+        .query
+        .iter()
         .map(|q| attention.compute(q, &keys_refs, &values_refs))
         .collect::<Result<Vec<_>, _>>()
         .map_err(|e| error_response(e.to_string()))?;
@@ -306,7 +319,9 @@ async fn batch_compute(
     State(_state): State<Arc<ServerState>>,
     Json(_req): Json<serde_json::Value>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
-    Err(error_response("Batch compute not yet implemented".to_string()))
+    Err(error_response(
+        "Batch compute not yet implemented".to_string(),
+    ))
 }
 
 fn error_response(message: String) -> (StatusCode, Json<ErrorResponse>) {

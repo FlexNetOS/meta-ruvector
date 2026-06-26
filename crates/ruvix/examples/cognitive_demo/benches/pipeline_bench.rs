@@ -144,7 +144,7 @@ fn benchmark_event_generation(c: &mut Criterion) {
 }
 
 fn benchmark_embedding_computation(c: &mut Criterion) {
-    let extractor = FeatureExtractor::new(
+    let _extractor = FeatureExtractor::new(
         QueueHandle::new(0, 0),
         QueueHandle::new(1, 0),
         VectorStoreHandle::null(),

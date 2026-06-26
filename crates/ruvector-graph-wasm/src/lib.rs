@@ -137,7 +137,7 @@ impl GraphDB {
         for label in &labels {
             labels_index
                 .entry(label.clone())
-                .or_insert_with(Vec::new)
+                .or_default()
                 .push(id.clone());
         }
 
@@ -199,19 +199,19 @@ impl GraphDB {
         self.edge_types_index
             .lock()
             .entry(edge_type)
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(id.clone());
 
         self.node_edges_out
             .lock()
             .entry(from)
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(id.clone());
 
         self.node_edges_in
             .lock()
             .entry(to)
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(id.clone());
 
         Ok(id)
@@ -563,7 +563,7 @@ mod tests {
 
     #[wasm_bindgen_test]
     fn test_graph_creation() {
-        let db = GraphDB::new(Some("cosine".to_string())).unwrap();
-        assert!(true); // Basic smoke test
+        let _db = GraphDB::new(Some("cosine".to_string())).unwrap();
+        // Basic smoke test: verify construction doesn't panic
     }
 }

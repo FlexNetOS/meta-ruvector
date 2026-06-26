@@ -149,10 +149,7 @@ impl TripleStore {
         // Update graph membership
         if let Some(graph_iri) = graph {
             let mut graphs = self.graphs.write().unwrap();
-            graphs
-                .entry(graph_iri.to_string())
-                .or_default()
-                .insert(id);
+            graphs.entry(graph_iri.to_string()).or_default().insert(id);
         } else {
             let mut default_graph = self.default_graph.write().unwrap();
             default_graph.insert(id);

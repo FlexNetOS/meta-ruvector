@@ -103,16 +103,16 @@ impl LoRAPair {
 
         // Compute low_rank = input @ A (result: [2])
         let mut low_rank = [0.0f32; 2];
-        for i in 0..n {
-            low_rank[0] += input[i] * self.a[i][0];
-            low_rank[1] += input[i] * self.a[i][1];
+        for (i, &inp) in input.iter().enumerate().take(n) {
+            low_rank[0] += inp * self.a[i][0];
+            low_rank[1] += inp * self.a[i][1];
         }
 
         // Compute delta = low_rank @ B (result: [dim])
         // Output = input + alpha * delta
-        for i in 0..n {
+        for (i, out) in output.iter_mut().enumerate().take(n) {
             let delta = low_rank[0] * self.b[0][i] + low_rank[1] * self.b[1][i];
-            output[i] += self.alpha * delta;
+            *out += self.alpha * delta;
         }
 
         output
@@ -128,15 +128,15 @@ impl LoRAPair {
 
         // Compute low_rank = input @ A
         let mut low_rank = [0.0f32; 2];
-        for i in 0..n {
-            low_rank[0] += input[i] * self.a[i][0];
-            low_rank[1] += input[i] * self.a[i][1];
+        for (i, &inp) in input.iter().enumerate().take(n) {
+            low_rank[0] += inp * self.a[i][0];
+            low_rank[1] += inp * self.a[i][1];
         }
 
         // Add delta to output
-        for i in 0..n {
+        for (i, out) in output.iter_mut().enumerate().take(n) {
             let delta = low_rank[0] * self.b[0][i] + low_rank[1] * self.b[1][i];
-            output[i] += self.alpha * delta;
+            *out += self.alpha * delta;
         }
     }
 
@@ -150,8 +150,8 @@ impl LoRAPair {
 
         // Compute gradient norm for normalization
         let mut grad_norm_sq = 0.0f32;
-        for i in 0..n {
-            grad_norm_sq += gradient[i] * gradient[i];
+        for &g in gradient.iter().take(n) {
+            grad_norm_sq += g * g;
         }
 
         if grad_norm_sq < 1e-16 {
@@ -169,8 +169,8 @@ impl LoRAPair {
         }
 
         // Update B using outer product: B += lr * a_sum * normalized_grad^T
-        for j in 0..n {
-            let normalized_grad = gradient[j] * inv_norm;
+        for (j, &grad_val) in gradient.iter().enumerate().take(n) {
+            let normalized_grad = grad_val * inv_norm;
             self.b[0][j] += self.lr * a_col_sum[0] * normalized_grad;
             self.b[1][j] += self.lr * a_col_sum[1] * normalized_grad;
         }
@@ -194,8 +194,8 @@ impl LoRAPair {
 
         // Compute gradient norm
         let mut grad_norm_sq = 0.0f32;
-        for i in 0..n {
-            grad_norm_sq += gradient[i] * gradient[i];
+        for &g in gradient.iter().take(n) {
+            grad_norm_sq += g * g;
         }
 
         if grad_norm_sq < 1e-16 {
@@ -212,8 +212,8 @@ impl LoRAPair {
         }
 
         // Update B
-        for j in 0..n {
-            let normalized_grad = gradient[j] * inv_norm;
+        for (j, &grad_val) in gradient.iter().enumerate().take(n) {
+            let normalized_grad = grad_val * inv_norm;
             self.b[0][j] += scaled_lr * a_col_sum[0] * normalized_grad;
             self.b[1][j] += scaled_lr * a_col_sum[1] * normalized_grad;
         }

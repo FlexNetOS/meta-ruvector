@@ -82,7 +82,6 @@ enum RegionEntry {
     },
 }
 
-
 /// Manages memory regions for the RuVix kernel.
 ///
 /// The RegionManager implements the region_map syscall logic from ADR-087.

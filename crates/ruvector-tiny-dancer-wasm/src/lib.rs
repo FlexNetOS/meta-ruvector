@@ -30,6 +30,12 @@ pub struct RouterConfig {
     enable_quantization: bool,
 }
 
+impl Default for RouterConfig {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[wasm_bindgen]
 impl RouterConfig {
     #[wasm_bindgen(constructor)]

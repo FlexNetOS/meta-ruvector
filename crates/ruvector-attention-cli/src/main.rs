@@ -53,7 +53,7 @@ async fn main() -> anyhow::Result<()> {
                 .with_target(false)
                 .with_thread_ids(false)
                 .with_file(true)
-                .with_line_number(true)
+                .with_line_number(true),
         )
         .with(tracing_subscriber::EnvFilter::new(&cli.log_level))
         .init();

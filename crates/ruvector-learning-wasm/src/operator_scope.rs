@@ -231,7 +231,7 @@ impl ScopedLoRA {
             .map(|(i, &c)| (i, c))
             .collect();
 
-        counts.sort_by(|a, b| b.1.cmp(&a.1));
+        counts.sort_by_key(|b| std::cmp::Reverse(b.1));
 
         counts
             .into_iter()

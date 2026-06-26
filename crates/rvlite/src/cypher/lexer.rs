@@ -594,9 +594,9 @@ mod tests {
 
     #[test]
     fn test_number() {
-        let tokens = tokenize("42 3.14").unwrap();
+        let tokens = tokenize("42 1.5").unwrap();
         assert_eq!(tokens[0].kind, TokenKind::Integer(42));
-        assert_eq!(tokens[1].kind, TokenKind::Float(3.14));
+        assert_eq!(tokens[1].kind, TokenKind::Float(1.5));
     }
 
     #[test]

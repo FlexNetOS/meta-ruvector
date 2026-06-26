@@ -1,17 +1,19 @@
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use ros3_core::message::RobotState;
 use ros3_core::publisher::Publisher;
-use ros3_core::serialization::Serializer;
+use ros3_core::serialization::Format;
 use ros3_core::subscriber::Subscriber;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 fn benchmark_publisher_creation(c: &mut Criterion) {
     let mut group = c.benchmark_group("Publisher Creation");
 
     group.bench_function("create_publisher", |b| {
         b.iter(|| {
-            let publisher =
-                Publisher::<RobotState>::new(black_box("test_topic".to_string()), Serializer::Cdr);
+            let publisher = Publisher::<RobotState>::with_format(
+                black_box("test_topic".to_string()),
+                Format::Cdr,
+            );
             black_box(publisher)
         })
     });
@@ -24,8 +26,7 @@ fn benchmark_subscriber_creation(c: &mut Criterion) {
 
     group.bench_function("create_subscriber", |b| {
         b.iter(|| {
-            let subscriber =
-                Subscriber::<RobotState>::new(black_box("test_topic".to_string()), Serializer::Cdr);
+            let subscriber = Subscriber::<RobotState>::new(black_box("test_topic".to_string()));
             black_box(subscriber)
         })
     });
@@ -36,7 +37,7 @@ fn benchmark_subscriber_creation(c: &mut Criterion) {
 fn benchmark_publish_latency(c: &mut Criterion) {
     let mut group = c.benchmark_group("Publish Latency");
 
-    let publisher = Publisher::<RobotState>::new("bench_topic".to_string(), Serializer::Cdr);
+    let publisher = Publisher::<RobotState>::with_format("bench_topic".to_string(), Format::Cdr);
 
     let message = RobotState {
         position: [1.0, 2.0, 3.0],
@@ -57,7 +58,7 @@ fn benchmark_publish_latency(c: &mut Criterion) {
 fn benchmark_publish_throughput(c: &mut Criterion) {
     let mut group = c.benchmark_group("Publish Throughput");
 
-    let publisher = Publisher::<RobotState>::new("bench_topic".to_string(), Serializer::Cdr);
+    let publisher = Publisher::<RobotState>::with_format("bench_topic".to_string(), Format::Cdr);
 
     let message = RobotState {
         position: [1.0, 2.0, 3.0],
@@ -91,9 +92,8 @@ fn benchmark_end_to_end_latency(c: &mut Criterion) {
     group.bench_function("pubsub_roundtrip", |b| {
         b.iter_custom(|iters| {
             let publisher =
-                Publisher::<RobotState>::new("latency_topic".to_string(), Serializer::Cdr);
-            let _subscriber =
-                Subscriber::<RobotState>::new("latency_topic".to_string(), Serializer::Cdr);
+                Publisher::<RobotState>::with_format("latency_topic".to_string(), Format::Cdr);
+            let _subscriber = Subscriber::<RobotState>::new("latency_topic".to_string());
 
             let start = Instant::now();
 
@@ -124,7 +124,7 @@ fn benchmark_serializer_comparison(c: &mut Criterion) {
     };
 
     // CDR serializer
-    let cdr_publisher = Publisher::<RobotState>::new("cdr_topic".to_string(), Serializer::Cdr);
+    let cdr_publisher = Publisher::<RobotState>::with_format("cdr_topic".to_string(), Format::Cdr);
     group.bench_function("CDR_publish", |b| {
         b.iter(|| {
             futures::executor::block_on(cdr_publisher.publish(black_box(&message))).ok();
@@ -132,7 +132,8 @@ fn benchmark_serializer_comparison(c: &mut Criterion) {
     });
 
     // JSON serializer
-    let json_publisher = Publisher::<RobotState>::new("json_topic".to_string(), Serializer::Json);
+    let json_publisher =
+        Publisher::<RobotState>::with_format("json_topic".to_string(), Format::Json);
     group.bench_function("JSON_publish", |b| {
         b.iter(|| {
             futures::executor::block_on(json_publisher.publish(black_box(&message))).ok();
@@ -154,7 +155,10 @@ fn benchmark_concurrent_publishers(c: &mut Criterion) {
                 b.iter(|| {
                     let publishers: Vec<_> = (0..count)
                         .map(|i| {
-                            Publisher::<RobotState>::new(format!("topic_{}", i), Serializer::Cdr)
+                            Publisher::<RobotState>::with_format(
+                                format!("topic_{}", i),
+                                Format::Cdr,
+                            )
                         })
                         .collect();
 

@@ -108,10 +108,23 @@ pub struct SlabAllocator<B: MemoryBacking> {
 ///
 /// Uses a fixed-size array for no_std compatibility, with dynamic
 /// allocation available when std is enabled.
+///
+/// The `Static` variant is heap-allocated (boxed) when std/alloc is
+/// available to keep the enum size reasonable; in pure no_std without
+/// alloc it remains a plain array.
 enum SlabMetaStorage {
-    /// Static storage for small slabs.
+    /// Static storage for small slabs (heap-allocated when std to reduce enum size).
+    #[cfg(feature = "std")]
+    Static(Box<[SlotMeta; 256]>),
+    /// Static storage (plain array in no_std-without-alloc environments).
+    #[cfg(not(feature = "std"))]
     Static([SlotMeta; 256]),
-    /// Inline storage for up to 64 slots.
+    /// Inline storage for up to 64 slots (heap-allocated when std to keep enum compact).
+    /// In no_std environments this is kept as a plain array (no allocator available).
+    #[cfg(feature = "std")]
+    Inline(Box<[SlotMeta; 64]>),
+    /// Inline storage (plain array in no_std-without-alloc environments).
+    #[cfg(not(feature = "std"))]
     Inline([SlotMeta; 64]),
     #[cfg(feature = "std")]
     /// Dynamic storage for large slabs.
@@ -121,9 +134,23 @@ enum SlabMetaStorage {
 impl SlabMetaStorage {
     fn new(count: usize) -> Self {
         if count <= 64 {
-            Self::Inline([SlotMeta::new(); 64])
+            #[cfg(feature = "std")]
+            {
+                Self::Inline(Box::new([SlotMeta::new(); 64]))
+            }
+            #[cfg(not(feature = "std"))]
+            {
+                Self::Inline([SlotMeta::new(); 64])
+            }
         } else if count <= 256 {
-            Self::Static([SlotMeta::new(); 256])
+            #[cfg(feature = "std")]
+            {
+                Self::Static(Box::new([SlotMeta::new(); 256]))
+            }
+            #[cfg(not(feature = "std"))]
+            {
+                Self::Static([SlotMeta::new(); 256])
+            }
         } else {
             #[cfg(feature = "std")]
             {
@@ -364,6 +391,16 @@ impl<B: MemoryBacking> SlabAllocator<B> {
         unsafe {
             core::ptr::write_bytes(self.data_ptr.add(offset), 0, self.slot_size);
         }
+    }
+
+    /// Returns a reference to the memory backing store.
+    ///
+    /// The backing store owns the raw slot-data memory; this accessor
+    /// lets callers inspect or verify it without taking ownership.
+    #[inline]
+    #[must_use]
+    pub fn backing(&self) -> &B {
+        &self.backing
     }
 
     /// Returns the slot size in bytes.

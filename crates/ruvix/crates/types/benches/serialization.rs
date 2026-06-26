@@ -287,16 +287,14 @@ fn bench_syscall_parameter_packing(c: &mut Criterion) {
 fn bench_alignment(c: &mut Criterion) {
     let mut group = c.benchmark_group("memory_alignment");
 
-    group.bench_function("Handle_alignment", |b| {
-        b.iter(|| std::mem::align_of::<Handle>())
-    });
+    group.bench_function("Handle_alignment", |b| b.iter(std::mem::align_of::<Handle>));
 
     group.bench_function("Capability_alignment", |b| {
-        b.iter(|| std::mem::align_of::<Capability>())
+        b.iter(std::mem::align_of::<Capability>)
     });
 
     group.bench_function("RegionPolicy_alignment", |b| {
-        b.iter(|| std::mem::align_of::<RegionPolicy>())
+        b.iter(std::mem::align_of::<RegionPolicy>)
     });
 
     group.finish();

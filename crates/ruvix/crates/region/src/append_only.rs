@@ -173,6 +173,26 @@ impl<B: MemoryBacking> AppendOnlyRegion<B> {
         self.write_cursor >= self.max_size
     }
 
+    /// Returns a reference to the memory backing store.
+    ///
+    /// The backing store owns the raw memory pointed to by the internal
+    /// write cursor; this accessor lets callers inspect or verify it.
+    #[inline]
+    #[must_use]
+    pub fn backing(&self) -> &B {
+        &self.backing
+    }
+
+    /// Returns the total allocated size in bytes.
+    ///
+    /// May be larger than `max_size` due to backing-store alignment.
+    /// Exposed so callers can audit or assert allocation granularity.
+    #[inline]
+    #[must_use]
+    pub const fn allocated_size(&self) -> usize {
+        self.allocated_size
+    }
+
     /// Returns the fill percentage (0.0 to 1.0).
     #[inline]
     #[must_use]

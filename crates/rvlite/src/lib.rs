@@ -205,7 +205,7 @@ impl RvLite {
     }
 
     /// Create with default configuration (384 dimensions, cosine similarity)
-    pub fn default() -> Result<RvLite, JsValue> {
+    pub fn new_default() -> Result<RvLite, JsValue> {
         Self::new(RvLiteConfig::new(384))
     }
 
@@ -552,8 +552,8 @@ impl RvLite {
             kind: ErrorKind::SparqlError,
         })?;
 
-        let result = sparql::execute_sparql(&self.triple_store, &parsed)
-            .map_err(RvLiteError::from)?;
+        let result =
+            sparql::execute_sparql(&self.triple_store, &parsed).map_err(RvLiteError::from)?;
 
         // Convert result to serializable format
         let serializable = convert_sparql_result(&result);
@@ -663,9 +663,7 @@ impl RvLite {
                 vector: entry.vector.clone(),
                 metadata: entry.metadata.clone(),
             };
-            self.db
-                .insert(vector_entry)
-                .map_err(RvLiteError::from)?;
+            self.db.insert(vector_entry).map_err(RvLiteError::from)?;
         }
 
         // Import graph
@@ -825,8 +823,8 @@ fn parse_rdf_term(s: &str) -> Result<sparql::RdfTerm, JsValue> {
     let s = s.trim();
     if s.starts_with('<') && s.ends_with('>') {
         Ok(sparql::RdfTerm::iri(&s[1..s.len() - 1]))
-    } else if s.starts_with("_:") {
-        Ok(sparql::RdfTerm::blank(&s[2..]))
+    } else if let Some(blank_id) = s.strip_prefix("_:") {
+        Ok(sparql::RdfTerm::blank(blank_id))
     } else if s.starts_with('"') {
         let end = s.rfind('"').unwrap_or(s.len() - 1);
         let value = &s[1..end];

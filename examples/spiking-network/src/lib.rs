@@ -54,7 +54,7 @@ pub use encoding::{SpikeEncoder, SpikeEvent, SpikeTrain};
 pub use error::{Result, SpikingError};
 pub use learning::{STDPConfig, STDPLearning};
 pub use network::{NetworkConfig, NetworkStats, SpikingNetwork};
-pub use neuron::{IzhikevichNeuron, LIFNeuron, NeuronParams, SpikingNeuron};
+pub use neuron::{IzhikevichNeuron, LIFNeuron, LIFParams, NeuronParams, SpikingNeuron};
 pub use router::{AsicRouter, RouterConfig, SpikePacket};
 
 /// Library version

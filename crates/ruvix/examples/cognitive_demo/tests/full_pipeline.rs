@@ -10,7 +10,6 @@
 use ruvix_demo::{
     config,
     pipeline::{CognitivePipeline, PipelineConfig, PipelineState},
-    stats::SyscallStats,
 };
 
 /// Test the full pipeline with 10,000 events.

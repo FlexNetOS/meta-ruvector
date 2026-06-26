@@ -298,10 +298,7 @@ impl PropertyGraph {
             .or_default()
             .push(id.clone());
 
-        self.incoming_edges
-            .entry(to)
-            .or_default()
-            .push(id.clone());
+        self.incoming_edges.entry(to).or_default().push(id.clone());
 
         self.edges.insert(id.clone(), edge);
         Ok(id)

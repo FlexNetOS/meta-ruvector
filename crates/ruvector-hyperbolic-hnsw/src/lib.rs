@@ -156,7 +156,7 @@ pub mod prelude {
     pub use crate::error::{HyperbolicError, HyperbolicResult};
     pub use crate::hnsw::{HyperbolicHnsw, HyperbolicHnswConfig, SearchResult};
     pub use crate::poincare::{exp_map, log_map, mobius_add, poincare_distance, project_to_ball};
-    pub use crate::shard::{ShardedHyperbolicHnsw, ShardStrategy};
+    pub use crate::shard::{ShardStrategy, ShardedHyperbolicHnsw};
     pub use crate::tangent::{TangentCache, TangentPruner};
 }
 

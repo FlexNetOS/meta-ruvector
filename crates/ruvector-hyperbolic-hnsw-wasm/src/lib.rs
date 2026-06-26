@@ -151,8 +151,8 @@ pub fn wasm_frechet_mean(points: &[f32], dim: usize, curvature: f32) -> Result<V
 
     let point_refs: Vec<&[f32]> = point_vecs.iter().map(|v| v.as_slice()).collect();
 
-    let config = PoincareConfig::with_curvature(curvature)
-        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let config =
+        PoincareConfig::with_curvature(curvature).map_err(|e| JsValue::from_str(&e.to_string()))?;
 
     frechet_mean(&point_refs, None, &config).map_err(|e| JsValue::from_str(&e.to_string()))
 }
@@ -221,8 +221,8 @@ impl HyperbolicIndex {
     /// @param config - JSON configuration object
     #[wasm_bindgen(js_name = fromConfig)]
     pub fn from_config(config: JsValue) -> Result<HyperbolicIndex, JsValue> {
-        let config: HyperbolicHnswConfig =
-            serde_wasm_bindgen::from_value(config).map_err(|e| JsValue::from_str(&e.to_string()))?;
+        let config: HyperbolicHnswConfig = serde_wasm_bindgen::from_value(config)
+            .map_err(|e| JsValue::from_str(&e.to_string()))?;
         Ok(Self {
             inner: HyperbolicHnsw::new(config),
         })

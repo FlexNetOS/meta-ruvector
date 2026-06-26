@@ -761,7 +761,8 @@ mod tests {
 
         // Single zero byte
         let h1 = fnv1a_hash(&[0]);
-        let expected = 0x811c9dc5u32 ^ 0;
+        // XOR with byte 0x00 is the identity step in FNV-1a
+        let expected = 0x811c9dc5u32;
         let expected = expected.wrapping_mul(0x01000193);
         assert_eq!(u32::from_le_bytes(h1), expected);
 
@@ -795,7 +796,7 @@ mod tests {
 
         // The partition should be trivial since there is only one component
         let partition = cactus.canonical_partition();
-        partition.canonical_hash; // Just ensure it doesn't panic
+        let _ = partition.canonical_hash; // Just ensure it doesn't panic
     }
 
     #[test]
@@ -813,10 +814,10 @@ mod tests {
         // same canonical witness fragment.
         let build_tile = || {
             let mut tile = TileState::new(42);
-            tile.ingest_delta(&crate::delta::Delta::edge_add(0, 1, 100));
-            tile.ingest_delta(&crate::delta::Delta::edge_add(1, 2, 100));
-            tile.ingest_delta(&crate::delta::Delta::edge_add(2, 3, 200));
-            tile.ingest_delta(&crate::delta::Delta::edge_add(3, 0, 200));
+            assert!(tile.ingest_delta(&crate::delta::Delta::edge_add(0, 1, 100)));
+            assert!(tile.ingest_delta(&crate::delta::Delta::edge_add(1, 2, 100)));
+            assert!(tile.ingest_delta(&crate::delta::Delta::edge_add(2, 3, 200)));
+            assert!(tile.ingest_delta(&crate::delta::Delta::edge_add(3, 0, 200)));
             tile.tick(10);
             tile
         };

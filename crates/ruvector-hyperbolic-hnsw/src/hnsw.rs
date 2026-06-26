@@ -286,7 +286,12 @@ impl HyperbolicHnsw {
     }
 
     /// Search for single nearest neighbor at a layer (greedy)
-    fn search_layer_single(&self, query: &[f32], entry: usize, level: usize) -> HyperbolicResult<usize> {
+    fn search_layer_single(
+        &self,
+        query: &[f32],
+        entry: usize,
+        level: usize,
+    ) -> HyperbolicResult<usize> {
         let mut current = entry;
         let mut current_dist = self.distance(query, &self.nodes[current].vector);
 
@@ -356,11 +361,8 @@ impl HyperbolicHnsw {
 
                 let dist = self.distance(query, &self.nodes[neighbor].vector);
 
-                let should_add = results.len() < ef
-                    || results
-                        .peek()
-                        .map(|r| dist < r.distance)
-                        .unwrap_or(true);
+                let should_add =
+                    results.len() < ef || results.peek().map(|r| dist < r.distance).unwrap_or(true);
 
                 if should_add {
                     candidates.push(std::cmp::Reverse(SearchResult {
@@ -402,8 +404,11 @@ impl HyperbolicHnsw {
 
         scored.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap());
 
-        self.nodes[node_id].connections[level] =
-            scored.into_iter().take(max_conn).map(|(id, _)| id).collect();
+        self.nodes[node_id].connections[level] = scored
+            .into_iter()
+            .take(max_conn)
+            .map(|(id, _)| id)
+            .collect();
 
         Ok(())
     }
@@ -432,7 +437,11 @@ impl HyperbolicHnsw {
     }
 
     /// Search with tangent space pruning (optimized for hyperbolic)
-    pub fn search_with_pruning(&self, query: &[f32], k: usize) -> HyperbolicResult<Vec<SearchResult>> {
+    pub fn search_with_pruning(
+        &self,
+        query: &[f32],
+        k: usize,
+    ) -> HyperbolicResult<Vec<SearchResult>> {
         // Fall back to regular search if no tangent cache
         if self.tangent_cache.is_none() || !self.config.use_tangent_pruning {
             return self.search(query, k);
@@ -482,7 +491,11 @@ impl HyperbolicHnsw {
         let vectors: Vec<Vec<f32>> = self.nodes.iter().map(|n| n.vector.clone()).collect();
         let indices: Vec<usize> = (0..self.nodes.len()).collect();
 
-        self.tangent_cache = Some(TangentCache::new(&vectors, &indices, self.config.curvature)?);
+        self.tangent_cache = Some(TangentCache::new(
+            &vectors,
+            &indices,
+            self.config.curvature,
+        )?);
 
         Ok(())
     }
@@ -588,10 +601,9 @@ impl DualSpaceIndex {
             .into_iter()
             .take(k)
             .map(|(id, _)| {
-                let dist = self.hyperbolic.distance(
-                    query,
-                    self.hyperbolic.get_vector(id).unwrap_or(&[]),
-                );
+                let dist = self
+                    .hyperbolic
+                    .distance(query, self.hyperbolic.get_vector(id).unwrap_or(&[]));
                 SearchResult { id, distance: dist }
             })
             .collect())

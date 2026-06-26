@@ -168,8 +168,7 @@ impl Default for AskQuery {
 }
 
 /// DESCRIBE query
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct DescribeQuery {
     /// Resources to describe
     pub resources: Vec<VarOrIri>,
@@ -178,7 +177,6 @@ pub struct DescribeQuery {
     /// Optional WHERE clause
     pub where_clause: Option<GraphPattern>,
 }
-
 
 /// Dataset clause (FROM / FROM NAMED)
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -865,8 +863,8 @@ mod tests {
         let int_lit = Literal::integer(42);
         assert_eq!(int_lit.as_integer(), Some(42));
 
-        let double_lit = Literal::double(3.14);
-        assert!((double_lit.as_double().unwrap() - 3.14).abs() < 0.001);
+        let double_lit = Literal::double(1.5);
+        assert!((double_lit.as_double().unwrap() - 1.5).abs() < 0.001);
 
         let bool_lit = Literal::boolean(true);
         assert_eq!(bool_lit.as_boolean(), Some(true));

@@ -426,6 +426,12 @@ impl JsDeltaStream {
         self.inner.len()
     }
 
+    /// Get the vector dimensionality this stream was created for
+    #[wasm_bindgen(getter)]
+    pub fn dimensions(&self) -> usize {
+        self.dimensions
+    }
+
     /// Replay from initial state
     pub fn replay(&self, initial: Float32Array) -> Result<Float32Array, JsValue> {
         let init: Vec<f32> = initial.to_vec();
@@ -535,6 +541,12 @@ impl JsDeltaWindow {
         self.inner.len()
     }
 
+    /// Get the vector dimensionality this window was created for
+    #[wasm_bindgen(getter)]
+    pub fn dimensions(&self) -> usize {
+        self.dimensions
+    }
+
     /// Clear the window
     pub fn clear(&mut self) {
         self.inner.clear();
@@ -575,7 +587,7 @@ mod tests {
 
         let delta = engine.capture(old.clone(), new.clone()).unwrap();
 
-        let mut test_vec = Float32Array::from(&[1.0f32, 2.0, 3.0][..]);
+        let test_vec = Float32Array::from(&[1.0f32, 2.0, 3.0][..]);
         engine.apply(test_vec.clone(), &delta).unwrap();
 
         // Note: can't easily verify Float32Array equality in WASM tests

@@ -1578,12 +1578,14 @@ pub fn run_codex_tdd_workflow(options: CodexTddWorkflowOptions) -> Result<CodexT
         ));
         let step_for_run = step.clone();
         write_tdd_workflow_status(&tdd_workflow_snapshot(
-            &repo_root,
-            &codex_home,
-            &run_dir,
-            &status_path,
-            &extraction_report_path,
-            &extraction_plan_path,
+            TddWorkflowPaths {
+                repo_root: &repo_root,
+                codex_home: &codex_home,
+                run_dir: &run_dir,
+                status_path: &status_path,
+                extraction_report_path: &extraction_report_path,
+                extraction_plan_path: &extraction_plan_path,
+            },
             false,
             &steps,
         ))?;
@@ -3999,23 +4001,27 @@ fn codex_tdd_step_semantics(name: &str, rationale: &str) -> (String, String, Str
     )
 }
 
+struct TddWorkflowPaths<'a> {
+    repo_root: &'a Path,
+    codex_home: &'a Path,
+    run_dir: &'a Path,
+    status_path: &'a Path,
+    extraction_report_path: &'a Path,
+    extraction_plan_path: &'a Path,
+}
+
 fn tdd_workflow_snapshot(
-    repo_root: &Path,
-    codex_home: &Path,
-    run_dir: &Path,
-    status_path: &Path,
-    extraction_report_path: &Path,
-    extraction_plan_path: &Path,
+    paths: TddWorkflowPaths<'_>,
     dry_run: bool,
     steps: &[CodexTddWorkflowStepReport],
 ) -> CodexTddWorkflowReport {
     CodexTddWorkflowReport {
-        repo_root: repo_root.to_path_buf(),
-        codex_home: codex_home.to_path_buf(),
-        run_dir: run_dir.to_path_buf(),
-        status_path: status_path.to_path_buf(),
-        extraction_report_path: extraction_report_path.to_path_buf(),
-        extraction_plan_path: extraction_plan_path.to_path_buf(),
+        repo_root: paths.repo_root.to_path_buf(),
+        codex_home: paths.codex_home.to_path_buf(),
+        run_dir: paths.run_dir.to_path_buf(),
+        status_path: paths.status_path.to_path_buf(),
+        extraction_report_path: paths.extraction_report_path.to_path_buf(),
+        extraction_plan_path: paths.extraction_plan_path.to_path_buf(),
         operator_role: "codex-as-human-in-loop".to_owned(),
         supervision_protocol: codex_tdd_supervision_protocol(),
         dry_run,

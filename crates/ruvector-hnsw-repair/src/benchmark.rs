@@ -45,57 +45,36 @@ fn main() {
     // -------------------------------------------------------------------------
     // Strategy 1: TombstoneOnly
     // -------------------------------------------------------------------------
-    let (stats_ts, r_ts) = run_strategy(
-        &graph,
-        &queries,
-        &delete_ids,
-        k,
-        ef_search,
-        |g, ids| {
-            let s = TombstoneOnly;
-            for &id in ids {
-                s.delete(g, id);
-            }
-        },
-    );
+    let (stats_ts, r_ts) = run_strategy(&graph, &queries, &delete_ids, k, ef_search, |g, ids| {
+        let s = TombstoneOnly;
+        for &id in ids {
+            s.delete(g, id);
+        }
+    });
     print_stats("TombstoneOnly", &stats_ts, baseline_recall, r_ts);
 
     // -------------------------------------------------------------------------
     // Strategy 2: BatchRepair (batch_size = 50)
     // -------------------------------------------------------------------------
     let batch_size = 50;
-    let (stats_br, r_br) = run_strategy(
-        &graph,
-        &queries,
-        &delete_ids,
-        k,
-        ef_search,
-        |g, ids| {
-            let s = BatchRepair::new(batch_size);
-            for &id in ids {
-                s.delete(g, id);
-            }
-            s.flush(g);
-        },
-    );
+    let (stats_br, r_br) = run_strategy(&graph, &queries, &delete_ids, k, ef_search, |g, ids| {
+        let s = BatchRepair::new(batch_size);
+        for &id in ids {
+            s.delete(g, id);
+        }
+        s.flush(g);
+    });
     print_stats("BatchRepair(50)", &stats_br, baseline_recall, r_br);
 
     // -------------------------------------------------------------------------
     // Strategy 3: EagerRepair
     // -------------------------------------------------------------------------
-    let (stats_er, r_er) = run_strategy(
-        &graph,
-        &queries,
-        &delete_ids,
-        k,
-        ef_search,
-        |g, ids| {
-            let s = EagerRepair;
-            for &id in ids {
-                s.delete(g, id);
-            }
-        },
-    );
+    let (stats_er, r_er) = run_strategy(&graph, &queries, &delete_ids, k, ef_search, |g, ids| {
+        let s = EagerRepair;
+        for &id in ids {
+            s.delete(g, id);
+        }
+    });
     print_stats("EagerRepair", &stats_er, baseline_recall, r_er);
 
     // -------------------------------------------------------------------------

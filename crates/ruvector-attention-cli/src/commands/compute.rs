@@ -1,10 +1,13 @@
+use crate::{
+    config::Config,
+    output::{Output, OutputDimensions, OutputFormat, OutputMetadata},
+};
 use clap::Args;
-use crate::{config::Config, output::{Output, OutputFormat, OutputDimensions, OutputMetadata}};
 use ruvector_attention::{
-    attention::{ScaledDotProductAttention, MultiHeadAttention},
+    attention::{MultiHeadAttention, ScaledDotProductAttention},
     hyperbolic::{HyperbolicAttention, HyperbolicAttentionConfig},
-    sparse::{FlashAttention, LinearAttention},
     moe::{MoEAttention, MoEConfig},
+    sparse::{FlashAttention, LinearAttention},
     traits::Attention,
 };
 use std::time::Instant;
@@ -77,49 +80,80 @@ pub async fn run(args: ComputeArgs, _config: &Config) -> anyhow::Result<()> {
         AttentionType::ScaledDot => {
             tracing::info!("Computing scaled dot-product attention");
             let attention = ScaledDotProductAttention::new(input_data.dim);
-            let result: Vec<Vec<f32>> = input_data.query
+            let result: Vec<Vec<f32>> = input_data
+                .query
                 .iter()
-                .map(|q| attention.compute(q, &keys_refs, &values_refs).map_err(anyhow::Error::from))
+                .map(|q| {
+                    attention
+                        .compute(q, &keys_refs, &values_refs)
+                        .map_err(anyhow::Error::from)
+                })
                 .collect::<Result<Vec<_>, _>>()?;
             (result, "ScaledDotProduct")
         }
         AttentionType::MultiHead => {
-            tracing::info!("Computing multi-head attention with {} heads", args.num_heads);
+            tracing::info!(
+                "Computing multi-head attention with {} heads",
+                args.num_heads
+            );
             let attention = MultiHeadAttention::new(input_data.dim, args.num_heads);
-            let result: Vec<Vec<f32>> = input_data.query
+            let result: Vec<Vec<f32>> = input_data
+                .query
                 .iter()
-                .map(|q| attention.compute(q, &keys_refs, &values_refs).map_err(anyhow::Error::from))
+                .map(|q| {
+                    attention
+                        .compute(q, &keys_refs, &values_refs)
+                        .map_err(anyhow::Error::from)
+                })
                 .collect::<Result<Vec<_>, _>>()?;
             (result, "MultiHead")
         }
         AttentionType::Hyperbolic => {
-            tracing::info!("Computing hyperbolic attention with curvature={}", args.curvature);
+            tracing::info!(
+                "Computing hyperbolic attention with curvature={}",
+                args.curvature
+            );
             let attention = HyperbolicAttention::new(HyperbolicAttentionConfig {
                 dim: input_data.dim,
                 curvature: args.curvature,
                 ..Default::default()
             });
-            let result: Vec<Vec<f32>> = input_data.query
+            let result: Vec<Vec<f32>> = input_data
+                .query
                 .iter()
-                .map(|q| attention.compute(q, &keys_refs, &values_refs).map_err(anyhow::Error::from))
+                .map(|q| {
+                    attention
+                        .compute(q, &keys_refs, &values_refs)
+                        .map_err(anyhow::Error::from)
+                })
                 .collect::<Result<Vec<_>, _>>()?;
             (result, "Hyperbolic")
         }
         AttentionType::Flash => {
             tracing::info!("Computing flash attention");
             let attention = FlashAttention::new(input_data.dim, 64);
-            let result: Vec<Vec<f32>> = input_data.query
+            let result: Vec<Vec<f32>> = input_data
+                .query
                 .iter()
-                .map(|q| attention.compute(q, &keys_refs, &values_refs).map_err(anyhow::Error::from))
+                .map(|q| {
+                    attention
+                        .compute(q, &keys_refs, &values_refs)
+                        .map_err(anyhow::Error::from)
+                })
                 .collect::<Result<Vec<_>, _>>()?;
             (result, "Flash")
         }
         AttentionType::Linear => {
             tracing::info!("Computing linear attention");
             let attention = LinearAttention::new(input_data.dim, 64);
-            let result: Vec<Vec<f32>> = input_data.query
+            let result: Vec<Vec<f32>> = input_data
+                .query
                 .iter()
-                .map(|q| attention.compute(q, &keys_refs, &values_refs).map_err(anyhow::Error::from))
+                .map(|q| {
+                    attention
+                        .compute(q, &keys_refs, &values_refs)
+                        .map_err(anyhow::Error::from)
+                })
                 .collect::<Result<Vec<_>, _>>()?;
             (result, "Linear")
         }
@@ -136,9 +170,14 @@ pub async fn run(args: ComputeArgs, _config: &Config) -> anyhow::Result<()> {
                     .top_k(args.top_k)
                     .build(),
             );
-            let result: Vec<Vec<f32>> = input_data.query
+            let result: Vec<Vec<f32>> = input_data
+                .query
                 .iter()
-                .map(|q| attention.compute(q, &keys_refs, &values_refs).map_err(anyhow::Error::from))
+                .map(|q| {
+                    attention
+                        .compute(q, &keys_refs, &values_refs)
+                        .map_err(anyhow::Error::from)
+                })
                 .collect::<Result<Vec<_>, _>>()?;
             (result, "MixtureOfExperts")
         }
@@ -147,7 +186,10 @@ pub async fn run(args: ComputeArgs, _config: &Config) -> anyhow::Result<()> {
     let elapsed = start.elapsed();
 
     if args.verbose {
-        tracing::info!("Computation completed in {:.2}ms", elapsed.as_secs_f64() * 1000.0);
+        tracing::info!(
+            "Computation completed in {:.2}ms",
+            elapsed.as_secs_f64() * 1000.0
+        );
     }
 
     let dimensions = OutputDimensions {
@@ -172,7 +214,10 @@ pub async fn run(args: ComputeArgs, _config: &Config) -> anyhow::Result<()> {
 }
 
 fn estimate_memory_usage(result: &[Vec<f32>]) -> usize {
-    result.iter().map(|row| row.len() * std::mem::size_of::<f32>()).sum()
+    result
+        .iter()
+        .map(|row| row.len() * std::mem::size_of::<f32>())
+        .sum()
 }
 
 fn calculate_parameters(args: &ComputeArgs, dim: usize) -> usize {

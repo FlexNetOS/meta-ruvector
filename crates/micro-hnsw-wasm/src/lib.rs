@@ -25,35 +25,39 @@
 #![cfg_attr(target_family = "wasm", no_std)]
 
 // ============ Configuration ============
-const MAX_VECTORS: usize = 32;       // Per core (256 × 32 = 8K total)
-const MAX_DIMS: usize = 16;          // Vector dimensions
-const MAX_NEIGHBORS: usize = 6;      // Graph connectivity
-const BEAM_WIDTH: usize = 3;         // Search beam width
+const MAX_VECTORS: usize = 32; // Per core (256 × 32 = 8K total)
+const MAX_DIMS: usize = 16; // Vector dimensions
+const MAX_NEIGHBORS: usize = 6; // Graph connectivity
+const BEAM_WIDTH: usize = 3; // Search beam width
 
 // ============ Spiking Neural Network Configuration ============
-const TAU_MEMBRANE: f32 = 20.0;      // Membrane time constant (ms)
-const TAU_REFRAC: f32 = 2.0;         // Refractory period (ms)
-const V_RESET: f32 = 0.0;            // Reset potential
-const V_REST: f32 = 0.0;             // Resting potential
-const STDP_A_PLUS: f32 = 0.01;       // STDP potentiation magnitude
-const STDP_A_MINUS: f32 = 0.012;     // STDP depression magnitude
+const TAU_MEMBRANE: f32 = 20.0; // Membrane time constant (ms)
+const TAU_REFRAC: f32 = 2.0; // Refractory period (ms)
+const V_RESET: f32 = 0.0; // Reset potential
+const V_REST: f32 = 0.0; // Resting potential
+const STDP_A_PLUS: f32 = 0.01; // STDP potentiation magnitude
+const STDP_A_MINUS: f32 = 0.012; // STDP depression magnitude
 #[allow(dead_code)]
-const TAU_STDP: f32 = 20.0;          // STDP time constant
-const INV_TAU_STDP: f32 = 0.05;      // Pre-computed 1/TAU_STDP for optimization
-const INV_255: f32 = 0.00392157;     // Pre-computed 1/255 for weight normalization
+const TAU_STDP: f32 = 20.0; // STDP time constant
+const INV_TAU_STDP: f32 = 0.05; // Pre-computed 1/TAU_STDP for optimization
+const INV_255: f32 = 0.00392157; // Pre-computed 1/255 for weight normalization
 
 // ============ Novel Neuromorphic Configuration ============
 const HOMEOSTATIC_TARGET: f32 = 0.1; // Target spike rate (spikes/ms)
 const HOMEOSTATIC_TAU: f32 = 1000.0; // Homeostasis time constant (slow)
-const OSCILLATOR_FREQ: f32 = 40.0;   // Gamma oscillation frequency (Hz)
-const WTA_INHIBITION: f32 = 0.8;     // Winner-take-all lateral inhibition
-const DENDRITIC_NONLIN: f32 = 2.0;   // Dendritic nonlinearity exponent
-const SPIKE_ENCODING_RES: u8 = 8;    // Temporal encoding resolution (bits)
+const OSCILLATOR_FREQ: f32 = 40.0; // Gamma oscillation frequency (Hz)
+const WTA_INHIBITION: f32 = 0.8; // Winner-take-all lateral inhibition
+const DENDRITIC_NONLIN: f32 = 2.0; // Dendritic nonlinearity exponent
+const SPIKE_ENCODING_RES: u8 = 8; // Temporal encoding resolution (bits)
 
 // ============ Types ============
 #[repr(u8)]
 #[derive(Clone, Copy, PartialEq)]
-pub enum Metric { L2 = 0, Cosine = 1, Dot = 2 }
+pub enum Metric {
+    L2 = 0,
+    Cosine = 1,
+    Dot = 2,
+}
 
 #[derive(Clone, Copy)]
 #[repr(C)]
@@ -97,8 +101,14 @@ pub struct MicroHnsw {
 // crate, all `static mut` must be migrated to `UnsafeCell`-based synchronization or
 // atomics to avoid data races.
 static mut HNSW: MicroHnsw = MicroHnsw {
-    vectors: [Vector { data: [0.0; MAX_DIMS], norm: 0.0 }; MAX_VECTORS],
-    nodes: [Node { neighbors: [0; MAX_NEIGHBORS], count: 0 }; MAX_VECTORS],
+    vectors: [Vector {
+        data: [0.0; MAX_DIMS],
+        norm: 0.0,
+    }; MAX_VECTORS],
+    nodes: [Node {
+        neighbors: [0; MAX_NEIGHBORS],
+        count: 0,
+    }; MAX_VECTORS],
     count: 0,
     dims: 16,
     metric: Metric::L2,
@@ -107,8 +117,16 @@ static mut HNSW: MicroHnsw = MicroHnsw {
 
 static mut QUERY: [f32; MAX_DIMS] = [0.0; MAX_DIMS];
 static mut INSERT: [f32; MAX_DIMS] = [0.0; MAX_DIMS];
-static mut RESULTS: [SearchResult; 16] = [SearchResult { idx: 255, core_id: 0, distance: 0.0 }; 16];
-static mut GLOBAL: [SearchResult; 16] = [SearchResult { idx: 255, core_id: 0, distance: 0.0 }; 16];
+static mut RESULTS: [SearchResult; 16] = [SearchResult {
+    idx: 255,
+    core_id: 0,
+    distance: 0.0,
+}; 16];
+static mut GLOBAL: [SearchResult; 16] = [SearchResult {
+    idx: 255,
+    core_id: 0,
+    distance: 0.0,
+}; 16];
 
 // ============ GNN/Cypher Extensions ============
 // Node types: 4 bits per node (16 types), packed 2 per byte = 16 bytes
@@ -120,7 +138,6 @@ static mut EDGE_WEIGHTS: [u8; MAX_VECTORS] = [255; 32];
 // Delta buffer for vector updates
 // SAFETY: Single-threaded WASM only; see static mut safety note above.
 static mut DELTA: [f32; MAX_DIMS] = [0.0; MAX_DIMS];
-
 
 // ============ Spiking Neural Network State ============
 // SAFETY: All SNN `static mut` below are safe under single-threaded WASM execution.
@@ -157,7 +174,9 @@ static mut WTA_INHIBIT: f32 = 0.0;
 // ============ Math ============
 #[inline(always)]
 fn sqrt_fast(x: f32) -> f32 {
-    if x <= 0.0 { return 0.0; }
+    if x <= 0.0 {
+        return 0.0;
+    }
     let i = 0x5f3759df - (x.to_bits() >> 1);
     let y = f32::from_bits(i);
     x * y * (1.5 - 0.5 * x * y * y)
@@ -167,7 +186,10 @@ fn sqrt_fast(x: f32) -> f32 {
 fn norm(v: &[f32], n: usize) -> f32 {
     let mut s = 0.0f32;
     let mut i = 0;
-    while i < n { s += v[i] * v[i]; i += 1; }
+    while i < n {
+        s += v[i] * v[i];
+        i += 1;
+    }
     sqrt_fast(s)
 }
 
@@ -175,7 +197,11 @@ fn norm(v: &[f32], n: usize) -> f32 {
 fn dist_l2(a: &[f32], b: &[f32], n: usize) -> f32 {
     let mut s = 0.0f32;
     let mut i = 0;
-    while i < n { let d = a[i] - b[i]; s += d * d; i += 1; }
+    while i < n {
+        let d = a[i] - b[i];
+        s += d * d;
+        i += 1;
+    }
     s
 }
 
@@ -183,16 +209,24 @@ fn dist_l2(a: &[f32], b: &[f32], n: usize) -> f32 {
 fn dist_dot(a: &[f32], b: &[f32], n: usize) -> f32 {
     let mut s = 0.0f32;
     let mut i = 0;
-    while i < n { s += a[i] * b[i]; i += 1; }
+    while i < n {
+        s += a[i] * b[i];
+        i += 1;
+    }
     -s
 }
 
 #[inline(always)]
 fn dist_cos(a: &[f32], an: f32, b: &[f32], bn: f32, n: usize) -> f32 {
-    if an == 0.0 || bn == 0.0 { return 1.0; }
+    if an == 0.0 || bn == 0.0 {
+        return 1.0;
+    }
     let mut d = 0.0f32;
     let mut i = 0;
-    while i < n { d += a[i] * b[i]; i += 1; }
+    while i < n {
+        d += a[i] * b[i];
+        i += 1;
+    }
     1.0 - d / (an * bn)
 }
 
@@ -221,7 +255,11 @@ pub extern "C" fn init(dims: u8, metric: u8, core_id: u8) {
     unsafe {
         HNSW.count = 0;
         HNSW.dims = dims.min(MAX_DIMS as u8);
-        HNSW.metric = match metric { 1 => Metric::Cosine, 2 => Metric::Dot, _ => Metric::L2 };
+        HNSW.metric = match metric {
+            1 => Metric::Cosine,
+            2 => Metric::Dot,
+            _ => Metric::L2,
+        };
         HNSW.core_id = core_id;
     }
 }
@@ -229,22 +267,30 @@ pub extern "C" fn init(dims: u8, metric: u8, core_id: u8) {
 #[no_mangle]
 // SAFETY: Returns pointer to INSERT static mut; valid for the lifetime of the WASM instance.
 // Caller (host JS) must not hold this pointer across calls that mutate INSERT.
-pub extern "C" fn get_insert_ptr() -> *mut f32 { core::ptr::addr_of_mut!(INSERT) as *mut f32 }
+pub extern "C" fn get_insert_ptr() -> *mut f32 {
+    core::ptr::addr_of_mut!(INSERT) as *mut f32
+}
 
 #[no_mangle]
 // SAFETY: Returns pointer to QUERY static mut; valid for the lifetime of the WASM instance.
 // Caller (host JS) must not hold this pointer across calls that mutate QUERY.
-pub extern "C" fn get_query_ptr() -> *mut f32 { core::ptr::addr_of_mut!(QUERY) as *mut f32 }
+pub extern "C" fn get_query_ptr() -> *mut f32 {
+    core::ptr::addr_of_mut!(QUERY) as *mut f32
+}
 
 #[no_mangle]
 // SAFETY: Returns read-only pointer to RESULTS static mut; valid for WASM instance lifetime.
 // Caller must not read through this pointer while a search is in progress.
-pub extern "C" fn get_result_ptr() -> *const SearchResult { core::ptr::addr_of!(RESULTS) as *const SearchResult }
+pub extern "C" fn get_result_ptr() -> *const SearchResult {
+    core::ptr::addr_of!(RESULTS) as *const SearchResult
+}
 
 #[no_mangle]
 // SAFETY: Returns read-only pointer to GLOBAL static mut; valid for WASM instance lifetime.
 // Caller must not read through this pointer while a merge is in progress.
-pub extern "C" fn get_global_ptr() -> *const SearchResult { core::ptr::addr_of!(GLOBAL) as *const SearchResult }
+pub extern "C" fn get_global_ptr() -> *const SearchResult {
+    core::ptr::addr_of!(GLOBAL) as *const SearchResult
+}
 
 /// Insert vector from INSERT buffer, returns index or 255 if full
 #[no_mangle]
@@ -252,14 +298,19 @@ pub extern "C" fn insert() -> u8 {
     // SAFETY: Mutates HNSW, reads INSERT static muts; single-threaded WASM guarantees
     // exclusive access. Bounds are checked: count < MAX_VECTORS before indexing.
     unsafe {
-        if HNSW.count >= MAX_VECTORS as u8 { return 255; }
+        if HNSW.count >= MAX_VECTORS as u8 {
+            return 255;
+        }
 
         let idx = HNSW.count;
         let n = HNSW.dims as usize;
 
         // Copy vector and compute norm
         let mut i = 0;
-        while i < n { HNSW.vectors[idx as usize].data[i] = INSERT[i]; i += 1; }
+        while i < n {
+            HNSW.vectors[idx as usize].data[i] = INSERT[i];
+            i += 1;
+        }
         HNSW.vectors[idx as usize].norm = norm(&INSERT[..n], n);
         HNSW.nodes[idx as usize].count = 0;
 
@@ -277,11 +328,17 @@ pub extern "C" fn insert() -> u8 {
                 if found < MAX_NEIGHBORS || d < best_d[found.saturating_sub(1)] {
                     let mut p = found.min(MAX_NEIGHBORS - 1);
                     while p > 0 && best_d[p - 1] > d {
-                        if p < MAX_NEIGHBORS { best[p] = best[p - 1]; best_d[p] = best_d[p - 1]; }
+                        if p < MAX_NEIGHBORS {
+                            best[p] = best[p - 1];
+                            best_d[p] = best_d[p - 1];
+                        }
                         p -= 1;
                     }
-                    best[p] = j; best_d[p] = d;
-                    if found < MAX_NEIGHBORS { found += 1; }
+                    best[p] = j;
+                    best_d[p] = d;
+                    if found < MAX_NEIGHBORS {
+                        found += 1;
+                    }
                 }
                 j += 1;
             }
@@ -315,7 +372,9 @@ pub extern "C" fn search(k: u8) -> u8 {
     // SAFETY: Reads HNSW and QUERY, mutates RESULTS static muts; single-threaded WASM
     // guarantees exclusive access. All index accesses are bounded by HNSW.count.
     unsafe {
-        if HNSW.count == 0 { return 0; }
+        if HNSW.count == 0 {
+            return 0;
+        }
 
         let n = HNSW.dims as usize;
         let k = k.min(16).min(HNSW.count);
@@ -323,7 +382,14 @@ pub extern "C" fn search(k: u8) -> u8 {
 
         // Reset
         let mut i = 0;
-        while i < 16 { RESULTS[i] = SearchResult { idx: 255, core_id: HNSW.core_id, distance: f32::MAX }; i += 1; }
+        while i < 16 {
+            RESULTS[i] = SearchResult {
+                idx: 255,
+                core_id: HNSW.core_id,
+                distance: f32::MAX,
+            };
+            i += 1;
+        }
 
         let mut visited = [false; MAX_VECTORS];
         let mut beam = [255u8; BEAM_WIDTH];
@@ -333,7 +399,11 @@ pub extern "C" fn search(k: u8) -> u8 {
         beam[0] = 0;
         beam_d[0] = distance(&QUERY[..n], qn, 0);
         visited[0] = true;
-        RESULTS[0] = SearchResult { idx: 0, core_id: HNSW.core_id, distance: beam_d[0] };
+        RESULTS[0] = SearchResult {
+            idx: 0,
+            core_id: HNSW.core_id,
+            distance: beam_d[0],
+        };
         let mut rc = 1u8;
         let mut bs = 1usize;
 
@@ -346,14 +416,19 @@ pub extern "C" fn search(k: u8) -> u8 {
 
             let mut b = 0;
             while b < bs {
-                if beam[b] == 255 { b += 1; continue; }
+                if beam[b] == 255 {
+                    b += 1;
+                    continue;
+                }
                 let node = &HNSW.nodes[beam[b] as usize];
 
                 let mut j = 0u8;
                 while j < node.count {
                     let nbr = node.neighbors[j as usize];
                     j += 1;
-                    if visited[nbr as usize] { continue; }
+                    if visited[nbr as usize] {
+                        continue;
+                    }
                     visited[nbr as usize] = true;
 
                     let d = distance(&QUERY[..n], qn, nbr);
@@ -362,30 +437,46 @@ pub extern "C" fn search(k: u8) -> u8 {
                     if ns < BEAM_WIDTH || d < nd[ns.saturating_sub(1)] {
                         let mut p = ns.min(BEAM_WIDTH - 1);
                         while p > 0 && nd[p - 1] > d {
-                            if p < BEAM_WIDTH { nb[p] = nb[p - 1]; nd[p] = nd[p - 1]; }
+                            if p < BEAM_WIDTH {
+                                nb[p] = nb[p - 1];
+                                nd[p] = nd[p - 1];
+                            }
                             p -= 1;
                         }
-                        nb[p] = nbr; nd[p] = d;
-                        if ns < BEAM_WIDTH { ns += 1; }
+                        nb[p] = nbr;
+                        nd[p] = d;
+                        if ns < BEAM_WIDTH {
+                            ns += 1;
+                        }
                     }
 
                     // Update results
                     if rc < 16 || d < RESULTS[(rc - 1) as usize].distance {
                         let mut p = rc.min(15) as usize;
                         while p > 0 && RESULTS[p - 1].distance > d {
-                            if p < 16 { RESULTS[p] = RESULTS[p - 1]; }
+                            if p < 16 {
+                                RESULTS[p] = RESULTS[p - 1];
+                            }
                             p -= 1;
                         }
                         if p < 16 {
-                            RESULTS[p] = SearchResult { idx: nbr, core_id: HNSW.core_id, distance: d };
-                            if rc < 16 { rc += 1; }
+                            RESULTS[p] = SearchResult {
+                                idx: nbr,
+                                core_id: HNSW.core_id,
+                                distance: d,
+                            };
+                            if rc < 16 {
+                                rc += 1;
+                            }
                         }
                     }
                 }
                 b += 1;
             }
 
-            beam = nb; let _ = nd; bs = ns;
+            beam = nb;
+            let _ = nd;
+            bs = ns;
             iter += 1;
         }
 
@@ -405,23 +496,31 @@ pub extern "C" fn merge(ptr: *const SearchResult, cnt: u8) -> u8 {
     // TODO(safety): No null-check or alignment validation on `ptr`; relies on host contract.
     unsafe {
         let mut gc = 0u8;
-        while gc < 16 && GLOBAL[gc as usize].idx != 255 { gc += 1; }
+        while gc < 16 && GLOBAL[gc as usize].idx != 255 {
+            gc += 1;
+        }
 
         let mut i = 0u8;
         while i < cnt.min(16) {
             let r = &*ptr.add(i as usize);
             i += 1;
-            if r.idx == 255 { continue; }
+            if r.idx == 255 {
+                continue;
+            }
 
             if gc < 16 || r.distance < GLOBAL[(gc - 1) as usize].distance {
                 let mut p = gc.min(15) as usize;
                 while p > 0 && GLOBAL[p - 1].distance > r.distance {
-                    if p < 16 { GLOBAL[p] = GLOBAL[p - 1]; }
+                    if p < 16 {
+                        GLOBAL[p] = GLOBAL[p - 1];
+                    }
                     p -= 1;
                 }
                 if p < 16 {
                     GLOBAL[p] = *r;
-                    if gc < 16 { gc += 1; }
+                    if gc < 16 {
+                        gc += 1;
+                    }
                 }
             }
         }
@@ -435,29 +534,46 @@ pub extern "C" fn clear_global() {
     // SAFETY: Mutates GLOBAL static mut; single-threaded WASM guarantees exclusive access.
     unsafe {
         let mut i = 0;
-        while i < 16 { GLOBAL[i] = SearchResult { idx: 255, core_id: 0, distance: f32::MAX }; i += 1; }
+        while i < 16 {
+            GLOBAL[i] = SearchResult {
+                idx: 255,
+                core_id: 0,
+                distance: f32::MAX,
+            };
+            i += 1;
+        }
     }
 }
 
 // ============ Info ============
 #[no_mangle]
 // SAFETY: Reads HNSW static mut; single-threaded WASM guarantees no concurrent mutation.
-pub extern "C" fn count() -> u8 { unsafe { HNSW.count } }
+pub extern "C" fn count() -> u8 {
+    unsafe { HNSW.count }
+}
 
 #[no_mangle]
 // SAFETY: Reads HNSW static mut; single-threaded WASM guarantees no concurrent mutation.
-pub extern "C" fn get_core_id() -> u8 { unsafe { HNSW.core_id } }
+pub extern "C" fn get_core_id() -> u8 {
+    unsafe { HNSW.core_id }
+}
 
 #[no_mangle]
 // SAFETY: Reads HNSW static mut; single-threaded WASM guarantees no concurrent mutation.
-pub extern "C" fn get_metric() -> u8 { unsafe { HNSW.metric as u8 } }
+pub extern "C" fn get_metric() -> u8 {
+    unsafe { HNSW.metric as u8 }
+}
 
 #[no_mangle]
 // SAFETY: Reads HNSW static mut; single-threaded WASM guarantees no concurrent mutation.
-pub extern "C" fn get_dims() -> u8 { unsafe { HNSW.dims } }
+pub extern "C" fn get_dims() -> u8 {
+    unsafe { HNSW.dims }
+}
 
 #[no_mangle]
-pub extern "C" fn get_capacity() -> u8 { MAX_VECTORS as u8 }
+pub extern "C" fn get_capacity() -> u8 {
+    MAX_VECTORS as u8
+}
 
 // ============ Cypher Node Types ============
 
@@ -465,7 +581,9 @@ pub extern "C" fn get_capacity() -> u8 { MAX_VECTORS as u8 }
 /// Types packed 2 per byte (4 bits each)
 #[no_mangle]
 pub extern "C" fn set_node_type(idx: u8, node_type: u8) {
-    if idx >= MAX_VECTORS as u8 { return; }
+    if idx >= MAX_VECTORS as u8 {
+        return;
+    }
     // SAFETY: Mutates NODE_TYPES static mut; bounds checked above. Single-threaded WASM.
     unsafe {
         let byte_idx = (idx / 2) as usize;
@@ -481,7 +599,9 @@ pub extern "C" fn set_node_type(idx: u8, node_type: u8) {
 /// Get node type (0-15)
 #[no_mangle]
 pub extern "C" fn get_node_type(idx: u8) -> u8 {
-    if idx >= MAX_VECTORS as u8 { return 0; }
+    if idx >= MAX_VECTORS as u8 {
+        return 0;
+    }
     // SAFETY: Reads NODE_TYPES static mut; bounds checked above. Single-threaded WASM.
     unsafe {
         let byte_idx = (idx / 2) as usize;
@@ -505,14 +625,22 @@ pub extern "C" fn type_matches(idx: u8, type_mask: u16) -> u8 {
 #[no_mangle]
 pub extern "C" fn set_edge_weight(node: u8, weight: u8) {
     // SAFETY: Mutates EDGE_WEIGHTS static mut; bounds checked. Single-threaded WASM.
-    if node < MAX_VECTORS as u8 { unsafe { EDGE_WEIGHTS[node as usize] = weight; } }
+    if node < MAX_VECTORS as u8 {
+        unsafe {
+            EDGE_WEIGHTS[node as usize] = weight;
+        }
+    }
 }
 
 /// Get node edge weight
 #[no_mangle]
 pub extern "C" fn get_edge_weight(node: u8) -> u8 {
     // SAFETY: Reads EDGE_WEIGHTS static mut; bounds checked. Single-threaded WASM.
-    if node < MAX_VECTORS as u8 { unsafe { EDGE_WEIGHTS[node as usize] } } else { 0 }
+    if node < MAX_VECTORS as u8 {
+        unsafe { EDGE_WEIGHTS[node as usize] }
+    } else {
+        0
+    }
 }
 
 /// Aggregate neighbors into DELTA buffer (GNN message passing)
@@ -521,22 +649,36 @@ pub extern "C" fn aggregate_neighbors(idx: u8) {
     // SAFETY: Reads HNSW/EDGE_WEIGHTS, mutates DELTA static muts; single-threaded WASM.
     // `idx` is bounds-checked against HNSW.count before any indexed access.
     unsafe {
-        if idx >= HNSW.count { return; }
+        if idx >= HNSW.count {
+            return;
+        }
         let n = HNSW.dims as usize;
         let nc = HNSW.nodes[idx as usize].count;
         let mut d = 0;
-        while d < n { DELTA[d] = 0.0; d += 1; }
-        if nc == 0 { return; }
+        while d < n {
+            DELTA[d] = 0.0;
+            d += 1;
+        }
+        if nc == 0 {
+            return;
+        }
         let mut i = 0u8;
         while i < nc {
             let nb = HNSW.nodes[idx as usize].neighbors[i as usize];
             let w = EDGE_WEIGHTS[nb as usize] as f32;
             d = 0;
-            while d < n { DELTA[d] += w * HNSW.vectors[nb as usize].data[d]; d += 1; }
+            while d < n {
+                DELTA[d] += w * HNSW.vectors[nb as usize].data[d];
+                d += 1;
+            }
             i += 1;
         }
         let s = INV_255 / nc as f32;
-        d = 0; while d < n { DELTA[d] *= s; d += 1; }
+        d = 0;
+        while d < n {
+            DELTA[d] *= s;
+            d += 1;
+        }
     }
 }
 
@@ -545,17 +687,24 @@ pub extern "C" fn aggregate_neighbors(idx: u8) {
 /// Get delta buffer pointer for reading aggregated values
 #[no_mangle]
 // SAFETY: Returns read-only pointer to DELTA static mut; valid for WASM instance lifetime.
-pub extern "C" fn get_delta_ptr() -> *const f32 { core::ptr::addr_of!(DELTA) as *const f32 }
+pub extern "C" fn get_delta_ptr() -> *const f32 {
+    core::ptr::addr_of!(DELTA) as *const f32
+}
 
 /// Update vector: v = v + alpha * delta (in-place)
 #[no_mangle]
 pub extern "C" fn update_vector(idx: u8, alpha: f32) {
     // SAFETY: Mutates HNSW vectors, reads DELTA; single-threaded WASM. Bounds-checked.
     unsafe {
-        if idx >= HNSW.count { return; }
+        if idx >= HNSW.count {
+            return;
+        }
         let n = HNSW.dims as usize;
         let mut i = 0;
-        while i < n { HNSW.vectors[idx as usize].data[i] += alpha * DELTA[i]; i += 1; }
+        while i < n {
+            HNSW.vectors[idx as usize].data[i] += alpha * DELTA[i];
+            i += 1;
+        }
         HNSW.vectors[idx as usize].norm = norm(&HNSW.vectors[idx as usize].data[..n], n);
     }
 }
@@ -564,7 +713,9 @@ pub extern "C" fn update_vector(idx: u8, alpha: f32) {
 #[no_mangle]
 // SAFETY: Returns mutable pointer to DELTA static mut; valid for WASM instance lifetime.
 // Caller (host JS) must not hold this pointer across calls that mutate DELTA.
-pub extern "C" fn set_delta_ptr() -> *mut f32 { core::ptr::addr_of_mut!(DELTA) as *mut f32 }
+pub extern "C" fn set_delta_ptr() -> *mut f32 {
+    core::ptr::addr_of_mut!(DELTA) as *mut f32
+}
 
 /// Combined HNSW-SNN cycle: search → convert to currents → inject
 /// Useful for linking vector similarity to neural activation
@@ -574,7 +725,9 @@ pub extern "C" fn hnsw_to_snn(k: u8, gain: f32) -> u8 {
     // search() populates RESULTS; we only access indices returned by search.
     unsafe {
         let found = search(k);
-        if found == 0 { return 0; }
+        if found == 0 {
+            return 0;
+        }
 
         // Convert search results to neural currents
         let mut i = 0u8;
@@ -616,35 +769,55 @@ pub extern "C" fn snn_reset() {
 #[no_mangle]
 pub extern "C" fn snn_set_membrane(idx: u8, v: f32) {
     // SAFETY: Mutates MEMBRANE static mut; bounds checked. Single-threaded WASM.
-    if idx < MAX_VECTORS as u8 { unsafe { MEMBRANE[idx as usize] = v; } }
+    if idx < MAX_VECTORS as u8 {
+        unsafe {
+            MEMBRANE[idx as usize] = v;
+        }
+    }
 }
 
 /// Get membrane potential
 #[no_mangle]
 pub extern "C" fn snn_get_membrane(idx: u8) -> f32 {
     // SAFETY: Reads MEMBRANE static mut; bounds checked. Single-threaded WASM.
-    if idx < MAX_VECTORS as u8 { unsafe { MEMBRANE[idx as usize] } } else { 0.0 }
+    if idx < MAX_VECTORS as u8 {
+        unsafe { MEMBRANE[idx as usize] }
+    } else {
+        0.0
+    }
 }
 
 /// Set firing threshold for a neuron
 #[no_mangle]
 pub extern "C" fn snn_set_threshold(idx: u8, t: f32) {
     // SAFETY: Mutates THRESHOLD static mut; bounds checked. Single-threaded WASM.
-    if idx < MAX_VECTORS as u8 { unsafe { THRESHOLD[idx as usize] = t; } }
+    if idx < MAX_VECTORS as u8 {
+        unsafe {
+            THRESHOLD[idx as usize] = t;
+        }
+    }
 }
 
 /// Inject current into a neuron (adds to membrane potential)
 #[no_mangle]
 pub extern "C" fn snn_inject(idx: u8, current: f32) {
     // SAFETY: Mutates MEMBRANE static mut; bounds checked. Single-threaded WASM.
-    if idx < MAX_VECTORS as u8 { unsafe { MEMBRANE[idx as usize] += current; } }
+    if idx < MAX_VECTORS as u8 {
+        unsafe {
+            MEMBRANE[idx as usize] += current;
+        }
+    }
 }
 
 /// Get spike status (1 if spiked last step, 0 otherwise)
 #[no_mangle]
 pub extern "C" fn snn_spiked(idx: u8) -> u8 {
     // SAFETY: Reads SPIKES static mut; bounds checked. Single-threaded WASM.
-    if idx < MAX_VECTORS as u8 { unsafe { SPIKES[idx as usize] as u8 } } else { 0 }
+    if idx < MAX_VECTORS as u8 {
+        unsafe { SPIKES[idx as usize] as u8 }
+    } else {
+        0
+    }
 }
 
 /// Get spike bitset (32 neurons packed into u32)
@@ -655,7 +828,12 @@ pub extern "C" fn snn_get_spikes() -> u32 {
     unsafe {
         let mut bits = 0u32;
         let mut i = 0;
-        while i < MAX_VECTORS { if SPIKES[i] { bits |= 1 << i; } i += 1; }
+        while i < MAX_VECTORS {
+            if SPIKES[i] {
+                bits |= 1 << i;
+            }
+            i += 1;
+        }
         bits
     }
 }
@@ -710,7 +888,10 @@ pub extern "C" fn snn_propagate(gain: f32) {
     unsafe {
         let mut i = 0u8;
         while i < HNSW.count {
-            if !SPIKES[i as usize] { i += 1; continue; }
+            if !SPIKES[i as usize] {
+                i += 1;
+                continue;
+            }
 
             // This neuron spiked, inject current to neighbors
             let nc = HNSW.nodes[i as usize].count;
@@ -735,7 +916,10 @@ pub extern "C" fn snn_stdp() {
     unsafe {
         let mut i = 0u8;
         while i < HNSW.count {
-            if !SPIKES[i as usize] { i += 1; continue; }
+            if !SPIKES[i as usize] {
+                i += 1;
+                continue;
+            }
 
             // Post-synaptic neuron spiked
             let nc = HNSW.nodes[i as usize].count;
@@ -747,14 +931,20 @@ pub extern "C" fn snn_stdp() {
                 // LTP: pre before post, LTD: pre after post
                 // Simplified exponential approximation
                 let dw = if dt < 0.0 {
-                    STDP_A_PLUS * (1.0 + dt * INV_TAU_STDP)  // dt negative, so this decays
+                    STDP_A_PLUS * (1.0 + dt * INV_TAU_STDP) // dt negative, so this decays
                 } else {
                     -STDP_A_MINUS * (1.0 - dt * INV_TAU_STDP)
                 };
 
                 // Update weight (clamped to 0-255 using integer math)
                 let w = EDGE_WEIGHTS[pre as usize] as i16 + (dw * 255.0) as i16;
-                EDGE_WEIGHTS[pre as usize] = if w < 0 { 0 } else if w > 255 { 255 } else { w as u8 };
+                EDGE_WEIGHTS[pre as usize] = if w < 0 {
+                    0
+                } else if w > 255 {
+                    255
+                } else {
+                    w as u8
+                };
                 j += 1;
             }
             i += 1;
@@ -768,14 +958,18 @@ pub extern "C" fn snn_stdp() {
 pub extern "C" fn snn_tick(dt: f32, gain: f32, learn: u8) -> u8 {
     let spikes = snn_step(dt);
     snn_propagate(gain);
-    if learn != 0 { snn_stdp(); }
+    if learn != 0 {
+        snn_stdp();
+    }
     spikes
 }
 
 /// Get current simulation time
 #[no_mangle]
 // SAFETY: Reads SIM_TIME static mut; single-threaded WASM guarantees no concurrent mutation.
-pub extern "C" fn snn_get_time() -> f32 { unsafe { SIM_TIME } }
+pub extern "C" fn snn_get_time() -> f32 {
+    unsafe { SIM_TIME }
+}
 
 // ============================================================================
 // NOVEL NEUROMORPHIC DISCOVERIES
@@ -793,7 +987,9 @@ pub extern "C" fn encode_vector_to_spikes(idx: u8) -> u32 {
     // SAFETY: Reads HNSW vectors, mutates SPIKE_PATTERN; single-threaded WASM.
     // `idx` is bounds-checked against HNSW.count before any indexed access.
     unsafe {
-        if idx >= HNSW.count { return 0; }
+        if idx >= HNSW.count {
+            return 0;
+        }
         let n = HNSW.dims as usize;
         let mut pattern = 0u32;
 
@@ -802,11 +998,17 @@ pub extern "C" fn encode_vector_to_spikes(idx: u8) -> u32 {
         let mut i = 0;
         while i < n {
             let v = HNSW.vectors[idx as usize].data[i];
-            if v > max_val { max_val = v; }
-            if -v > max_val { max_val = -v; }
+            if v > max_val {
+                max_val = v;
+            }
+            if -v > max_val {
+                max_val = -v;
+            }
             i += 1;
         }
-        if max_val == 0.0 { return 0; }
+        if max_val == 0.0 {
+            return 0;
+        }
 
         // Encode: high values → low bit positions (early spikes)
         i = 0;
@@ -814,7 +1016,9 @@ pub extern "C" fn encode_vector_to_spikes(idx: u8) -> u32 {
             let normalized = (HNSW.vectors[idx as usize].data[i] + max_val) / (2.0 * max_val);
             let slot = ((1.0 - normalized) * SPIKE_ENCODING_RES as f32) as u8;
             let bit_pos = i as u8 + slot * (n as u8 / SPIKE_ENCODING_RES);
-            if bit_pos < 32 { pattern |= 1u32 << bit_pos; }
+            if bit_pos < 32 {
+                pattern |= 1u32 << bit_pos;
+            }
             i += 1;
         }
 
@@ -830,8 +1034,10 @@ pub extern "C" fn spike_timing_similarity(a: u32, b: u32) -> f32 {
     // Count matching spike positions
     let matches = (a & b).count_ones() as f32;
     let total = (a | b).count_ones() as f32;
-    if total == 0.0 { return 1.0; }
-    matches / total  // Jaccard-like similarity
+    if total == 0.0 {
+        return 1.0;
+    }
+    matches / total // Jaccard-like similarity
 }
 
 /// Search using spike-timing representation
@@ -841,13 +1047,19 @@ pub extern "C" fn spike_search(query_pattern: u32, k: u8) -> u8 {
     // SAFETY: Reads HNSW.count, SPIKE_PATTERN; mutates RESULTS. Single-threaded WASM.
     // All indices bounded by HNSW.count; RESULTS indices bounded by k <= 16.
     unsafe {
-        if HNSW.count == 0 { return 0; }
+        if HNSW.count == 0 {
+            return 0;
+        }
         let k = k.min(16).min(HNSW.count);
 
         // Reset results
         let mut i = 0;
         while i < 16 {
-            RESULTS[i] = SearchResult { idx: 255, core_id: HNSW.core_id, distance: 0.0 };
+            RESULTS[i] = SearchResult {
+                idx: 255,
+                core_id: HNSW.core_id,
+                distance: 0.0,
+            };
             i += 1;
         }
 
@@ -861,16 +1073,20 @@ pub extern "C" fn spike_search(query_pattern: u32, k: u8) -> u8 {
             if found < k || dist < RESULTS[(found - 1) as usize].distance {
                 let mut p = found.min(k - 1) as usize;
                 while p > 0 && RESULTS[p - 1].distance > dist {
-                    if p < 16 { RESULTS[p] = RESULTS[p - 1]; }
+                    if p < 16 {
+                        RESULTS[p] = RESULTS[p - 1];
+                    }
                     p -= 1;
                 }
                 if p < 16 {
                     RESULTS[p] = SearchResult {
                         idx: i as u8,
                         core_id: HNSW.core_id,
-                        distance: dist
+                        distance: dist,
                     };
-                    if found < k { found += 1; }
+                    if found < k {
+                        found += 1;
+                    }
                 }
             }
             i += 1;
@@ -915,7 +1131,11 @@ pub extern "C" fn homeostatic_update(dt: f32) {
 #[no_mangle]
 pub extern "C" fn get_spike_rate(idx: u8) -> f32 {
     // SAFETY: Reads SPIKE_RATE static mut; bounds checked. Single-threaded WASM.
-    if idx < MAX_VECTORS as u8 { unsafe { SPIKE_RATE[idx as usize] } } else { 0.0 }
+    if idx < MAX_VECTORS as u8 {
+        unsafe { SPIKE_RATE[idx as usize] }
+    } else {
+        0.0
+    }
 }
 
 // ============ Oscillatory Resonance ============
@@ -930,14 +1150,18 @@ pub extern "C" fn oscillator_step(dt: f32) {
         // Phase advances with time: ω = 2πf
         let omega = core::f32::consts::TAU * OSCILLATOR_FREQ / 1000.0; // Convert Hz to rad/ms
         OSCILLATOR_PHASE += omega * dt;
-        if OSCILLATOR_PHASE > core::f32::consts::TAU { OSCILLATOR_PHASE -= core::f32::consts::TAU; }
+        if OSCILLATOR_PHASE > core::f32::consts::TAU {
+            OSCILLATOR_PHASE -= core::f32::consts::TAU;
+        }
     }
 }
 
 /// Get current oscillator phase (0 to 2π)
 #[no_mangle]
 // SAFETY: Reads OSCILLATOR_PHASE static mut; single-threaded WASM.
-pub extern "C" fn oscillator_get_phase() -> f32 { unsafe { OSCILLATOR_PHASE } }
+pub extern "C" fn oscillator_get_phase() -> f32 {
+    unsafe { OSCILLATOR_PHASE }
+}
 
 /// Compute resonance boost for a neuron based on phase alignment
 /// Neurons in sync with gamma get amplified
@@ -946,13 +1170,19 @@ pub extern "C" fn compute_resonance(idx: u8) -> f32 {
     // SAFETY: Reads OSCILLATOR_PHASE, HNSW.count; mutates RESONANCE. Single-threaded WASM.
     // `idx` is bounds-checked against HNSW.count.
     unsafe {
-        if idx >= HNSW.count { return 0.0; }
+        if idx >= HNSW.count {
+            return 0.0;
+        }
         let i = idx as usize;
 
         // Each neuron has preferred phase based on its index
         let preferred_phase = (idx as f32 / MAX_VECTORS as f32) * core::f32::consts::TAU;
         let phase_diff = (OSCILLATOR_PHASE - preferred_phase).abs();
-        let min_diff = if phase_diff > core::f32::consts::PI { core::f32::consts::TAU - phase_diff } else { phase_diff };
+        let min_diff = if phase_diff > core::f32::consts::PI {
+            core::f32::consts::TAU - phase_diff
+        } else {
+            phase_diff
+        };
 
         // Resonance is high when phase matches
         RESONANCE[i] = 1.0 - min_diff / core::f32::consts::PI;
@@ -1005,7 +1235,11 @@ pub extern "C" fn resonance_search(k: u8, phase_weight: f32) -> u8 {
 /// Reset WTA state
 #[no_mangle]
 // SAFETY: Mutates WTA_INHIBIT static mut; single-threaded WASM.
-pub extern "C" fn wta_reset() { unsafe { WTA_INHIBIT = 0.0; } }
+pub extern "C" fn wta_reset() {
+    unsafe {
+        WTA_INHIBIT = 0.0;
+    }
+}
 
 /// Run WTA competition: only highest membrane potential survives
 /// Returns winner index (or 255 if no winner)
@@ -1055,10 +1289,14 @@ pub extern "C" fn wta_soft() {
         let mut max_v = 0.0f32;
         let mut i = 0u8;
         while i < HNSW.count {
-            if MEMBRANE[i as usize] > max_v { max_v = MEMBRANE[i as usize]; }
+            if MEMBRANE[i as usize] > max_v {
+                max_v = MEMBRANE[i as usize];
+            }
             i += 1;
         }
-        if max_v <= 0.0 { return; }
+        if max_v <= 0.0 {
+            return;
+        }
 
         // Normalize and apply softmax-like competition
         i = 0;
@@ -1085,7 +1323,10 @@ pub extern "C" fn dendrite_reset() {
         let mut i = 0;
         while i < MAX_VECTORS {
             let mut j = 0;
-            while j < MAX_NEIGHBORS { DENDRITE[i][j] = 0.0; j += 1; }
+            while j < MAX_NEIGHBORS {
+                DENDRITE[i][j] = 0.0;
+                j += 1;
+            }
             i += 1;
         }
     }
@@ -1109,7 +1350,9 @@ pub extern "C" fn dendrite_integrate(neuron: u8) -> f32 {
     // SAFETY: Reads DENDRITE, HNSW.nodes; mutates MEMBRANE. Single-threaded WASM.
     // `neuron` is bounds-checked against HNSW.count; branch count from HNSW.nodes.
     unsafe {
-        if neuron >= HNSW.count { return 0.0; }
+        if neuron >= HNSW.count {
+            return 0.0;
+        }
         let idx = neuron as usize;
         let nc = HNSW.nodes[idx].count as usize;
 
@@ -1144,7 +1387,10 @@ pub extern "C" fn dendrite_propagate(gain: f32) {
     unsafe {
         let mut i = 0u8;
         while i < HNSW.count {
-            if !SPIKES[i as usize] { i += 1; continue; }
+            if !SPIKES[i as usize] {
+                i += 1;
+                continue;
+            }
 
             // This neuron spiked, inject to neighbor dendrites
             let nc = HNSW.nodes[i as usize].count;
@@ -1196,7 +1442,11 @@ pub extern "C" fn pattern_record() {
 #[no_mangle]
 pub extern "C" fn get_pattern(idx: u8) -> u32 {
     // SAFETY: Reads SPIKE_PATTERN static mut; bounds checked. Single-threaded WASM.
-    if idx < MAX_VECTORS as u8 { unsafe { SPIKE_PATTERN[idx as usize] } } else { 0 }
+    if idx < MAX_VECTORS as u8 {
+        unsafe { SPIKE_PATTERN[idx as usize] }
+    } else {
+        0
+    }
 }
 
 /// Match pattern against stored patterns (Hamming similarity)
@@ -1230,7 +1480,9 @@ pub extern "C" fn pattern_correlate(idx: u8, threshold: u8) -> u32 {
     // SAFETY: Reads HNSW.count, SPIKE_PATTERN. Single-threaded WASM.
     // `idx` bounds-checked; bit positions bounded by `i < 32` guard.
     unsafe {
-        if idx >= HNSW.count { return 0; }
+        if idx >= HNSW.count {
+            return 0;
+        }
         let target = SPIKE_PATTERN[idx as usize];
         let mut correlated = 0u32;
 
@@ -1260,7 +1512,9 @@ pub extern "C" fn neuromorphic_search(k: u8, dt: f32, iterations: u8) -> u8 {
     // RESONANCE, etc.) via called functions and directly. Single-threaded WASM guarantees
     // exclusive access. All index accesses bounded by HNSW.count.
     unsafe {
-        if HNSW.count == 0 { return 0; }
+        if HNSW.count == 0 {
+            return 0;
+        }
 
         // Reset neural state
         snn_reset();
@@ -1311,7 +1565,11 @@ pub extern "C" fn neuromorphic_search(k: u8, dt: f32, iterations: u8) -> u8 {
         // Collect results based on final spike patterns and resonance
         let mut i = 0;
         while i < 16 {
-            RESULTS[i] = SearchResult { idx: 255, core_id: HNSW.core_id, distance: f32::MAX };
+            RESULTS[i] = SearchResult {
+                idx: 255,
+                core_id: HNSW.core_id,
+                distance: f32::MAX,
+            };
             i += 1;
         }
 
@@ -1322,21 +1580,25 @@ pub extern "C" fn neuromorphic_search(k: u8, dt: f32, iterations: u8) -> u8 {
             let spikes = SPIKE_PATTERN[i].count_ones() as f32;
             let res = RESONANCE[i];
             let vm = MEMBRANE[i];
-            let score = -(spikes * 10.0 + res * 5.0 + vm);  // Negative for sorting
+            let score = -(spikes * 10.0 + res * 5.0 + vm); // Negative for sorting
 
             if found < k || score < RESULTS[(found - 1) as usize].distance {
                 let mut p = found.min(k - 1) as usize;
                 while p > 0 && RESULTS[p - 1].distance > score {
-                    if p < 16 { RESULTS[p] = RESULTS[p - 1]; }
+                    if p < 16 {
+                        RESULTS[p] = RESULTS[p - 1];
+                    }
                     p -= 1;
                 }
                 if p < 16 {
                     RESULTS[p] = SearchResult {
                         idx: i as u8,
                         core_id: HNSW.core_id,
-                        distance: score
+                        distance: score,
                     };
-                    if found < k { found += 1; }
+                    if found < k {
+                        found += 1;
+                    }
                 }
             }
             i += 1;
@@ -1363,4 +1625,6 @@ pub extern "C" fn get_network_activity() -> f32 {
 
 #[cfg(all(target_family = "wasm", not(test)))]
 #[panic_handler]
-fn panic(_: &core::panic::PanicInfo) -> ! { loop {} }
+fn panic(_: &core::panic::PanicInfo) -> ! {
+    loop {}
+}

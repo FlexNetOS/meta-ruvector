@@ -337,11 +337,9 @@ impl CoreGraphTransformer {
         env_hash[0..4].copy_from_slice(&(self.gates.len() as u32).to_le_bytes());
 
         let total = self.stats.cache_hits + self.stats.cache_misses;
-        let rate = if total > 0 {
-            ((self.stats.cache_hits * 10000) / total) as u16
-        } else {
-            0
-        };
+        let rate = (self.stats.cache_hits * 10000)
+            .checked_div(total)
+            .unwrap_or(0) as u16;
 
         Attestation {
             proof_id,

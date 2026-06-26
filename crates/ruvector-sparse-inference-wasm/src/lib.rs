@@ -245,10 +245,7 @@ fn parse_inference_config(json: &str) -> InferenceConfig {
     let val: serde_json::Value = serde_json::from_str(json).unwrap_or_default();
 
     InferenceConfig {
-        sparsity: val
-            .get("sparsity")
-            .and_then(|v| v.as_f64())
-            .unwrap_or(0.9) as f32,
+        sparsity: val.get("sparsity").and_then(|v| v.as_f64()).unwrap_or(0.9) as f32,
         sparsity_threshold: val
             .get("sparsity_threshold")
             .and_then(|v| v.as_f64())
@@ -261,10 +258,7 @@ fn parse_inference_config(json: &str) -> InferenceConfig {
             .get("top_k")
             .and_then(|v| v.as_u64())
             .map(|v| v as usize),
-        top_p: val
-            .get("top_p")
-            .and_then(|v| v.as_f64())
-            .map(|v| v as f32),
+        top_p: val.get("top_p").and_then(|v| v.as_f64()).map(|v| v as f32),
         use_sparse_ffn: val
             .get("use_sparse_ffn")
             .and_then(|v| v.as_bool())
