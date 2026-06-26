@@ -76,9 +76,46 @@ impl VectorDB {
         #[cfg(not(feature = "storage"))]
         let storage = Arc::new(VectorStorage::new(options.dimensions)?);
 
-        // Choose index based on configuration and available features
+        // Choose the index. A requested per-vector quantizer selects a
+        // brute-force quantized index that actually reduces the index's RAM
+        // footprint (issue #563): it stores u8/bit codes instead of `f32`, while
+        // the storage layer keeps the lossless vectors for `get()`. Product
+        // quantization is not applicable to the streaming index (it needs a
+        // codebook trained over the full corpus) and HNSW does not yet hold
+        // quantized codes, so those cases fall back to a full-precision index
+        // rather than silently pretending to compress.
+        use crate::index::quantized_flat::{QuantKind, QuantizedFlatIndex};
+
+        let quant_kind = match &options.quantization {
+            None | Some(QuantizationConfig::None) => None,
+            Some(QuantizationConfig::Scalar) => Some(QuantKind::Scalar),
+            Some(QuantizationConfig::Binary) => Some(QuantKind::Binary),
+            Some(QuantizationConfig::Product { .. }) => {
+                tracing::warn!(
+                    "DbOptions.quantization = Product is not applied by the index: \
+                     product quantization requires training a codebook over the full \
+                     corpus, which the streaming index cannot do. Storing full \
+                     precision. See advanced_features::product_quantization and issue #563."
+                );
+                None
+            }
+        };
+
         #[allow(unused_mut)] // `index` is mutated only when feature = "storage"
-        let mut index: Box<dyn VectorIndex> = if let Some(hnsw_config) = &options.hnsw_config {
+        let mut index: Box<dyn VectorIndex> = if let Some(kind) = quant_kind {
+            if options.hnsw_config.is_some() {
+                tracing::info!(
+                    "Quantization ({:?}) requested: using a brute-force quantized index \
+                     for memory reduction (HNSW + quantization is not combined yet).",
+                    kind
+                );
+            }
+            Box::new(QuantizedFlatIndex::new(
+                options.dimensions,
+                options.distance_metric,
+                kind,
+            ))
+        } else if let Some(hnsw_config) = &options.hnsw_config {
             #[cfg(feature = "hnsw")]
             {
                 Box::new(HnswIndex::new(
@@ -96,22 +133,6 @@ impl VectorDB {
         } else {
             Box::new(FlatIndex::new(options.dimensions, options.distance_metric))
         };
-
-        // `DbOptions.quantization` is persisted/restored but not yet applied to
-        // the index or storage representation (issue #563). Warn loudly rather
-        // than silently ignoring a requested quantization so callers don't
-        // assume a memory reduction that isn't happening.
-        if !matches!(
-            options.quantization,
-            None | Some(crate::types::QuantizationConfig::None)
-        ) {
-            tracing::warn!(
-                "DbOptions.quantization = {:?} is set but not yet applied — the \
-                 index is stored unquantized (no compression / memory reduction). \
-                 See issue #563.",
-                options.quantization
-            );
-        }
 
         // Rebuild index from persisted vectors if storage is not empty
         // This fixes the bug where search() returns empty results after restart

@@ -100,26 +100,31 @@ impl Default for HnswConfig {
 
 /// Quantization configuration.
 ///
-/// NOTE (issue #563): these variants are accepted, persisted, and restored, but
-/// quantization is **not yet applied** to the index/storage — vectors are stored
-/// in full precision regardless. The compression figures below describe the
-/// intended behavior once quantization is wired into the index; today they are a
-/// target, not a guarantee. `VectorDB::new` logs a warning when a non-`None`
-/// value is set so it is not silently ignored.
+/// `Scalar` and `Binary` are applied (issue #563): when set, `VectorDB` builds a
+/// brute-force [quantized index](crate::index::quantized_flat) that stores
+/// compressed codes instead of `f32`, cutting the index's RAM footprint by ~4x
+/// (Scalar) / ~32x (Binary). The storage layer still keeps lossless vectors, so
+/// `get()` is unaffected; only the in-memory search structure is compressed, and
+/// search uses asymmetric (full-precision query) distance to preserve the metric.
+///
+/// `Product` is **not** applied by the streaming index — it needs a codebook
+/// trained over the whole corpus (see
+/// [`crate::advanced_features::product_quantization`]); `VectorDB::new` logs a
+/// warning and stores full precision in that case.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum QuantizationConfig {
     /// No quantization (full precision)
     None,
-    /// Scalar quantization to int8 (target: 4x compression — not yet applied)
+    /// Scalar quantization to int8 (~4x reduction of the index footprint)
     Scalar,
-    /// Product quantization (not yet applied)
+    /// Product quantization (not applied by the index — needs codebook training)
     Product {
         /// Number of subspaces
         subspaces: usize,
         /// Codebook size (typically 256)
         k: usize,
     },
-    /// Binary quantization (target: 32x compression — not yet applied)
+    /// Binary quantization (~32x reduction of the index footprint)
     Binary,
 }
 
@@ -130,9 +135,8 @@ impl Default for DbOptions {
             distance_metric: DistanceMetric::Cosine,
             storage_path: "./ruvector.db".to_string(),
             hnsw_config: Some(HnswConfig::default()),
-            // Quantization is not yet applied to the index/storage (issue #563),
-            // so the default is `None` to avoid advertising a compression that
-            // does not happen. Set this explicitly once quantization is wired in.
+            // Default to full precision (HNSW). Opt into `Scalar`/`Binary` to
+            // trade HNSW's sublinear search for a quantized, lower-RAM index.
             quantization: None,
         }
     }
