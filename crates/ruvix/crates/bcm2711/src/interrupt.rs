@@ -243,7 +243,9 @@ impl BcmInterruptController {
     /// Create a new interrupt controller instance.
     #[inline]
     pub const fn new() -> Self {
-        Self { base: INTERRUPT_BASE }
+        Self {
+            base: INTERRUPT_BASE,
+        }
     }
 
     /// Create a new interrupt controller with a custom base address.

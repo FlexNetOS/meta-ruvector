@@ -1,4 +1,5 @@
 //! DAG Attention Mechanisms (from ruvector-dag)
+#![allow(dead_code, unused_imports, unused_variables)]
 //!
 //! Re-exports the 7 DAG-specific attention mechanisms:
 //! - Topological Attention
@@ -24,6 +25,12 @@ pub struct WasmQueryDag {
     inner: QueryDag,
 }
 
+impl Default for WasmQueryDag {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[wasm_bindgen]
 impl WasmQueryDag {
     /// Create a new empty DAG
@@ -44,7 +51,7 @@ impl WasmQueryDag {
     /// Node ID
     #[wasm_bindgen(js_name = addNode)]
     pub fn add_node(&mut self, op_type: &str, cost: f32) -> u32 {
-        let table_id = self.inner.node_count() as usize;
+        let table_id = self.inner.node_count();
         let mut node = match op_type {
             "scan" => OperatorNode::seq_scan(table_id, &format!("table_{}", table_id)),
             "filter" => OperatorNode::filter(table_id, "condition"),
@@ -465,7 +472,7 @@ impl WasmHierarchicalLorentzAttention {
         }
 
         let depths = dag.inner.compute_depths();
-        let max_depth = depths.values().max().copied().unwrap_or(0);
+        let _max_depth = depths.values().max().copied().unwrap_or(0);
 
         // Compute hyperbolic distances from origin
         let mut distances: Vec<f32> = Vec::with_capacity(n);
@@ -553,7 +560,7 @@ impl WasmParallelBranchAttention {
             let is_branch_child = parents.iter().any(|&p| branch_starts.contains(&p));
 
             let children = dag.inner.children(node_id);
-            let is_sync_point = children.len() == 0 && parents.len() > 1;
+            let is_sync_point = children.is_empty() && parents.len() > 1;
 
             let score = if is_branch_child {
                 1.5 // Boost parallel branch nodes

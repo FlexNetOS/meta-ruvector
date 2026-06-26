@@ -1,9 +1,7 @@
 //! Async operations for graph database using wasm-bindgen-futures
 
-use crate::types::{GraphError, QueryResult};
 use js_sys::Promise;
 use wasm_bindgen::prelude::*;
-use wasm_bindgen_futures::JsFuture;
 use web_sys::console;
 
 /// Async query executor for streaming results

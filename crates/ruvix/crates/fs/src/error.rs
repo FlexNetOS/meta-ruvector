@@ -119,40 +119,40 @@ impl FsError {
     #[must_use]
     pub const fn to_errno(self) -> i32 {
         match self {
-            Self::NotFound => 2,            // ENOENT
-            Self::PermissionDenied => 13,   // EACCES
-            Self::AlreadyExists => 17,      // EEXIST
-            Self::NotADirectory => 20,      // ENOTDIR
-            Self::IsADirectory => 21,       // EISDIR
-            Self::DirectoryNotEmpty => 39,  // ENOTEMPTY
-            Self::InvalidPath => 22,        // EINVAL
-            Self::InvalidFilename => 22,    // EINVAL
-            Self::PathTooLong => 36,        // ENAMETOOLONG
-            Self::NameTooLong => 36,        // ENAMETOOLONG
-            Self::TooManySymlinks => 40,    // ELOOP
-            Self::InvalidArgument => 22,    // EINVAL
-            Self::IoError => 5,             // EIO
-            Self::Busy => 16,               // EBUSY
-            Self::NoSpace => 28,            // ENOSPC
-            Self::ReadOnly => 30,           // EROFS
-            Self::InvalidFilesystem => 5,   // EIO
-            Self::InvalidFatEntry => 5,     // EIO
-            Self::InvalidClusterChain => 5, // EIO
-            Self::BlockDeviceError => 5,    // EIO
-            Self::MountNotFound => 2,       // ENOENT
-            Self::MountAlreadyExists => 17, // EEXIST
-            Self::TooManyMounts => 12,      // ENOMEM
-            Self::FileTooLarge => 27,       // EFBIG
-            Self::InvalidSeek => 29,        // ESPIPE
-            Self::EndOfFile => 0,           // Success (EOF is not an error)
+            Self::NotFound => 2,              // ENOENT
+            Self::PermissionDenied => 13,     // EACCES
+            Self::AlreadyExists => 17,        // EEXIST
+            Self::NotADirectory => 20,        // ENOTDIR
+            Self::IsADirectory => 21,         // EISDIR
+            Self::DirectoryNotEmpty => 39,    // ENOTEMPTY
+            Self::InvalidPath => 22,          // EINVAL
+            Self::InvalidFilename => 22,      // EINVAL
+            Self::PathTooLong => 36,          // ENAMETOOLONG
+            Self::NameTooLong => 36,          // ENAMETOOLONG
+            Self::TooManySymlinks => 40,      // ELOOP
+            Self::InvalidArgument => 22,      // EINVAL
+            Self::IoError => 5,               // EIO
+            Self::Busy => 16,                 // EBUSY
+            Self::NoSpace => 28,              // ENOSPC
+            Self::ReadOnly => 30,             // EROFS
+            Self::InvalidFilesystem => 5,     // EIO
+            Self::InvalidFatEntry => 5,       // EIO
+            Self::InvalidClusterChain => 5,   // EIO
+            Self::BlockDeviceError => 5,      // EIO
+            Self::MountNotFound => 2,         // ENOENT
+            Self::MountAlreadyExists => 17,   // EEXIST
+            Self::TooManyMounts => 12,        // ENOMEM
+            Self::FileTooLarge => 27,         // EFBIG
+            Self::InvalidSeek => 29,          // ESPIPE
+            Self::EndOfFile => 0,             // Success (EOF is not an error)
             Self::InvalidFileDescriptor => 9, // EBADF
-            Self::TooManyOpenFiles => 24,   // EMFILE
-            Self::CrossDeviceLink => 18,    // EXDEV
-            Self::NotSupported => 95,       // EOPNOTSUPP
-            Self::InodeNotFound => 2,       // ENOENT
-            Self::OutOfInodes => 28,        // ENOSPC
-            Self::InvalidBootSector => 5,   // EIO
-            Self::FeatureNotEnabled => 95,  // EOPNOTSUPP
+            Self::TooManyOpenFiles => 24,     // EMFILE
+            Self::CrossDeviceLink => 18,      // EXDEV
+            Self::NotSupported => 95,         // EOPNOTSUPP
+            Self::InodeNotFound => 2,         // ENOENT
+            Self::OutOfInodes => 28,          // ENOSPC
+            Self::InvalidBootSector => 5,     // EIO
+            Self::FeatureNotEnabled => 95,    // EOPNOTSUPP
         }
     }
 

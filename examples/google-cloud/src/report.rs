@@ -1,8 +1,7 @@
 //! Benchmark report generation for RuVector Cloud Run GPU
 
-use anyhow::{Context, Result};
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use anyhow::Result;
+use serde::Serialize;
 use std::fs::{self, File};
 use std::io::{BufReader, BufWriter, Write};
 use std::path::Path;
@@ -54,7 +53,7 @@ fn load_results(dir: &Path) -> Result<Vec<BenchmarkResult>> {
         let entry = entry?;
         let path = entry.path();
 
-        if path.extension().map_or(false, |ext| ext == "json") {
+        if path.extension().is_some_and(|ext| ext == "json") {
             let file = File::open(&path)?;
             let reader = BufReader::new(file);
 

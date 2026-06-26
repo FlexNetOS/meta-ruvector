@@ -337,7 +337,9 @@ mod tests {
 
     impl MockDmaController {
         fn new() -> Self {
-            Self { channels: [false; 8] }
+            Self {
+                channels: [false; 8],
+            }
         }
     }
 

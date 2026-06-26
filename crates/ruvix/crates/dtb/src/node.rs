@@ -378,11 +378,11 @@ mod tests {
     #[test]
     fn test_node_iter() {
         let nodes = [
-            Node::new("", 0, 0, 0),           // root
-            Node::new("soc", 10, 1, 0),       // child of root
-            Node::new("uart", 20, 2, 10),     // child of soc
-            Node::new("timer", 30, 2, 10),    // child of soc
-            Node::new("memory", 40, 1, 0),    // child of root
+            Node::new("", 0, 0, 0),        // root
+            Node::new("soc", 10, 1, 0),    // child of root
+            Node::new("uart", 20, 2, 10),  // child of soc
+            Node::new("timer", 30, 2, 10), // child of soc
+            Node::new("memory", 40, 1, 0), // child of root
         ];
 
         // All nodes

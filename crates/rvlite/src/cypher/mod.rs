@@ -27,8 +27,7 @@ pub use lexer::{tokenize, Token, TokenKind};
 pub use parser::{parse_cypher, ParseError};
 
 use crate::storage::state::{EdgeState, GraphState, NodeState, PropertyValue};
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+// wasm_bindgen: used by re-exported types
 use wasm_bindgen::prelude::*;
 
 /// WASM-compatible Cypher engine

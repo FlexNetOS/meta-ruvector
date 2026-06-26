@@ -2,7 +2,6 @@
 
 #[cfg(test)]
 mod causal_cone_query_tests {
-    use super::*;
     // use exo_temporal::*;
 
     #[test]
@@ -71,7 +70,6 @@ mod causal_cone_query_tests {
 
 #[cfg(test)]
 mod memory_consolidation_tests {
-    use super::*;
 
     #[test]
     fn test_short_term_to_long_term() {
@@ -161,7 +159,6 @@ mod memory_consolidation_tests {
 
 #[cfg(test)]
 mod anticipation_tests {
-    use super::*;
 
     #[test]
     fn test_anticipate_sequential_pattern() {
@@ -214,7 +211,6 @@ mod anticipation_tests {
 
 #[cfg(test)]
 mod causal_graph_tests {
-    use super::*;
 
     #[test]
     fn test_causal_graph_add_edge() {
@@ -261,7 +257,6 @@ mod causal_graph_tests {
 
 #[cfg(test)]
 mod temporal_knowledge_graph_tests {
-    use super::*;
 
     #[test]
     fn test_tkg_add_temporal_fact() {
@@ -292,7 +287,6 @@ mod temporal_knowledge_graph_tests {
 
 #[cfg(test)]
 mod short_term_buffer_tests {
-    use super::*;
 
     #[test]
     fn test_short_term_insert() {
@@ -334,7 +328,6 @@ mod short_term_buffer_tests {
 
 #[cfg(test)]
 mod long_term_store_tests {
-    use super::*;
 
     #[test]
     fn test_long_term_integrate() {
@@ -363,7 +356,6 @@ mod long_term_store_tests {
 
 #[cfg(test)]
 mod edge_cases_tests {
-    use super::*;
 
     #[test]
     fn test_empty_antecedents() {

@@ -166,23 +166,39 @@ fn list_available_devices(_verbose: bool) -> Result<()> {
 
 fn validate_inputs(args: &FlashArgs) -> Result<()> {
     if let Some(ref image) = args.image {
-        println!("  {} Checking image exists: {}", "[stub]".yellow(), image.display());
+        println!(
+            "  {} Checking image exists: {}",
+            "[stub]".yellow(),
+            image.display()
+        );
         // In real implementation: check file exists and is readable
     }
 
     if let Some(ref dtb) = args.dtb {
-        println!("  {} Checking DTB exists: {}", "[stub]".yellow(), dtb.display());
+        println!(
+            "  {} Checking DTB exists: {}",
+            "[stub]".yellow(),
+            dtb.display()
+        );
     }
 
     for boot_file in &args.boot_files {
-        println!("  {} Checking boot file: {}", "[stub]".yellow(), boot_file.display());
+        println!(
+            "  {} Checking boot file: {}",
+            "[stub]".yellow(),
+            boot_file.display()
+        );
     }
 
     Ok(())
 }
 
 fn check_device(device: &PathBuf) -> Result<()> {
-    println!("  {} Checking device: {}", "[stub]".yellow(), device.display());
+    println!(
+        "  {} Checking device: {}",
+        "[stub]".yellow(),
+        device.display()
+    );
     println!("  {} Verifying device is not mounted", "[stub]".yellow());
     println!("  {} Checking device permissions", "[stub]".yellow());
 
@@ -204,7 +220,10 @@ fn confirm_flash(device: &PathBuf) -> Result<bool> {
         device.display().to_string().yellow()
     );
     println!("  {} Would prompt: Continue? [y/N]", "[stub]".yellow());
-    println!("  {} Assuming 'yes' for stub implementation", "[stub]".yellow());
+    println!(
+        "  {} Assuming 'yes' for stub implementation",
+        "[stub]".yellow()
+    );
     Ok(true)
 }
 
@@ -236,7 +255,11 @@ fn flash_image(args: &FlashArgs) -> Result<()> {
     }
 
     for boot_file in &args.boot_files {
-        println!("  {} Writing boot file: {}", "[stub]".yellow(), boot_file.display());
+        println!(
+            "  {} Writing boot file: {}",
+            "[stub]".yellow(),
+            boot_file.display()
+        );
     }
 
     println!("  {} Syncing filesystem...", "[stub]".yellow());

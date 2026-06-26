@@ -306,10 +306,10 @@ impl PredictiveModel {
 
         // Initialize likelihood matrix
         let mut likelihood = vec![vec![0.0; obs_dims]; hidden_dims];
-        for i in 0..hidden_dims {
-            for j in 0..obs_dims {
+        for (i, row) in likelihood.iter_mut().enumerate() {
+            for (j, cell) in row.iter_mut().enumerate() {
                 // Simple diagonal-ish initialization
-                likelihood[i][j] = if i % obs_dims == j {
+                *cell = if i % obs_dims == j {
                     0.7
                 } else {
                     0.3 / (obs_dims - 1) as f64

@@ -73,9 +73,10 @@ impl Snapshot {
     /// Highest CPU temperature across all zones, or `None` if no zones
     /// were readable. Used by the future budget calculator.
     pub fn max_cpu_celsius(&self) -> Option<f32> {
-        self.cpu_temps_celsius.iter().map(|c| c.celsius).fold(None, |acc, t| {
-            Some(acc.map_or(t, |a: f32| a.max(t)))
-        })
+        self.cpu_temps_celsius
+            .iter()
+            .map(|c| c.celsius)
+            .fold(None, |acc, t| Some(acc.map_or(t, |a: f32| a.max(t))))
     }
 
     /// Mean CPU temperature across all zones, or `None` if no zones
@@ -307,7 +308,13 @@ fn read_policy(path: &Path, id: u32) -> Option<CpuPolicy> {
     let max_hz = read_u64_khz(&path.join("scaling_max_freq")).unwrap_or(0);
     let hw_max_hz = read_u64_khz(&path.join("cpuinfo_max_freq")).unwrap_or(max_hz);
     let governor = read_string(&path.join("scaling_governor")).unwrap_or_default();
-    Some(CpuPolicy { id, cur_hz, max_hz, hw_max_hz, governor })
+    Some(CpuPolicy {
+        id,
+        cur_hz,
+        max_hz,
+        hw_max_hz,
+        governor,
+    })
 }
 
 #[cfg(test)]
@@ -374,9 +381,18 @@ mod tests {
     fn snapshot_max_and_mean_match_inputs() {
         let snap = Snapshot {
             cpu_temps_celsius: vec![
-                CpuTemp { zone: 0, celsius: 50.0 },
-                CpuTemp { zone: 1, celsius: 65.0 },
-                CpuTemp { zone: 2, celsius: 80.0 },
+                CpuTemp {
+                    zone: 0,
+                    celsius: 50.0,
+                },
+                CpuTemp {
+                    zone: 1,
+                    celsius: 65.0,
+                },
+                CpuTemp {
+                    zone: 2,
+                    celsius: 80.0,
+                },
             ],
             cpu_policies: vec![],
         };
@@ -425,7 +441,10 @@ mod tests {
             assert!(p.estimated_watts() <= 13.0);
         }
         // Synonym + bad input.
-        assert_eq!(ClockProfile::from_name("safe"), Some(ClockProfile::SafeOverclock));
+        assert_eq!(
+            ClockProfile::from_name("safe"),
+            Some(ClockProfile::SafeOverclock)
+        );
         assert_eq!(ClockProfile::from_name("turbo"), None);
         assert_eq!(ClockProfile::from_name(""), None);
     }
@@ -468,10 +487,8 @@ mod tests {
     #[test]
     fn read_handles_missing_roots_gracefully() {
         // Both roots point at a path that doesn't exist — no panic, empty snapshot.
-        let sensor = ThermalSensor::with_roots(
-            "/nonexistent-path-thermal",
-            "/nonexistent-path-cpufreq",
-        );
+        let sensor =
+            ThermalSensor::with_roots("/nonexistent-path-thermal", "/nonexistent-path-cpufreq");
         let snap = sensor.read().unwrap();
         assert!(snap.cpu_temps_celsius.is_empty());
         assert!(snap.cpu_policies.is_empty());

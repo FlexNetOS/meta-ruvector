@@ -7,13 +7,12 @@
 //! OS-level thread priorities.
 
 pub mod executor;
-pub mod scheduler;
 pub mod latency;
+pub mod scheduler;
 
-pub use executor::{ROS3Executor, Priority, Deadline};
-pub use scheduler::PriorityScheduler;
+pub use executor::{Deadline, Priority, ROS3Executor};
 pub use latency::LatencyTracker;
-
+pub use scheduler::PriorityScheduler;
 
 /// Real-time task priority levels
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]

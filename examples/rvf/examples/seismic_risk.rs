@@ -26,8 +26,8 @@ fn solve_mincut(lam: &[f64], edges: &[(usize, usize, f64)], gamma: f64) -> Vec<b
             adj[u].push((v, i));
             adj[v].push((u, i + 1));
         };
-    for i in 0..m {
-        let (p0, p1) = (lam[i].max(0.0), (-lam[i]).max(0.0));
+    for (i, &lam_i) in lam.iter().enumerate().take(m) {
+        let (p0, p1) = (lam_i.max(0.0), (-lam_i).max(0.0));
         if p0 > 1e-12 {
             add(&mut adj, &mut caps, s, i, p0);
         }
@@ -280,7 +280,10 @@ fn main() {
 
         // Depth distribution
         let shallow = depths.iter().filter(|&&d| d < 70.0).count();
-        let intermediate = depths.iter().filter(|&&d| d >= 70.0 && d <= 300.0).count();
+        let intermediate = depths
+            .iter()
+            .filter(|&&d| (70.0..=300.0).contains(&d))
+            .count();
         let deep = depths.iter().filter(|&&d| d > 300.0).count();
 
         // Representative place name (from strongest event in cell)
@@ -307,7 +310,7 @@ fn main() {
     }
 
     // Sort cells by event count for display
-    cells.sort_by(|a, b| b.event_count.cmp(&a.event_count));
+    cells.sort_by_key(|b| std::cmp::Reverse(b.event_count));
 
     // Global b-value statistics
     let b_values: Vec<f64> = cells.iter().map(|c| c.b_value).collect();
@@ -769,9 +772,7 @@ fn main() {
         (7.0, 10.0, "M7.0+  "),
     ] {
         let count = quakes.iter().filter(|q| q.mag >= lo && q.mag < hi).count();
-        let bar: String = std::iter::repeat('#')
-            .take(count / 5 + if count > 0 { 1 } else { 0 })
-            .collect();
+        let bar = "#".repeat(count / 5 + if count > 0 { 1 } else { 0 });
         println!("    {} {:>5}  {}", label, count, bar);
     }
 

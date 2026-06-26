@@ -784,12 +784,8 @@ mod tests {
 
     #[test]
     fn test_decrement_ttl() {
-        let mut header = Ipv4Header::new(
-            Ipv4Addr::LOCALHOST,
-            Ipv4Addr::LOCALHOST,
-            Protocol::Icmp,
-            0,
-        );
+        let mut header =
+            Ipv4Header::new(Ipv4Addr::LOCALHOST, Ipv4Addr::LOCALHOST, Protocol::Icmp, 0);
 
         header.ttl = 2;
         assert!(header.decrement_ttl().is_ok());

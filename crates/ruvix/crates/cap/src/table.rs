@@ -79,7 +79,7 @@ impl CapTableEntry {
             is_valid: true,
             owner,
             depth,
-            parent: CapHandle::null(),
+            parent,
         }
     }
 

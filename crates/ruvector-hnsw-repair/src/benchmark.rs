@@ -45,63 +45,36 @@ fn main() {
     // -------------------------------------------------------------------------
     // Strategy 1: TombstoneOnly
     // -------------------------------------------------------------------------
-    let (stats_ts, r_ts) = run_strategy(
-        "TombstoneOnly",
-        &graph,
-        &queries,
-        &delete_ids,
-        k,
-        ef_search,
-        |g, ids| {
-            let s = TombstoneOnly;
-            for &id in ids {
-                s.delete(g, id);
-            }
-        },
-        |g| {},
-    );
+    let (stats_ts, r_ts) = run_strategy(&graph, &queries, &delete_ids, k, ef_search, |g, ids| {
+        let s = TombstoneOnly;
+        for &id in ids {
+            s.delete(g, id);
+        }
+    });
     print_stats("TombstoneOnly", &stats_ts, baseline_recall, r_ts);
 
     // -------------------------------------------------------------------------
     // Strategy 2: BatchRepair (batch_size = 50)
     // -------------------------------------------------------------------------
     let batch_size = 50;
-    let (stats_br, r_br) = run_strategy(
-        "BatchRepair(50)",
-        &graph,
-        &queries,
-        &delete_ids,
-        k,
-        ef_search,
-        |g, ids| {
-            let s = BatchRepair::new(batch_size);
-            for &id in ids {
-                s.delete(g, id);
-            }
-            s.flush(g);
-        },
-        |_g| {},
-    );
+    let (stats_br, r_br) = run_strategy(&graph, &queries, &delete_ids, k, ef_search, |g, ids| {
+        let s = BatchRepair::new(batch_size);
+        for &id in ids {
+            s.delete(g, id);
+        }
+        s.flush(g);
+    });
     print_stats("BatchRepair(50)", &stats_br, baseline_recall, r_br);
 
     // -------------------------------------------------------------------------
     // Strategy 3: EagerRepair
     // -------------------------------------------------------------------------
-    let (stats_er, r_er) = run_strategy(
-        "EagerRepair",
-        &graph,
-        &queries,
-        &delete_ids,
-        k,
-        ef_search,
-        |g, ids| {
-            let s = EagerRepair;
-            for &id in ids {
-                s.delete(g, id);
-            }
-        },
-        |_g| {},
-    );
+    let (stats_er, r_er) = run_strategy(&graph, &queries, &delete_ids, k, ef_search, |g, ids| {
+        let s = EagerRepair;
+        for &id in ids {
+            s.delete(g, id);
+        }
+    });
     print_stats("EagerRepair", &stats_er, baseline_recall, r_er);
 
     // -------------------------------------------------------------------------
@@ -178,19 +151,16 @@ struct BenchStats {
     p95_us: f64,
 }
 
-fn run_strategy<D, P>(
-    _name: &str,
+fn run_strategy<D>(
     base: &HnswGraph,
     queries: &[Vec<f32>],
     delete_ids: &[usize],
     k: usize,
     ef_search: usize,
     do_deletes: D,
-    _post: P,
 ) -> (BenchStats, f32)
 where
     D: Fn(&mut HnswGraph, &[usize]),
-    P: Fn(&mut HnswGraph),
 {
     // Clone the graph so each strategy starts fresh.
     let mut g = clone_graph(base);
@@ -295,7 +265,7 @@ fn mean_dur(v: &[Duration]) -> f64 {
     v.iter().map(|d| d.as_secs_f64()).sum::<f64>() / v.len() as f64
 }
 
-fn percentile_dur(v: &mut Vec<Duration>, p: usize) -> f64 {
+fn percentile_dur(v: &mut [Duration], p: usize) -> f64 {
     if v.is_empty() {
         return 0.0;
     }

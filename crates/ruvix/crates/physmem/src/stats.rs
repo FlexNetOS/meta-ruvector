@@ -327,8 +327,8 @@ impl fmt::Debug for OrderStats {
 #[cfg(test)]
 mod tests {
     extern crate alloc;
-    use alloc::format;
     use super::*;
+    use alloc::format;
 
     #[test]
     fn test_new_stats() {

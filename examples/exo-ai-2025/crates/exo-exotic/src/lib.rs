@@ -37,15 +37,15 @@ pub mod temporal_qualia;
 pub mod thermodynamics;
 
 // Re-exports for convenience
-pub use black_holes::{AttractorState, CognitiveBlackHole, EscapeDynamics};
-pub use collective::{CollectiveConsciousness, DistributedPhi, HiveMind};
+pub use black_holes::{AttractorState, CognitiveBlackHole, EscapeDynamics, EscapeMethod, TrapType};
+pub use collective::{CollectiveConsciousness, DistributedPhi, HiveMind, SubstrateSpecialization};
 pub use dreams::{DreamEngine, DreamReport, DreamState};
-pub use emergence::{CausalEmergence, EmergenceDetector, PhaseTransition};
+pub use emergence::{AggregationType, CausalEmergence, EmergenceDetector, PhaseTransition};
 pub use free_energy::{ActiveInference, FreeEnergyMinimizer, PredictiveModel};
 pub use morphogenesis::{CognitiveEmbryogenesis, MorphogeneticField, TuringPattern};
-pub use multiple_selves::{MultipleSelvesSystem, SelfCoherence, SubPersonality};
-pub use strange_loops::{SelfReference, StrangeLoop, TangledHierarchy};
-pub use temporal_qualia::{SubjectiveTime, TemporalQualia, TimeCrystal};
+pub use multiple_selves::{EmotionalTone, MultipleSelvesSystem, SelfCoherence, SubPersonality};
+pub use strange_loops::{SelfAspect, SelfReference, StrangeLoop, TangledHierarchy};
+pub use temporal_qualia::{SubjectiveTime, TemporalEvent, TemporalQualia, TimeCrystal};
 pub use thermodynamics::{CognitiveThermodynamics, MaxwellDemon, ThoughtEntropy};
 
 /// Unified experiment runner for all exotic modules
@@ -143,7 +143,8 @@ mod tests {
     #[test]
     fn test_experiment_suite_creation() {
         let experiments = ExoticExperiments::new();
-        assert!(experiments.strange_loops.measure_depth() >= 0);
+        // measure_depth() returns usize (always >= 0); just ensure it is callable.
+        let _ = experiments.strange_loops.measure_depth();
     }
 
     #[test]

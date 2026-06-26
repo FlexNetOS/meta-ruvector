@@ -14,7 +14,7 @@ use exo_core::{Pattern, SubstrateBackend};
 use std::sync::Arc;
 
 mod types;
-use types::*;
+use types::{JsPattern, JsSearchResult};
 
 /// EXO-AI cognitive substrate for Node.js
 ///
@@ -36,10 +36,15 @@ impl ExoSubstrateNode {
     ///   distanceMetric: 'Cosine'
     /// });
     /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the backend cannot be initialized for the requested
+    /// number of dimensions.
     #[napi(constructor)]
     pub fn new(dimensions: u32) -> Result<Self> {
         let backend = ClassicalBackend::with_dimensions(dimensions as usize)
-            .map_err(|e| Error::from_reason(format!("Failed to create backend: {}", e)))?;
+            .map_err(|e| Error::from_reason(format!("Failed to create backend: {e}")))?;
 
         Ok(Self {
             backend: Arc::new(backend),
@@ -52,6 +57,11 @@ impl ExoSubstrateNode {
     /// ```javascript
     /// const substrate = ExoSubstrateNode.withDimensions(384);
     /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the backend cannot be initialized for the requested
+    /// number of dimensions.
     #[napi(factory)]
     pub fn with_dimensions(dimensions: u32) -> Result<Self> {
         Self::new(dimensions)
@@ -69,6 +79,11 @@ impl ExoSubstrateNode {
     ///   salience: 1.0
     /// });
     /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the pattern cannot be converted to the core
+    /// representation or if storing it in the backend fails.
     #[napi]
     pub fn store(&self, pattern: JsPattern) -> Result<String> {
         let core_pattern: Pattern = pattern.try_into()?;
@@ -76,7 +91,7 @@ impl ExoSubstrateNode {
 
         self.backend
             .manifold_deform(&core_pattern, 0.0)
-            .map_err(|e| Error::from_reason(format!("Failed to store pattern: {}", e)))?;
+            .map_err(|e| Error::from_reason(format!("Failed to store pattern: {e}")))?;
 
         Ok(pattern_id.to_string())
     }
@@ -92,12 +107,19 @@ impl ExoSubstrateNode {
     ///   10  // top-k
     /// );
     /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if the similarity search fails in the backend.
+    // napi-rs requires `Float32Array` arguments to be taken by value (it does not
+    // implement `FromNapiRef`), so a reference cannot be used here.
+    #[allow(clippy::needless_pass_by_value)]
     #[napi]
     pub fn search(&self, embedding: Float32Array, k: u32) -> Result<Vec<JsSearchResult>> {
         let results = self
             .backend
-            .similarity_search(&embedding.to_vec(), k as usize, None)
-            .map_err(|e| Error::from_reason(format!("Failed to search: {}", e)))?;
+            .similarity_search(&embedding, k as usize, None)
+            .map_err(|e| Error::from_reason(format!("Failed to search: {e}")))?;
 
         Ok(results.into_iter().map(Into::into).collect())
     }
@@ -111,6 +133,12 @@ impl ExoSubstrateNode {
     /// ```javascript
     /// const result = await substrate.hypergraphQuery('{"BettiNumbers":{"max_dimension":3}}');
     /// ```
+    ///
+    /// # Errors
+    ///
+    /// Currently never returns an error; hypergraph queries are not yet
+    /// supported by the classical backend and a `NotSupported` response is
+    /// returned instead. The `Result` is retained for forward compatibility.
     #[napi]
     pub fn hypergraph_query(&self, _query: String) -> Result<String> {
         // Hypergraph queries are not supported in the classical backend yet
@@ -126,19 +154,26 @@ impl ExoSubstrateNode {
     /// console.log(`Dimensions: ${dims}`);
     /// ```
     #[napi]
+    #[must_use]
     pub fn dimensions(&self) -> u32 {
-        self.backend.dimension() as u32
+        // The dimension is set from a `u32` in the constructor, so it always
+        // fits back into a `u32` — the round-trip cast cannot truncate.
+        #[allow(clippy::cast_possible_truncation)]
+        let dims = self.backend.dimension() as u32;
+        dims
     }
 }
 
 /// Get the version of the EXO-AI library
 #[napi]
+#[must_use]
 pub fn version() -> String {
     env!("CARGO_PKG_VERSION").to_string()
 }
 
 /// Test function to verify the bindings are working
 #[napi]
+#[must_use]
 pub fn hello() -> String {
     "Hello from EXO-AI cognitive substrate!".to_string()
 }

@@ -22,6 +22,9 @@ pub enum CausalConeType {
     },
 }
 
+/// Cached petgraph representation plus the pattern -> node-index map used for path finding.
+type GraphCache = (DiGraph<PatternId, ()>, HashMap<PatternId, NodeIndex>);
+
 /// Causal graph tracking antecedent relationships
 pub struct CausalGraph {
     /// Forward edges: cause -> effects
@@ -31,8 +34,7 @@ pub struct CausalGraph {
     /// Pattern timestamps for light cone calculations
     timestamps: DashMap<PatternId, SubstrateTime>,
     /// Cached graph representation for path finding
-    graph_cache:
-        Arc<parking_lot::RwLock<Option<(DiGraph<PatternId, ()>, HashMap<PatternId, NodeIndex>)>>>,
+    graph_cache: Arc<parking_lot::RwLock<Option<GraphCache>>>,
 }
 
 impl CausalGraph {
@@ -49,16 +51,10 @@ impl CausalGraph {
     /// Add causal edge: cause -> effect
     pub fn add_edge(&self, cause: PatternId, effect: PatternId) {
         // Add to forward edges
-        self.forward
-            .entry(cause)
-            .or_insert_with(Vec::new)
-            .push(effect);
+        self.forward.entry(cause).or_default().push(effect);
 
         // Add to backward edges
-        self.backward
-            .entry(effect)
-            .or_insert_with(Vec::new)
-            .push(cause);
+        self.backward.entry(effect).or_default().push(cause);
 
         // Invalidate cache
         *self.graph_cache.write() = None;
@@ -132,16 +128,12 @@ impl CausalGraph {
         // Add all nodes
         for entry in self.forward.iter() {
             let id = *entry.key();
-            if !node_map.contains_key(&id) {
-                let idx = graph.add_node(id);
-                node_map.insert(id, idx);
-            }
+            node_map.entry(id).or_insert_with(|| graph.add_node(id));
 
             for &effect in entry.value() {
-                if !node_map.contains_key(&effect) {
-                    let idx = graph.add_node(effect);
-                    node_map.insert(effect, idx);
-                }
+                node_map
+                    .entry(effect)
+                    .or_insert_with(|| graph.add_node(effect));
             }
         }
 

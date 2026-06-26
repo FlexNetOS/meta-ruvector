@@ -1,6 +1,7 @@
 //! ruvector-attention-node
 //!
 //! Node.js bindings for ruvector-attention via NAPI-RS
+#![allow(dead_code, unused_imports, unused_variables)]
 //!
 //! This crate provides comprehensive Node.js bindings for:
 //! - Attention mechanisms (dot-product, multi-head, hyperbolic, flash, linear, local-global, MoE)

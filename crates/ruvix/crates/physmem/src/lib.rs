@@ -304,7 +304,10 @@ mod tests {
         for order in 0..MAX_ORDER {
             let pages = order_to_pages(order);
             let back = pages_to_order(pages);
-            assert_eq!(back, order, "Order {order} -> {pages} pages -> order {back}");
+            assert_eq!(
+                back, order,
+                "Order {order} -> {pages} pages -> order {back}"
+            );
         }
     }
 }

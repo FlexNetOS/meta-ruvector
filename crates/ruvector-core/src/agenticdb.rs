@@ -166,9 +166,7 @@ impl AgenticDB {
 
     #[cfg(not(feature = "onnx-embeddings"))]
     fn default_embedding_provider(dimensions: usize) -> BoxedEmbeddingProvider {
-        tracing::info!(
-            "AgenticDB: using hash embeddings (feature onnx-embeddings not enabled)"
-        );
+        tracing::info!("AgenticDB: using hash embeddings (feature onnx-embeddings not enabled)");
         Arc::new(HashEmbedding::new(dimensions))
     }
 

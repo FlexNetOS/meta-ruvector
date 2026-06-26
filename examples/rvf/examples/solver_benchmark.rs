@@ -168,7 +168,7 @@ fn simulate_benchmark(
     let base_iters = (matrix_size as f64).sqrt() * algo_factor * prob_factor;
     let noise = 0.8 + lcg_f64(&mut state) * 0.4; // 0.8 to 1.2
     let iterations = (base_iters * noise * (1.0 / tolerance).log10()) as u64;
-    let iterations = iterations.max(1).min(10000);
+    let iterations = iterations.clamp(1, 10000);
 
     // Convergence rate: closer to 1.0 means slower convergence
     let base_rate = match algorithm {

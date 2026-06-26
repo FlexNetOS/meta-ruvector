@@ -370,7 +370,7 @@ impl<'a> DeviceTree<'a> {
                 Some(FdtToken::Prop) => {
                     let len = read_be_u32(structure, offset).ok_or(DtbError::UnexpectedEnd)?;
                     offset += 8; // Skip len and nameoff
-                    // CVE-003 FIX: Check for integer overflow
+                                 // CVE-003 FIX: Check for integer overflow
                     let value_end = offset
                         .checked_add(len as usize)
                         .ok_or(DtbError::IntegerOverflow)?;

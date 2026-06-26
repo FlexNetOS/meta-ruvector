@@ -169,7 +169,10 @@ impl fmt::Display for DtbError {
                 write!(f, "Unsupported FDT version: {version}")
             }
             Self::BlobTooSmall { size, min_size } => {
-                write!(f, "DTB blob too small: {size} bytes, need at least {min_size}")
+                write!(
+                    f,
+                    "DTB blob too small: {size} bytes, need at least {min_size}"
+                )
             }
             Self::InvalidTotalSize {
                 header_size,

@@ -2,6 +2,8 @@
 //!
 //! This crate provides a comprehensive demonstration of all RuVix kernel features
 //! as specified in ADR-087. It implements a complete cognitive pipeline with:
+
+#![allow(dead_code, unused_imports, unused_variables)]
 //!
 //! - **5 Components**: SensorAdapter, FeatureExtractor, ReasoningEngine, Attestor, Coordinator
 //! - **3 Region Types**: Immutable, AppendOnly, Slab

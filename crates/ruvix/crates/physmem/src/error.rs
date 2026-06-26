@@ -108,8 +108,8 @@ impl std::error::Error for PhysMemError {}
 #[cfg(test)]
 mod tests {
     extern crate alloc;
-    use alloc::format;
     use super::*;
+    use alloc::format;
 
     #[test]
     fn test_error_as_str() {
@@ -156,7 +156,10 @@ mod tests {
 
     #[test]
     fn test_display() {
-        assert_eq!(format!("{}", PhysMemError::OutOfMemory), "Out of physical memory");
+        assert_eq!(
+            format!("{}", PhysMemError::OutOfMemory),
+            "Out of physical memory"
+        );
     }
 
     #[test]

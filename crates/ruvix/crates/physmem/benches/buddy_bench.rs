@@ -28,15 +28,19 @@ fn bench_multi_page_alloc_free(c: &mut Criterion) {
     for pages in [2, 4, 8, 16, 32, 64, 128, 256, 512] {
         group.throughput(Throughput::Elements(pages as u64));
 
-        group.bench_with_input(BenchmarkId::new("alloc_free", pages), &pages, |b, &pages| {
-            let mut allocator = BuddyAllocator::new(PhysAddr::new(BASE_ADDR), 4096);
+        group.bench_with_input(
+            BenchmarkId::new("alloc_free", pages),
+            &pages,
+            |b, &pages| {
+                let mut allocator = BuddyAllocator::new(PhysAddr::new(BASE_ADDR), 4096);
 
-            b.iter(|| {
-                let addr = allocator.alloc_pages(pages).unwrap();
-                allocator.dealloc_pages(addr, pages);
-                black_box(addr)
-            });
-        });
+                b.iter(|| {
+                    let addr = allocator.alloc_pages(pages).unwrap();
+                    allocator.dealloc_pages(addr, pages);
+                    black_box(addr)
+                });
+            },
+        );
     }
 
     group.finish();
@@ -48,22 +52,26 @@ fn bench_sequential_alloc(c: &mut Criterion) {
     for count in [10, 50, 100, 200] {
         group.throughput(Throughput::Elements(count as u64));
 
-        group.bench_with_input(BenchmarkId::new("alloc_then_free", count), &count, |b, &count| {
-            b.iter(|| {
-                let mut allocator = BuddyAllocator::new(PhysAddr::new(BASE_ADDR), 4096);
-                let mut addrs = [PhysAddr::NULL; 200];
+        group.bench_with_input(
+            BenchmarkId::new("alloc_then_free", count),
+            &count,
+            |b, &count| {
+                b.iter(|| {
+                    let mut allocator = BuddyAllocator::new(PhysAddr::new(BASE_ADDR), 4096);
+                    let mut addrs = [PhysAddr::NULL; 200];
 
-                for addr in addrs.iter_mut().take(count) {
-                    *addr = allocator.alloc_pages(1).unwrap();
-                }
+                    for addr in addrs.iter_mut().take(count) {
+                        *addr = allocator.alloc_pages(1).unwrap();
+                    }
 
-                for addr in addrs.iter().take(count) {
-                    allocator.dealloc_pages(*addr, 1);
-                }
+                    for addr in addrs.iter().take(count) {
+                        allocator.dealloc_pages(*addr, 1);
+                    }
 
-                black_box(&addrs)
-            });
-        });
+                    black_box(&addrs)
+                });
+            },
+        );
     }
 
     group.finish();

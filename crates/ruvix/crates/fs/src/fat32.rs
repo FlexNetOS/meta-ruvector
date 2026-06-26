@@ -173,7 +173,11 @@ impl Fat32BootSector {
     /// Get the volume label as a string.
     #[must_use]
     pub fn volume_label_str(&self) -> &str {
-        let end = self.volume_label.iter().rposition(|&b| b != b' ').map_or(0, |i| i + 1);
+        let end = self
+            .volume_label
+            .iter()
+            .rposition(|&b| b != b' ')
+            .map_or(0, |i| i + 1);
         core::str::from_utf8(&self.volume_label[..end]).unwrap_or("")
     }
 }
@@ -284,16 +288,26 @@ impl Fat32DirEntry {
     #[must_use]
     pub fn short_name(&self) -> String {
         // Handle special first byte
-        let first = if self.name[0] == 0x05 { 0xE5 } else { self.name[0] };
+        let first = if self.name[0] == 0x05 {
+            0xE5
+        } else {
+            self.name[0]
+        };
 
         // Get name part (first 8 bytes, trimmed)
-        let name_end = self.name[..8].iter().rposition(|&b| b != b' ').map_or(0, |i| i + 1);
+        let name_end = self.name[..8]
+            .iter()
+            .rposition(|&b| b != b' ')
+            .map_or(0, |i| i + 1);
         let name_bytes: Vec<u8> = core::iter::once(first)
             .chain(self.name[1..name_end].iter().copied())
             .collect();
 
         // Get extension part (last 3 bytes, trimmed)
-        let ext_end = self.name[8..11].iter().rposition(|&b| b != b' ').map_or(0, |i| i + 1);
+        let ext_end = self.name[8..11]
+            .iter()
+            .rposition(|&b| b != b' ')
+            .map_or(0, |i| i + 1);
 
         let name_str = String::from_utf8_lossy(&name_bytes);
         if ext_end > 0 {
@@ -577,7 +591,8 @@ impl<B: BlockDevice> Fat32Fs<B> {
 
         // Read sector
         let mut sector_data = vec![0u8; FAT32_SECTOR_SIZE];
-        self.device.read_block(fat_sector as u64, &mut sector_data)?;
+        self.device
+            .read_block(fat_sector as u64, &mut sector_data)?;
 
         let entry = u32::from_le_bytes([
             sector_data[offset],
@@ -595,7 +610,8 @@ impl<B: BlockDevice> Fat32Fs<B> {
         let mut current = start;
 
         // Safety limit to prevent infinite loops
-        let max_clusters = (self.boot_sector.total_sectors / self.boot_sector.sectors_per_cluster as u32) as usize;
+        let max_clusters =
+            (self.boot_sector.total_sectors / self.boot_sector.sectors_per_cluster as u32) as usize;
 
         while current >= 2 && current < FAT32_EOC_MIN && clusters.len() < max_clusters {
             clusters.push(current);
@@ -667,7 +683,12 @@ impl<B: BlockDevice> Fat32Fs<B> {
                 let name = if !lfn_parts.is_empty() {
                     // Sort LFN parts by sequence number and combine
                     lfn_parts.sort_by_key(|(seq, _)| *seq);
-                    let chars: Vec<u16> = lfn_parts.iter().rev().flat_map(|(_, chars)| chars.iter()).copied().collect();
+                    let chars: Vec<u16> = lfn_parts
+                        .iter()
+                        .rev()
+                        .flat_map(|(_, chars)| chars.iter())
+                        .copied()
+                        .collect();
                     let name = String::from_utf16_lossy(&chars);
                     lfn_parts.clear();
                     name
@@ -729,8 +750,9 @@ impl<B: BlockDevice> Fat32Fs<B> {
                 .min(bytes_available)
                 .min(buf.len() - bytes_read);
 
-            buf[bytes_read..bytes_read + bytes_to_copy]
-                .copy_from_slice(&cluster_data[offset_in_cluster..offset_in_cluster + bytes_to_copy]);
+            buf[bytes_read..bytes_read + bytes_to_copy].copy_from_slice(
+                &cluster_data[offset_in_cluster..offset_in_cluster + bytes_to_copy],
+            );
 
             bytes_read += bytes_to_copy;
             current_offset += bytes_to_copy as u64;

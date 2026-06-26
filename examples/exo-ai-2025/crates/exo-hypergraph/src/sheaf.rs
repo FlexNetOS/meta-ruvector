@@ -144,7 +144,7 @@ impl SheafStructure {
         // Associate with hyperedge
         self.hyperedge_sections
             .entry(hyperedge_id)
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(section_id);
 
         Ok(())

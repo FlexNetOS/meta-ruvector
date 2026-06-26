@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
 /// Ruvector CLI configuration
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Config {
     /// Database options
     #[serde(default)]
@@ -116,16 +116,6 @@ fn default_host() -> String {
 
 fn default_port() -> u16 {
     3000
-}
-
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            database: DatabaseConfig::default(),
-            cli: CliConfig::default(),
-            mcp: McpConfig::default(),
-        }
-    }
 }
 
 impl Default for DatabaseConfig {
@@ -251,6 +241,8 @@ impl Config {
     }
 
     /// Save configuration to file
+    // Retained config API: round-trips the in-memory config to a TOML file; not yet wired to a subcommand.
+    #[allow(dead_code)]
     pub fn save<P: AsRef<Path>>(&self, path: P) -> Result<()> {
         let content = toml::to_string_pretty(self).context("Failed to serialize config")?;
         std::fs::write(path, content).context("Failed to write config file")?;

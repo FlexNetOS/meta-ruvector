@@ -40,7 +40,8 @@ pub struct Coordinator {
     name: &'static str,
 
     /// Timer capability.
-    timer_cap: CapHandle,
+    #[allow(dead_code)]
+    pub(super) timer_cap: CapHandle,
 
     /// Spawned task handles.
     tasks: Vec<TaskHandle>,
@@ -163,7 +164,7 @@ impl Coordinator {
         let mut handles = Vec::with_capacity(component_types.len());
 
         for (i, _comp_type) in component_types.iter().enumerate() {
-            let entry = RvfComponentId::new(self.rvf_mount, i as u32);
+            let _entry = RvfComponentId::new(self.rvf_mount, i as u32);
 
             // In a real kernel, we would pass entry point info
             // For simulation, we just spawn with empty caps
@@ -191,7 +192,7 @@ impl Coordinator {
         // Each component needs specific capabilities
 
         // SensorAdapter (task 0): sensor cap, output queue cap
-        if self.tasks.len() > 0 {
+        if !self.tasks.is_empty() {
             let cap1 = kernel.cap_grant(self.tasks[0], self.timer_cap, CapRights::READ)?;
             granted.push(cap1);
             self.caps_granted += 1;

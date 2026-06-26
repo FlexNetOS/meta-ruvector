@@ -255,7 +255,7 @@ fn score_life_candidate(
     let raw = disequilibrium * 0.4 + repeatability * 0.3
         - contamination_penalty * 0.15
         - stellar_confound_penalty * 0.15;
-    let total_score = raw.max(0.0).min(1.0);
+    let total_score = raw.clamp(0.0, 1.0);
 
     // Uncertainty decreases with more molecules and observations
     let uncertainty =
@@ -335,11 +335,12 @@ fn main() {
             // Determine dominant molecule in this band
             let mut dominant_mol = "none";
             for mol in MOLECULES {
-                if mol.wavelength_um >= wl_lo && mol.wavelength_um < wl_hi {
-                    if spectrum.detected_molecules.contains(&mol.name.to_string()) {
-                        dominant_mol = mol.name;
-                        break;
-                    }
+                if mol.wavelength_um >= wl_lo
+                    && mol.wavelength_um < wl_hi
+                    && spectrum.detected_molecules.contains(&mol.name.to_string())
+                {
+                    dominant_mol = mol.name;
+                    break;
                 }
             }
 
@@ -395,8 +396,7 @@ fn main() {
     // ====================================================================
     println!("\n--- L1. Feature Extraction: Molecule Co-Occurrence ---");
 
-    let all_edges: Vec<Vec<CoOccurrenceEdge>> =
-        spectra.iter().map(|s| extract_features(s)).collect();
+    let all_edges: Vec<Vec<CoOccurrenceEdge>> = spectra.iter().map(extract_features).collect();
 
     let total_edges: usize = all_edges.iter().map(|e| e.len()).sum();
     println!("  Total co-occurrence edges: {}", total_edges);

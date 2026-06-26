@@ -384,7 +384,11 @@ impl RamFs {
 
     /// Get the inode for a given ID.
     fn get_inode(&self, id: InodeId) -> FsResult<RamInode> {
-        self.inodes.borrow().get(&id).cloned().ok_or(FsError::InodeNotFound)
+        self.inodes
+            .borrow()
+            .get(&id)
+            .cloned()
+            .ok_or(FsError::InodeNotFound)
     }
 
     /// Get a mutable reference to an inode.
@@ -417,7 +421,11 @@ impl RamFs {
 
     /// Remove an inode from the table.
     fn remove_inode(&self, id: InodeId) -> FsResult<RamInode> {
-        let inode = self.inodes.borrow_mut().remove(&id).ok_or(FsError::InodeNotFound)?;
+        let inode = self
+            .inodes
+            .borrow_mut()
+            .remove(&id)
+            .ok_or(FsError::InodeNotFound)?;
         let size = inode.size();
         let current_used = *self.bytes_used.borrow();
         *self.bytes_used.borrow_mut() = current_used.saturating_sub(size);
@@ -776,7 +784,9 @@ mod tests {
         fs.mount().unwrap();
 
         let root = fs.root().unwrap();
-        let file_id = fs.create(root, "test.txt", FileType::Regular, 0o644).unwrap();
+        let file_id = fs
+            .create(root, "test.txt", FileType::Regular, 0o644)
+            .unwrap();
 
         let stat = fs.stat(file_id).unwrap();
         assert_eq!(stat.file_type, FileType::Regular);
@@ -789,7 +799,9 @@ mod tests {
         fs.mount().unwrap();
 
         let root = fs.root().unwrap();
-        let file_id = fs.create(root, "test.txt", FileType::Regular, 0o644).unwrap();
+        let file_id = fs
+            .create(root, "test.txt", FileType::Regular, 0o644)
+            .unwrap();
 
         // Write data
         let data = b"Hello, World!";
@@ -809,13 +821,17 @@ mod tests {
         fs.mount().unwrap();
 
         let root = fs.root().unwrap();
-        let dir_id = fs.create(root, "subdir", FileType::Directory, 0o755).unwrap();
+        let dir_id = fs
+            .create(root, "subdir", FileType::Directory, 0o755)
+            .unwrap();
 
         let stat = fs.stat(dir_id).unwrap();
         assert_eq!(stat.file_type, FileType::Directory);
 
         // Create file in subdirectory
-        let file_id = fs.create(dir_id, "nested.txt", FileType::Regular, 0o644).unwrap();
+        let file_id = fs
+            .create(dir_id, "nested.txt", FileType::Regular, 0o644)
+            .unwrap();
         assert!(file_id.is_valid());
     }
 
@@ -825,7 +841,9 @@ mod tests {
         fs.mount().unwrap();
 
         let root = fs.root().unwrap();
-        let file_id = fs.create(root, "test.txt", FileType::Regular, 0o644).unwrap();
+        let file_id = fs
+            .create(root, "test.txt", FileType::Regular, 0o644)
+            .unwrap();
 
         let found = fs.lookup(root, "test.txt").unwrap();
         assert_eq!(found, file_id);
@@ -839,7 +857,8 @@ mod tests {
         fs.mount().unwrap();
 
         let root = fs.root().unwrap();
-        fs.create(root, "test.txt", FileType::Regular, 0o644).unwrap();
+        fs.create(root, "test.txt", FileType::Regular, 0o644)
+            .unwrap();
 
         fs.unlink(root, "test.txt").unwrap();
 
@@ -852,8 +871,11 @@ mod tests {
         fs.mount().unwrap();
 
         let root = fs.root().unwrap();
-        let dir_id = fs.create(root, "subdir", FileType::Directory, 0o755).unwrap();
-        fs.create(dir_id, "file.txt", FileType::Regular, 0o644).unwrap();
+        let dir_id = fs
+            .create(root, "subdir", FileType::Directory, 0o755)
+            .unwrap();
+        fs.create(dir_id, "file.txt", FileType::Regular, 0o644)
+            .unwrap();
 
         assert_eq!(fs.unlink(root, "subdir"), Err(FsError::DirectoryNotEmpty));
     }
@@ -866,7 +888,8 @@ mod tests {
         let root = fs.root().unwrap();
         fs.create(root, "a.txt", FileType::Regular, 0o644).unwrap();
         fs.create(root, "b.txt", FileType::Regular, 0o644).unwrap();
-        fs.create(root, "c_dir", FileType::Directory, 0o755).unwrap();
+        fs.create(root, "c_dir", FileType::Directory, 0o755)
+            .unwrap();
 
         let entries = fs.readdir(root, 0).unwrap();
 
@@ -885,7 +908,9 @@ mod tests {
         fs.mount().unwrap();
 
         let root = fs.root().unwrap();
-        let file_id = fs.create(root, "test.txt", FileType::Regular, 0o644).unwrap();
+        let file_id = fs
+            .create(root, "test.txt", FileType::Regular, 0o644)
+            .unwrap();
 
         fs.write(file_id, 0, b"Hello, World!").unwrap();
         assert_eq!(fs.stat(file_id).unwrap().size, 13);
@@ -905,8 +930,12 @@ mod tests {
         fs.mount().unwrap();
 
         let root = fs.root().unwrap();
-        let dir_id = fs.create(root, "subdir", FileType::Directory, 0o755).unwrap();
-        let file_id = fs.create(dir_id, "test.txt", FileType::Regular, 0o644).unwrap();
+        let dir_id = fs
+            .create(root, "subdir", FileType::Directory, 0o755)
+            .unwrap();
+        let file_id = fs
+            .create(dir_id, "test.txt", FileType::Regular, 0o644)
+            .unwrap();
 
         let found = fs.lookup_path(Path::new("/subdir/test.txt")).unwrap();
         assert_eq!(found, file_id);
@@ -928,7 +957,8 @@ mod tests {
         fs.mount().unwrap();
 
         let root = fs.root().unwrap();
-        fs.create(root, "test.txt", FileType::Regular, 0o644).unwrap();
+        fs.create(root, "test.txt", FileType::Regular, 0o644)
+            .unwrap();
 
         assert_eq!(
             fs.create(root, "test.txt", FileType::Regular, 0o644),

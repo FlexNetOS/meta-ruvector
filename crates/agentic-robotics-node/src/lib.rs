@@ -205,7 +205,9 @@ mod tests {
         let node = AgenticNode::new("test_node".to_string()).unwrap();
         let publisher = node.create_publisher("/test".to_string()).await.unwrap();
 
-        let result = publisher.publish(r#"{"message": "hello"}"#.to_string()).await;
+        let result = publisher
+            .publish(r#"{"message": "hello"}"#.to_string())
+            .await;
         assert!(result.is_ok());
 
         let stats = publisher.get_stats();

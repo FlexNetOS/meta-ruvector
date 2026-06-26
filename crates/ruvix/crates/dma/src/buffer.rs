@@ -109,7 +109,13 @@ impl DmaBuffer {
         size: usize,
         flags: DmaBufferFlags,
     ) -> DmaResult<Self> {
-        Self::with_alignment(physical_addr, virtual_addr, size, DMA_BUFFER_ALIGNMENT, flags)
+        Self::with_alignment(
+            physical_addr,
+            virtual_addr,
+            size,
+            DMA_BUFFER_ALIGNMENT,
+            flags,
+        )
     }
 
     /// Create a new DMA buffer with custom alignment.

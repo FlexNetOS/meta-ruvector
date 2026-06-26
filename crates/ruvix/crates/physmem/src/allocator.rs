@@ -5,8 +5,8 @@
 //! and deallocation with minimal fragmentation.
 
 use crate::{
-    AllocatorStats, PageFrame, PageOrder, PhysAddr, PhysMemError,
-    MAX_ORDER, PAGE_SIZE, order_to_pages, pages_to_order,
+    order_to_pages, pages_to_order, AllocatorStats, PageFrame, PageOrder, PhysAddr, PhysMemError,
+    MAX_ORDER, PAGE_SIZE,
 };
 
 /// Maximum number of blocks per free list.
@@ -221,9 +221,16 @@ impl BuddyAllocator {
             base_addr: PhysAddr::NULL,
             total_pages: 0,
             free_lists: [
-                FreeList::new(), FreeList::new(), FreeList::new(), FreeList::new(),
-                FreeList::new(), FreeList::new(), FreeList::new(), FreeList::new(),
-                FreeList::new(), FreeList::new(),
+                FreeList::new(),
+                FreeList::new(),
+                FreeList::new(),
+                FreeList::new(),
+                FreeList::new(),
+                FreeList::new(),
+                FreeList::new(),
+                FreeList::new(),
+                FreeList::new(),
+                FreeList::new(),
             ],
             stats: AllocatorStats::new(0, 0),
             initialized: false,
@@ -674,7 +681,11 @@ impl BuddyAllocator {
     pub fn dump_free_lists(&self) {
         std::println!("Buddy Allocator State:");
         std::println!("  Base: {}", self.base_addr);
-        std::println!("  Total: {} pages ({} bytes)", self.total_pages, self.total_pages * PAGE_SIZE);
+        std::println!(
+            "  Total: {} pages ({} bytes)",
+            self.total_pages,
+            self.total_pages * PAGE_SIZE
+        );
         std::println!("  Free: {} pages", self.free_page_count());
         std::println!("  Used: {} pages", self.used_pages());
         std::println!();
@@ -684,8 +695,13 @@ impl BuddyAllocator {
             if count > 0 {
                 let pages = order_to_pages(order);
                 let bytes = pages * PAGE_SIZE;
-                std::println!("  Order {}: {} blocks ({} pages each, {} bytes)",
-                    order, count, pages, bytes);
+                std::println!(
+                    "  Order {}: {} blocks ({} pages each, {} bytes)",
+                    order,
+                    count,
+                    pages,
+                    bytes
+                );
             }
         }
     }
@@ -993,7 +1009,9 @@ mod tests {
         assert!(alloc.contains(PhysAddr::new(TEST_BASE)));
         assert!(alloc.contains(PhysAddr::new(TEST_BASE + 0x1000)));
         assert!(!alloc.contains(PhysAddr::new(TEST_BASE - 1)));
-        assert!(!alloc.contains(PhysAddr::new(TEST_BASE + TEST_PAGES as u64 * PAGE_SIZE as u64)));
+        assert!(!alloc.contains(PhysAddr::new(
+            TEST_BASE + TEST_PAGES as u64 * PAGE_SIZE as u64
+        )));
     }
 
     #[test]

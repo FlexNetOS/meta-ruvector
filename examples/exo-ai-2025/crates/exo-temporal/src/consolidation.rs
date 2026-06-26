@@ -69,7 +69,7 @@ pub fn compute_salience(
         + config.w_surprise * surprise;
 
     // Clamp to [0, 1]
-    salience.max(0.0).min(1.0)
+    salience.clamp(0.0, 1.0)
 }
 
 /// Compute surprise score using sampling-based approximation
@@ -297,7 +297,7 @@ mod tests {
 
         let salience = compute_salience(&temporal_pattern, &causal_graph, &long_term, &config);
 
-        assert!(salience >= 0.0 && salience <= 1.0);
+        assert!((0.0..=1.0).contains(&salience));
     }
 
     #[test]

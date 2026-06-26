@@ -64,14 +64,14 @@ pub use error::{FsError, FsResult};
 pub use fat32::{Fat32BootSector, Fat32DirEntry};
 #[cfg(feature = "alloc")]
 pub use fat32::{Fat32Fs, Fat32Inode};
-pub use path::{Path, PathComponent, PathIter};
 #[cfg(feature = "alloc")]
 pub use path::PathBuf;
+pub use path::{Path, PathComponent, PathIter};
 #[cfg(feature = "alloc")]
 pub use ramfs::{RamFs, RamInode, RamInodeType};
 pub use vfs::{
-    DirEntry, FileSystem, FileType, Inode, InodeId, InodeOps, MountId, OpenFile,
-    OpenFlags, SeekFrom,
+    DirEntry, FileSystem, FileType, Inode, InodeId, InodeOps, MountId, OpenFile, OpenFlags,
+    SeekFrom,
 };
 #[cfg(feature = "alloc")]
 pub use vfs::{OpenFileTable, VfsMountPoint, VfsMountTable};

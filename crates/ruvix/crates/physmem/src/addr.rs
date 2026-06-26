@@ -437,8 +437,8 @@ impl From<PhysAddr> for u64 {
 #[cfg(test)]
 mod tests {
     extern crate alloc;
-    use alloc::format;
     use super::*;
+    use alloc::format;
 
     #[test]
     fn test_new_and_as_u64() {

@@ -182,24 +182,59 @@ pub enum OutputFormat {
 /// Execute the DTB command
 pub fn execute(action: DtbAction, verbose: bool) -> Result<()> {
     match action {
-        DtbAction::Validate { file, strict, compatible, check_required } => {
-            execute_validate(&file, strict, compatible.as_deref(), check_required, verbose)
-        }
-        DtbAction::Info { file, node, all, format } => {
-            execute_info(&file, node.as_deref(), all, format, verbose)
-        }
-        DtbAction::Dump { file, output, node, resolve_phandles } => {
-            execute_dump(&file, output.as_ref(), node.as_deref(), resolve_phandles, verbose)
-        }
-        DtbAction::Compare { file1, file2, diff_only } => {
-            execute_compare(&file1, &file2, diff_only, verbose)
-        }
-        DtbAction::Compile { file, output, include_path, debug } => {
-            execute_compile(&file, &output, &include_path, debug, verbose)
-        }
-        DtbAction::Search { file, property, node, value } => {
-            execute_search(&file, property.as_deref(), node.as_deref(), value.as_deref(), verbose)
-        }
+        DtbAction::Validate {
+            file,
+            strict,
+            compatible,
+            check_required,
+        } => execute_validate(
+            &file,
+            strict,
+            compatible.as_deref(),
+            check_required,
+            verbose,
+        ),
+        DtbAction::Info {
+            file,
+            node,
+            all,
+            format,
+        } => execute_info(&file, node.as_deref(), all, format, verbose),
+        DtbAction::Dump {
+            file,
+            output,
+            node,
+            resolve_phandles,
+        } => execute_dump(
+            &file,
+            output.as_ref(),
+            node.as_deref(),
+            resolve_phandles,
+            verbose,
+        ),
+        DtbAction::Compare {
+            file1,
+            file2,
+            diff_only,
+        } => execute_compare(&file1, &file2, diff_only, verbose),
+        DtbAction::Compile {
+            file,
+            output,
+            include_path,
+            debug,
+        } => execute_compile(&file, &output, &include_path, debug, verbose),
+        DtbAction::Search {
+            file,
+            property,
+            node,
+            value,
+        } => execute_search(
+            &file,
+            property.as_deref(),
+            node.as_deref(),
+            value.as_deref(),
+            verbose,
+        ),
     }
 }
 
@@ -229,7 +264,10 @@ fn execute_validate(
 
     let magic = u32::from_be_bytes([data[0], data[1], data[2], data[3]]);
     if magic != 0xd00dfeed {
-        bail!("Invalid DTB magic number: 0x{:08x} (expected 0xd00dfeed)", magic);
+        bail!(
+            "Invalid DTB magic number: 0x{:08x} (expected 0xd00dfeed)",
+            magic
+        );
     }
     println!("  Magic number: 0x{:08x} {}", magic, "OK".green());
 
@@ -248,8 +286,12 @@ fn execute_validate(
     println!("  Version: {} (last compatible: {})", version, last_comp);
 
     if total_size != data.len() {
-        println!("  {} File size mismatch: header says {} bytes, file is {} bytes",
-            "WARN".yellow(), total_size, data.len());
+        println!(
+            "  {} File size mismatch: header says {} bytes, file is {} bytes",
+            "WARN".yellow(),
+            total_size,
+            data.len()
+        );
     }
 
     println!("{} Validating structure block...", "[2/5]".cyan());
@@ -269,7 +311,8 @@ fn execute_validate(
         // Check root node for required properties
         let has_compatible = search_property_in_root(&data, off_struct, off_strings, "compatible");
         let has_model = search_property_in_root(&data, off_struct, off_strings, "model");
-        let has_address_cells = search_property_in_root(&data, off_struct, off_strings, "#address-cells");
+        let has_address_cells =
+            search_property_in_root(&data, off_struct, off_strings, "#address-cells");
         let has_size_cells = search_property_in_root(&data, off_struct, off_strings, "#size-cells");
 
         print_check("  /compatible", has_compatible);
@@ -322,7 +365,11 @@ fn execute_info(
     verbose: bool,
 ) -> Result<()> {
     if verbose {
-        println!("{} Reading DTB info from {}", "[dtb]".cyan(), file.display());
+        println!(
+            "{} Reading DTB info from {}",
+            "[dtb]".cyan(),
+            file.display()
+        );
     }
 
     let data = load_dtb_data(file)?;
@@ -411,7 +458,11 @@ fn execute_dump(
 
     if let Some(out) = output {
         fs::write(out, &dts)?;
-        println!("{} Dumped DTS to {}", "OK".green(), out.display().to_string().yellow());
+        println!(
+            "{} Dumped DTS to {}",
+            "OK".green(),
+            out.display().to_string().yellow()
+        );
     } else {
         println!();
         println!("{}", "--- DTS Output ---".dimmed());
@@ -422,9 +473,19 @@ fn execute_dump(
     Ok(())
 }
 
-fn execute_compare(file1: &PathBuf, file2: &PathBuf, _diff_only: bool, verbose: bool) -> Result<()> {
+fn execute_compare(
+    file1: &PathBuf,
+    file2: &PathBuf,
+    _diff_only: bool,
+    verbose: bool,
+) -> Result<()> {
     if verbose {
-        println!("{} Comparing DTBs:\n  {} vs {}", "[dtb]".cyan(), file1.display(), file2.display());
+        println!(
+            "{} Comparing DTBs:\n  {} vs {}",
+            "[dtb]".cyan(),
+            file1.display(),
+            file2.display()
+        );
     }
 
     let data1 = load_dtb_data(file1)?;
@@ -447,9 +508,11 @@ fn execute_compare(file1: &PathBuf, file2: &PathBuf, _diff_only: bool, verbose: 
 
         // Parse and compare header info
         let off_struct1 = u32::from_be_bytes([data1[8], data1[9], data1[10], data1[11]]) as usize;
-        let off_strings1 = u32::from_be_bytes([data1[12], data1[13], data1[14], data1[15]]) as usize;
+        let off_strings1 =
+            u32::from_be_bytes([data1[12], data1[13], data1[14], data1[15]]) as usize;
         let off_struct2 = u32::from_be_bytes([data2[8], data2[9], data2[10], data2[11]]) as usize;
-        let off_strings2 = u32::from_be_bytes([data2[12], data2[13], data2[14], data2[15]]) as usize;
+        let off_strings2 =
+            u32::from_be_bytes([data2[12], data2[13], data2[14], data2[15]]) as usize;
 
         let (nodes1, props1) = count_structure_elements(&data1, off_struct1, off_strings1)?;
         let (nodes2, props2) = count_structure_elements(&data2, off_struct2, off_strings2)?;
@@ -473,14 +536,27 @@ fn execute_compile(
     verbose: bool,
 ) -> Result<()> {
     if verbose {
-        println!("{} Compiling DTS {} to DTB {}", "[dtb]".cyan(), file.display(), output.display());
+        println!(
+            "{} Compiling DTS {} to DTB {}",
+            "[dtb]".cyan(),
+            file.display(),
+            output.display()
+        );
     }
 
-    println!("{} DTS compilation requires external dtc tool", "[note]".yellow());
+    println!(
+        "{} DTS compilation requires external dtc tool",
+        "[note]".yellow()
+    );
     println!();
     println!("To compile DTS files, use the device tree compiler (dtc):");
     println!();
-    println!("  {} dtc -I dts -O dtb -o {} {}", "$".dimmed(), output.display(), file.display());
+    println!(
+        "  {} dtc -I dts -O dtb -o {} {}",
+        "$".dimmed(),
+        output.display(),
+        file.display()
+    );
     println!();
     println!("Install dtc:");
     println!("  Ubuntu/Debian: sudo apt install device-tree-compiler");
@@ -489,7 +565,10 @@ fn execute_compile(
 
     if debug {
         println!();
-        println!("{} Full DTS parsing is not yet implemented in ruvix-cli.", "[debug]".magenta());
+        println!(
+            "{} Full DTS parsing is not yet implemented in ruvix-cli.",
+            "[debug]".magenta()
+        );
     }
 
     // Try to shell out to dtc if available
@@ -501,7 +580,11 @@ fn execute_compile(
 
     match dtc_result {
         Ok(output_result) if output_result.status.success() => {
-            println!("{} Compiled DTB: {}", "OK".green(), output.display().to_string().yellow());
+            println!(
+                "{} Compiled DTB: {}",
+                "OK".green(),
+                output.display().to_string().yellow()
+            );
         }
         Ok(output_result) => {
             let stderr = String::from_utf8_lossy(&output_result.stderr);
@@ -567,17 +650,27 @@ fn execute_search(
 
 // Helper functions for parsing DTB structure block
 
-fn count_structure_elements(data: &[u8], off_struct: usize, _off_strings: usize) -> Result<(usize, usize)> {
+fn count_structure_elements(
+    data: &[u8],
+    off_struct: usize,
+    _off_strings: usize,
+) -> Result<(usize, usize)> {
     let mut nodes = 0;
     let mut props = 0;
     let mut offset = off_struct;
 
     while offset + 4 <= data.len() {
-        let token = u32::from_be_bytes([data[offset], data[offset + 1], data[offset + 2], data[offset + 3]]);
+        let token = u32::from_be_bytes([
+            data[offset],
+            data[offset + 1],
+            data[offset + 2],
+            data[offset + 3],
+        ]);
         offset += 4;
 
         match token {
-            0x00000001 => { // FDT_BEGIN_NODE
+            0x00000001 => {
+                // FDT_BEGIN_NODE
                 nodes += 1;
                 // Skip name (null-terminated string)
                 while offset < data.len() && data[offset] != 0 {
@@ -587,22 +680,29 @@ fn count_structure_elements(data: &[u8], off_struct: usize, _off_strings: usize)
                 offset = (offset + 3) & !3; // Align to 4 bytes
             }
             0x00000002 => { // FDT_END_NODE
-                // Nothing to do
+                 // Nothing to do
             }
-            0x00000003 => { // FDT_PROP
+            0x00000003 => {
+                // FDT_PROP
                 props += 1;
                 if offset + 8 > data.len() {
                     break;
                 }
-                let len = u32::from_be_bytes([data[offset], data[offset + 1], data[offset + 2], data[offset + 3]]) as usize;
+                let len = u32::from_be_bytes([
+                    data[offset],
+                    data[offset + 1],
+                    data[offset + 2],
+                    data[offset + 3],
+                ]) as usize;
                 offset += 8; // Skip len and nameoff
                 offset += len;
                 offset = (offset + 3) & !3; // Align to 4 bytes
             }
             0x00000004 => { // FDT_NOP
-                // Nothing to do
+                 // Nothing to do
             }
-            0x00000009 => { // FDT_END
+            0x00000009 => {
+                // FDT_END
                 break;
             }
             _ => {
@@ -614,16 +714,27 @@ fn count_structure_elements(data: &[u8], off_struct: usize, _off_strings: usize)
     Ok((nodes, props))
 }
 
-fn search_property_in_root(data: &[u8], off_struct: usize, off_strings: usize, prop_name: &str) -> bool {
+fn search_property_in_root(
+    data: &[u8],
+    off_struct: usize,
+    off_strings: usize,
+    prop_name: &str,
+) -> bool {
     let mut offset = off_struct;
     let mut depth = 0;
 
     while offset + 4 <= data.len() {
-        let token = u32::from_be_bytes([data[offset], data[offset + 1], data[offset + 2], data[offset + 3]]);
+        let token = u32::from_be_bytes([
+            data[offset],
+            data[offset + 1],
+            data[offset + 2],
+            data[offset + 3],
+        ]);
         offset += 4;
 
         match token {
-            0x00000001 => { // FDT_BEGIN_NODE
+            0x00000001 => {
+                // FDT_BEGIN_NODE
                 depth += 1;
                 // Skip name
                 while offset < data.len() && data[offset] != 0 {
@@ -632,18 +743,30 @@ fn search_property_in_root(data: &[u8], off_struct: usize, off_strings: usize, p
                 offset += 1;
                 offset = (offset + 3) & !3;
             }
-            0x00000002 => { // FDT_END_NODE
+            0x00000002 => {
+                // FDT_END_NODE
                 depth -= 1;
                 if depth == 0 {
                     return false; // Left root node
                 }
             }
-            0x00000003 => { // FDT_PROP
+            0x00000003 => {
+                // FDT_PROP
                 if offset + 8 > data.len() {
                     break;
                 }
-                let len = u32::from_be_bytes([data[offset], data[offset + 1], data[offset + 2], data[offset + 3]]) as usize;
-                let nameoff = u32::from_be_bytes([data[offset + 4], data[offset + 5], data[offset + 6], data[offset + 7]]) as usize;
+                let len = u32::from_be_bytes([
+                    data[offset],
+                    data[offset + 1],
+                    data[offset + 2],
+                    data[offset + 3],
+                ]) as usize;
+                let nameoff = u32::from_be_bytes([
+                    data[offset + 4],
+                    data[offset + 5],
+                    data[offset + 6],
+                    data[offset + 7],
+                ]) as usize;
                 offset += 8;
 
                 // Only check root node properties (depth == 1)
@@ -668,15 +791,26 @@ fn search_property_in_root(data: &[u8], off_struct: usize, off_strings: usize, p
     false
 }
 
-fn search_compatible_string(data: &[u8], off_struct: usize, off_strings: usize, compat: &str) -> bool {
+fn search_compatible_string(
+    data: &[u8],
+    off_struct: usize,
+    off_strings: usize,
+    compat: &str,
+) -> bool {
     let mut offset = off_struct;
 
     while offset + 4 <= data.len() {
-        let token = u32::from_be_bytes([data[offset], data[offset + 1], data[offset + 2], data[offset + 3]]);
+        let token = u32::from_be_bytes([
+            data[offset],
+            data[offset + 1],
+            data[offset + 2],
+            data[offset + 3],
+        ]);
         offset += 4;
 
         match token {
-            0x00000001 => { // FDT_BEGIN_NODE
+            0x00000001 => {
+                // FDT_BEGIN_NODE
                 while offset < data.len() && data[offset] != 0 {
                     offset += 1;
                 }
@@ -684,12 +818,23 @@ fn search_compatible_string(data: &[u8], off_struct: usize, off_strings: usize, 
                 offset = (offset + 3) & !3;
             }
             0x00000002 => {} // FDT_END_NODE
-            0x00000003 => { // FDT_PROP
+            0x00000003 => {
+                // FDT_PROP
                 if offset + 8 > data.len() {
                     break;
                 }
-                let len = u32::from_be_bytes([data[offset], data[offset + 1], data[offset + 2], data[offset + 3]]) as usize;
-                let nameoff = u32::from_be_bytes([data[offset + 4], data[offset + 5], data[offset + 6], data[offset + 7]]) as usize;
+                let len = u32::from_be_bytes([
+                    data[offset],
+                    data[offset + 1],
+                    data[offset + 2],
+                    data[offset + 3],
+                ]) as usize;
+                let nameoff = u32::from_be_bytes([
+                    data[offset + 4],
+                    data[offset + 5],
+                    data[offset + 6],
+                    data[offset + 7],
+                ]) as usize;
                 offset += 8;
 
                 if let Some(name) = get_string_at(data, off_strings + nameoff) {
@@ -740,11 +885,17 @@ fn print_structure_summary(data: &[u8], off_struct: usize, off_strings: usize) -
     let mut depth = 0;
 
     while offset + 4 <= data.len() {
-        let token = u32::from_be_bytes([data[offset], data[offset + 1], data[offset + 2], data[offset + 3]]);
+        let token = u32::from_be_bytes([
+            data[offset],
+            data[offset + 1],
+            data[offset + 2],
+            data[offset + 3],
+        ]);
         offset += 4;
 
         match token {
-            0x00000001 => { // FDT_BEGIN_NODE
+            0x00000001 => {
+                // FDT_BEGIN_NODE
                 let name_start = offset;
                 while offset < data.len() && data[offset] != 0 {
                     offset += 1;
@@ -756,15 +907,27 @@ fn print_structure_summary(data: &[u8], off_struct: usize, off_strings: usize) -
                 offset = (offset + 3) & !3;
                 depth += 1;
             }
-            0x00000002 => { // FDT_END_NODE
+            0x00000002 => {
+                // FDT_END_NODE
                 depth = depth.saturating_sub(1);
             }
-            0x00000003 => { // FDT_PROP
+            0x00000003 => {
+                // FDT_PROP
                 if offset + 8 > data.len() {
                     break;
                 }
-                let len = u32::from_be_bytes([data[offset], data[offset + 1], data[offset + 2], data[offset + 3]]) as usize;
-                let nameoff = u32::from_be_bytes([data[offset + 4], data[offset + 5], data[offset + 6], data[offset + 7]]) as usize;
+                let len = u32::from_be_bytes([
+                    data[offset],
+                    data[offset + 1],
+                    data[offset + 2],
+                    data[offset + 3],
+                ]) as usize;
+                let nameoff = u32::from_be_bytes([
+                    data[offset + 4],
+                    data[offset + 5],
+                    data[offset + 6],
+                    data[offset + 7],
+                ]) as usize;
                 offset += 8;
 
                 if let Some(name) = get_string_at(data, off_strings + nameoff) {
@@ -804,7 +967,8 @@ fn format_property_bytes(data: &[u8]) -> String {
 
     // Try as u32 array
     if data.len() % 4 == 0 && data.len() <= 16 {
-        let cells: Vec<String> = data.chunks(4)
+        let cells: Vec<String> = data
+            .chunks(4)
             .map(|chunk| {
                 let val = u32::from_be_bytes([chunk[0], chunk[1], chunk[2], chunk[3]]);
                 format!("<0x{:x}>", val)
@@ -814,7 +978,14 @@ fn format_property_bytes(data: &[u8]) -> String {
     }
 
     // Hex
-    format!("[{}]", data.iter().take(8).map(|b| format!("{:02x}", b)).collect::<Vec<_>>().join(" "))
+    format!(
+        "[{}]",
+        data.iter()
+            .take(8)
+            .map(|b| format!("{:02x}", b))
+            .collect::<Vec<_>>()
+            .join(" ")
+    )
 }
 
 fn generate_dts(data: &[u8], off_struct: usize, off_strings: usize) -> Result<String> {
@@ -825,33 +996,55 @@ fn generate_dts(data: &[u8], off_struct: usize, off_strings: usize) -> Result<St
     let mut depth = 0;
 
     while offset + 4 <= data.len() {
-        let token = u32::from_be_bytes([data[offset], data[offset + 1], data[offset + 2], data[offset + 3]]);
+        let token = u32::from_be_bytes([
+            data[offset],
+            data[offset + 1],
+            data[offset + 2],
+            data[offset + 3],
+        ]);
         offset += 4;
 
         match token {
-            0x00000001 => { // FDT_BEGIN_NODE
+            0x00000001 => {
+                // FDT_BEGIN_NODE
                 let name_start = offset;
                 while offset < data.len() && data[offset] != 0 {
                     offset += 1;
                 }
                 let name = std::str::from_utf8(&data[name_start..offset]).unwrap_or("<invalid>");
                 let indent = "\t".repeat(depth);
-                dts.push_str(&format!("{}{} {{\n", indent, if name.is_empty() { "/" } else { name }));
+                dts.push_str(&format!(
+                    "{}{} {{\n",
+                    indent,
+                    if name.is_empty() { "/" } else { name }
+                ));
                 offset += 1;
                 offset = (offset + 3) & !3;
                 depth += 1;
             }
-            0x00000002 => { // FDT_END_NODE
+            0x00000002 => {
+                // FDT_END_NODE
                 depth = depth.saturating_sub(1);
                 let indent = "\t".repeat(depth);
                 dts.push_str(&format!("{}}};\n", indent));
             }
-            0x00000003 => { // FDT_PROP
+            0x00000003 => {
+                // FDT_PROP
                 if offset + 8 > data.len() {
                     break;
                 }
-                let len = u32::from_be_bytes([data[offset], data[offset + 1], data[offset + 2], data[offset + 3]]) as usize;
-                let nameoff = u32::from_be_bytes([data[offset + 4], data[offset + 5], data[offset + 6], data[offset + 7]]) as usize;
+                let len = u32::from_be_bytes([
+                    data[offset],
+                    data[offset + 1],
+                    data[offset + 2],
+                    data[offset + 3],
+                ]) as usize;
+                let nameoff = u32::from_be_bytes([
+                    data[offset + 4],
+                    data[offset + 5],
+                    data[offset + 6],
+                    data[offset + 7],
+                ]) as usize;
                 offset += 8;
 
                 if let Some(name) = get_string_at(data, off_strings + nameoff) {
@@ -883,19 +1076,25 @@ fn format_dts_property(data: &[u8]) -> String {
 
     // Try as string
     if data.iter().all(|&b| b == 0 || (b >= 0x20 && b < 0x7f)) {
-        let strings: Vec<&str> = data.split(|&b| b == 0)
+        let strings: Vec<&str> = data
+            .split(|&b| b == 0)
             .filter(|s| !s.is_empty())
             .filter_map(|s| std::str::from_utf8(s).ok())
             .collect();
 
         if !strings.is_empty() {
-            return strings.iter().map(|s| format!("\"{}\"", s)).collect::<Vec<_>>().join(", ");
+            return strings
+                .iter()
+                .map(|s| format!("\"{}\"", s))
+                .collect::<Vec<_>>()
+                .join(", ");
         }
     }
 
     // Try as u32 array
     if data.len() % 4 == 0 {
-        let cells: Vec<String> = data.chunks(4)
+        let cells: Vec<String> = data
+            .chunks(4)
             .map(|chunk| {
                 let val = u32::from_be_bytes([chunk[0], chunk[1], chunk[2], chunk[3]]);
                 format!("0x{:08x}", val)
@@ -905,20 +1104,37 @@ fn format_dts_property(data: &[u8]) -> String {
     }
 
     // Hex bytes
-    format!("[{}]", data.iter().map(|b| format!("{:02x}", b)).collect::<Vec<_>>().join(" "))
+    format!(
+        "[{}]",
+        data.iter()
+            .map(|b| format!("{:02x}", b))
+            .collect::<Vec<_>>()
+            .join(" ")
+    )
 }
 
-fn search_and_print_property(data: &[u8], off_struct: usize, off_strings: usize, prop_name: &str) -> usize {
+fn search_and_print_property(
+    data: &[u8],
+    off_struct: usize,
+    off_strings: usize,
+    prop_name: &str,
+) -> usize {
     let mut found = 0;
     let mut offset = off_struct;
     let mut current_node = String::from("/");
 
     while offset + 4 <= data.len() {
-        let token = u32::from_be_bytes([data[offset], data[offset + 1], data[offset + 2], data[offset + 3]]);
+        let token = u32::from_be_bytes([
+            data[offset],
+            data[offset + 1],
+            data[offset + 2],
+            data[offset + 3],
+        ]);
         offset += 4;
 
         match token {
-            0x00000001 => { // FDT_BEGIN_NODE
+            0x00000001 => {
+                // FDT_BEGIN_NODE
                 let name_start = offset;
                 while offset < data.len() && data[offset] != 0 {
                     offset += 1;
@@ -930,23 +1146,40 @@ fn search_and_print_property(data: &[u8], off_struct: usize, off_strings: usize,
                 offset += 1;
                 offset = (offset + 3) & !3;
             }
-            0x00000002 => { // FDT_END_NODE
+            0x00000002 => {
+                // FDT_END_NODE
                 if let Some(pos) = current_node.trim_end_matches('/').rfind('/') {
                     current_node = current_node[..=pos].to_string();
                 }
             }
-            0x00000003 => { // FDT_PROP
+            0x00000003 => {
+                // FDT_PROP
                 if offset + 8 > data.len() {
                     break;
                 }
-                let len = u32::from_be_bytes([data[offset], data[offset + 1], data[offset + 2], data[offset + 3]]) as usize;
-                let nameoff = u32::from_be_bytes([data[offset + 4], data[offset + 5], data[offset + 6], data[offset + 7]]) as usize;
+                let len = u32::from_be_bytes([
+                    data[offset],
+                    data[offset + 1],
+                    data[offset + 2],
+                    data[offset + 3],
+                ]) as usize;
+                let nameoff = u32::from_be_bytes([
+                    data[offset + 4],
+                    data[offset + 5],
+                    data[offset + 6],
+                    data[offset + 7],
+                ]) as usize;
                 offset += 8;
 
                 if let Some(name) = get_string_at(data, off_strings + nameoff) {
                     if name == prop_name {
                         let prop_data = &data[offset..offset.min(data.len()).min(offset + len)];
-                        println!("  {} {} = {}", current_node.dimmed(), name.yellow(), format_property_bytes(prop_data));
+                        println!(
+                            "  {} {} = {}",
+                            current_node.dimmed(),
+                            name.yellow(),
+                            format_property_bytes(prop_data)
+                        );
                         found += 1;
                     }
                 }
@@ -968,11 +1201,17 @@ fn search_and_print_nodes(data: &[u8], off_struct: usize, pattern: &str) -> usiz
     let mut path = String::from("/");
 
     while offset + 4 <= data.len() {
-        let token = u32::from_be_bytes([data[offset], data[offset + 1], data[offset + 2], data[offset + 3]]);
+        let token = u32::from_be_bytes([
+            data[offset],
+            data[offset + 1],
+            data[offset + 2],
+            data[offset + 3],
+        ]);
         offset += 4;
 
         match token {
-            0x00000001 => { // FDT_BEGIN_NODE
+            0x00000001 => {
+                // FDT_BEGIN_NODE
                 let name_start = offset;
                 while offset < data.len() && data[offset] != 0 {
                     offset += 1;
@@ -990,16 +1229,23 @@ fn search_and_print_nodes(data: &[u8], off_struct: usize, pattern: &str) -> usiz
                 offset += 1;
                 offset = (offset + 3) & !3;
             }
-            0x00000002 => { // FDT_END_NODE
+            0x00000002 => {
+                // FDT_END_NODE
                 if let Some(pos) = path.trim_end_matches('/').rfind('/') {
                     path = path[..=pos].to_string();
                 }
             }
-            0x00000003 => { // FDT_PROP
+            0x00000003 => {
+                // FDT_PROP
                 if offset + 8 > data.len() {
                     break;
                 }
-                let len = u32::from_be_bytes([data[offset], data[offset + 1], data[offset + 2], data[offset + 3]]) as usize;
+                let len = u32::from_be_bytes([
+                    data[offset],
+                    data[offset + 1],
+                    data[offset + 2],
+                    data[offset + 3],
+                ]) as usize;
                 offset += 8 + len;
                 offset = (offset + 3) & !3;
             }
@@ -1011,13 +1257,23 @@ fn search_and_print_nodes(data: &[u8], off_struct: usize, pattern: &str) -> usiz
     found
 }
 
-fn search_and_print_value(data: &[u8], off_struct: usize, off_strings: usize, search_value: &str) -> usize {
+fn search_and_print_value(
+    data: &[u8],
+    off_struct: usize,
+    off_strings: usize,
+    search_value: &str,
+) -> usize {
     let mut found = 0;
     let mut offset = off_struct;
     let mut current_node = String::from("/");
 
     while offset + 4 <= data.len() {
-        let token = u32::from_be_bytes([data[offset], data[offset + 1], data[offset + 2], data[offset + 3]]);
+        let token = u32::from_be_bytes([
+            data[offset],
+            data[offset + 1],
+            data[offset + 2],
+            data[offset + 3],
+        ]);
         offset += 4;
 
         match token {
@@ -1042,15 +1298,30 @@ fn search_and_print_value(data: &[u8], off_struct: usize, off_strings: usize, se
                 if offset + 8 > data.len() {
                     break;
                 }
-                let len = u32::from_be_bytes([data[offset], data[offset + 1], data[offset + 2], data[offset + 3]]) as usize;
-                let nameoff = u32::from_be_bytes([data[offset + 4], data[offset + 5], data[offset + 6], data[offset + 7]]) as usize;
+                let len = u32::from_be_bytes([
+                    data[offset],
+                    data[offset + 1],
+                    data[offset + 2],
+                    data[offset + 3],
+                ]) as usize;
+                let nameoff = u32::from_be_bytes([
+                    data[offset + 4],
+                    data[offset + 5],
+                    data[offset + 6],
+                    data[offset + 7],
+                ]) as usize;
                 offset += 8;
 
                 if let Some(name) = get_string_at(data, off_strings + nameoff) {
                     let prop_data = &data[offset..offset.min(data.len()).min(offset + len)];
                     let value_str = format_property_bytes(prop_data);
                     if value_str.contains(search_value) {
-                        println!("  {} {} = {}", current_node.dimmed(), name.yellow(), value_str);
+                        println!(
+                            "  {} {} = {}",
+                            current_node.dimmed(),
+                            name.yellow(),
+                            value_str
+                        );
                         found += 1;
                     }
                 }

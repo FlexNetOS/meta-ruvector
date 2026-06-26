@@ -47,10 +47,13 @@ struct MicrolensingEvent {
     name: String,
     source: String,
     observations: Vec<Observation>,
+    #[allow(dead_code)] // illustrative fields retained for the example data model
     baseline_mag: f64,
+    #[allow(dead_code)] // illustrative fields retained for the example data model
     peak_mag: f64,
     t0_est: f64,
     t_e_est: f64,
+    #[allow(dead_code)] // illustrative fields retained for the example data model
     u0_est: f64,
 }
 #[derive(Debug, Clone, Copy)]
@@ -70,10 +73,12 @@ struct ManifestEntry {
 
 #[derive(Debug, Clone)]
 enum DownloadState {
+    #[allow(dead_code)] // illustrative state retained for the example state machine
     Pending,
     Simulated,
     #[allow(dead_code)]
     Downloaded,
+    #[allow(dead_code)] // illustrative state retained for the example state machine
     Failed(String),
 }
 impl std::fmt::Display for DownloadState {
@@ -294,7 +299,7 @@ fn normalize_cross_survey(event: &mut MicrolensingEvent) {
     for obs in &mut event.observations {
         let f = 10.0f64.powf(-0.4 * (obs.mag - zp));
         obs.flux = (f - baseline_flux) / baseline_flux;
-        obs.flux_err = f * 0.4 * 2.302585 * obs.mag_err / baseline_flux;
+        obs.flux_err = f * 0.4 * std::f64::consts::LN_10 * obs.mag_err / baseline_flux;
     }
 }
 
@@ -334,11 +339,14 @@ fn parse_ogle_format(data: &str, event_name: &str) -> MicrolensingEvent {
         let (mag, mag_err) = if val > 10.0 {
             (val, err)
         } else if val > 0.0 {
-            (-2.5 * val.log10() + 22.0, 2.5 / (val * 2.302585) * err)
+            (
+                -2.5 * val.log10() + 22.0,
+                2.5 / (val * std::f64::consts::LN_10) * err,
+            )
         } else {
             continue;
         };
-        if mag_err <= 0.0 || mag_err > 1.0 || mag < 5.0 || mag > 25.0 {
+        if mag_err <= 0.0 || mag_err > 1.0 || !(5.0_f64..=25.0).contains(&mag) {
             continue;
         }
         obs.push(Observation {
@@ -387,7 +395,7 @@ fn parse_moa_format(data: &str, event_name: &str) -> MicrolensingEvent {
         let hjd = if jd > 2400000.0 { jd - 2450000.0 } else { jd };
         // MOA R-band zero-point 22.0
         let mag = -2.5 * flux.log10() + 22.0;
-        let mag_err = 2.5 / (flux * 2.302585) * ferr;
+        let mag_err = 2.5 / (flux * std::f64::consts::LN_10) * ferr;
         if mag_err <= 0.0 || mag_err > 1.0 {
             continue;
         }
@@ -414,7 +422,7 @@ fn parse_moa_format(data: &str, event_name: &str) -> MicrolensingEvent {
             for o in &mut obs {
                 let raw = o.flux;
                 o.flux = (raw - baseline_flux) / baseline_flux; // fractional deviation
-                o.flux_err = o.flux_err / baseline_flux;
+                o.flux_err /= baseline_flux;
             }
         }
     }
@@ -435,7 +443,7 @@ fn finalize_event(mut obs: Vec<Observation>, name: &str, source: &str) -> Microl
     for o in &mut obs {
         if o.flux == 0.0 {
             o.flux = 10.0f64.powf(-0.4 * (o.mag - baseline_mag));
-            o.flux_err = o.flux * 0.4 * 2.302585 * o.mag_err;
+            o.flux_err = o.flux * 0.4 * std::f64::consts::LN_10 * o.mag_err;
         }
     }
     let t0_est = obs
@@ -678,7 +686,7 @@ fn main() {
     .expect("failed to create store");
 
     // Step 1: Build manifest and simulate from published parameters
-    println!("--- Step 1. Download Manifest ({} real events) ---\n", "13");
+    println!("--- Step 1. Download Manifest (13 real events) ---\n");
     let manifest = build_manifest();
     let mut rng = 42u64;
     let mut events = Vec::new();
@@ -846,9 +854,8 @@ fn main() {
     .collect();
     let chain = create_witness_chain(&entries);
     println!(
-        "  Witness chain: {} entries, {}",
+        "  Witness chain: {} entries, VALID",
         verify_witness_chain(&chain).expect("verify").len(),
-        "VALID"
     );
 
     println!("\n=== Summary ===\n");

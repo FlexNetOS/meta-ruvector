@@ -360,7 +360,10 @@ impl DmaDescriptorChain {
     /// Check if all descriptors have completed.
     #[must_use]
     pub fn is_completed(&self) -> bool {
-        self.count > 0 && self.descriptors[..self.count].iter().all(|d| d.is_completed())
+        self.count > 0
+            && self.descriptors[..self.count]
+                .iter()
+                .all(|d| d.is_completed())
     }
 
     /// Check if any descriptor has an error.

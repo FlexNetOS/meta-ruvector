@@ -357,7 +357,10 @@ mod tests {
 
         assert_eq!(DmaTransferWidth::Word.bits(), 32);
 
-        assert_eq!(DmaTransferWidth::from_bytes(4), Some(DmaTransferWidth::Word));
+        assert_eq!(
+            DmaTransferWidth::from_bytes(4),
+            Some(DmaTransferWidth::Word)
+        );
         assert_eq!(DmaTransferWidth::from_bytes(3), None);
     }
 
@@ -451,8 +454,8 @@ mod tests {
 
     #[test]
     fn test_transfer_count() {
-        let config = DmaConfig::mem_to_mem(0x1000, 0x2000, 4096)
-            .with_width(DmaTransferWidth::DoubleWord);
+        let config =
+            DmaConfig::mem_to_mem(0x1000, 0x2000, 4096).with_width(DmaTransferWidth::DoubleWord);
         assert_eq!(config.transfer_count(), 512); // 4096 / 8
     }
 

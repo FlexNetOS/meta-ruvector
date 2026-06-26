@@ -1,8 +1,8 @@
 //! Priority-based task scheduler
 
 use crate::RTPriority;
-use std::collections::BinaryHeap;
 use std::cmp::Ordering;
+use std::collections::BinaryHeap;
 use std::time::{Duration, Instant};
 
 /// Scheduled task

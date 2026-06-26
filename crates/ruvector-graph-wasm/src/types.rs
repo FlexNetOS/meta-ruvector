@@ -1,6 +1,6 @@
 //! JavaScript-friendly type conversions for graph database
 
-use js_sys::{Array, Object, Reflect};
+use js_sys::{Object, Reflect};
 use serde::{Deserialize, Serialize};
 use serde_wasm_bindgen::{from_value, to_value};
 use std::collections::HashMap;

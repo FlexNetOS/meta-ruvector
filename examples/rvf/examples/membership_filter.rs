@@ -19,7 +19,7 @@
 //!   cargo run --example membership_filter
 
 use rvf_runtime::membership::MembershipFilter;
-use rvf_types::membership::{FilterMode, MembershipHeader, MEMBERSHIP_MAGIC};
+use rvf_types::membership::{MembershipHeader, MEMBERSHIP_MAGIC};
 
 fn hex(data: &[u8], n: usize) -> String {
     data.iter().take(n).map(|b| format!("{:02x}", b)).collect()

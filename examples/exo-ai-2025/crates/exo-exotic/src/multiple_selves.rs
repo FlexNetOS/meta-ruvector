@@ -293,7 +293,7 @@ impl MultipleSelvesSystem {
         let mut total_relationships = 0;
 
         for self_entity in &self.selves {
-            for (_, rel) in &self_entity.relationships {
+            for rel in self_entity.relationships.values() {
                 total_relationships += 1;
                 if matches!(
                     rel.relationship_type,
@@ -655,7 +655,7 @@ mod tests {
         );
 
         let coherence = system.measure_coherence();
-        assert!(coherence >= 0.0 && coherence <= 1.0);
+        assert!((0.0..=1.0).contains(&coherence));
     }
 
     #[test]

@@ -1,5 +1,23 @@
 [workspace]
 exclude = ["crates/micro-hnsw-wasm", "crates/ruvector-hyperbolic-hnsw", "crates/ruvector-hyperbolic-hnsw-wasm", "examples/ruvLLM/esp32", "examples/ruvLLM/esp32-flash", "examples/edge-net", "examples/data", "examples/ruvLLM", "examples/delta-behavior", "crates/rvf", "crates/rvf/*", "crates/rvf/*/*",
+    # vendor/cognitum-one: vendored third-party SDK (UPSTREAM_VCS_INFO.json / VENDORED.md).
+    # Excluded from the host strict-gated build — its upstream tests import a renamed crate
+    # (`cognitum_rs`) and we do not patch vendored upstream code. develop excludes it too.
+    "vendor/cognitum-one",
+    # RVM bare-metal Pi-5 kernel cluster (nested no_std kernel): excluded from the
+    # host strict-gated workspace build. Source preserved on disk and built standalone
+    # with its own bare-metal target; ~262 domain-inappropriate pedantic lints (register
+    # cast-truncation, hardware-constant dead_code) make it unfit for `-D warnings`.
+    # Aligns with develop's deliberate exclusion (see ADR / Cargo comment "cannot be a member").
+    "crates/ruvix/crates/bcm2711",
+    "crates/ruvix/crates/cli",
+    "crates/ruvix/crates/dma",
+    "crates/ruvix/crates/dtb",
+    "crates/ruvix/crates/fs",
+    "crates/ruvix/crates/net",
+    "crates/ruvix/crates/physmem",
+    "crates/ruvix/crates/shell",
+    "crates/ruvix/crates/smp",
     # ruvector-postgres is a pgrx-based PostgreSQL extension. Its build script
     # requires `$PGRX_HOME` set up via `cargo install cargo-pgrx --version 0.12.9`
     # and `cargo pgrx init`, which downloads and builds multiple Postgres
@@ -13,19 +31,7 @@ exclude = ["crates/micro-hnsw-wasm", "crates/ruvector-hyperbolic-hnsw", "crates/
     # stays opt-in (only `cargo build --features hailo,cpu-fallback`
     # pulls libhailort + candle), so workspace builds on stock x86
     # still compile without Pi-specific tooling.
-    # agentic-robotics-*: a self-contained DDS/ROS2 robotics-middleware cluster
-    # (upstream ruvnet/vibecast) — 6 crates that only depend on each other, with
-    # zero linkage to ruvector proper. They inherit workspace.package fields
-    # (homepage/documentation/description/keywords/categories) and require
-    # zenoh/rustdds/cdr — none of which exist in this workspace. Kept out of the
-    # default build so the main workspace stays lean; full integration (own
-    # nested workspace + DDS deps) is tracked as a follow-up.
-    "crates/agentic-robotics-core",
-    "crates/agentic-robotics-rt",
-    "crates/agentic-robotics-node",
-    "crates/agentic-robotics-mcp",
-    "crates/agentic-robotics-embedded",
-    "crates/agentic-robotics-benchmarks",
+    # (agentic-robotics-* and ruos-thermal promoted to members in the union merge)
     # Vendored [patch.crates-io] override source for hnsw_rs — a patch source is
     # not a workspace member by design (two copies exist for different patch
     # tables); excluded explicitly so it is accounted for, not silently orphaned.
@@ -312,16 +318,7 @@ members = [
     # Each subcrate uses `workspace = true` for deps pointing to its own [workspace.package].
     # Task #12: Ruvix non-member subcrates (bcm2711/rpi-boot/smp/dma/dtb/fs/net/shell/drivers/physmem) —
     # present on disk but never wired into workspace members. Added here.
-    "crates/ruvix/crates/bcm2711",
-    "crates/ruvix/crates/cli",
-    "crates/ruvix/crates/dma",
-    "crates/ruvix/crates/dtb",
-    "crates/ruvix/crates/fs",
-    "crates/ruvix/crates/net",
-    "crates/ruvix/crates/shell",
-    "crates/ruvix/crates/smp",
     # Note: drivers already in members at line 188 — no duplicate needed.
-    "crates/ruvix/crates/physmem",
     # Task #13: exo-ai-2025 subcrates — 9 standalone crates (literal version, no path deps).
     # Each compiles clean in this workspace via parent's [workspace.dependencies].
     "examples/exo-ai-2025/crates/exo-core",
@@ -352,7 +349,14 @@ members = [
     # Standalone native desktop app with embedded Three.js dashboard (wry/tao) — zero workspace deps, compiles clean.
     "examples/rvf-desktop",
     # Cognitum Seed / Cloud SDK surface — vendored in-tree, already defined in [workspace.dependencies]. Enables seed (LAN appliance), mdns, stream, blocking features per-crate opt-in.
-    "vendor/cognitum-one",
+    # agentic-robotics-* wired as members (develop #86) — union-merged with main's set
+    # agentic-robotics-*: DDS/ROS2 robotics middleware cluster (ruvnet/vibecast) — requires zenoh/rustdds/cdr workspace deps
+    "crates/agentic-robotics-core",
+    "crates/agentic-robotics-rt",
+    "crates/agentic-robotics-node",
+    "crates/agentic-robotics-mcp",
+    "crates/agentic-robotics-embedded",
+    "crates/agentic-robotics-benchmarks",
 ]
 resolver = "2"
 
@@ -366,6 +370,11 @@ rust-version = "1.77"
 license = "MIT"
 authors = ["Ruvector Team"]
 repository = "https://github.com/FlexNetOS/ruvector"
+homepage = "https://ruv.io"
+description = "Neuromorphic vector search engine with spiking neural networks and HNSW indexing"
+keywords = ["neuromorphic", "vector-search", "hnsw", "spiking", "snn"]
+categories = ["algorithms", "science"]
+documentation = "https://docs.rs/ruvector"
 
 [workspace.dependencies]
 # Cognitum Seed / Cloud SDK (https://cognitum.one/developers).
@@ -384,6 +393,12 @@ hnsw_rs = "0.3"
 simsimd = "5.9"
 rayon = "1.10"
 crossbeam = "0.8"
+
+# DDS / robotics middleware (used by agentic-robotics-* crates)
+zenoh = "1.9"
+rustdds = "0.11"
+cdr = "0.2"
+hdrhistogram = "7.5"
 
 # Serialization
 rkyv = "0.8"

@@ -24,8 +24,8 @@ fn solve_mincut(lam: &[f64], edges: &[(usize, usize, f64)], gamma: f64) -> Vec<b
             adj[u].push((v, i));
             adj[v].push((u, i + 1));
         };
-    for i in 0..m {
-        let (p0, p1) = (lam[i].max(0.0), (-lam[i]).max(0.0));
+    for (i, &lam_i) in lam.iter().enumerate().take(m) {
+        let (p0, p1) = (lam_i.max(0.0), (-lam_i).max(0.0));
         if p0 > 1e-12 {
             add(&mut adj, &mut caps, s, i, p0);
         }
@@ -686,7 +686,7 @@ fn run_climate() {
     );
 
     for &ti in &transitions {
-        let before_start = if ti > 10 { ti - 10 } else { 0 };
+        let before_start = ti.saturating_sub(10);
         let after_end = (ti + 10).min(n);
         let before_mean =
             anomalies[before_start..ti].iter().sum::<f64>() / (ti - before_start) as f64;

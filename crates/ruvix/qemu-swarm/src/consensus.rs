@@ -314,7 +314,11 @@ pub enum Operation {
     /// RVF deployment.
     DeployRvf { rvf_hash: [u8; 32] },
     /// Vector store operation.
-    VectorOp { store_id: u64, key: u64, data: Vec<u8> },
+    VectorOp {
+        store_id: u64,
+        key: u64,
+        data: Vec<u8>,
+    },
     /// Graph mutation.
     GraphMutation { graph_id: u64, mutation: Vec<u8> },
 }
@@ -591,10 +595,9 @@ impl PbftReplica {
             // Forward to primary
             let view = self.view();
             let primary = self.config.primary(view);
-            self.outbox.write().push((
-                Some(primary),
-                PbftMessage::Request(request.clone()),
-            ));
+            self.outbox
+                .write()
+                .push((Some(primary), PbftMessage::Request(request.clone())));
         }
 
         Ok(())
@@ -646,7 +649,9 @@ impl PbftReplica {
         self.request_timers.write().insert(sequence, Instant::now());
 
         // Broadcast pre-prepare
-        self.outbox.write().push((None, PbftMessage::PrePrepare(pre_prepare)));
+        self.outbox
+            .write()
+            .push((None, PbftMessage::PrePrepare(pre_prepare)));
 
         Ok(())
     }
@@ -715,7 +720,9 @@ impl PbftReplica {
         };
 
         self.stats.write().prepares_sent += 1;
-        self.outbox.write().push((None, PbftMessage::Prepare(prepare)));
+        self.outbox
+            .write()
+            .push((None, PbftMessage::Prepare(prepare)));
 
         self.try_commit(pp.sequence);
 
@@ -825,7 +832,9 @@ impl PbftReplica {
             };
 
             self.stats.write().commits_sent += 1;
-            self.outbox.write().push((None, PbftMessage::Commit(commit)));
+            self.outbox
+                .write()
+                .push((None, PbftMessage::Commit(commit)));
 
             self.try_execute(sequence);
         }
@@ -837,9 +846,7 @@ impl PbftReplica {
         let should_execute = {
             let log = self.log.read();
             if let Some(entry) = log.get(&sequence) {
-                entry.committed_local
-                    && entry.commits.len() >= quorum
-                    && !entry.committed
+                entry.committed_local && entry.commits.len() >= quorum && !entry.committed
             } else {
                 false
             }
@@ -952,7 +959,9 @@ impl PbftReplica {
         debug!(sequence = sequence, "Creating checkpoint");
 
         self.stats.write().checkpoints_created += 1;
-        self.outbox.write().push((None, PbftMessage::Checkpoint(checkpoint)));
+        self.outbox
+            .write()
+            .push((None, PbftMessage::Checkpoint(checkpoint)));
     }
 
     fn handle_checkpoint(&self, from: usize, checkpoint: Checkpoint) -> SwarmResult<()> {
@@ -1000,11 +1009,7 @@ impl PbftReplica {
             return Ok(());
         }
 
-        info!(
-            from = from,
-            new_view = vc.new_view,
-            "Received view change"
-        );
+        info!(from = from, new_view = vc.new_view, "Received view change");
 
         // Store view change
         {
@@ -1069,7 +1074,9 @@ impl PbftReplica {
         *self.view.write() = view;
         *self.state.write() = ReplicaState::Normal;
 
-        self.outbox.write().push((None, PbftMessage::NewView(new_view)));
+        self.outbox
+            .write()
+            .push((None, PbftMessage::NewView(new_view)));
     }
 
     fn compute_state_digest(&self) -> HashDigest {
@@ -1108,7 +1115,9 @@ impl PbftReplica {
             signature: Signature::default(),
         };
 
-        self.outbox.write().push((None, PbftMessage::ViewChange(vc)));
+        self.outbox
+            .write()
+            .push((None, PbftMessage::ViewChange(vc)));
     }
 
     /// Check for timed out requests and trigger view change.
@@ -1239,7 +1248,9 @@ mod tests {
         let outbox = replica.drain_outbox();
         for (_, msg) in outbox {
             if let PbftMessage::PrePrepare(pp) = msg {
-                replica.handle_message(0, PbftMessage::PrePrepare(pp)).unwrap();
+                replica
+                    .handle_message(0, PbftMessage::PrePrepare(pp))
+                    .unwrap();
             }
         }
 

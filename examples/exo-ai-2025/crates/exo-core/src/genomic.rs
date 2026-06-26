@@ -227,6 +227,10 @@ impl GenomicPatternStore {
     pub fn len(&self) -> usize {
         self.patterns.len()
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.patterns.is_empty()
+    }
 }
 
 impl Default for GenomicPatternStore {
@@ -325,6 +329,6 @@ mod tests {
             ..Default::default()
         };
         let phase = neuro.circadian_phase_rad();
-        assert!(phase >= 0.0 && phase <= 2.0 * std::f32::consts::PI);
+        assert!((0.0..=2.0 * std::f32::consts::PI).contains(&phase));
     }
 }

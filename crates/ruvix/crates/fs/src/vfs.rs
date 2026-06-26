@@ -552,8 +552,13 @@ pub trait FileSystem {
     fn lookup(&self, dir_inode: InodeId, name: &str) -> FsResult<InodeId>;
 
     /// Create a new file or directory.
-    fn create(&self, dir_inode: InodeId, name: &str, file_type: FileType, mode: u32)
-        -> FsResult<InodeId>;
+    fn create(
+        &self,
+        dir_inode: InodeId,
+        name: &str,
+        file_type: FileType,
+        mode: u32,
+    ) -> FsResult<InodeId>;
 
     /// Remove a file or empty directory.
     fn unlink(&self, dir_inode: InodeId, name: &str) -> FsResult<()>;
@@ -847,8 +852,12 @@ mod tests {
     fn test_open_file_table() {
         let mut table = OpenFileTable::new();
 
-        let fd1 = table.alloc(OpenFile::new(MountId(0), InodeId(1), OpenFlags::READ)).unwrap();
-        let fd2 = table.alloc(OpenFile::new(MountId(0), InodeId(2), OpenFlags::WRITE)).unwrap();
+        let fd1 = table
+            .alloc(OpenFile::new(MountId(0), InodeId(1), OpenFlags::READ))
+            .unwrap();
+        let fd2 = table
+            .alloc(OpenFile::new(MountId(0), InodeId(2), OpenFlags::WRITE))
+            .unwrap();
 
         assert_eq!(fd1, 0);
         assert_eq!(fd2, 1);

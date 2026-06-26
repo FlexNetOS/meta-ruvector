@@ -122,12 +122,11 @@ impl FdtHeader {
         }
 
         // Check structure block bounds
-        let struct_end = self
-            .off_dt_struct
-            .checked_add(self.size_dt_struct)
-            .ok_or(DtbError::InvalidStructureOffset {
+        let struct_end = self.off_dt_struct.checked_add(self.size_dt_struct).ok_or(
+            DtbError::InvalidStructureOffset {
                 offset: self.off_dt_struct,
-            })?;
+            },
+        )?;
         if struct_end as usize > blob_size {
             return Err(DtbError::InvalidStructureOffset {
                 offset: self.off_dt_struct,

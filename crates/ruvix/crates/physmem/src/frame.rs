@@ -237,7 +237,13 @@ impl fmt::Debug for PageOrder {
 
 impl fmt::Display for PageOrder {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "order {} ({} pages, {} bytes)", self.0, self.pages(), self.bytes())
+        write!(
+            f,
+            "order {} ({} pages, {} bytes)",
+            self.0,
+            self.pages(),
+            self.bytes()
+        )
     }
 }
 
@@ -546,8 +552,8 @@ impl fmt::Display for PageFrame {
 #[cfg(test)]
 mod tests {
     extern crate alloc;
-    use alloc::format;
     use super::*;
+    use alloc::format;
 
     #[test]
     fn test_page_order_new() {
@@ -604,10 +610,7 @@ mod tests {
 
     #[test]
     fn test_page_frame_new() {
-        let frame = PageFrame::new(
-            PhysAddr::new(0x1000_0000),
-            PageOrder::new(3).unwrap(),
-        );
+        let frame = PageFrame::new(PhysAddr::new(0x1000_0000), PageOrder::new(3).unwrap());
         assert_eq!(frame.addr().as_u64(), 0x1000_0000);
         assert_eq!(frame.order().as_usize(), 3);
         assert_eq!(frame.pages(), 8);
@@ -623,19 +626,13 @@ mod tests {
 
     #[test]
     fn test_page_frame_end_addr() {
-        let frame = PageFrame::new(
-            PhysAddr::new(0x1000),
-            PageOrder::new(2).unwrap(),
-        );
+        let frame = PageFrame::new(PhysAddr::new(0x1000), PageOrder::new(2).unwrap());
         assert_eq!(frame.end_addr().as_u64(), 0x5000);
     }
 
     #[test]
     fn test_page_frame_contains() {
-        let frame = PageFrame::new(
-            PhysAddr::new(0x1000),
-            PageOrder::new(2).unwrap(),
-        );
+        let frame = PageFrame::new(PhysAddr::new(0x1000), PageOrder::new(2).unwrap());
 
         assert!(frame.contains(PhysAddr::new(0x1000)));
         assert!(frame.contains(PhysAddr::new(0x2000)));
@@ -646,10 +643,7 @@ mod tests {
 
     #[test]
     fn test_page_frame_split() {
-        let frame = PageFrame::new(
-            PhysAddr::new(0x4000),
-            PageOrder::new(2).unwrap(),
-        );
+        let frame = PageFrame::new(PhysAddr::new(0x4000), PageOrder::new(2).unwrap());
 
         let (left, right) = frame.split().unwrap();
         assert_eq!(left.order().as_usize(), 1);
@@ -667,26 +661,17 @@ mod tests {
     #[test]
     fn test_page_frame_buddy_addr() {
         // Order 1 block at 0x2000 (2 pages = 0x2000 bytes)
-        let frame = PageFrame::new(
-            PhysAddr::new(0x2000),
-            PageOrder::new(1).unwrap(),
-        );
+        let frame = PageFrame::new(PhysAddr::new(0x2000), PageOrder::new(1).unwrap());
         // XOR with 0x2000 gives 0x0
         assert_eq!(frame.buddy_addr().as_u64(), 0x0);
 
         // Order 1 block at 0x0
-        let frame = PageFrame::new(
-            PhysAddr::new(0x0),
-            PageOrder::new(1).unwrap(),
-        );
+        let frame = PageFrame::new(PhysAddr::new(0x0), PageOrder::new(1).unwrap());
         // XOR with 0x2000 gives 0x2000
         assert_eq!(frame.buddy_addr().as_u64(), 0x2000);
 
         // Order 2 block at 0x4000 (4 pages = 0x4000 bytes)
-        let frame = PageFrame::new(
-            PhysAddr::new(0x4000),
-            PageOrder::new(2).unwrap(),
-        );
+        let frame = PageFrame::new(PhysAddr::new(0x4000), PageOrder::new(2).unwrap());
         // XOR with 0x4000 gives 0x0
         assert_eq!(frame.buddy_addr().as_u64(), 0x0);
     }
@@ -716,10 +701,7 @@ mod tests {
 
     #[test]
     fn test_page_frame_display() {
-        let frame = PageFrame::new(
-            PhysAddr::new(0x1000),
-            PageOrder::new(2).unwrap(),
-        );
+        let frame = PageFrame::new(PhysAddr::new(0x1000), PageOrder::new(2).unwrap());
         let s = format!("{frame}");
         assert!(s.contains("0x1000"));
         assert!(s.contains("0x5000"));

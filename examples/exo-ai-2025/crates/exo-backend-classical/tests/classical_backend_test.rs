@@ -2,7 +2,6 @@
 
 #[cfg(test)]
 mod substrate_backend_impl_tests {
-    use super::*;
     // use exo_backend_classical::*;
     // use exo_core::{SubstrateBackend, Pattern, Filter};
 
@@ -79,7 +78,6 @@ mod substrate_backend_impl_tests {
 
 #[cfg(test)]
 mod manifold_deform_tests {
-    use super::*;
 
     #[test]
     fn test_manifold_deform_as_insert() {
@@ -117,7 +115,6 @@ mod manifold_deform_tests {
 
 #[cfg(test)]
 mod hyperedge_query_tests {
-    use super::*;
 
     #[test]
     fn test_hyperedge_query_not_supported() {
@@ -142,7 +139,6 @@ mod hyperedge_query_tests {
 
 #[cfg(test)]
 mod ruvector_core_integration_tests {
-    use super::*;
 
     #[test]
     fn test_ruvector_core_hnsw() {
@@ -167,7 +163,6 @@ mod ruvector_core_integration_tests {
 
 #[cfg(test)]
 mod ruvector_graph_integration_tests {
-    use super::*;
 
     #[test]
     fn test_ruvector_graph_database() {
@@ -192,7 +187,6 @@ mod ruvector_graph_integration_tests {
 
 #[cfg(test)]
 mod ruvector_gnn_integration_tests {
-    use super::*;
 
     #[test]
     fn test_ruvector_gnn_layer() {
@@ -213,7 +207,6 @@ mod ruvector_gnn_integration_tests {
 
 #[cfg(test)]
 mod error_handling_tests {
-    use super::*;
 
     #[test]
     fn test_error_conversion() {
@@ -235,7 +228,6 @@ mod error_handling_tests {
 
 #[cfg(test)]
 mod performance_tests {
-    use super::*;
 
     #[test]
     fn test_search_latency() {
@@ -267,7 +259,6 @@ mod performance_tests {
 
 #[cfg(test)]
 mod memory_tests {
-    use super::*;
 
     #[test]
     fn test_memory_usage() {
@@ -291,7 +282,6 @@ mod memory_tests {
 
 #[cfg(test)]
 mod concurrency_tests {
-    use super::*;
 
     #[test]
     fn test_concurrent_searches() {
@@ -319,7 +309,6 @@ mod concurrency_tests {
 
 #[cfg(test)]
 mod edge_cases_tests {
-    use super::*;
 
     #[test]
     fn test_zero_dimension() {

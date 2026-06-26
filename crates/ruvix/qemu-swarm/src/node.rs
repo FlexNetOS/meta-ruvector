@@ -34,7 +34,14 @@ impl NodeId {
     pub fn from_index(index: usize) -> Self {
         // Use a deterministic UUID based on index for reproducibility
         let bytes = [
-            0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
+            0x00,
+            0x11,
+            0x22,
+            0x33,
+            0x44,
+            0x55,
+            0x66,
+            0x77,
             (index >> 56) as u8,
             (index >> 48) as u8,
             (index >> 40) as u8,
@@ -227,7 +234,10 @@ impl NodeConfig {
 
         // Serial console via Unix socket
         args.push("-serial".to_string());
-        args.push(format!("unix:{},server,nowait", self.console_socket.display()));
+        args.push(format!(
+            "unix:{},server,nowait",
+            self.console_socket.display()
+        ));
 
         // GDB server
         if self.enable_gdb {
@@ -631,10 +641,8 @@ impl QemuNode {
 
         let mut stream = UnixStream::connect(&self.config.console_socket)
             .await
-            .map_err(|e| {
-                SwarmError::SocketConnection {
-                    path: self.config.console_socket.clone(),
-                }
+            .map_err(|e| SwarmError::SocketConnection {
+                path: self.config.console_socket.clone(),
             })?;
 
         stream.write_all(data).await.map_err(SwarmError::Io)?;
@@ -688,9 +696,7 @@ mod tests {
 
     #[test]
     fn test_node_config_qemu_args() {
-        let config = NodeConfig::new(0)
-            .with_cpus(4)
-            .with_memory(1024);
+        let config = NodeConfig::new(0).with_cpus(4).with_memory(1024);
 
         let args = config.to_qemu_args();
         assert!(args.contains(&"-smp".to_string()));

@@ -39,7 +39,7 @@ pub fn scaled_dot_attention(
     query: &[f32],
     keys: JsValue,
     values: JsValue,
-    scale: Option<f32>,
+    #[allow(unused_variables)] scale: Option<f32>,
 ) -> Result<Vec<f32>, JsError> {
     let keys_vec: Vec<Vec<f32>> = serde_wasm_bindgen::from_value(keys)
         .map_err(|e| JsError::new(&format!("Failed to parse keys: {}", e)))?;
@@ -76,7 +76,7 @@ impl WasmMultiHeadAttention {
     /// * `num_heads` - Number of parallel attention heads
     #[wasm_bindgen(constructor)]
     pub fn new(dim: usize, num_heads: usize) -> Result<WasmMultiHeadAttention, JsError> {
-        if dim % num_heads != 0 {
+        if !dim.is_multiple_of(num_heads) {
             return Err(JsError::new(&format!(
                 "Dimension {} must be divisible by number of heads {}",
                 dim, num_heads
@@ -414,26 +414,25 @@ mod tests {
 
     #[wasm_bindgen_test]
     fn test_linear_attention_creation() {
-        let linear = WasmLinearAttention::new(64, 128);
-        // Just verify it can be created
-        assert!(true);
+        // Just verify it can be created without panicking
+        let _linear = WasmLinearAttention::new(64, 128);
     }
 
     #[wasm_bindgen_test]
     fn test_flash_attention_creation() {
-        let flash = WasmFlashAttention::new(64, 16);
-        assert!(true);
+        // Just verify it can be created without panicking
+        let _flash = WasmFlashAttention::new(64, 16);
     }
 
     #[wasm_bindgen_test]
     fn test_local_global_creation() {
-        let lg = WasmLocalGlobalAttention::new(64, 128, 4);
-        assert!(true);
+        // Just verify it can be created without panicking
+        let _lg = WasmLocalGlobalAttention::new(64, 128, 4);
     }
 
     #[wasm_bindgen_test]
     fn test_moe_attention_creation() {
-        let moe = WasmMoEAttention::new(64, 8, 2);
-        assert!(true);
+        // Just verify it can be created without panicking
+        let _moe = WasmMoEAttention::new(64, 8, 2);
     }
 }

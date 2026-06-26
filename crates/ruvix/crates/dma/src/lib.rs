@@ -78,7 +78,7 @@ mod error;
 
 pub use buffer::{DmaBuffer, DmaBufferFlags};
 pub use channel::{DmaChannel, DmaChannelId};
-pub use config::{DmaConfig, DmaBurstSize, DmaTransferWidth};
+pub use config::{DmaBurstSize, DmaConfig, DmaTransferWidth};
 pub use controller::DmaController;
 pub use descriptor::{DmaDescriptor, DmaDescriptorChain, DmaDescriptorFlags};
 pub use error::{DmaError, DmaResult};

@@ -30,8 +30,8 @@ fn solve_mincut(lam: &[f64], edges: &[(usize, usize, f64)], gamma: f64) -> Vec<b
             adj[u].push((v, i));
             adj[v].push((u, i + 1));
         };
-    for i in 0..m {
-        let (p0, p1) = (lam[i].max(0.0), (-lam[i]).max(0.0));
+    for (i, &lam_i) in lam.iter().enumerate() {
+        let (p0, p1) = (lam_i.max(0.0), (-lam_i).max(0.0));
         if p0 > 1e-12 {
             add(&mut adj, &mut caps, s, i, p0);
         }
@@ -503,7 +503,7 @@ fn extract_climate_experiences() -> Vec<TrainingExperience> {
     // Regime transitions
     for i in 1..n {
         if regime[i] != regime[i - 1] {
-            let before_start = if i > 10 { i - 10 } else { 0 };
+            let before_start = i.saturating_sub(10);
             let after_end = (i + 10).min(n);
             let before_mean =
                 anomalies[before_start..i].iter().sum::<f64>() / (i - before_start) as f64;

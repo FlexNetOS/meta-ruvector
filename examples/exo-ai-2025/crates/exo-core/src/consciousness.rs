@@ -537,7 +537,7 @@ impl ConsciousnessCalculator {
 // Thread-local for thread safety without locking overhead.
 // Period: 2^64 - 1
 thread_local! {
-    static XORSHIFT_STATE: RefCell<u64> = RefCell::new(0x853c_49e6_748f_ea9b);
+    static XORSHIFT_STATE: RefCell<u64> = const { RefCell::new(0x853c_49e6_748f_ea9b) };
 }
 
 /// Fast XorShift64 random number generator

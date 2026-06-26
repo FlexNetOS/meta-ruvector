@@ -11,12 +11,12 @@
 //! - Async query execution with streaming results
 //! - IndexedDB persistence (planned)
 
-use js_sys::{Array, Object, Promise, Reflect};
+#![allow(dead_code)]
+use js_sys::{Object, Reflect};
 use parking_lot::Mutex;
-use ruvector_core::advanced::hypergraph::{
-    Hyperedge as CoreHyperedge, HypergraphIndex, TemporalGranularity, TemporalHyperedge,
-};
+use ruvector_core::advanced::hypergraph::{Hyperedge as CoreHyperedge, HypergraphIndex};
 use ruvector_core::types::DistanceMetric;
+#[allow(unused_imports)]
 use serde_wasm_bindgen::{from_value, to_value};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -137,7 +137,7 @@ impl GraphDB {
         for label in &labels {
             labels_index
                 .entry(label.clone())
-                .or_insert_with(Vec::new)
+                .or_default()
                 .push(id.clone());
         }
 
@@ -199,19 +199,19 @@ impl GraphDB {
         self.edge_types_index
             .lock()
             .entry(edge_type)
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(id.clone());
 
         self.node_edges_out
             .lock()
             .entry(from)
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(id.clone());
 
         self.node_edges_in
             .lock()
             .entry(to)
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(id.clone());
 
         Ok(id)
@@ -389,7 +389,7 @@ impl GraphDB {
         let mut cypher = String::new();
 
         // Export nodes
-        for (id, node) in self.nodes.lock().iter() {
+        for (_id, node) in self.nodes.lock().iter() {
             let labels = if node.labels.is_empty() {
                 String::new()
             } else {
@@ -413,7 +413,7 @@ impl GraphDB {
         }
 
         // Export edges
-        for (id, edge) in self.edges.lock().iter() {
+        for (_id, edge) in self.edges.lock().iter() {
             let props = if edge.properties.is_empty() {
                 String::new()
             } else {
@@ -564,6 +564,8 @@ mod tests {
     #[wasm_bindgen_test]
     fn test_graph_creation() {
         let db = GraphDB::new(Some("cosine".to_string())).unwrap();
-        assert!(true); // Basic smoke test
+        // A freshly created graph has no nodes or edges.
+        assert_eq!(db.nodes.lock().len(), 0);
+        assert_eq!(db.edges.lock().len(), 0);
     }
 }
