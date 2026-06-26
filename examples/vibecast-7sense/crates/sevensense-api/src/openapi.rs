@@ -112,7 +112,7 @@ pub fn create_router() -> Router<AppContext> {
         // Raw OpenAPI JSON
         .route("/openapi.json", get(openapi_json))
         // Swagger UI - merge directly
-        .merge(SwaggerUi::new("/docs/swagger-ui").url("/docs/openapi.json", ApiDoc::openapi()))
+        .merge(<Router<AppContext>>::from(SwaggerUi::new("/docs/swagger-ui").url("/docs/openapi.json", ApiDoc::openapi())))
 }
 
 /// Get raw OpenAPI JSON.

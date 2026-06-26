@@ -396,7 +396,7 @@ cdr = "0.2"
 hdrhistogram = "7.5"
 
 # agentic-robotics-mcp SSE transport (optional deps)
-axum = { version = "0.7", features = ["http2"] }
+axum = { version = "0.8", features = ["http2"] }
 tokio-stream = "0.1"
 napi-build = "2.3"
 tokio-test = "0.4"

@@ -49,7 +49,7 @@ async-graphql-axum = "7.0"
 
 # OpenAPI
 utoipa = { version = "5.3", features = ["axum_extras", "uuid", "chrono"] }
-utoipa-swagger-ui = { version = "9.0", features = ["axum"] }
+utoipa-swagger-ui = { version = "9.0", default-features = false, features = ["axum"] }
 
 # Async streaming
 async-stream = "0.3"

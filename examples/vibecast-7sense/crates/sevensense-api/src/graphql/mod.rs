@@ -18,7 +18,7 @@ use async_graphql_axum::{GraphQLRequest, GraphQLResponse};
 use axum::{
     extract::State,
     response::{Html, IntoResponse},
-    routing::get,
+    routing::{get, post},
     Router,
 };
 
@@ -42,11 +42,13 @@ pub fn create_router(ctx: AppContext) -> Router<AppContext> {
     let schema = build_schema(ctx.clone());
 
     Router::new()
-        .route("/", get(graphql_playground).post(graphql_handler))
+        .route("/", get(graphql_playground))
+        .route("/graphql", post(graphql_handler))
         .with_state(schema)
 }
 
 /// GraphQL request handler.
+#[axum::debug_handler]
 async fn graphql_handler(State(schema): State<ApiSchema>, req: GraphQLRequest) -> GraphQLResponse {
     schema.execute(req.into_inner()).await.into()
 }
