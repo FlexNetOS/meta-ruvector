@@ -1,7 +1,7 @@
 //! Message definitions and traits
 
-use serde::{Deserialize, Serialize};
 use rkyv::{Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
+use serde::{Deserialize, Serialize};
 
 /// Message trait for ROS3 messages
 pub trait Message: Serialize + for<'de> Deserialize<'de> + Send + Sync + 'static {

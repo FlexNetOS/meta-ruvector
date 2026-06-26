@@ -16,7 +16,8 @@ use js_sys::{Object, Reflect};
 use parking_lot::Mutex;
 use ruvector_core::advanced::hypergraph::{Hyperedge as CoreHyperedge, HypergraphIndex};
 use ruvector_core::types::DistanceMetric;
-#[allow(unused_imports)] use serde_wasm_bindgen::{from_value, to_value};
+#[allow(unused_imports)]
+use serde_wasm_bindgen::{from_value, to_value};
 use std::collections::HashMap;
 use std::sync::Arc;
 use uuid::Uuid;

@@ -13,11 +13,12 @@ use std::path::PathBuf;
 use std::time::Instant;
 
 // Import RuVector crates
+#[allow(unused_imports)]
+use ruvector_attention::ScaledDotProductAttention;
 use ruvector_attention::{
     traits::Attention, HyperbolicAttention, HyperbolicAttentionConfig, MoEAttention, MoEConfig,
     MultiHeadAttention,
 };
-#[allow(unused_imports)] use ruvector_attention::ScaledDotProductAttention;
 use ruvector_gnn::{
     ewc::ElasticWeightConsolidation,
     layer::RuvectorLayer,

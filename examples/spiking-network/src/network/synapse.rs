@@ -25,14 +25,39 @@ pub struct Synapse {
 }
 impl Synapse {
     /// Create an excitatory synapse with the given weight.
-    pub fn excitatory(w: f32) -> Self { Self { weight: w, delay: 1.0, syn_type: SynapseType::Excitatory } }
+    pub fn excitatory(w: f32) -> Self {
+        Self {
+            weight: w,
+            delay: 1.0,
+            syn_type: SynapseType::Excitatory,
+        }
+    }
     /// Create an inhibitory synapse with the given weight magnitude.
-    pub fn inhibitory(w: f32) -> Self { Self { weight: -w, delay: 1.0, syn_type: SynapseType::Inhibitory } }
+    pub fn inhibitory(w: f32) -> Self {
+        Self {
+            weight: -w,
+            delay: 1.0,
+            syn_type: SynapseType::Inhibitory,
+        }
+    }
     /// Return +1.0 for excitatory, -1.0 for inhibitory.
-    pub fn sign(&self) -> f32 { match self.syn_type { SynapseType::Excitatory => 1.0, _ => -1.0 } }
+    pub fn sign(&self) -> f32 {
+        match self.syn_type {
+            SynapseType::Excitatory => 1.0,
+            _ => -1.0,
+        }
+    }
     /// Returns true if this synapse is inhibitory.
-    pub fn is_inhibitory(&self) -> bool { self.syn_type == SynapseType::Inhibitory } }
+    pub fn is_inhibitory(&self) -> bool {
+        self.syn_type == SynapseType::Inhibitory
+    }
+}
 
-#[cfg(test)] mod tests {
-    #[test] fn test_excitatory() { let s = Synapse::excitatory(0.5); assert!(!s.is_inhibitory()); }
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn test_excitatory() {
+        let s = Synapse::excitatory(0.5);
+        assert!(!s.is_inhibitory());
+    }
 }

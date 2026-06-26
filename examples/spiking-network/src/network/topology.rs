@@ -27,7 +27,14 @@ pub struct TopologyConfig {
     /// Enable random weight initialization (ignored when false).
     pub random: bool,
 }
-impl Default for TopologyConfig { fn default() -> Self { Self { pattern: ConnectionPattern::AllToAll { probability: 0.1 }, random: true } } }
+impl Default for TopologyConfig {
+    fn default() -> Self {
+        Self {
+            pattern: ConnectionPattern::AllToAll { probability: 0.1 },
+            random: true,
+        }
+    }
+}
 
 /// Local grid connectivity parameters.
 #[derive(Debug, Clone, Serialize, Deserialize)]

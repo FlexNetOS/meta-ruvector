@@ -1,6 +1,6 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId, Throughput};
-use ros3_core::message::{RobotState, PointCloud, Pose};
-use ros3_core::serialization::{serialize_cdr, deserialize_cdr, serialize_json, deserialize_json};
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
+use ros3_core::message::{PointCloud, Pose, RobotState};
+use ros3_core::serialization::{deserialize_cdr, deserialize_json, serialize_cdr, serialize_json};
 
 fn benchmark_cdr_serialization(c: &mut Criterion) {
     let mut group = c.benchmark_group("CDR Serialization");
@@ -142,7 +142,10 @@ fn benchmark_json_vs_cdr(c: &mut Criterion) {
     println!("\nSerialization size comparison for RobotState:");
     println!("  CDR:  {} bytes", cdr_bytes.len());
     println!("  JSON: {} bytes", json_bytes.len());
-    println!("  Ratio: {:.2}x", json_bytes.len() as f64 / cdr_bytes.len() as f64);
+    println!(
+        "  Ratio: {:.2}x",
+        json_bytes.len() as f64 / cdr_bytes.len() as f64
+    );
 
     group.finish();
 }
@@ -166,12 +169,16 @@ fn benchmark_message_sizes(c: &mut Criterion) {
         let size_bytes = pointcloud.points.len() * std::mem::size_of::<[f32; 3]>();
         group.throughput(Throughput::Bytes(size_bytes as u64));
 
-        group.bench_with_input(BenchmarkId::new("PointCloud", size), &pointcloud, |b, pc| {
-            b.iter(|| {
-                let serialized = serialize_cdr(black_box(pc)).unwrap();
-                black_box(serialized)
-            })
-        });
+        group.bench_with_input(
+            BenchmarkId::new("PointCloud", size),
+            &pointcloud,
+            |b, pc| {
+                b.iter(|| {
+                    let serialized = serialize_cdr(black_box(pc)).unwrap();
+                    black_box(serialized)
+                })
+            },
+        );
     }
 
     group.finish();

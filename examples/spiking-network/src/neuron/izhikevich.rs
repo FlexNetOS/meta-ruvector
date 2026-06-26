@@ -363,7 +363,10 @@ mod tests {
         }
 
         // Should spike regularly
-        assert!(spike_count > 10, "Regular spiking neuron should fire regularly");
+        assert!(
+            spike_count > 10,
+            "Regular spiking neuron should fire regularly"
+        );
         assert!(spike_count < 200, "Should not fire too fast");
     }
 
@@ -380,12 +383,19 @@ mod tests {
             fs.receive_input(14.0);
             rs.receive_input(14.0);
 
-            if fs.update(1.0) { fs_spikes += 1; }
-            if rs.update(1.0) { rs_spikes += 1; }
+            if fs.update(1.0) {
+                fs_spikes += 1;
+            }
+            if rs.update(1.0) {
+                rs_spikes += 1;
+            }
         }
 
         // Fast spiking should fire more often
-        assert!(fs_spikes > rs_spikes, "Fast spiking should fire more than regular");
+        assert!(
+            fs_spikes > rs_spikes,
+            "Fast spiking should fire more than regular"
+        );
     }
 
     #[test]
@@ -397,7 +407,10 @@ mod tests {
         neuron.v = 35.0; // Above threshold
         neuron.update(1.0);
 
-        assert!(neuron.recovery() > initial_u, "Recovery should increase after spike");
+        assert!(
+            neuron.recovery() > initial_u,
+            "Recovery should increase after spike"
+        );
     }
 
     #[test]

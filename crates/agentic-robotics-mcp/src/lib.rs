@@ -12,8 +12,8 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
-pub mod transport;
 pub mod server;
+pub mod transport;
 
 /// MCP Protocol version
 pub const MCP_VERSION: &str = "2025-11-15";
@@ -71,7 +71,11 @@ pub enum ContentItem {
     #[serde(rename = "text")]
     Text { text: String },
     #[serde(rename = "resource")]
-    Resource { uri: String, mimeType: String, data: String },
+    Resource {
+        uri: String,
+        mimeType: String,
+        data: String,
+    },
     #[serde(rename = "image")]
     Image { data: String, mimeType: String },
 }
@@ -108,11 +112,7 @@ impl McpServer {
     }
 
     /// Register a tool
-    pub async fn register_tool(
-        &self,
-        tool: McpTool,
-        handler: ToolHandler,
-    ) -> Result<()> {
+    pub async fn register_tool(&self, tool: McpTool, handler: ToolHandler) -> Result<()> {
         let mut tools = self.tools.write().await;
         tools.insert(tool.name.clone(), (tool, handler));
         Ok(())
@@ -157,9 +157,7 @@ impl McpServer {
 
     async fn handle_list_tools(&self, id: Option<Value>) -> McpResponse {
         let tools = self.tools.read().await;
-        let tool_list: Vec<McpTool> = tools.values()
-            .map(|(tool, _)| tool.clone())
-            .collect();
+        let tool_list: Vec<McpTool> = tools.values().map(|(tool, _)| tool.clone()).collect();
 
         McpResponse {
             jsonrpc: "2.0".to_string(),
@@ -208,26 +206,24 @@ impl McpServer {
 
         let tools = self.tools.read().await;
         match tools.get(tool_name) {
-            Some((_, handler)) => {
-                match handler(arguments) {
-                    Ok(result) => McpResponse {
-                        jsonrpc: "2.0".to_string(),
-                        id,
-                        result: Some(serde_json::to_value(result).unwrap()),
-                        error: None,
-                    },
-                    Err(e) => McpResponse {
-                        jsonrpc: "2.0".to_string(),
-                        id,
-                        result: None,
-                        error: Some(McpError {
-                            code: -32000,
-                            message: format!("Tool execution failed: {}", e),
-                            data: None,
-                        }),
-                    },
-                }
-            }
+            Some((_, handler)) => match handler(arguments) {
+                Ok(result) => McpResponse {
+                    jsonrpc: "2.0".to_string(),
+                    id,
+                    result: Some(serde_json::to_value(result).unwrap()),
+                    error: None,
+                },
+                Err(e) => McpResponse {
+                    jsonrpc: "2.0".to_string(),
+                    id,
+                    result: None,
+                    error: Some(McpError {
+                        code: -32000,
+                        message: format!("Tool execution failed: {}", e),
+                        data: None,
+                    }),
+                },
+            },
             None => McpResponse {
                 jsonrpc: "2.0".to_string(),
                 id,
@@ -319,7 +315,8 @@ mod tests {
         };
 
         let handler: ToolHandler = Arc::new(|args| {
-            let message = args.get("message")
+            let message = args
+                .get("message")
                 .and_then(|v| v.as_str())
                 .unwrap_or("empty");
 

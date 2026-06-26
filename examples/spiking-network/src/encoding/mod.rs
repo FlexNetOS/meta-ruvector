@@ -43,7 +43,11 @@ impl SpikeEvent {
 
     /// Create spike with payload.
     pub fn with_payload(source: u32, time: f32, payload: u8) -> Self {
-        Self { source, time, payload }
+        Self {
+            source,
+            time,
+            payload,
+        }
     }
 }
 
@@ -221,11 +225,7 @@ impl SpikeEncoder {
     ///
     /// Uses difference-of-Gaussians for edge detection,
     /// then temporal coding for spike generation.
-    pub fn encode_image_patch(
-        patch: &[f32],
-        width: usize,
-        height: usize,
-    ) -> SparseSpikes {
+    pub fn encode_image_patch(patch: &[f32], width: usize, height: usize) -> SparseSpikes {
         let mut spikes = SparseSpikes::new((width * height) as u32, 100);
 
         // Simple intensity-based encoding

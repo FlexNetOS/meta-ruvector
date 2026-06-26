@@ -1,5 +1,5 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use ros3_rt::{LatencyTracker, ROS3Executor, Priority, Deadline};
+use ros3_rt::{Deadline, LatencyTracker, Priority, ROS3Executor};
 use std::time::Duration;
 
 fn benchmark_latency_tracking(c: &mut Criterion) {
@@ -25,5 +25,9 @@ fn benchmark_executor_spawn(c: &mut Criterion) {
     });
 }
 
-criterion_group!(benches, benchmark_latency_tracking, benchmark_executor_spawn);
+criterion_group!(
+    benches,
+    benchmark_latency_tracking,
+    benchmark_executor_spawn
+);
 criterion_main!(benches);

@@ -17,12 +17,12 @@
 //! - Predictable memory access patterns
 //! - Branch-friendly state machines
 
-mod lif;
 mod izhikevich;
+mod lif;
 mod traits;
 
-pub use lif::{LIFNeuron, LIFParams};
 pub use izhikevich::{IzhikevichNeuron, IzhikevichParams, IzhikevichType};
+pub use lif::{LIFNeuron, LIFParams};
 pub use traits::{EnergyModel, NeuronParams, NeuronState, SpikingNeuron};
 
 /// Default membrane time constant (ms)

@@ -1,5 +1,5 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId};
-use ros3_rt::executor::{ROS3Executor, Priority, Deadline};
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
+use ros3_rt::executor::{Deadline, Priority, ROS3Executor};
 use ros3_rt::scheduler::PriorityScheduler;
 use std::time::Duration;
 
@@ -36,14 +36,10 @@ fn benchmark_task_spawning(c: &mut Criterion) {
 
     group.bench_function("spawn_low_priority", |b| {
         b.iter(|| {
-            executor.spawn_rt(
-                Priority::Low,
-                Deadline(Duration::from_millis(100)),
-                async {
-                    // Minimal async task
-                    black_box(42);
-                },
-            );
+            executor.spawn_rt(Priority::Low, Deadline(Duration::from_millis(100)), async {
+                // Minimal async task
+                black_box(42);
+            });
         })
     });
 
@@ -183,11 +179,9 @@ fn benchmark_priority_handling(c: &mut Criterion) {
     group.bench_function("mixed_priorities", |b| {
         b.iter(|| {
             // High priority task
-            executor.spawn_rt(
-                Priority::High,
-                Deadline(Duration::from_micros(50)),
-                async { black_box(1) },
-            );
+            executor.spawn_rt(Priority::High, Deadline(Duration::from_micros(50)), async {
+                black_box(1)
+            });
 
             // Medium priority task
             executor.spawn_rt(
@@ -197,11 +191,9 @@ fn benchmark_priority_handling(c: &mut Criterion) {
             );
 
             // Low priority task
-            executor.spawn_rt(
-                Priority::Low,
-                Deadline(Duration::from_millis(100)),
-                async { black_box(3) },
-            );
+            executor.spawn_rt(Priority::Low, Deadline(Duration::from_millis(100)), async {
+                black_box(3)
+            });
         })
     });
 
@@ -230,11 +222,9 @@ fn benchmark_deadline_distribution(c: &mut Criterion) {
     group.bench_function("loose_deadlines", |b| {
         b.iter(|| {
             for _ in 0..10 {
-                executor.spawn_rt(
-                    Priority::Low,
-                    Deadline(Duration::from_millis(100)),
-                    async { black_box(42) },
-                );
+                executor.spawn_rt(Priority::Low, Deadline(Duration::from_millis(100)), async {
+                    black_box(42)
+                });
             }
         })
     });

@@ -92,17 +92,19 @@ impl NetworkStats {
         self.total_spikes = self.spikes_per_step.iter().sum();
 
         let _num_neurons = if !self.active_neurons_per_step.is_empty() {
-            self.active_neurons_per_step.iter().max().copied().unwrap_or(1)
+            self.active_neurons_per_step
+                .iter()
+                .max()
+                .copied()
+                .unwrap_or(1)
         } else {
             1
         };
 
         // Calculate average firing rate
         if self.simulation_time > 0.0 && _num_neurons > 0 {
-            self.avg_firing_rate = (self.total_spikes as f32)
-                / (_num_neurons as f32)
-                / self.simulation_time
-                * 1000.0;
+            self.avg_firing_rate =
+                (self.total_spikes as f32) / (_num_neurons as f32) / self.simulation_time * 1000.0;
         }
 
         // Calculate sparsity
@@ -161,7 +163,9 @@ impl SpikingNetwork {
     /// Create a new spiking network.
     pub fn new(config: NetworkConfig) -> Result<Self> {
         if config.num_neurons == 0 {
-            return Err(SpikingError::InvalidParams("num_neurons must be > 0".into()));
+            return Err(SpikingError::InvalidParams(
+                "num_neurons must be > 0".into(),
+            ));
         }
 
         // Initialize neurons
@@ -220,10 +224,7 @@ impl SpikingNetwork {
             ConnectionPattern::LocalGrid { width, radius } => {
                 self.build_local_grid(width, radius)?;
             }
-            ConnectionPattern::SmallWorld {
-                k,
-                rewire_prob,
-            } => {
+            ConnectionPattern::SmallWorld { k, rewire_prob } => {
                 self.build_small_world(k, rewire_prob)?;
             }
             ConnectionPattern::Feedforward { layer_sizes } => {
@@ -385,25 +386,13 @@ impl SpikingNetwork {
             self.neurons
                 .par_iter_mut()
                 .enumerate()
-                .filter_map(|(i, neuron)| {
-                    if neuron.update(dt) {
-                        Some(i)
-                    } else {
-                        None
-                    }
-                })
+                .filter_map(|(i, neuron)| if neuron.update(dt) { Some(i) } else { None })
                 .collect()
         } else {
             self.neurons
                 .iter_mut()
                 .enumerate()
-                .filter_map(|(i, neuron)| {
-                    if neuron.update(dt) {
-                        Some(i)
-                    } else {
-                        None
-                    }
-                })
+                .filter_map(|(i, neuron)| if neuron.update(dt) { Some(i) } else { None })
                 .collect()
         };
 
@@ -430,7 +419,9 @@ impl SpikingNetwork {
 
         // Update statistics
         self.stats.spikes_per_step.push(spikes_this_step);
-        self.stats.active_neurons_per_step.push(self.config.num_neurons);
+        self.stats
+            .active_neurons_per_step
+            .push(self.config.num_neurons);
         self.stats.energy_consumed += self.estimate_step_energy(spikes_this_step);
 
         self.current_time = next_time;

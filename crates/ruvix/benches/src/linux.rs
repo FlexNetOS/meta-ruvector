@@ -13,11 +13,13 @@
 //! | timer_wait | clock_nanosleep |
 //! | vector_put_proved | write+fsync |
 
-#[allow(unused_imports)] use std::time::Duration;
+#[allow(unused_imports)]
+use std::time::Duration;
 use std::time::Instant;
 
 // BenchmarkResult: kept for API compat
-#[allow(unused_imports)] use crate::BenchmarkResult;
+#[allow(unused_imports)]
+use crate::BenchmarkResult;
 
 #[cfg(unix)]
 use std::os::unix::io::RawFd;
