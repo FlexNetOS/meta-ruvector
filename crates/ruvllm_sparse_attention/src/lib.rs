@@ -1,3 +1,15 @@
+//! Subquadratic sparse attention kernel for Rust LLM inference on edge devices.
+//!
+//! `ruvllm_sparse_attention` implements an `O(N log N)` sparse attention kernel
+//! with an optional FastGRNN salience gate ([`FastGrnnGate`]) that brings scaling
+//! down toward near-linear `O(N)`. It is `no_std` + `alloc` compatible — disable
+//! the default `std` feature for bare-metal targets such as the ESP32-S3, where
+//! the [`no_std_math`] trait restores the required `f32` math via `libm`.
+//!
+//! The core building block is [`RuvLlmSparseBlock`] (configured with
+//! [`RuvLlmSparseBlockConfig`]); see the [`attention`], [`model`], and [`tensor`]
+//! modules for the lower-level primitives.
+
 // no_std + alloc support: works on ESP32-S3 and other bare-metal targets
 // when the default `std` feature is disabled. With `std` (the default),
 // the crate behaves exactly as before. The feature is purely additive
