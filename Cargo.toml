@@ -1,5 +1,5 @@
 [workspace]
-exclude = ["external/ruqu", "external/rvdna", "examples/OSpipe", "examples/rvf", "crates/micro-hnsw-wasm", "crates/ruvector-hyperbolic-hnsw", "crates/ruvector-hyperbolic-hnsw-wasm", "examples/ruvLLM/esp32", "examples/ruvLLM/esp32-flash", "examples/edge-net", "examples/data", "examples/ruvLLM", "examples/delta-behavior", "crates/rvf", "crates/rvf/*", "crates/rvf/*/*", "examples/rvf-desktop", "crates/mcp-brain-server",
+exclude = ["crates/micro-hnsw-wasm", "crates/ruvector-hyperbolic-hnsw", "crates/ruvector-hyperbolic-hnsw-wasm", "examples/ruvLLM/esp32", "examples/ruvLLM/esp32-flash", "examples/edge-net", "examples/data", "examples/ruvLLM", "examples/delta-behavior", "crates/rvf", "crates/rvf/*", "crates/rvf/*/*", "examples/rvf-desktop", "crates/mcp-brain-server",
     # ruvector-postgres is a pgrx-based PostgreSQL extension. Its build script
     # requires `$PGRX_HOME` set up via `cargo install cargo-pgrx --version 0.12.9`
     # and `cargo pgrx init`, which downloads and builds multiple Postgres
@@ -54,14 +54,34 @@ exclude = ["external/ruqu", "external/rvdna", "examples/OSpipe", "examples/rvf",
     # than added as broken members; re-align to the current APIs, then re-add.
     "crates/ruvector-attention-cli",
     "crates/ruvector-sparse-inference-wasm",
-    # ruvector-agent-memory / ruvector-hnsw-repair / ruvector-maxsim: compile
-    # cleanly but still fail the `clippy --all-targets -- -D warnings` CI gate
-    # (e.g. too_many_arguments, ptr_arg, unnecessary_sort_by — not auto-fixable
-    # without API changes). Excluded so the workspace clippy gate stays green;
-    # promote to `members` after a lint pass.
-    "crates/ruvector-agent-memory",
-    "crates/ruvector-hnsw-repair",
-    "crates/ruvector-maxsim"]
+    # Broken manifests — Cargo.toml exists but source files are missing.
+    # These were scaffolded (empty skeleton) and never filled in.
+    "crates/ruQu",
+    "crates/ruqu-core",
+    "crates/ruqu-algorithms",
+    "crates/ruqu-exotic",
+    "crates/ruqu-wasm",
+    # vibecast-7sense subcrates: 9 crates with source but use `workspace = true`
+    # deps (async-trait, tokio, tracing) not defined in parent's [workspace.dependencies].
+    # They compile standalone (`cargo check --manifest-path examples/vibecast-7sense/...`)
+    # but cannot be wired as members without duplicating all 9 dep definitions here.
+    "examples/vibecast-7sense/crates/sevensense-core",
+    "examples/vibecast-7sense/crates/sevensense-audio",
+    "examples/vibecast-7sense/crates/sevensense-analysis",
+    "examples/vibecast-7sense/crates/sevensense-api",
+    "examples/vibecast-7sense/crates/sevensense-embedding",
+    "examples/vibecast-7sense/crates/sevensense-interpretation",
+    "examples/vibecast-7sense/crates/sevensense-learning",
+    "examples/vibecast-7sense/crates/sevensense-vector",
+    # RVM bare-metal kernel sub-workspace: 14+ crates under crates/rvm/
+    # with their own [workspace] + [workspace.package] + [workspace.dependencies].
+    # Cannot be added to parent workspace — Cargo rejects nested workspace roots.
+]
+
+# =============================================================================
+# MEMBERS — all crate paths that are part of this workspace build.
+# =============================================================================
+
 members = [
     "crates/ruvector-temporal-coherence",
     "crates/ruvector-acorn",
@@ -124,7 +144,6 @@ members = [
     "examples/subpolynomial-time",
     "crates/sona",
     "crates/rvlite",
-    "crates/ruvector-nervous-system",
     "crates/ruvector-dag",
     "crates/ruvector-dag-wasm",
     "crates/ruvector-nervous-system-wasm",
@@ -292,13 +311,56 @@ members = [
     "crates/photonlayer-ruvector",
     "crates/photonlayer-cli",
     "crates/photonlayer-wasm",
-    # Crate-membership audit (meta-integration): these were orphaned — present
-    # with [package] but members of no workspace, so `cargo build --workspace`
-    # never built them. Promoted here because they compile AND pass the
-    # `clippy --workspace --all-targets -- -D warnings` CI gate. Other recovered
-    # orphans that compile but still carry clippy debt are in `exclude` below.
+    # Recovered orphans — compile AND pass the clippy gate.
     "crates/ruvector-temporal-tensor-wasm",
     "crates/ruvector-bet4-ivf-bench",
+    # Task #16: agent-memory / hnsw-repair / maxsim — promoted from exclude
+    # (compiled cleanly, clippy gate was the only blocker). Now wired in.
+    "crates/ruvector-agent-memory",
+    "crates/ruvector-hnsw-repair",
+    "crates/ruvector-maxsim",
+    # RVM bare-metal kernel: self-contained nested workspace (14 subcrates, own Cargo.toml).
+    # Cannot be added as a member — Cargo rejects nested workspace roots.
+    # Each subcrate uses `workspace = true` for deps pointing to its own [workspace.package].
+    # Task #12: Ruvix non-member subcrates (bcm2711/rpi-boot/smp/dma/dtb/fs/net/shell/drivers/physmem) —
+    # present on disk but never wired into workspace members. Added here.
+    "crates/ruvix/crates/bcm2711",
+    "crates/ruvix/crates/cli",
+    "crates/ruvix/crates/dma",
+    "crates/ruvix/crates/dtb",
+    "crates/ruvix/crates/fs",
+    "crates/ruvix/crates/net",
+    "crates/ruvix/crates/shell",
+    "crates/ruvix/crates/smp",
+    # Note: drivers already in members at line 188 — no duplicate needed.
+    "crates/ruvix/crates/physmem",
+    # Task #13: exo-ai-2025 subcrates — 9 standalone crates (literal version, no path deps).
+    # Each compiles clean in this workspace via parent's [workspace.dependencies].
+    "examples/exo-ai-2025/crates/exo-core",
+    "examples/exo-ai-2025/crates/exo-backend-classical",
+    "examples/exo-ai-2025/crates/exo-exotic",
+    "examples/exo-ai-2025/crates/exo-federation",
+    "examples/exo-ai-2025/crates/exo-hypergraph",
+    "examples/exo-ai-2025/crates/exo-manifold",
+    "examples/exo-ai-2025/crates/exo-node",
+    "examples/exo-ai-2025/crates/exo-temporal",
+    "examples/exo-ai-2025/crates/exo-wasm",
+    # ruos-thermal: Pi 5 thermal supervisor (ADR-174). Zero deps, ready to build.
+    # Joined the workspace now that the skeleton is complete — daemon mode
+    # (Unix socket protocol) in iter 92 of ADR-174 as a follow-up.
+    "crates/ruos-thermal",
+    # Recovered from GitHub (ruvnet/ruqu) — quantum execution intelligence engine, 93 Rust files, ~63K lines.
+    # Source was deleted via commit 82c21c2a7 and never populated into submodules; reconstituted via tarball fetch.
+    "external/ruqu/crates/ruQu",
+    "external/ruqu/crates/ruqu-algorithms",
+    "external/ruqu/crates/ruqu-core",
+    "external/ruqu/crates/ruqu-exotic",
+    "external/ruqu/crates/ruqu-wasm",
+    # Consumers of external/ruqu — re-included in workspace (was excluded due to broken path deps)
+    # Now that external/ruqu source is recovered, their path deps resolve correctly.
+    "examples/OSpipe",
+    # Recovered — had its own [workspace] section (nested workspace root). Stripped it to allow parent membership.
+    "examples/rvf",
 ]
 resolver = "2"
 

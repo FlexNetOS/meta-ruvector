@@ -789,11 +789,35 @@ dependencies = [
 name = "exo-backend-classical"
 version = "0.1.1"
 dependencies = [
- "exo-core",
- "exo-exotic",
- "exo-federation",
- "exo-manifold",
- "exo-temporal",
+ "exo-core 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "exo-exotic 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "exo-federation 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "exo-manifold 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "exo-temporal 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "parking_lot",
+ "rand 0.8.5",
+ "ruvector-core",
+ "ruvector-dither",
+ "ruvector-domain-expansion",
+ "ruvector-graph",
+ "serde",
+ "serde_json",
+ "thermorust",
+ "thiserror 2.0.17",
+ "uuid",
+]
+
+[[package]]
+name = "exo-backend-classical"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ed2d7893b5be0d24621c699224812d68c62885dbf5292c5a9b6b8813815694a6"
+dependencies = [
+ "exo-core 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "exo-exotic 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "exo-federation 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "exo-manifold 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "exo-temporal 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "parking_lot",
  "rand 0.8.5",
  "ruvector-core",
@@ -824,18 +848,55 @@ dependencies = [
 ]
 
 [[package]]
+name = "exo-core"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8b0e153bb4ccc42db7cde1855fca5706bba89a8b8c94dc3e6f291dc8df4db67f"
+dependencies = [
+ "anyhow",
+ "dashmap",
+ "ruvector-core",
+ "ruvector-graph",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.17",
+ "tokio",
+ "uuid",
+]
+
+[[package]]
 name = "exo-exotic"
 version = "0.1.1"
 dependencies = [
  "criterion",
  "dashmap",
- "exo-core",
- "exo-temporal",
+ "exo-core 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "exo-temporal 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "ordered-float",
  "parking_lot",
  "petgraph",
  "rand 0.8.5",
  "rayon",
+ "ruvector-domain-expansion",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "uuid",
+]
+
+[[package]]
+name = "exo-exotic"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8606188530e90f6878d4c5cc116b1e2737d8e700c1a437c907da05372a599b71"
+dependencies = [
+ "dashmap",
+ "exo-core 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "exo-temporal 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ordered-float",
+ "parking_lot",
+ "petgraph",
+ "rand 0.8.5",
  "ruvector-domain-expansion",
  "serde",
  "serde_json",
@@ -850,7 +911,7 @@ dependencies = [
  "anyhow",
  "chacha20poly1305",
  "dashmap",
- "exo-core",
+ "exo-core 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "hex",
  "hmac",
  "pqcrypto-kyber",
@@ -868,11 +929,36 @@ dependencies = [
 ]
 
 [[package]]
+name = "exo-federation"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a7a7e1d313cff4606ffda42cb5c2637862a77398aa5adfc22b70d310ff14cf8d"
+dependencies = [
+ "anyhow",
+ "chacha20poly1305",
+ "dashmap",
+ "exo-core 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "hex",
+ "hmac",
+ "pqcrypto-kyber",
+ "pqcrypto-traits",
+ "rand 0.8.5",
+ "ruvector-domain-expansion",
+ "serde",
+ "serde_json",
+ "sha2",
+ "subtle",
+ "thiserror 1.0.69",
+ "tokio",
+ "zeroize",
+]
+
+[[package]]
 name = "exo-hypergraph"
 version = "0.1.1"
 dependencies = [
  "dashmap",
- "exo-core",
+ "exo-core 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "petgraph",
  "serde",
  "serde_json",
@@ -886,7 +972,21 @@ name = "exo-manifold"
 version = "0.1.1"
 dependencies = [
  "approx",
- "exo-core",
+ "exo-core 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ndarray",
+ "parking_lot",
+ "ruvector-domain-expansion",
+ "serde",
+ "thiserror 1.0.69",
+]
+
+[[package]]
+name = "exo-manifold"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e902a2b2742a7f0edcfcd81dde77cded413764753ccc20e369ceb00b0c781a7e"
+dependencies = [
+ "exo-core 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "ndarray",
  "parking_lot",
  "ruvector-domain-expansion",
@@ -899,8 +999,8 @@ name = "exo-node"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "exo-backend-classical",
- "exo-core",
+ "exo-backend-classical 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "exo-core 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "napi",
  "napi-build",
  "napi-derive",
@@ -918,13 +1018,31 @@ dependencies = [
  "ahash",
  "chrono",
  "dashmap",
- "exo-core",
+ "exo-core 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "parking_lot",
  "petgraph",
  "ruvector-domain-expansion",
  "serde",
  "thiserror 2.0.17",
  "tokio",
+ "uuid",
+]
+
+[[package]]
+name = "exo-temporal"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ce0db35909431c5f79b65510bd910663759d1d991589a40212e79218598de362"
+dependencies = [
+ "ahash",
+ "chrono",
+ "dashmap",
+ "exo-core 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "parking_lot",
+ "petgraph",
+ "ruvector-domain-expansion",
+ "serde",
+ "thiserror 2.0.17",
  "uuid",
 ]
 
@@ -2189,14 +2307,18 @@ dependencies = [
 [[package]]
 name = "ruvector-dither"
 version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "62143029ffe8b0693509d894b0bc8150c4aca3fa26c273395bdd933bd56e91a2"
 
 [[package]]
 name = "ruvector-domain-expansion"
-version = "2.2.3"
+version = "2.0.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a30d2a1753db421985d99b802931b3434d830f2c7bb47236636966de9a382336"
 dependencies = [
  "rand 0.8.5",
  "rvf-crypto",
- "rvf-types",
+ "rvf-types 0.2.1",
  "rvf-wire",
  "serde",
  "serde_json",
@@ -2249,24 +2371,34 @@ dependencies = [
 [[package]]
 name = "rvf-crypto"
 version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dff39ba56ba54399ad3796e4b4d079ab9b663afe4b53b4e0f30d68aff98897de"
 dependencies = [
  "ed25519-dalek",
- "rvf-types",
+ "rvf-types 0.2.1",
  "sha3",
 ]
 
 [[package]]
 name = "rvf-types"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a650cb7329774b8eaf764b02ee187adab7e31640a69a4efe33abcb3fc86a5170"
+
+[[package]]
+name = "rvf-types"
 version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "05adcbb7dd0f7d323314ad2de13fbfebd43b6403e3a9bcc6fea94d1b873b72c3"
 
 [[package]]
 name = "rvf-wire"
 version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dc9a5b2778f0aa4442ab8ad27bc8afeab7a6a7ad2022ee65d870587e9f43f62f"
 dependencies = [
  "crc32c",
- "rvf-types",
- "sha3",
- "subtle",
+ "rvf-types 0.1.0",
  "xxhash-rust",
 ]
 
@@ -2492,6 +2624,8 @@ checksum = "7b2093cf4c8eb1e67749a6762251bc9cd836b6fc171623bd0a9d324d37af2417"
 [[package]]
 name = "thermorust"
 version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e55ee30381d249806dfa9dc01b63451b2071f9b5c3d4955053d35412e7146fff"
 dependencies = [
  "rand 0.8.5",
  "rand_distr",
