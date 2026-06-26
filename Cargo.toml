@@ -331,6 +331,15 @@ members = [
     "crates/ruvector-hyperbolic-hnsw-wasm",
     # Edge-net: edge networking with crypto (ed25519, x25519, aes-gcm, sha2, argon2) + WASM. All deps wired above.
     "examples/edge-net",
+    # Robotics middleware cluster (DDS/ROS2 via zenoh/rustdds/cdr) — 6 self-contained crates with workspace.package fields inherited from parent. Internal cross-deps all use workspace = true.
+    "crates/agentic-robotics-core",
+    "crates/agentic-robotics-rt",
+    "crates/agentic-robotics-node",
+    "crates/agentic-robotics-mcp",
+    "crates/agentic-robotics-embedded",
+    "crates/agentic-robotics-benchmarks",
+    # Vibecast/sevensense migration — internal path deps require own workspace; pending separate PR.
+    # All external deps added to [workspace.dependencies] for when migration happens.
     "vendor/cognitum-one",
 ]
 resolver = "2"
@@ -370,7 +379,7 @@ rayon = "1.10"
 crossbeam = "0.8"
 
 # DDS/ROS2 middleware (agentic-robotics cluster)
-zenoh = { version = "1", features = ["full"] }
+zenoh = "1"
 rustdds = "0.8"
 cdr = "0.2"
 hdrhistogram = "7.5"
@@ -380,6 +389,13 @@ axum = { version = "0.7", features = ["http2"] }
 tokio-stream = "0.1"
 napi-build = "2.3"
 tokio-test = "0.4"
+
+# Robotics internal path deps (required for workspace = true references)
+agentic-robotics-core = { path = "crates/agentic-robotics-core", version = "2.2.3" }
+agentic-robotics-rt = { path = "crates/agentic-robotics-rt", version = "2.2.3" }
+agentic-robotics-node = { path = "crates/agentic-robotics-node", version = "0.1.2" }
+agentic-robotics-mcp = { path = "crates/agentic-robotics-mcp", version = "0.1.2" }
+agentic-robotics-embedded = { path = "crates/agentic-robotics-embedded", version = "0.1.1" }
 
 # Serialization
 rkyv = "0.8"

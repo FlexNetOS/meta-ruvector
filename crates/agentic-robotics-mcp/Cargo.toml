@@ -13,7 +13,7 @@ categories.workspace = true
 readme = "README.md"
 
 [dependencies]
-agentic-robotics-core = { path = "../agentic-robotics-core", version = "0.1.2" }
+agentic-robotics-core = { workspace = true }
 tokio = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
