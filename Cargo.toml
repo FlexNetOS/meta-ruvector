@@ -54,13 +54,9 @@ exclude = ["crates/micro-hnsw-wasm", "crates/ruvector-hyperbolic-hnsw", "crates/
     # than added as broken members; re-align to the current APIs, then re-add.
     "crates/ruvector-attention-cli",
     "crates/ruvector-sparse-inference-wasm",
-    # Broken manifests — Cargo.toml exists but source files are missing.
-    # These were scaffolded (empty skeleton) and never filled in.
-    "crates/ruQu",
-    "crates/ruqu-core",
-    "crates/ruqu-algorithms",
-    "crates/ruqu-exotic",
-    "crates/ruqu-wasm",
+    # Ghost scaffolds DELETED (PR #79) — zero source, only misleading README claiming
+    # "30 modules, 24K lines" but had no .rs files. Source was recovered via tarball
+    # fetch from GitHub (ruvnet/ruqu) into external/ruqu/. See commit 5f4b65d9f.
     # vibecast-7sense subcrates: 9 crates with source but use `workspace = true`
     # deps (async-trait, tokio, tracing) not defined in parent's [workspace.dependencies].
     # They compile standalone (`cargo check --manifest-path examples/vibecast-7sense/...`)
