@@ -162,6 +162,9 @@ pub fn capture_batch(
 #[cfg(test)]
 mod tests {
     use super::*;
+    // `Delta` (for `is_identity`) and `DeltaValue` are only used by these
+    // tests; importing them here keeps the non-test build warning-free.
+    use ruvector_delta_core::{Delta, DeltaValue};
 
     #[test]
     fn test_capture_sparse() {

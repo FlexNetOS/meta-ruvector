@@ -44,7 +44,8 @@ use js_sys::Float32Array;
 use js_sys::{Array, Object, Reflect, Uint8Array};
 // RwLock removed: not used directly in this module
 use ruvector_delta_core::{
-    Delta, DeltaEncoding, DeltaOp, DeltaStream, DeltaValue, DeltaWindow, HybridEncoding, VectorDelta,
+    Delta, DeltaEncoding, DeltaOp, DeltaStream, DeltaValue, DeltaWindow, HybridEncoding,
+    VectorDelta,
 };
 // SparseEncoding/WindowConfig/WindowType: re-exported below via pub use
 use serde::{Deserialize, Serialize};
