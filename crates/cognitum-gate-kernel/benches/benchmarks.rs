@@ -17,7 +17,7 @@ use cognitum_gate_kernel::{
         f32_to_log_e, EvidenceAccumulator, HypothesisState, LogEValue, LOG_LR_CONNECTIVITY_POS,
     },
     report::TileReport,
-    shard::{CompactGraph, MAX_SHARD_VERTICES},
+    shard::CompactGraph,
     TileState, MAX_DELTA_BUFFER,
 };
 
@@ -169,7 +169,7 @@ fn bench_tick(c: &mut Criterion) {
         let mut tile = TileState::new(0);
         // Add some edges
         for i in 0..10u16 {
-            tile.ingest_delta(&Delta::edge_add(i, i + 1, 100));
+            assert!(tile.ingest_delta(&Delta::edge_add(i, i + 1, 100)));
         }
         tile.tick(0); // Initial tick to process deltas
 
@@ -182,7 +182,7 @@ fn bench_tick(c: &mut Criterion) {
             || {
                 let mut tile = TileState::new(0);
                 for i in 0..10u16 {
-                    tile.ingest_delta(&Delta::edge_add(i, i + 1, 100));
+                    assert!(tile.ingest_delta(&Delta::edge_add(i, i + 1, 100)));
                 }
                 tile
             },
@@ -199,7 +199,7 @@ fn bench_tick(c: &mut Criterion) {
                 tile.evidence.add_connectivity_hypothesis(5);
                 for _ in 0..5 {
                     let obs = Observation::connectivity(5, true);
-                    tile.ingest_delta(&Delta::observation(obs));
+                    assert!(tile.ingest_delta(&Delta::observation(obs)));
                 }
                 tile
             },
@@ -227,19 +227,21 @@ fn bench_tick_under_load(c: &mut Criterion) {
                 b.iter_batched(
                     || {
                         let mut tile = TileState::new(0);
-                        // Create a connected graph
+                        // Create a connected graph — loop exceeds delta buffer (64); overflow is
+                        // intentional so we acknowledge but do not assert the return value.
                         for i in 0..count.min(1000) as u16 {
                             let src = i % 250;
                             let dst = (i + 1) % 250;
                             if src != dst {
-                                tile.ingest_delta(&Delta::edge_add(src, dst, 100));
+                                let _ = tile.ingest_delta(&Delta::edge_add(src, dst, 100));
                             }
                         }
                         tile.tick(0); // Process initial deltas
 
-                        // Add some pending work
-                        tile.ingest_delta(&Delta::edge_add(0, 100, 150));
-                        tile.ingest_delta(&Delta::observation(Observation::connectivity(0, true)));
+                        // Add some pending work (buffer is clear after tick)
+                        assert!(tile.ingest_delta(&Delta::edge_add(0, 100, 150)));
+                        assert!(tile
+                            .ingest_delta(&Delta::observation(Observation::connectivity(0, true))));
                         tile
                     },
                     |mut tile| black_box(tile.tick(1)),
@@ -287,7 +289,7 @@ fn bench_report_serialize(c: &mut Criterion) {
     let create_report = || {
         let mut tile = TileState::new(42);
         for i in 0..20u16 {
-            tile.ingest_delta(&Delta::edge_add(i, i + 1, 100));
+            assert!(tile.ingest_delta(&Delta::edge_add(i, i + 1, 100)));
         }
         tile.tick(1)
     };
@@ -450,7 +452,7 @@ fn bench_mixture_evalue(c: &mut Criterion) {
     // Scale to 255 tiles (realistic workload)
     group.bench_function("aggregate_255_tiles", |b| {
         let log_e_values: Vec<LogEValue> = (0..255)
-            .map(|i| (i as i32 % 3 - 1) * 65536) // Varying positive/negative evidence
+            .map(|i| (i % 3 - 1) * 65536) // Varying positive/negative evidence
             .collect();
 
         b.iter(|| {
@@ -503,7 +505,7 @@ fn bench_delta_ingestion(c: &mut Criterion) {
             || TileState::new(0),
             |mut tile| {
                 for i in 0..MAX_DELTA_BUFFER as u16 {
-                    tile.ingest_delta(&Delta::edge_add(i, i + 1, 100));
+                    assert!(tile.ingest_delta(&Delta::edge_add(i, i + 1, 100)));
                 }
                 black_box(tile)
             },

@@ -50,8 +50,6 @@ extern crate alloc;
 extern crate std;
 
 // With std feature, provide Vec compatibility
-#[cfg(feature = "std")]
-use std::vec::Vec;
 
 mod attestation;
 mod cache;
@@ -62,16 +60,18 @@ mod routing;
 mod verifier;
 mod witness;
 
-pub use attestation::{AttestationBuilder, WitnessLog};
+pub use attestation::{create_and_log_attestation, AttestationBuilder, WitnessLog};
 pub use cache::{CacheEntry, ProofCache, ProofCacheConfig};
-pub use engine::{ProofEngine, ProofEngineConfig, ProofEngineStats};
+pub use engine::{ProofEngine, ProofEngineBuilder, ProofEngineConfig, ProofEngineStats};
 pub use error::{ProofError, ProofResult};
 pub use integration::FormallyVerifiable;
 pub use routing::{
     route_proof_tier, MutationType, RoutingContext, RoutingContextBuilder, TierRouter,
 };
-pub use verifier::{ProofVerifier, VerificationResult, VerifierConfig};
-pub use witness::{MerkleWitness, WitnessBuilder};
+pub use verifier::{ProofVerifier, ProofVerifierBuilder, VerificationResult, VerifierConfig};
+pub use witness::{
+    create_single_leaf_witness, create_two_leaf_witness, MerkleWitness, WitnessBuilder,
+};
 
 #[cfg(feature = "verified")]
 pub use integration::VerifiedProofBridge;

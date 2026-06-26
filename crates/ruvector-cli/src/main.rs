@@ -131,6 +131,13 @@ enum Commands {
         source_path: String,
     },
 
+    /// Save current configuration to a TOML file
+    ConfigSave {
+        /// Output path for the configuration file
+        #[arg(short, long, default_value = "ruvector.toml")]
+        output: PathBuf,
+    },
+
     /// Graph database operations (Neo4j-compatible)
     Graph {
         #[command(subcommand)]
@@ -189,6 +196,17 @@ async fn main() -> Result<()> {
             source,
             source_path,
         } => import_from_external(&db, &source, &source_path, &config),
+        Commands::ConfigSave { output } => {
+            config.save(&output)?;
+            println!(
+                "{}",
+                cli::format::format_success(&format!(
+                    "Configuration saved to: {}",
+                    output.display()
+                ))
+            );
+            return Ok(());
+        }
         Commands::Graph { action } => {
             use cli::graph::GraphCommands;
             match action {

@@ -12,13 +12,10 @@
 
 use crate::error::{HyperbolicError, HyperbolicResult};
 use crate::hnsw::{HyperbolicHnsw, HyperbolicHnswConfig, SearchResult};
-use crate::poincare::{frechet_mean, poincare_distance, project_to_ball, PoincareConfig, EPS};
+use crate::poincare::poincare_distance;
 use crate::tangent::TangentCache;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-
-#[cfg(feature = "parallel")]
-use rayon::prelude::*;
 
 /// Curvature configuration for a shard
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -50,8 +47,8 @@ impl Default for ShardCurvature {
 impl ShardCurvature {
     /// Get the effective curvature (considering canary traffic)
     pub fn effective(&self, use_canary: bool) -> f32 {
-        if use_canary && self.canary.is_some() && self.canary_traffic > 0 {
-            self.canary.unwrap()
+        if use_canary && self.canary_traffic > 0 {
+            self.canary.unwrap_or(self.current)
         } else {
             self.current
         }
@@ -178,8 +175,10 @@ pub struct HyperbolicShard {
 impl HyperbolicShard {
     /// Create a new shard
     pub fn new(id: String, curvature: f32) -> Self {
-        let mut config = HyperbolicHnswConfig::default();
-        config.curvature = curvature;
+        let config = HyperbolicHnswConfig {
+            curvature,
+            ..Default::default()
+        };
 
         Self {
             id,
@@ -206,12 +205,7 @@ impl HyperbolicShard {
             return Ok(());
         }
 
-        let vectors: Vec<Vec<f32>> = self
-            .index
-            .vectors()
-            .iter()
-            .map(|v| v.to_vec())
-            .collect();
+        let vectors: Vec<Vec<f32>> = self.index.vectors().iter().map(|v| v.to_vec()).collect();
         let indices: Vec<usize> = (0..vectors.len()).collect();
 
         self.tangent_cache = Some(TangentCache::new(
@@ -257,22 +251,17 @@ pub struct ShardedHyperbolicHnsw {
 }
 
 /// Strategy for assigning vectors to shards
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum ShardStrategy {
     /// Assign by hash
     Hash,
     /// Assign by hierarchy depth
     Depth,
     /// Assign by radius (distance from origin)
+    #[default]
     Radius,
     /// Round-robin
     RoundRobin,
-}
-
-impl Default for ShardStrategy {
-    fn default() -> Self {
-        Self::Radius
-    }
 }
 
 impl ShardedHyperbolicHnsw {
@@ -336,11 +325,7 @@ impl ShardedHyperbolicHnsw {
     }
 
     /// Insert into specific shard
-    pub fn insert_to_shard(
-        &mut self,
-        shard_id: &str,
-        vector: Vec<f32>,
-    ) -> HyperbolicResult<usize> {
+    pub fn insert_to_shard(&mut self, shard_id: &str, vector: Vec<f32>) -> HyperbolicResult<usize> {
         let shard = self.get_or_create_shard(shard_id);
         let local_id = shard.insert(vector)?;
 
@@ -358,7 +343,12 @@ impl ShardedHyperbolicHnsw {
             let results = shard.search(query, k)?;
             for result in results {
                 // Map local ID to global ID
-                if let Some((global_id, _)) = self.id_to_shard.iter().enumerate().find(|(_, (s, l))| s == shard_id && *l == result.id) {
+                if let Some((global_id, _)) = self
+                    .id_to_shard
+                    .iter()
+                    .enumerate()
+                    .find(|(_, (s, l))| s == shard_id && *l == result.id)
+                {
                     all_results.push((global_id, result));
                 }
             }
@@ -475,7 +465,7 @@ impl HierarchyMetrics {
             radius_depth_correlation,
             distance_distortion,
             ancestor_auprc: 0.0, // Requires ground truth
-            mean_rank: 0.0,     // Requires ground truth
+            mean_rank: 0.0,      // Requires ground truth
             ndcg: HashMap::new(),
         })
     }

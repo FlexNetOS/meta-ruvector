@@ -88,7 +88,6 @@ pub struct RegionStats {
 mod tests {
     #[test]
     fn test_module_compiles() {
-        // Basic compilation test
-        assert!(true);
+        // Basic compilation test: if this function body exists the crate compiled.
     }
 }

@@ -24,7 +24,7 @@ fn benchmark_task_spawning(c: &mut Criterion) {
     group.bench_function("spawn_high_priority", |b| {
         b.iter(|| {
             executor.spawn_rt(
-                Priority::High,
+                Priority::HIGH,
                 Deadline(Duration::from_micros(100)),
                 async {
                     // Minimal async task
@@ -36,7 +36,7 @@ fn benchmark_task_spawning(c: &mut Criterion) {
 
     group.bench_function("spawn_low_priority", |b| {
         b.iter(|| {
-            executor.spawn_rt(Priority::Low, Deadline(Duration::from_millis(100)), async {
+            executor.spawn_rt(Priority::LOW, Deadline(Duration::from_millis(100)), async {
                 // Minimal async task
                 black_box(42);
             });
@@ -54,7 +54,7 @@ fn benchmark_scheduler_overhead(c: &mut Criterion) {
     group.bench_function("priority_low", |b| {
         b.iter(|| {
             scheduler.should_use_high_priority(
-                black_box(Priority::Low),
+                black_box(Priority::LOW),
                 black_box(Deadline(Duration::from_millis(100))),
             );
         })
@@ -63,7 +63,7 @@ fn benchmark_scheduler_overhead(c: &mut Criterion) {
     group.bench_function("priority_high", |b| {
         b.iter(|| {
             scheduler.should_use_high_priority(
-                black_box(Priority::High),
+                black_box(Priority::HIGH),
                 black_box(Deadline(Duration::from_micros(100))),
             );
         })
@@ -72,7 +72,7 @@ fn benchmark_scheduler_overhead(c: &mut Criterion) {
     group.bench_function("deadline_check_fast", |b| {
         b.iter(|| {
             scheduler.should_use_high_priority(
-                black_box(Priority::Medium),
+                black_box(Priority::MEDIUM),
                 black_box(Deadline(Duration::from_micros(500))),
             );
         })
@@ -81,7 +81,7 @@ fn benchmark_scheduler_overhead(c: &mut Criterion) {
     group.bench_function("deadline_check_slow", |b| {
         b.iter(|| {
             scheduler.should_use_high_priority(
-                black_box(Priority::Medium),
+                black_box(Priority::MEDIUM),
                 black_box(Deadline(Duration::from_secs(1))),
             );
         })
@@ -103,14 +103,14 @@ fn benchmark_task_distribution(c: &mut Criterion) {
 
                     for i in 0..count {
                         let priority = if i % 3 == 0 {
-                            Priority::High
+                            Priority::HIGH
                         } else if i % 3 == 1 {
-                            Priority::Medium
+                            Priority::MEDIUM
                         } else {
-                            Priority::Low
+                            Priority::LOW
                         };
 
-                        let deadline = if priority == Priority::High {
+                        let deadline = if priority == Priority::HIGH {
                             Deadline(Duration::from_micros(100))
                         } else {
                             Deadline(Duration::from_millis(10))
@@ -139,7 +139,7 @@ fn benchmark_async_task_execution(c: &mut Criterion) {
     group.bench_function("execute_sync_task", |b| {
         b.iter(|| {
             executor.spawn_rt(
-                Priority::High,
+                Priority::HIGH,
                 Deadline(Duration::from_micros(100)),
                 async {
                     // Synchronous computation
@@ -147,7 +147,7 @@ fn benchmark_async_task_execution(c: &mut Criterion) {
                     for i in 0..100 {
                         sum += i;
                     }
-                    black_box(sum)
+                    black_box(sum);
                 },
             );
         })
@@ -156,12 +156,12 @@ fn benchmark_async_task_execution(c: &mut Criterion) {
     group.bench_function("execute_with_yield", |b| {
         b.iter(|| {
             executor.spawn_rt(
-                Priority::Medium,
+                Priority::MEDIUM,
                 Deadline(Duration::from_millis(1)),
                 async {
                     // Yield to executor
                     tokio::task::yield_now().await;
-                    black_box(42)
+                    black_box(42);
                 },
             );
         })
@@ -179,20 +179,22 @@ fn benchmark_priority_handling(c: &mut Criterion) {
     group.bench_function("mixed_priorities", |b| {
         b.iter(|| {
             // High priority task
-            executor.spawn_rt(Priority::High, Deadline(Duration::from_micros(50)), async {
-                black_box(1)
+            executor.spawn_rt(Priority::HIGH, Deadline(Duration::from_micros(50)), async {
+                black_box(1);
             });
 
             // Medium priority task
             executor.spawn_rt(
-                Priority::Medium,
+                Priority::MEDIUM,
                 Deadline(Duration::from_millis(1)),
-                async { black_box(2) },
+                async {
+                    black_box(2);
+                },
             );
 
             // Low priority task
-            executor.spawn_rt(Priority::Low, Deadline(Duration::from_millis(100)), async {
-                black_box(3)
+            executor.spawn_rt(Priority::LOW, Deadline(Duration::from_millis(100)), async {
+                black_box(3);
             });
         })
     });
@@ -210,9 +212,11 @@ fn benchmark_deadline_distribution(c: &mut Criterion) {
         b.iter(|| {
             for _ in 0..10 {
                 executor.spawn_rt(
-                    Priority::High,
+                    Priority::HIGH,
                     Deadline(Duration::from_micros(100)),
-                    async { black_box(42) },
+                    async {
+                        black_box(42);
+                    },
                 );
             }
         })
@@ -222,8 +226,8 @@ fn benchmark_deadline_distribution(c: &mut Criterion) {
     group.bench_function("loose_deadlines", |b| {
         b.iter(|| {
             for _ in 0..10 {
-                executor.spawn_rt(Priority::Low, Deadline(Duration::from_millis(100)), async {
-                    black_box(42)
+                executor.spawn_rt(Priority::LOW, Deadline(Duration::from_millis(100)), async {
+                    black_box(42);
                 });
             }
         })

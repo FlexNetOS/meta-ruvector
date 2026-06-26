@@ -15,8 +15,8 @@
 
 use crate::error::{HyperbolicError, HyperbolicResult};
 use crate::poincare::{
-    conformal_factor, frechet_mean, log_map, norm, norm_squared, poincare_distance,
-    project_to_ball, PoincareConfig, EPS,
+    conformal_factor, frechet_mean, log_map, norm, poincare_distance, project_to_ball,
+    PoincareConfig, EPS,
 };
 use serde::{Deserialize, Serialize};
 
@@ -253,8 +253,11 @@ impl TangentPruner {
         // Phase 2: Exact Poincaré distance for finalists
         for candidate in &mut candidates {
             if candidate.index < points.len() {
-                candidate.exact_dist =
-                    Some(poincare_distance(query, &points[candidate.index], curvature));
+                candidate.exact_dist = Some(poincare_distance(
+                    query,
+                    &points[candidate.index],
+                    curvature,
+                ));
             }
         }
 

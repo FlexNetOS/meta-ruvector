@@ -16,6 +16,15 @@ use tracing::{debug, info};
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Priority(pub u8);
 
+impl Priority {
+    /// Low-priority task (maps to RTPriority::Low)
+    pub const LOW: Self = Self(1);
+    /// Medium-priority task (maps to RTPriority::Normal)
+    pub const MEDIUM: Self = Self(2);
+    /// High-priority task (maps to RTPriority::High)
+    pub const HIGH: Self = Self(3);
+}
+
 /// Task deadline
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Deadline(pub Duration);

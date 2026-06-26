@@ -151,8 +151,8 @@ pub fn wasm_frechet_mean(points: &[f32], dim: usize, curvature: f32) -> Result<V
 
     let point_refs: Vec<&[f32]> = point_vecs.iter().map(|v| v.as_slice()).collect();
 
-    let config = PoincareConfig::with_curvature(curvature)
-        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let config =
+        PoincareConfig::with_curvature(curvature).map_err(|e| JsValue::from_str(&e.to_string()))?;
 
     frechet_mean(&point_refs, None, &config).map_err(|e| JsValue::from_str(&e.to_string()))
 }
@@ -205,9 +205,11 @@ impl HyperbolicIndex {
     /// @param curvature - Curvature parameter for Poincaré ball (default: 1.0)
     #[wasm_bindgen(constructor)]
     pub fn new(ef_search: Option<usize>, curvature: Option<f32>) -> Self {
-        let mut config = HyperbolicHnswConfig::default();
-        config.ef_search = ef_search.unwrap_or(50);
-        config.curvature = curvature.unwrap_or(DEFAULT_CURVATURE);
+        let config = HyperbolicHnswConfig {
+            ef_search: ef_search.unwrap_or(50),
+            curvature: curvature.unwrap_or(DEFAULT_CURVATURE),
+            ..Default::default()
+        };
 
         Self {
             inner: HyperbolicHnsw::new(config),
@@ -219,8 +221,8 @@ impl HyperbolicIndex {
     /// @param config - JSON configuration object
     #[wasm_bindgen(js_name = fromConfig)]
     pub fn from_config(config: JsValue) -> Result<HyperbolicIndex, JsValue> {
-        let config: HyperbolicHnswConfig =
-            serde_wasm_bindgen::from_value(config).map_err(|e| JsValue::from_str(&e.to_string()))?;
+        let config: HyperbolicHnswConfig = serde_wasm_bindgen::from_value(config)
+            .map_err(|e| JsValue::from_str(&e.to_string()))?;
         Ok(Self {
             inner: HyperbolicHnsw::new(config),
         })
@@ -553,6 +555,12 @@ impl WasmTangentCache {
     #[wasm_bindgen]
     pub fn len(&self) -> usize {
         self.inner.len()
+    }
+
+    /// Check if the cache is empty
+    #[wasm_bindgen(js_name = isEmpty)]
+    pub fn is_empty(&self) -> bool {
+        self.inner.len() == 0
     }
 
     /// Get dimension

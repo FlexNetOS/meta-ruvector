@@ -4,7 +4,6 @@ use anyhow::Result;
 use clap::Parser;
 use std::path::PathBuf;
 use std::sync::Arc;
-use tracing_subscriber;
 
 mod config;
 mod mcp;
@@ -27,6 +26,10 @@ struct Cli {
     /// Transport type (stdio or sse)
     #[arg(short, long, default_value = "stdio")]
     transport: String,
+
+    /// Preload common GNN layer configurations for faster first-request latency
+    #[arg(long)]
+    preload: bool,
 
     /// Host for SSE transport
     #[arg(long)]
@@ -61,8 +64,12 @@ async fn main() -> Result<()> {
     // Load configuration
     let config = Config::load(cli.config)?;
 
-    // Create MCP handler
-    let handler = Arc::new(McpHandler::new(config.clone()));
+    // Create MCP handler — optionally preload common GNN layers for lower first-request latency
+    let handler = if cli.preload {
+        Arc::new(McpHandler::with_preload(config.clone()).await)
+    } else {
+        Arc::new(McpHandler::new(config.clone()))
+    };
 
     // Run appropriate transport
     match cli.transport.as_str() {

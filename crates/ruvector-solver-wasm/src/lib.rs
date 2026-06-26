@@ -66,6 +66,12 @@ pub struct JsSolver {
     alpha: f64,
 }
 
+impl Default for JsSolver {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[wasm_bindgen]
 impl JsSolver {
     /// Construct a new solver with default parameters.
@@ -412,9 +418,7 @@ fn analyze_sparsity(csr: &CsrMatrix<f32>) -> SparsityProfile {
             // Check if (col, row) entry exists.
             let col_start = csr.row_ptr[col];
             let col_end = csr.row_ptr[col + 1];
-            let found = csr.col_indices[col_start..col_end]
-                .iter()
-                .any(|&c| c == row);
+            let found = csr.col_indices[col_start..col_end].contains(&row);
             if !found {
                 symmetric_check = false;
                 break 'outer;
@@ -484,13 +488,13 @@ fn neumann_solve(
 
     // Extract diagonal and compute D^{-1} b.
     let mut diag_inv = vec![0.0f32; n];
-    for row in 0..n {
+    for (row, diag_inv_entry) in diag_inv.iter_mut().enumerate().take(n) {
         let start = csr.row_ptr[row];
         let end = csr.row_ptr[row + 1];
         for idx in start..end {
             if csr.col_indices[idx] == row {
                 let d = csr.values[idx];
-                diag_inv[row] = if d.abs() > 1e-30 { 1.0 / d } else { 0.0 };
+                *diag_inv_entry = if d.abs() > 1e-30 { 1.0 / d } else { 0.0 };
                 break;
             }
         }
@@ -672,12 +676,12 @@ fn power_iteration_ppr(
 
     // Compute row sums (out-degree) for normalisation.
     let mut row_sums = vec![0.0f32; n];
-    for row in 0..n {
+    for (row, row_sum) in row_sums.iter_mut().enumerate().take(n) {
         let start = csr.row_ptr[row];
         let end = csr.row_ptr[row + 1];
         let sum: f32 = csr.values[start..end].iter().sum();
         // Dangling nodes get uniform teleport.
-        row_sums[row] = if sum > 0.0 { sum } else { 1.0 };
+        *row_sum = if sum > 0.0 { sum } else { 1.0 };
     }
 
     // pi starts as the source distribution.
@@ -818,14 +822,14 @@ fn build_complexity_estimate(
 #[inline]
 fn spmv(csr: &CsrMatrix<f32>, x: &[f32], y: &mut [f32]) {
     y.iter_mut().for_each(|v| *v = 0.0);
-    for row in 0..csr.rows {
+    for (row, y_val) in y.iter_mut().enumerate().take(csr.rows) {
         let start = csr.row_ptr[row];
         let end = csr.row_ptr[row + 1];
         let mut sum = 0.0f32;
         for idx in start..end {
             sum += csr.values[idx] * x[csr.col_indices[idx]];
         }
-        y[row] = sum;
+        *y_val = sum;
     }
 }
 

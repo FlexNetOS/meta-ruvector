@@ -1,5 +1,5 @@
-use clap::Args;
 use crate::config::Config;
+use clap::Args;
 use serde::{Deserialize, Serialize};
 
 #[derive(Args)]
@@ -119,8 +119,10 @@ fn parse_csv(content: &[u8]) -> anyhow::Result<Data> {
     let text = std::str::from_utf8(content)?;
     let mut values = Vec::new();
 
-    for line in text.lines().skip(1) { // Skip header
-        let row: Vec<f32> = line.split(',')
+    for line in text.lines().skip(1) {
+        // Skip header
+        let row: Vec<f32> = line
+            .split(',')
             .filter_map(|s| s.trim().parse().ok())
             .collect();
         if !row.is_empty() {

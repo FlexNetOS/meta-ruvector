@@ -131,8 +131,8 @@ impl FeatureExtractor {
 
         // Compute deterministic embedding from event data
         let mut hasher = Sha256::new();
-        hasher.update(&event.data_hash);
-        hasher.update(&event.sequence.to_le_bytes());
+        hasher.update(event.data_hash);
+        hasher.update(event.sequence.to_le_bytes());
         let hash: [u8; 32] = hasher.finalize().into();
 
         // Generate embedding components from hash

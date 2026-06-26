@@ -209,8 +209,8 @@ fn test_tick_clears_buffer() {
     let mut tile = TileState::new(0);
 
     // Add some deltas
-    tile.ingest_delta(&Delta::edge_add(1, 2, 100));
-    tile.ingest_delta(&Delta::edge_add(2, 3, 100));
+    assert!(tile.ingest_delta(&Delta::edge_add(1, 2, 100)));
+    assert!(tile.ingest_delta(&Delta::edge_add(2, 3, 100)));
     assert!(tile.has_pending_deltas());
 
     // Process tick

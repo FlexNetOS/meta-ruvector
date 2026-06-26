@@ -69,8 +69,10 @@ impl AttestationRecord {
 #[derive(Debug, Clone)]
 struct SimulatedProof {
     /// The operation being proven
+    #[allow(dead_code)]
     operation_hash: u64,
     /// Task that produced the proof
+    #[allow(dead_code)]
     prover_task: TaskHandle,
     /// Validity flag (simulated)
     valid: bool,
@@ -94,12 +96,14 @@ impl SimulatedProof {
 #[derive(Debug, Clone)]
 struct CheckpointState {
     /// Serialized region data
+    #[allow(dead_code)]
     region_data: Vec<u8>,
     /// Operation log for replay
     operation_log: Vec<PerceptionEvent>,
     /// Checkpoint sequence number
     sequence: u32,
     /// State hash at checkpoint
+    #[allow(dead_code)]
     state_hash: u64,
 }
 
@@ -486,7 +490,7 @@ fn test_section17_criterion_2_perception_event() {
     }
 
     // Verify events were recorded
-    assert!(region.len() > 0);
+    assert!(!region.is_empty());
     assert_eq!(queue.len(), 10);
 }
 

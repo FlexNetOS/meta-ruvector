@@ -36,3 +36,8 @@ audit-log = ["alloc"]
 # Enable metrics collection
 metrics = ["alloc"]
 
+# Disable boot-signature verification — for debug/test builds ONLY.
+# A compile_error! in security.rs (CVE-001 guard) blocks this feature
+# in release builds.  Never enable in production.
+disable-boot-verify = []
+

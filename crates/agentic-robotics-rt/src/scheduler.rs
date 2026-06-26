@@ -1,5 +1,6 @@
 //! Priority-based task scheduler
 
+use crate::executor::{Deadline, Priority};
 use crate::RTPriority;
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
@@ -80,6 +81,15 @@ impl PriorityScheduler {
     /// Clear all tasks
     pub fn clear(&mut self) {
         self.queue.clear();
+    }
+
+    /// Decide whether a task should run on the high-priority runtime.
+    ///
+    /// Returns `true` when the priority is High or Critical, or when the
+    /// deadline is tighter than 1 ms.
+    pub fn should_use_high_priority(&self, priority: Priority, deadline: Deadline) -> bool {
+        let rt_priority: RTPriority = priority.0.into();
+        rt_priority >= RTPriority::High || deadline.0 < Duration::from_millis(1)
     }
 }
 

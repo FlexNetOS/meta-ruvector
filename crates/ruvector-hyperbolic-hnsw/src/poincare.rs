@@ -119,7 +119,7 @@ pub fn dot(x: &[f32], y: &[f32]) -> f32 {
 
     let mut i = 0;
     for _ in 0..chunks {
-        sum += x[i] * y[i] + x[i+1] * y[i+1] + x[i+2] * y[i+2] + x[i+3] * y[i+3];
+        sum += x[i] * y[i] + x[i + 1] * y[i + 1] + x[i + 2] * y[i + 2] + x[i + 3] * y[i + 3];
         i += 4;
     }
 
@@ -144,8 +144,8 @@ pub fn fused_norms(u: &[f32], v: &[f32]) -> (f32, f32, f32) {
 
     let mut i = 0;
     for _ in 0..chunks {
-        let (u0, u1, u2, u3) = (u[i], u[i+1], u[i+2], u[i+3]);
-        let (v0, v1, v2, v3) = (v[i], v[i+1], v[i+2], v[i+3]);
+        let (u0, u1, u2, u3) = (u[i], u[i + 1], u[i + 2], u[i + 3]);
+        let (v0, v1, v2, v3) = (v[i], v[i + 1], v[i + 2], v[i + 3]);
         let (d0, d1, d2, d3) = (u0 - v0, u1 - v1, u2 - v2, u3 - v3);
 
         diff_sq += d0 * d0 + d1 * d1 + d2 * d2 + d3 * d3;
@@ -282,11 +282,7 @@ pub fn poincare_distance_squared(u: &[f32], v: &[f32], c: f32) -> f32 {
 }
 
 /// Batch distance computation (processes multiple pairs efficiently)
-pub fn poincare_distance_batch(
-    query: &[f32],
-    points: &[&[f32]],
-    c: f32,
-) -> Vec<f32> {
+pub fn poincare_distance_batch(query: &[f32], points: &[&[f32]], c: f32) -> Vec<f32> {
     let c = c.abs().max(EPS);
     let query_norm_sq = norm_squared(query);
 
@@ -322,8 +318,8 @@ pub fn mobius_add(x: &[f32], y: &[f32], c: f32) -> Vec<f32> {
 
     let mut i = 0;
     for _ in 0..chunks {
-        let (x0, x1, x2, x3) = (x[i], x[i+1], x[i+2], x[i+3]);
-        let (y0, y1, y2, y3) = (y[i], y[i+1], y[i+2], y[i+3]);
+        let (x0, x1, x2, x3) = (x[i], x[i + 1], x[i + 2], x[i + 3]);
+        let (y0, y1, y2, y3) = (y[i], y[i + 1], y[i + 2], y[i + 3]);
 
         norm_x_sq += x0 * x0 + x1 * x1 + x2 * x2 + x3 * x3;
         norm_y_sq += y0 * y0 + y1 * y1 + y2 * y2 + y3 * y3;
@@ -615,8 +611,7 @@ mod tests {
 
         let (diff_sq, norm_u_sq, norm_v_sq) = fused_norms(&u, &v);
 
-        let expected_diff_sq: f32 = u.iter().zip(v.iter())
-            .map(|(a, b)| (a - b) * (a - b)).sum();
+        let expected_diff_sq: f32 = u.iter().zip(v.iter()).map(|(a, b)| (a - b) * (a - b)).sum();
         let expected_norm_u_sq = norm_squared(&u);
         let expected_norm_v_sq = norm_squared(&v);
 

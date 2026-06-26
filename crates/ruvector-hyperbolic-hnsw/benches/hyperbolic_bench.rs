@@ -5,7 +5,7 @@
 //! - Memory overhead
 //! - Search recall@k
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId};
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use ruvector_hyperbolic_hnsw::*;
 
 fn bench_poincare_distance(c: &mut Criterion) {
@@ -69,10 +69,7 @@ fn bench_hnsw_insert(c: &mut Criterion) {
 
     for size in sizes {
         let vectors: Vec<Vec<f32>> = (0..size)
-            .map(|i| vec![
-                (i as f32 * 0.01) % 0.8,
-                ((i as f32 * 0.02) + 0.1) % 0.8,
-            ])
+            .map(|i| vec![(i as f32 * 0.01) % 0.8, ((i as f32 * 0.02) + 0.1) % 0.8])
             .collect();
 
         group.bench_with_input(BenchmarkId::new("n", size), &vectors, |b, vecs| {
@@ -94,10 +91,7 @@ fn bench_hnsw_search(c: &mut Criterion) {
     // Build index once
     let mut hnsw = HyperbolicHnsw::default_config();
     for i in 0..1000 {
-        let v = vec![
-            (i as f32 * 0.01) % 0.8,
-            ((i as f32 * 0.02) + 0.1) % 0.8,
-        ];
+        let v = vec![(i as f32 * 0.01) % 0.8, ((i as f32 * 0.02) + 0.1) % 0.8];
         hnsw.insert(v).unwrap();
     }
 
@@ -122,16 +116,15 @@ fn bench_tangent_cache(c: &mut Criterion) {
 
     for size in sizes {
         let points: Vec<Vec<f32>> = (0..size)
-            .map(|i| vec![
-                (i as f32 * 0.01) % 0.8,
-                ((i as f32 * 0.02) + 0.1) % 0.8,
-            ])
+            .map(|i| vec![(i as f32 * 0.01) % 0.8, ((i as f32 * 0.02) + 0.1) % 0.8])
             .collect();
         let indices: Vec<usize> = (0..size).collect();
 
-        group.bench_with_input(BenchmarkId::new("build", size), &(points.clone(), indices.clone()), |b, (p, i)| {
-            b.iter(|| TangentCache::new(black_box(p), black_box(i), 1.0))
-        });
+        group.bench_with_input(
+            BenchmarkId::new("build", size),
+            &(points.clone(), indices.clone()),
+            |b, (p, i)| b.iter(|| TangentCache::new(black_box(p), black_box(i), 1.0)),
+        );
     }
 
     group.finish();
@@ -141,10 +134,7 @@ fn bench_search_with_pruning(c: &mut Criterion) {
     // Build index with tangent cache
     let mut hnsw = HyperbolicHnsw::default_config();
     for i in 0..1000 {
-        let v = vec![
-            (i as f32 * 0.01) % 0.8,
-            ((i as f32 * 0.02) + 0.1) % 0.8,
-        ];
+        let v = vec![(i as f32 * 0.01) % 0.8, ((i as f32 * 0.02) + 0.1) % 0.8];
         hnsw.insert(v).unwrap();
     }
     hnsw.build_tangent_cache().unwrap();

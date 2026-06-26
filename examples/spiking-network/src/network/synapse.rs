@@ -55,6 +55,7 @@ impl Synapse {
 
 #[cfg(test)]
 mod tests {
+    use super::Synapse;
     #[test]
     fn test_excitatory() {
         let s = Synapse::excitatory(0.5);

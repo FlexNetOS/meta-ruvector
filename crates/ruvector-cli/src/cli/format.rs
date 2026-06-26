@@ -63,23 +63,31 @@ pub fn format_info(msg: &str) -> String {
     format!("{} {}", "ℹ".blue().bold(), msg)
 }
 
-/// Export vector entries to JSON
+/// Export vector entries to JSON.
+///
+/// NOTE: Wired into `export_database` in commands.rs once `VectorDB::all_ids()` is
+/// available in ruvector_core. The function is complete; only the caller is blocked.
+#[allow(dead_code)]
 pub fn export_json(entries: &[VectorEntry]) -> anyhow::Result<String> {
     serde_json::to_string_pretty(entries)
         .map_err(|e| anyhow::anyhow!("Failed to serialize to JSON: {}", e))
 }
 
-/// Export vector entries to CSV
+/// Export vector entries to CSV.
+///
+/// NOTE: Wired into `export_database` in commands.rs once `VectorDB::all_ids()` is
+/// available in ruvector_core. The function is complete; only the caller is blocked.
+#[allow(dead_code)]
 pub fn export_csv(entries: &[VectorEntry]) -> anyhow::Result<String> {
     let mut wtr = csv::Writer::from_writer(vec![]);
 
     // Write header
-    wtr.write_record(&["id", "vector", "metadata"])?;
+    wtr.write_record(["id", "vector", "metadata"])?;
 
     // Write entries
     for entry in entries {
-        wtr.write_record(&[
-            entry.id.as_ref().map(|s| s.as_str()).unwrap_or(""),
+        wtr.write_record([
+            entry.id.as_deref().unwrap_or(""),
             &serde_json::to_string(&entry.vector)?,
             &serde_json::to_string(&entry.metadata)?,
         ])?;
@@ -92,7 +100,11 @@ pub fn export_csv(entries: &[VectorEntry]) -> anyhow::Result<String> {
 
 // Graph-specific formatting functions
 
-/// Format graph node for display
+/// Format a single graph node for display.
+///
+/// NOTE: Wired into `execute_query` in graph.rs once per-node result iteration is
+/// implemented. The function is complete; the caller is a TODO stub.
+#[allow(dead_code)]
 pub fn format_graph_node(
     id: &str,
     labels: &[String],
@@ -112,7 +124,11 @@ pub fn format_graph_node(
     output
 }
 
-/// Format graph relationship for display
+/// Format a graph relationship for display.
+///
+/// NOTE: Wired into `execute_query` in graph.rs once per-relationship result iteration
+/// is implemented. The function is complete; the caller is a TODO stub.
+#[allow(dead_code)]
 pub fn format_graph_relationship(
     _id: &str,
     rel_type: &str,

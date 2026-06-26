@@ -208,9 +208,11 @@ impl<const N: usize> OptimizedCapTable<N> {
     pub fn new() -> Self {
         assert!(N <= 256, "OptimizedCapTable supports max 256 slots");
 
-        // Initialize with all slots free (all bits set to 1)
+        // Initialize with all slots free (all bits set to 1).
+        // Only initialise chunks that N actually occupies; trailing chunks
+        // in the fixed-size array stay zero (no free slots there).
         let mut free_bitmap = [0u64; MAX_BITMAP_CHUNKS];
-        for i in 0..MAX_BITMAP_CHUNKS {
+        for i in 0..Self::BITMAP_CHUNKS {
             let remaining = N.saturating_sub(i * 64);
             if remaining >= 64 {
                 free_bitmap[i] = u64::MAX;
@@ -370,9 +372,10 @@ impl<const N: usize> OptimizedCapTable<N> {
     ///
     /// This is O(1) amortized - we scan bitmap chunks and use CTZ
     /// to find the first set bit, which maps to hardware instruction.
+    /// Only chunks that N occupies (0..BITMAP_CHUNKS) are searched.
     #[inline]
     fn find_free_slot_ctz(&self) -> CapResult<usize> {
-        for (chunk_idx, &chunk) in self.free_bitmap.iter().enumerate() {
+        for (chunk_idx, &chunk) in self.free_bitmap[..Self::BITMAP_CHUNKS].iter().enumerate() {
             if chunk != 0 {
                 // CTZ finds first set bit (free slot)
                 let bit_pos = chunk.trailing_zeros() as usize;

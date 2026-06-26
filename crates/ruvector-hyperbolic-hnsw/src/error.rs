@@ -6,7 +6,9 @@ use thiserror::Error;
 #[derive(Error, Debug, Clone)]
 pub enum HyperbolicError {
     /// Vector is outside the Poincaré ball
-    #[error("Vector norm {norm} exceeds ball radius (1/sqrt(c) - eps) for curvature c={curvature}")]
+    #[error(
+        "Vector norm {norm} exceeds ball radius (1/sqrt(c) - eps) for curvature c={curvature}"
+    )]
     OutsideBall { norm: f32, curvature: f32 },
 
     /// Invalid curvature parameter

@@ -1,8 +1,8 @@
-pub mod compute;
 pub mod benchmark;
+pub mod compute;
 pub mod convert;
-pub mod serve;
 pub mod repl;
+pub mod serve;
 
 use serde::{Deserialize, Serialize};
 
@@ -45,6 +45,7 @@ pub fn load_input(path: &std::path::Path) -> anyhow::Result<InputData> {
     Err(anyhow::anyhow!("Failed to parse input file"))
 }
 
+#[allow(dead_code)]
 pub fn save_output(path: &std::path::Path, data: &[Vec<f32>], format: &str) -> anyhow::Result<()> {
     match format {
         "json" => {

@@ -1,5 +1,5 @@
 [workspace]
-exclude = ["external/ruqu", "external/rvdna", "examples/OSpipe", "examples/rvf", "crates/micro-hnsw-wasm", "crates/ruvector-hyperbolic-hnsw", "crates/ruvector-hyperbolic-hnsw-wasm", "examples/ruvLLM/esp32", "examples/ruvLLM/esp32-flash", "examples/edge-net", "examples/data", "examples/ruvLLM", "examples/delta-behavior", "crates/rvf", "crates/rvf/*", "crates/rvf/*/*", "examples/rvf-desktop", "crates/mcp-brain-server",
+exclude = ["external/ruqu", "external/rvdna", "examples/OSpipe", "examples/rvf", "examples/ruvLLM/esp32", "examples/ruvLLM/esp32-flash", "examples/edge-net", "examples/data", "examples/ruvLLM", "examples/delta-behavior", "crates/rvf", "crates/rvf/*", "crates/rvf/*/*", "examples/rvf-desktop",
     # ruvector-postgres is a pgrx-based PostgreSQL extension. Its build script
     # requires `$PGRX_HOME` set up via `cargo install cargo-pgrx --version 0.12.9`
     # and `cargo pgrx init`, which downloads and builds multiple Postgres
@@ -17,10 +17,6 @@ exclude = ["external/ruqu", "external/rvdna", "examples/OSpipe", "examples/rvf",
     # stays opt-in (only `cargo build --features hailo,cpu-fallback`
     # pulls libhailort + candle), so workspace builds on stock x86
     # still compile without Pi-specific tooling.
-    # ruos-thermal: Pi 5 thermal supervisor skeleton (ADR-174). Standalone
-    # for now; joins workspace once daemon mode + Unix socket protocol
-    # land in iters 92-97.
-    "crates/ruos-thermal",
     # Vendored [patch.crates-io] override source for hnsw_rs — a patch source is
     # not a workspace member by design (two copies exist for different patch
     # tables); excluded explicitly so it is accounted for, not silently orphaned.
@@ -28,26 +24,19 @@ exclude = ["external/ruqu", "external/rvdna", "examples/OSpipe", "examples/rvf",
     "scripts/patches/hnsw_rs",
     # Standalone docker integration-test harness (ruvector-attention-integration-test);
     # run inside its container, not part of the host `cargo build --workspace`.
-    "tests/docker-integration",
-    # spiking-network was WIP skeleton — completed (source stubs added 2026-06-25); promoted to members above.
-    # Removed from exclude so it builds as a workspace member.
-
-    # ruvector-attention-cli / ruvector-sparse-inference-wasm: stale against
-    # current ruvector-attention / sparse-model APIs (calls removed methods like
-    # ScaledDotProductAttention::compute, SparseModel::{encode,forward_embedding,
-    # sparsity_statistics}). They do not compile, so they are excluded rather
-    # than added as broken members; re-align to the current APIs, then re-add.
+    "tests/docker-integration"]
+members = [
+    # Wired back in (chore/wire-excluded-crates): stale APIs re-aligned,
+    # clippy --all-targets -D warnings clean, panic-profile/no_std fixed.
     "crates/ruvector-attention-cli",
     "crates/ruvector-sparse-inference-wasm",
-    # ruvector-agent-memory / ruvector-hnsw-repair / ruvector-maxsim: compile
-    # cleanly but still fail the `clippy --all-targets -- -D warnings` CI gate
-    # (e.g. too_many_arguments, ptr_arg, unnecessary_sort_by — not auto-fixable
-    # without API changes). Excluded so the workspace clippy gate stays green;
-    # promote to `members` after a lint pass.
     "crates/ruvector-agent-memory",
     "crates/ruvector-hnsw-repair",
-    "crates/ruvector-maxsim"]
-members = [
+    "crates/ruvector-hyperbolic-hnsw",
+    "crates/ruvector-hyperbolic-hnsw-wasm",
+    "crates/micro-hnsw-wasm",
+    "crates/ruos-thermal",
+    "crates/mcp-brain-server",
     "crates/ruvector-temporal-coherence",
     "crates/ruvector-acorn",
     "crates/ruvector-acorn-wasm",
@@ -122,6 +111,7 @@ members = [
     "crates/ruvector-sparse-inference",
     "crates/ruvector-math",
     "crates/ruvector-math-wasm",
+    "crates/ruvector-maxsim",
     "examples/benchmarks",
     "crates/cognitum-gate-kernel",
     "crates/cognitum-gate-tilezero",

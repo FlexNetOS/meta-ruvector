@@ -508,6 +508,9 @@ pub struct IntelligenceStats {
     pub total_errors: u32,
     pub session_count: u32,
     pub last_session: u64,
+    /// Last file path that was edited — used by post_edit_hook to build file-edit sequences
+    #[serde(default)]
+    pub last_edited_file: Option<String>,
 }
 
 /// Intelligence engine with optimizations
@@ -747,6 +750,7 @@ impl Intelligence {
         let alpha = self.alpha;
 
         // Insert or update pattern
+        let gamma = self.gamma;
         let new_q_value = {
             let pattern = self.data.patterns.entry(key.clone()).or_insert(QPattern {
                 state: state.to_string(),
@@ -756,8 +760,12 @@ impl Intelligence {
                 last_update: 0,
             });
 
-            // Q-learning update
-            pattern.q_value = pattern.q_value + alpha * (reward - pattern.q_value);
+            // Bellman update with discount factor γ (gamma):
+            //   Q ← Q·γ + α·(r - Q·γ)  ≡  Q·γ·(1-α) + α·r
+            // γ decays old Q-values toward fresh rewards, preventing stale values
+            // from dominating as the environment evolves.
+            pattern.q_value =
+                pattern.q_value * gamma + alpha * (reward - pattern.q_value * gamma);
             pattern.visits += 1;
             pattern.last_update = now;
             pattern.q_value
@@ -799,8 +807,33 @@ impl Intelligence {
         id
     }
 
-    /// Suggest best action for state
+    /// Suggest best action for state (epsilon-greedy: explores with probability epsilon)
     pub fn suggest(&self, state: &str, actions: &[String]) -> (String, f32) {
+        if actions.is_empty() {
+            return (String::new(), 0.0);
+        }
+
+        // Epsilon-greedy exploration: use a deterministic hash of (state + time bucket)
+        // so we don't need mutable self or an external RNG — same call, same minute =
+        // same decision, giving stable suggestions within a session.
+        let time_bucket = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs()
+            / 60; // 1-minute stability window
+        let explore_hash: u64 = state
+            .as_bytes()
+            .iter()
+            .chain(time_bucket.to_le_bytes().iter())
+            .fold(14695981039346656037u64, |h, &b| {
+                h.wrapping_mul(1099511628211).wrapping_add(b as u64)
+            });
+        // Explore if the low-order bits land below epsilon × 1000
+        if (explore_hash % 1000) < (self.epsilon * 1000.0) as u64 {
+            let idx = (explore_hash as usize) % actions.len();
+            return (actions[idx].clone(), 0.0); // confidence=0 signals "explored, not exploited"
+        }
+
         let mut best_action = actions.first().cloned().unwrap_or_default();
         let mut best_q = f32::MIN;
 
@@ -958,7 +991,7 @@ impl Intelligence {
             .map(|s| (s.to_file.as_str(), s.count))
             .collect();
 
-        suggestions.sort_by(|a, b| b.1.cmp(&a.1));
+        suggestions.sort_by_key(|b| std::cmp::Reverse(b.1));
         suggestions.into_iter().take(count).collect()
     }
 
@@ -1087,14 +1120,25 @@ impl Intelligence {
         &self.data.stats
     }
 
-    /// Get pattern count
+    /// Get pattern count (live count from the pattern map, more accurate than cached total)
     pub fn pattern_count(&self) -> usize {
         self.data.patterns.len()
     }
 
-    /// Get memory count
+    /// Get memory count (live count from the memory vec, more accurate than cached total)
     pub fn memory_count(&self) -> usize {
         self.data.memories.len()
+    }
+
+    /// Get the last file that was edited (used to build file-edit sequences)
+    pub fn last_edited_file(&self) -> Option<&str> {
+        self.data.stats.last_edited_file.as_deref()
+    }
+
+    /// Set the last edited file (persisted across sessions via intelligence.json)
+    pub fn set_last_edited_file(&mut self, file: &str) {
+        self.data.stats.last_edited_file = Some(file.to_string());
+        self.mark_dirty();
     }
 }
 
@@ -1409,13 +1453,15 @@ pub fn show_stats(_config: &Config) -> Result<()> {
 
     println!("{}", "🧠 RuVector Intelligence Stats".bold().cyan());
     println!();
+    // Use live counts (pattern_count/memory_count) rather than the cached counters in
+    // stats — they reflect the actual HashMap/Vec lengths after any in-session mutations.
     println!(
         "  {} Q-learning patterns",
-        stats.total_patterns.to_string().green()
+        intel.pattern_count().to_string().green()
     );
     println!(
         "  {} vector memories",
-        stats.total_memories.to_string().green()
+        intel.memory_count().to_string().green()
     );
     println!(
         "  {} learning trajectories",
@@ -1633,7 +1679,16 @@ pub fn post_edit_hook(file: &str, success: bool, _config: &Config) -> Result<()>
         HashMap::new(),
     );
 
-    intel.save()?;
+    // Build file-edit sequences for next-file prediction: record which file was edited
+    // and link it to the previously edited file (if any) so suggest_next() can learn.
+    let previous = intel.last_edited_file().map(|s| s.to_string());
+    intel.record_file_edit(file, previous.as_deref());
+    intel.set_last_edited_file(file);
+
+    // Batch save: only flush to disk when there is actually pending state (is_dirty check)
+    if intel.is_dirty() {
+        intel.save()?;
+    }
 
     let icon = if success { "✅" } else { "❌" };
     println!(
@@ -1850,14 +1905,26 @@ pub fn pre_compact_hook(length: Option<usize>, auto: bool, _config: &Config) -> 
 /// Suggest context for user prompt (UserPromptSubmit hook)
 /// Returns learned patterns and suggestions to inject into Claude's context
 pub fn suggest_context_cmd(_config: &Config) -> Result<()> {
-    let intel = Intelligence::new(get_intelligence_path());
+    let path = get_intelligence_path();
+    // Use lazy() when the intelligence file hasn't been created yet — avoids disk I/O
+    // on a fresh install while still giving a valid (empty) Intelligence instance.
+    let intel = if path.exists() {
+        Intelligence::new(path)
+    } else {
+        Intelligence::lazy()
+    };
     let stats = intel.stats();
 
     // Only output if we have learned patterns
     if stats.total_patterns > 0 || stats.total_errors > 0 {
-        // Output goes to stdout and gets injected as context
-        println!("RuVector Intelligence: {} learned patterns, {} error fixes available. Use 'ruvector hooks route' for agent suggestions.",
-            stats.total_patterns, stats.total_errors);
+        // output_context_injection emits the JSON HookOutput envelope that Claude Code
+        // consumes for UserPromptSubmit context injection (correct protocol format vs raw println).
+        let context = format!(
+            "RuVector Intelligence: {} learned patterns, {} error fixes available. \
+             Use 'ruvector hooks route' for agent suggestions.",
+            stats.total_patterns, stats.total_errors
+        );
+        output_context_injection(&context);
     }
 
     Ok(())
@@ -2135,7 +2202,7 @@ pub fn lsp_diagnostic_cmd(
     let state = format!(
         "lsp:{}:{}",
         severity,
-        file.split('/').last().unwrap_or(file)
+        file.split('/').next_back().unwrap_or(file)
     );
     intel.learn(
         &state,

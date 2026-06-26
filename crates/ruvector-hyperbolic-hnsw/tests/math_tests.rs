@@ -3,10 +3,10 @@
 //! These tests verify the mathematical properties of Poincaré ball operations
 //! as specified in the evaluation protocol.
 
-use ruvector_hyperbolic_hnsw::poincare::*;
-use ruvector_hyperbolic_hnsw::tangent::*;
 use ruvector_hyperbolic_hnsw::hnsw::*;
+use ruvector_hyperbolic_hnsw::poincare::*;
 use ruvector_hyperbolic_hnsw::shard::*;
+use ruvector_hyperbolic_hnsw::tangent::*;
 
 // ============================================================================
 // Poincaré Ball Properties
@@ -35,7 +35,11 @@ fn test_mobius_add_inverse() {
     let result_norm = norm(&result);
 
     // Result should be close to zero
-    assert!(result_norm < 0.1, "Inverse element failed: norm = {}", result_norm);
+    assert!(
+        result_norm < 0.1,
+        "Inverse element failed: norm = {}",
+        result_norm
+    );
 }
 
 #[test]
@@ -49,7 +53,11 @@ fn test_mobius_add_gyrocommutative() {
 
     // For small vectors, these should be similar
     let diff: f32 = xy.iter().zip(yx.iter()).map(|(a, b)| (a - b).abs()).sum();
-    assert!(diff < 0.5, "Gyrocommutative property check: diff = {}", diff);
+    assert!(
+        diff < 0.5,
+        "Gyrocommutative property check: diff = {}",
+        diff
+    );
 }
 
 #[test]
@@ -62,7 +70,12 @@ fn test_exp_log_inverse() {
     let v_recovered = log_map(&q, &p, 1.0);
 
     for (a, b) in v.iter().zip(v_recovered.iter()) {
-        assert!((a - b).abs() < 1e-4, "exp-log inverse failed: expected {}, got {}", a, b);
+        assert!(
+            (a - b).abs() < 1e-4,
+            "exp-log inverse failed: expected {}, got {}",
+            a,
+            b
+        );
     }
 }
 
@@ -76,7 +89,12 @@ fn test_log_exp_inverse() {
     let q_recovered = exp_map(&v, &p, 1.0);
 
     for (a, b) in q.iter().zip(q_recovered.iter()) {
-        assert!((a - b).abs() < 1e-4, "log-exp inverse failed: expected {}, got {}", a, b);
+        assert!(
+            (a - b).abs() < 1e-4,
+            "log-exp inverse failed: expected {}, got {}",
+            a,
+            b
+        );
     }
 }
 
@@ -98,7 +116,11 @@ fn test_distance_identity() {
     let x = vec![0.3, 0.2, 0.1];
     let d = poincare_distance(&x, &x, 1.0);
 
-    assert!(d.abs() < 1e-6, "Identity of indiscernibles failed: d = {}", d);
+    assert!(
+        d.abs() < 1e-6,
+        "Identity of indiscernibles failed: d = {}",
+        d
+    );
 }
 
 #[test]
@@ -122,8 +144,13 @@ fn test_distance_triangle_inequality() {
     let dxy = poincare_distance(&x, &y, 1.0);
     let dyz = poincare_distance(&y, &z, 1.0);
 
-    assert!(dxz <= dxy + dyz + 1e-5,
-        "Triangle inequality failed: {} > {} + {}", dxz, dxy, dyz);
+    assert!(
+        dxz <= dxy + dyz + 1e-5,
+        "Triangle inequality failed: {} > {} + {}",
+        dxz,
+        dxy,
+        dyz
+    );
 }
 
 // ============================================================================
@@ -144,8 +171,12 @@ fn test_projection_keeps_points_inside() {
         let projected = project_to_ball(&point, 1.0, EPS);
         let n = norm(&projected);
         // Use <= with small tolerance for floating point
-        assert!(n <= 1.0 - EPS + 1e-7,
-            "Projection failed: norm {} >= max {}", n, 1.0 - EPS);
+        assert!(
+            n <= 1.0 - EPS + 1e-7,
+            "Projection failed: norm {} >= max {}",
+            n,
+            1.0 - EPS
+        );
     }
 }
 
@@ -157,8 +188,10 @@ fn test_near_boundary_stability() {
 
     // Should not panic or produce NaN/Inf
     let result = mobius_add(&near_boundary, &small_vec, 1.0);
-    assert!(!result.iter().any(|v| v.is_nan() || v.is_infinite()),
-        "Near boundary operation produced NaN/Inf");
+    assert!(
+        !result.iter().any(|v| v.is_nan() || v.is_infinite()),
+        "Near boundary operation produced NaN/Inf"
+    );
 
     let n = norm(&result);
     assert!(n < 1.0 - EPS, "Result escaped ball boundary");
@@ -178,7 +211,10 @@ fn test_zero_vector_handling() {
 
     // log_map of same point should be zero
     let log_result = log_map(&x, &x, 1.0);
-    assert!(norm(&log_result) < 1e-5, "log_map of same point should be zero");
+    assert!(
+        norm(&log_result) < 1e-5,
+        "log_map of same point should be zero"
+    );
 }
 
 #[test]
@@ -188,15 +224,19 @@ fn test_small_curvature_stability() {
     let y = vec![0.1, 0.4];
 
     let d_small_c = poincare_distance(&x, &y, 0.01);
-    let d_euclidean: f32 = x.iter().zip(y.iter())
+    let _d_euclidean: f32 = x
+        .iter()
+        .zip(y.iter())
         .map(|(a, b)| (a - b) * (a - b))
         .sum::<f32>()
         .sqrt();
 
     // For small curvature, should approach Euclidean
     // The ratio should be bounded
-    assert!(!d_small_c.is_nan() && !d_small_c.is_infinite(),
-        "Small curvature produced invalid result");
+    assert!(
+        !d_small_c.is_nan() && !d_small_c.is_infinite(),
+        "Small curvature produced invalid result"
+    );
 }
 
 #[test]
@@ -207,8 +247,11 @@ fn test_large_curvature_stability() {
 
     let d_large_c = poincare_distance(&x, &y, 10.0);
 
-    assert!(!d_large_c.is_nan() && !d_large_c.is_infinite(),
-        "Large curvature produced invalid result: {}", d_large_c);
+    assert!(
+        !d_large_c.is_nan() && !d_large_c.is_infinite(),
+        "Large curvature produced invalid result: {}",
+        d_large_c
+    );
 }
 
 // ============================================================================
@@ -218,7 +261,7 @@ fn test_large_curvature_stability() {
 #[test]
 fn test_frechet_mean_single_point() {
     // Frechet mean of single point is that point
-    let points = vec![vec![0.3, 0.2]];
+    let points = [vec![0.3, 0.2]];
     let point_refs: Vec<&[f32]> = points.iter().map(|p| p.as_slice()).collect();
     let config = PoincareConfig::default();
 
@@ -232,10 +275,7 @@ fn test_frechet_mean_single_point() {
 #[test]
 fn test_frechet_mean_symmetric() {
     // Mean of symmetric points should be near origin
-    let points = vec![
-        vec![0.3, 0.0],
-        vec![-0.3, 0.0],
-    ];
+    let points = [vec![0.3, 0.0], vec![-0.3, 0.0]];
     let point_refs: Vec<&[f32]> = points.iter().map(|p| p.as_slice()).collect();
     let config = PoincareConfig::default();
 
@@ -243,7 +283,11 @@ fn test_frechet_mean_symmetric() {
 
     // Mean should be close to origin
     let mean_norm = norm(&mean);
-    assert!(mean_norm < 0.1, "Symmetric mean not near origin: {}", mean_norm);
+    assert!(
+        mean_norm < 0.1,
+        "Symmetric mean not near origin: {}",
+        mean_norm
+    );
 }
 
 // ============================================================================
@@ -272,11 +316,7 @@ fn test_tangent_cache_creation() {
 #[test]
 fn test_tangent_distance_ordering() {
     // Tangent distance should roughly preserve hyperbolic distance ordering
-    let points = vec![
-        vec![0.1, 0.1],
-        vec![0.2, 0.1],
-        vec![0.5, 0.3],
-    ];
+    let points = vec![vec![0.1, 0.1], vec![0.2, 0.1], vec![0.5, 0.3]];
     let indices: Vec<usize> = (0..3).collect();
 
     let cache = TangentCache::new(&points, &indices, 1.0).unwrap();
@@ -295,9 +335,11 @@ fn test_tangent_distance_ordering() {
     hyp_dists.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap());
 
     // First nearest neighbor should match
-    assert_eq!(tangent_dists[0].0, hyp_dists[0].0,
+    assert_eq!(
+        tangent_dists[0].0, hyp_dists[0].0,
         "First neighbor mismatch: tangent says {}, hyperbolic says {}",
-        tangent_dists[0].0, hyp_dists[0].0);
+        tangent_dists[0].0, hyp_dists[0].0
+    );
 }
 
 // ============================================================================
@@ -324,9 +366,13 @@ fn test_hnsw_insert_and_search() {
 
     // Results should be sorted by distance
     for i in 1..results.len() {
-        assert!(results[i-1].distance <= results[i].distance,
+        assert!(
+            results[i - 1].distance <= results[i].distance,
             "Results not sorted at index {}: {} > {}",
-            i, results[i-1].distance, results[i].distance);
+            i,
+            results[i - 1].distance,
+            results[i].distance
+        );
     }
 }
 
@@ -418,19 +464,24 @@ fn test_sharded_hnsw() {
 #[test]
 fn test_hierarchy_metrics_radius_correlation() {
     // Points with radius proportional to depth should have positive correlation
-    let points: Vec<Vec<f32>> = (0..20).map(|i| {
-        let depth = i / 4;
-        let radius = 0.1 + 0.15 * depth as f32;
-        let angle = (i % 4) as f32 * std::f32::consts::PI / 2.0;
-        vec![radius * angle.cos(), radius * angle.sin()]
-    }).collect();
+    let points: Vec<Vec<f32>> = (0..20)
+        .map(|i| {
+            let depth = i / 4;
+            let radius = 0.1 + 0.15 * depth as f32;
+            let angle = (i % 4) as f32 * std::f32::consts::PI / 2.0;
+            vec![radius * angle.cos(), radius * angle.sin()]
+        })
+        .collect();
 
     let depths: Vec<usize> = (0..20).map(|i| i / 4).collect();
 
     let metrics = HierarchyMetrics::compute(&points, &depths, 1.0).unwrap();
 
-    assert!(metrics.radius_depth_correlation > 0.5,
-        "Expected positive correlation, got {}", metrics.radius_depth_correlation);
+    assert!(
+        metrics.radius_depth_correlation > 0.5,
+        "Expected positive correlation, got {}",
+        metrics.radius_depth_correlation
+    );
 }
 
 // ============================================================================
@@ -452,7 +503,7 @@ fn test_dual_space_index() {
 
     // Results should be sorted
     for i in 1..results.len() {
-        assert!(results[i-1].distance <= results[i].distance);
+        assert!(results[i - 1].distance <= results[i].distance);
     }
 }
 
@@ -500,10 +551,7 @@ fn test_insert_performance() {
 
     // Should handle 100 insertions without panic
     for i in 0..100 {
-        let v = vec![
-            0.05 * (i % 10) as f32,
-            0.05 * (i / 10) as f32,
-        ];
+        let v = vec![0.05 * (i % 10) as f32, 0.05 * (i / 10) as f32];
         hnsw.insert(v).unwrap();
     }
 
@@ -515,10 +563,7 @@ fn test_search_performance() {
     let mut hnsw = HyperbolicHnsw::default_config();
 
     for i in 0..100 {
-        let v = vec![
-            0.05 * (i % 10) as f32,
-            0.05 * (i / 10) as f32,
-        ];
+        let v = vec![0.05 * (i % 10) as f32, 0.05 * (i / 10) as f32];
         hnsw.insert(v).unwrap();
     }
 

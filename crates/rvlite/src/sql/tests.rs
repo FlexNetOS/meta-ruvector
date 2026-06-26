@@ -1,6 +1,6 @@
 // Integration tests for SQL engine
 #[cfg(test)]
-mod tests {
+mod sql_tests {
     use crate::sql::{SqlEngine, SqlParser};
 
     #[test]
@@ -55,7 +55,7 @@ mod tests {
 
         assert_eq!(result.rows.len(), 3);
         // The closest vector should be [5, 10, 15]
-        assert!(result.rows[0].get("id").is_some());
+        assert!(result.rows[0].contains_key("id"));
     }
 
     #[test]
@@ -69,7 +69,7 @@ mod tests {
         engine.execute(stmt).unwrap();
 
         // Insert data with categories
-        let categories = vec!["tech", "sports", "tech", "news", "sports"];
+        let categories = ["tech", "sports", "tech", "news", "sports"];
         for (i, cat) in categories.iter().enumerate() {
             let insert_sql =
                 format!(
@@ -88,7 +88,7 @@ mod tests {
         let result = engine.execute(stmt).unwrap();
 
         // VectorDB filtering may not be fully precise, so we check for at least 1 result
-        assert!(result.rows.len() >= 1);
+        assert!(!result.rows.is_empty());
         assert!(result.rows.len() <= 2);
         // All results should have category = 'tech'
         for row in &result.rows {

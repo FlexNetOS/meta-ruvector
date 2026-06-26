@@ -262,8 +262,21 @@ impl GnnCache {
         self.query_results.write().await.clear();
     }
 
-    /// Preload common layer configurations for faster first access
+    /// Get the age (in seconds) of the oldest cached layer — uses CacheEntry::created_at for monitoring.
+    pub async fn oldest_layer_age_secs(&self) -> Option<f64> {
+        let layers = self.layers.read().await;
+        layers
+            .values()
+            .map(|e| e.created_at.elapsed().as_secs_f64())
+            .reduce(f64::max)
+    }
+
+    /// Preload common layer configurations for faster first access.
+    /// Respects the `preload_common` flag in `GnnCacheConfig`.
     pub async fn preload_common_layers(&self) {
+        if !self.config.preload_common {
+            return;
+        }
         // Common configurations used in practice
         let common_configs = [
             (128, 256, 4, 0.1),   // Small model
@@ -386,7 +399,7 @@ mod tests {
         let cache = GnnCache::new(GnnCacheConfig::default());
 
         // First access - miss
-        let layer1 = cache.get_or_create_layer(128, 256, 4, 0.1).await;
+        let _layer1 = cache.get_or_create_layer(128, 256, 4, 0.1).await;
         let stats = cache.stats().await;
         assert_eq!(stats.layer_misses, 1);
         assert_eq!(stats.layer_hits, 0);
