@@ -13,6 +13,10 @@ use std::time::Instant;
 #[derive(Clone)]
 pub struct HashTable {
     size: usize,
+    /// Reserved feature-grid backing store (Instant-NGP style). Allocated up
+    /// front to fix the table footprint; the hash-grid read/write path that
+    /// indexes into it is not yet wired up in this research prototype.
+    #[allow(dead_code)]
     data: Vec<u64>,
 }
 
@@ -120,10 +124,14 @@ pub struct MmapNeuralField {
     /// Virtual address space size (can be petabytes)
     virtual_size: usize,
 
-    /// Physical backing file path
+    /// Physical backing file path, retained for diagnostics/persistence.
+    #[allow(dead_code)]
     backing_file: PathBuf,
 
-    /// File handle
+    /// Owning file handle for the backing store. Held to keep the descriptor's
+    /// ownership tied to the field's lifetime even though all access goes
+    /// through `mmap`.
+    #[allow(dead_code)]
     file: File,
 
     /// Multi-resolution hash tables (Instant-NGP)
@@ -159,6 +167,9 @@ impl MmapNeuralField {
             .read(true)
             .write(true)
             .create(true)
+            // Preserve any existing backing-file contents (persistent field);
+            // size is set explicitly below via `set_len`.
+            .truncate(false)
             .open(path)?;
 
         // Set initial file size (sparse allocation)
@@ -258,7 +269,7 @@ impl MmapNeuralField {
     /// * `data` - f32 values to write
     pub fn write(&self, addr: u64, data: &[f32]) -> Result<()> {
         let byte_start = addr as usize;
-        let byte_len = data.len() * std::mem::size_of::<f32>();
+        let byte_len = std::mem::size_of_val(data);
         let byte_end = byte_start + byte_len;
 
         if byte_end > self.virtual_size {

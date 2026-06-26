@@ -1,10 +1,10 @@
-// Effective Information (EI) Calculation with SIMD Acceleration
+// Effective Information (EI) Calculation
 // Implements Hoel's causal emergence framework for O(log n) hierarchical analysis
+//
+// The math is expressed as straight-line scalar loops over `f32` slices, which
+// LLVM auto-vectorizes on stable Rust — no nightly `portable_simd` required.
 
-use std::simd::prelude::*;
-use std::simd::StdFloat;
-
-/// Computes effective information using SIMD acceleration
+/// Computes effective information for a transition matrix.
 ///
 /// # Arguments
 /// * `transition_matrix` - Flattened n×n matrix where T[i*n + j] = P(j|i)
@@ -14,7 +14,7 @@ use std::simd::StdFloat;
 /// Effective information in bits
 ///
 /// # Complexity
-/// O(n²) with SIMD vectorization (8-16× faster than scalar)
+/// O(n²)
 pub fn compute_ei_simd(transition_matrix: &[f32], n: usize) -> f32 {
     assert_eq!(transition_matrix.len(), n * n, "Matrix must be n×n");
 
@@ -36,107 +36,51 @@ pub fn compute_ei_simd(transition_matrix: &[f32], n: usize) -> f32 {
     ei.max(0.0)
 }
 
-/// Computes column means of transition matrix (SIMD accelerated)
+/// Computes column means of transition matrix.
 /// Returns p(j) = mean of column j
 fn compute_column_means_simd(matrix: &[f32], n: usize) -> Vec<f32> {
     let mut means = vec![0.0f32; n];
 
-    for j in 0..n {
-        let mut sum = f32x16::splat(0.0);
-
-        // Process 16 rows at a time
-        let full_chunks = (n / 16) * 16;
-        for i in (0..full_chunks).step_by(16) {
-            // Load 16 elements from column j
-            let mut chunk = [0.0f32; 16];
-            for k in 0..16 {
-                chunk[k] = matrix[(i + k) * n + j];
-            }
-            sum += f32x16::from_array(chunk);
+    for (j, mean) in means.iter_mut().enumerate() {
+        let mut sum = 0.0f32;
+        for i in 0..n {
+            sum += matrix[i * n + j];
         }
-
-        // Handle remaining rows (scalar)
-        let mut scalar_sum = sum.reduce_sum();
-        for i in full_chunks..n {
-            scalar_sum += matrix[i * n + j];
-        }
-
-        means[j] = scalar_sum / (n as f32);
+        *mean = sum / (n as f32);
     }
 
     means
 }
 
-/// Computes Shannon entropy with SIMD acceleration
+/// Computes Shannon entropy.
 /// H(X) = -Σ p(x) log₂ p(x)
 pub fn entropy_simd(probs: &[f32]) -> f32 {
-    let n = probs.len();
-    let mut entropy = f32x16::splat(0.0);
-
     const EPSILON: f32 = 1e-10;
-    let eps_vec = f32x16::splat(EPSILON);
-    let log2_e = f32x16::splat(std::f32::consts::LOG2_E);
 
-    // Process 16 elements at a time
-    let full_chunks = (n / 16) * 16;
-    for i in (0..full_chunks).step_by(16) {
-        let p = f32x16::from_slice(&probs[i..i + 16]);
-
-        // Clip to avoid log(0)
-        let p_safe = p.simd_max(eps_vec);
-
-        // -p * log₂(p) = -p * ln(p) / ln(2)
-        let log_p = p_safe.ln() * log2_e;
-        entropy -= p * log_p;
-    }
-
-    // Handle remaining elements (scalar)
-    let mut scalar_entropy = entropy.reduce_sum();
-    for i in full_chunks..n {
-        let p = probs[i];
+    let mut entropy = 0.0f32;
+    for &p in probs {
         if p > EPSILON {
-            scalar_entropy -= p * p.log2();
+            entropy -= p * p.log2();
         }
     }
 
-    scalar_entropy
+    entropy
 }
 
 /// Computes conditional entropy H(out|in) for transition matrix
 /// H(out|in) = (1/n) Σᵢ Σⱼ T[i,j] log₂ T[i,j]
 fn conditional_entropy_simd(matrix: &[f32], n: usize) -> f32 {
-    let mut h_cond = f32x16::splat(0.0);
-
     const EPSILON: f32 = 1e-10;
-    let eps_vec = f32x16::splat(EPSILON);
-    let log2_e = f32x16::splat(std::f32::consts::LOG2_E);
 
-    // Process matrix in 16-element chunks
-    let total_elements = n * n;
-    let full_chunks = (total_elements / 16) * 16;
-
-    for i in (0..full_chunks).step_by(16) {
-        let t = f32x16::from_slice(&matrix[i..i + 16]);
-
-        // Clip to avoid log(0)
-        let t_safe = t.simd_max(eps_vec);
-
-        // -T[i,j] * log₂(T[i,j])
-        let log_t = t_safe.ln() * log2_e;
-        h_cond -= t * log_t;
-    }
-
-    // Handle remaining elements
-    let mut scalar_sum = h_cond.reduce_sum();
-    for i in full_chunks..total_elements {
-        let t = matrix[i];
+    let mut h_cond = 0.0f32;
+    for &t in matrix {
         if t > EPSILON {
-            scalar_sum -= t * t.log2();
+            h_cond -= t * t.log2();
         }
     }
 
     // Divide by n (average over uniform input distribution)
-    scalar_sum / (n as f32)
+    h_cond / (n as f32)
 }
 
 /// Computes effective information for multiple scales in parallel
@@ -192,7 +136,7 @@ pub fn normalized_ei(ei: f32, num_states: usize) -> f32 {
     }
 
     let max_ei = (num_states as f32).log2();
-    (ei / max_ei).min(1.0).max(0.0)
+    (ei / max_ei).clamp(0.0, 1.0)
 }
 
 #[cfg(test)]

@@ -188,7 +188,7 @@ impl ErgodicityAnalyzer {
     /// Hypothesis: Conscious systems have τ_mix ≈ 100-1000 steps
     /// (corresponding to ~100-1000ms in biological time)
     pub fn is_optimal_mixing_time(&self, mixing_time: usize) -> bool {
-        mixing_time >= 100 && mixing_time <= 1000
+        (100..=1000).contains(&mixing_time)
     }
 }
 

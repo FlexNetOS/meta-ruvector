@@ -114,7 +114,7 @@ fn bench_tiered_memory(c: &mut Criterion) {
                 memory.insert(page).unwrap();
                 memory
             },
-            |mut memory| memory.load(1).unwrap(),
+            |mut memory| memory.load(1).unwrap().clone(),
         );
     });
 

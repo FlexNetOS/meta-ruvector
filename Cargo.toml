@@ -36,6 +36,18 @@ exclude = [
 # =============================================================================
 
 members = [
+    # exo-ai-2025 research crates (un-nested standalone workspaces)
+    "examples/exo-ai-2025/research/01-neuromorphic-spiking",
+    "examples/exo-ai-2025/research/02-quantum-superposition",
+    "examples/exo-ai-2025/research/03-time-crystal-cognition",
+    "examples/exo-ai-2025/research/04-sparse-persistent-homology",
+    "examples/exo-ai-2025/research/05-memory-mapped-neural-fields",
+    "examples/exo-ai-2025/research/06-federated-collective-phi",
+    "examples/exo-ai-2025/research/07-causal-emergence",
+    "examples/exo-ai-2025/research/08-meta-simulation-consciousness",
+    "examples/exo-ai-2025/research/09-hyperbolic-attention",
+    "examples/exo-ai-2025/research/10-thermodynamic-learning",
+    "examples/exo-ai-2025/research/11-conscious-language-interface",
     # FULL UNION of main + develop members (no exclusions — all crates wired).
     "crates/agentic-robotics-benchmarks",
     "crates/agentic-robotics-core",

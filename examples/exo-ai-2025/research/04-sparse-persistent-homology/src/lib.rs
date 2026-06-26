@@ -38,10 +38,15 @@
 #![warn(missing_docs)]
 #![allow(dead_code)]
 
+/// Zero-cost identification of apparent persistence pairs from filtration order.
 pub mod apparent_pairs;
+/// SIMD-accelerated distance matrix computation using AVX2 and AVX-512.
 pub mod simd_filtration;
+/// Enhanced SIMD operations for batch correlation and covariance matrix computation.
 pub mod simd_matrix_ops;
+/// Compressed sparse column boundary matrices for persistent homology reduction.
 pub mod sparse_boundary;
+/// Real-time streaming persistence tracking via the vineyards algorithm.
 pub mod streaming_homology;
 
 // Re-export main types for convenience
@@ -230,8 +235,8 @@ pub mod persistence_vectors {
                 let birth_norm = feature.birth / max_birth;
                 let pers_norm = feature.persistence() / max_pers;
 
-                for i in 0..resolution {
-                    for j in 0..resolution {
+                for (i, row) in pixels.iter_mut().enumerate() {
+                    for (j, pixel) in row.iter_mut().enumerate() {
                         let x = i as f64 / resolution as f64;
                         let y = j as f64 / resolution as f64;
 
@@ -239,7 +244,7 @@ pub mod persistence_vectors {
                         let dy = y - pers_norm;
                         let dist_sq = dx * dx + dy * dy;
 
-                        pixels[i][j] += (-dist_sq / (2.0 * sigma * sigma)).exp();
+                        *pixel += (-dist_sq / (2.0 * sigma * sigma)).exp();
                     }
                 }
             }
@@ -342,6 +347,6 @@ mod tests {
         filtration.add_simplex(vec![0, 1], 0.5);
 
         let apparent = identify_apparent_pairs(&filtration);
-        assert!(apparent.len() > 0);
+        assert!(!apparent.is_empty());
     }
 }

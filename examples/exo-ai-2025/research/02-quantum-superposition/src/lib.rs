@@ -71,7 +71,6 @@ pub const RESEARCH_DATE: &str = "December 2025";
 #[cfg(test)]
 mod integration_tests {
     use super::*;
-    use num_complex::Complex64;
 
     #[test]
     fn test_full_workflow() {

@@ -472,8 +472,8 @@ mod tests {
 
         // Use PI as threshold to ensure crossings occur
         let section = trajectory.poincare_section(std::f64::consts::PI);
-        // The number of crossings depends on dynamics, but method should work
-        // Just verify it returns a vector (may be empty if no crossings)
-        assert!(section.len() >= 0); // Always true, but tests the method works
+        // The number of crossings depends on dynamics, but the method should run
+        // without panicking and return a vector (possibly empty if no crossings).
+        let _crossings = section.len();
     }
 }

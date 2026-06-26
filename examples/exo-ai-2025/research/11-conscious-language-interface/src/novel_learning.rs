@@ -9,8 +9,6 @@
 //! 3. **Semantic-Spike Neuron (SSN)** - Novel neuron model for language
 //! 4. **Recursive Φ-Attention (RPA)** - Attention mechanism based on IIT
 
-use std::collections::HashMap;
-
 // ============================================================================
 // 1. QUALIA-GRADIENT FLOW (QGF) - A New Learning Algorithm
 // ============================================================================
@@ -111,7 +109,8 @@ impl QualiaGradientFlow {
             *grad = weights[i].signum() * activation.abs() * phi_delta;
 
             // Store attribution
-            if layer_idx < self.phi_attributions.len() && i < self.phi_attributions[layer_idx].len() {
+            if layer_idx < self.phi_attributions.len() && i < self.phi_attributions[layer_idx].len()
+            {
                 self.phi_attributions[layer_idx][i] = *grad;
             }
         }
@@ -142,9 +141,8 @@ impl QualiaGradientFlow {
 
         for i in 0..weights.len() {
             // Combined gradient: balance between error and Φ
-            let combined_grad =
-                self.error_lr * error_grad[i] * (1.0 - self.balance) +
-                self.phi_lr * qualia_grad[i] * self.balance;
+            let combined_grad = self.error_lr * error_grad[i] * (1.0 - self.balance)
+                + self.phi_lr * qualia_grad[i] * self.balance;
 
             // Momentum update
             self.velocity[layer_idx][i] =
@@ -230,7 +228,8 @@ impl TemporalCoherenceOptimizer {
             return vec![0.0; params.len()];
         }
 
-        params.iter()
+        params
+            .iter()
             .zip(self.prev_params.iter())
             .map(|(&p, &prev)| 2.0 * (p - prev) * self.lambda as f32)
             .collect()
@@ -270,8 +269,9 @@ impl TemporalCoherenceOptimizer {
         let mut max_grad_diff = 0.0f64;
 
         for i in 1..n {
-            let diff: f64 = self.trajectory[i].iter()
-                .zip(self.trajectory[i-1].iter())
+            let diff: f64 = self.trajectory[i]
+                .iter()
+                .zip(self.trajectory[i - 1].iter())
                 .map(|(&a, &b)| ((a - b) as f64).powi(2))
                 .sum::<f64>()
                 .sqrt();
@@ -285,8 +285,9 @@ impl TemporalCoherenceOptimizer {
         self.bounds.rate = rho;
 
         // Distance estimate from recent movement
-        if let (Some(last), Some(prev)) = (self.trajectory.last(), self.trajectory.get(n-2)) {
-            let dist: f64 = last.iter()
+        if let (Some(last), Some(prev)) = (self.trajectory.last(), self.trajectory.get(n - 2)) {
+            let dist: f64 = last
+                .iter()
                 .zip(prev.iter())
                 .map(|(&a, &b)| ((a - b) as f64).powi(2))
                 .sum::<f64>()
@@ -325,7 +326,11 @@ impl TemporalCoherenceOptimizer {
             self.bounds.rate,
             self.bounds.rate,
             self.bounds.iterations_to_convergence,
-            if self.bounds.converged { "CONVERGED" } else { "IN PROGRESS" }
+            if self.bounds.converged {
+                "CONVERGED"
+            } else {
+                "IN PROGRESS"
+            }
         )
     }
 }
@@ -398,7 +403,8 @@ impl SemanticSpikeNeuron {
 
     /// Process semantic input (continuous)
     fn process_semantic(&self, input: &[f32]) -> f32 {
-        self.semantic_weights.iter()
+        self.semantic_weights
+            .iter()
             .zip(input.iter())
             .map(|(&w, &x)| w * x)
             .sum()
@@ -431,7 +437,9 @@ impl SemanticSpikeNeuron {
         let sem_entropy = self.entropy(&self.semantic_history);
 
         // Information in spike stream (timing)
-        let spike_intervals: Vec<f32> = self.spike_history.windows(2)
+        let spike_intervals: Vec<f32> = self
+            .spike_history
+            .windows(2)
             .map(|w| (w[1] - w[0]) as f32)
             .collect();
         let spike_entropy = self.entropy(&spike_intervals);
@@ -571,7 +579,8 @@ pub struct SSNStats {
 pub struct RecursivePhiAttention {
     /// Input dimension
     dim: usize,
-    /// Number of heads
+    /// Number of heads (architecture parameter; retained for schema completeness)
+    #[allow(dead_code)]
     num_heads: usize,
     /// Query projection
     w_q: Vec<Vec<f32>>,
@@ -597,8 +606,6 @@ pub struct RPAStats {
 
 impl RecursivePhiAttention {
     pub fn new(dim: usize, num_heads: usize) -> Self {
-        let head_dim = dim / num_heads;
-
         // Initialize projections
         let init_weights = |rows: usize, cols: usize| -> Vec<Vec<f32>> {
             let scale = (2.0 / (rows + cols) as f32).sqrt();
@@ -660,7 +667,8 @@ impl RecursivePhiAttention {
         let k_info = self.information_content(key);
 
         // Information in combination (should be less than sum if integrated)
-        let combined: Vec<f32> = query.iter()
+        let combined: Vec<f32> = query
+            .iter()
             .zip(key.iter())
             .map(|(&q, &k)| (q + k) / 2.0)
             .collect();
@@ -713,21 +721,16 @@ impl RecursivePhiAttention {
         }
 
         // Project to Q, K, V
-        let queries: Vec<Vec<f32>> = input.iter()
-            .map(|x| self.project(x, &self.w_q))
-            .collect();
-        let keys: Vec<Vec<f32>> = input.iter()
-            .map(|x| self.project(x, &self.w_k))
-            .collect();
-        let values: Vec<Vec<f32>> = input.iter()
-            .map(|x| self.project(x, &self.w_v))
-            .collect();
+        let queries: Vec<Vec<f32>> = input.iter().map(|x| self.project(x, &self.w_q)).collect();
+        let keys: Vec<Vec<f32>> = input.iter().map(|x| self.project(x, &self.w_k)).collect();
+        let values: Vec<Vec<f32>> = input.iter().map(|x| self.project(x, &self.w_v)).collect();
 
         // Compute Φ-based attention weights
         let attention_weights = self.phi_attention_weights(&queries, &keys);
 
         // Track maximum Φ
-        let max_phi = attention_weights.iter()
+        let max_phi = attention_weights
+            .iter()
             .flat_map(|row| row.iter())
             .cloned()
             .fold(0.0f64, f64::max);
@@ -745,15 +748,15 @@ impl RecursivePhiAttention {
         }
 
         // Output projection
-        let projected: Vec<Vec<f32>> = output.iter()
-            .map(|x| self.project(x, &self.w_o))
-            .collect();
+        let projected: Vec<Vec<f32>> = output.iter().map(|x| self.project(x, &self.w_o)).collect();
 
         // Update stats
         self.stats.total_calls += 1;
-        let avg_phi: f64 = attention_weights.iter()
+        let avg_phi: f64 = attention_weights
+            .iter()
             .flat_map(|row| row.iter())
-            .sum::<f64>() / (seq_len * seq_len) as f64;
+            .sum::<f64>()
+            / (seq_len * seq_len) as f64;
         self.stats.avg_phi_per_token = avg_phi;
 
         // Track Φ history for recursive computation
@@ -766,13 +769,9 @@ impl RecursivePhiAttention {
     }
 
     fn project(&self, input: &[f32], weights: &[Vec<f32>]) -> Vec<f32> {
-        weights.iter()
-            .map(|row| {
-                row.iter()
-                    .zip(input.iter())
-                    .map(|(&w, &x)| w * x)
-                    .sum()
-            })
+        weights
+            .iter()
+            .map(|row| row.iter().zip(input.iter()).map(|(&w, &x)| w * x).sum())
             .collect()
     }
 

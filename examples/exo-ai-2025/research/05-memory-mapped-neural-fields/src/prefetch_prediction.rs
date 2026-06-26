@@ -197,6 +197,12 @@ pub struct HoeffdingTreePredictor {
     total: Arc<RwLock<usize>>,
 }
 
+impl Default for HoeffdingTreePredictor {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl HoeffdingTreePredictor {
     pub fn new() -> Self {
         Self {
@@ -284,6 +290,12 @@ pub struct MarkovPredictor {
     history: Arc<RwLock<Vec<u64>>>,
 }
 
+impl Default for MarkovPredictor {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MarkovPredictor {
     pub fn new() -> Self {
         Self {
@@ -315,7 +327,7 @@ impl MarkovPredictor {
         let mut transitions = self.transitions.write().unwrap();
         *transitions
             .entry(current_page)
-            .or_insert_with(HashMap::new)
+            .or_default()
             .entry(next_page)
             .or_insert(0) += 1;
 
@@ -335,6 +347,12 @@ pub struct PrefetchCoordinator {
     markov: MarkovPredictor,
     access_history: Arc<RwLock<VecDeque<u64>>>,
     prefetch_queue: Arc<RwLock<VecDeque<u64>>>,
+}
+
+impl Default for PrefetchCoordinator {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl PrefetchCoordinator {

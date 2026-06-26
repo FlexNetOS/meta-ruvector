@@ -105,7 +105,7 @@ pub fn lorentz_distance(x: &[f32], y: &[f32], curvature: f32) -> f32 {
 /// Project point onto hyperboloid constraint
 ///
 /// Ensures ⟨x,x⟩_L = -K² and x₀ > 0
-pub fn project_to_hyperboloid(coords: &mut Vec<f32>, curvature: f32) {
+pub fn project_to_hyperboloid(coords: &mut [f32], curvature: f32) {
     if coords.is_empty() {
         return;
     }

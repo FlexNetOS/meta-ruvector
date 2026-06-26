@@ -8,8 +8,6 @@ license = "MIT"
 repository = "https://github.com/FlexNetOS/ruvector"
 
 # Enable workspace for standalone compilation
-[workspace]
-
 [dependencies]
 # No external dependencies for core algorithms (pure Rust)
 

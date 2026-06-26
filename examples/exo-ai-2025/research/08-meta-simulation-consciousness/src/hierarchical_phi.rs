@@ -173,7 +173,7 @@ impl PhiLevel {
         let mut sorted = self.phi_values.clone();
         sorted.sort_by(|a, b| a.partial_cmp(b).unwrap());
 
-        let median = if n % 2 == 0 {
+        let median = if n.is_multiple_of(2) {
             (sorted[n / 2 - 1] + sorted[n / 2]) / 2.0
         } else {
             sorted[n / 2]
@@ -266,8 +266,8 @@ impl HierarchicalPhiResults {
     pub fn display_summary(&self) -> String {
         let mut summary = String::new();
 
-        summary.push_str(&format!("Hierarchical Φ Computation Results\n"));
-        summary.push_str(&format!("===================================\n"));
+        summary.push_str("Hierarchical Φ Computation Results\n");
+        summary.push_str("===================================\n");
         summary.push_str(&format!(
             "Networks processed: {}\n",
             self.total_networks_processed
@@ -349,21 +349,21 @@ impl ConsciousnessParameterSpace {
         let mut adj = vec![vec![0.0; n]; n];
 
         // Random connectivity with density
-        for i in 0..n {
-            for j in 0..n {
+        for (i, row) in adj.iter_mut().enumerate() {
+            for (j, cell) in row.iter_mut().enumerate() {
                 if i != j && rand() < density {
-                    adj[i][j] = 1.0;
+                    *cell = 1.0;
                 }
             }
         }
 
         // Add reentrant connections (feedback loops)
-        for i in 0..n {
-            if rand() < reentry_prob {
-                let target = (i + 1) % n;
-                adj[i][target] = 1.0;
-                adj[target][i] = 1.0; // Bidirectional
-            }
+        // Collect which nodes get reentry first (preserves rand() call order)
+        let reentry_nodes: Vec<usize> = (0..n).filter(|_| rand() < reentry_prob).collect();
+        for i in reentry_nodes {
+            let target = (i + 1) % n;
+            adj[i][target] = 1.0;
+            adj[target][i] = 1.0; // Bidirectional
         }
 
         let nodes: Vec<u64> = (0..n as u64).collect();
@@ -380,7 +380,7 @@ impl ConsciousnessParameterSpace {
 fn rand() -> f64 {
     use std::cell::RefCell;
     thread_local! {
-        static SEED: RefCell<u64> = RefCell::new(0x853c49e6748fea9b);
+        static SEED: RefCell<u64> = const { RefCell::new(0x853c49e6748fea9b) };
     }
 
     SEED.with(|s| {

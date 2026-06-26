@@ -1420,6 +1420,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "causal-emergence"
+version = "0.1.0"
+dependencies = [
+ "criterion 0.5.1",
+]
+
+[[package]]
 name = "cc"
 version = "1.2.64"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1925,6 +1932,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4ca0197aee26d1ae37445ee532fefce43251d24cc7c166799f4d46817f1d3973"
 dependencies = [
  "crossbeam-utils",
+]
+
+[[package]]
+name = "conscious-language-interface"
+version = "0.1.0"
+dependencies = [
+ "criterion 0.5.1",
 ]
 
 [[package]]
@@ -2658,6 +2672,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bef552e6f588e446098f6ba40d89ac146c8c7b64aade83c051ee00bb5d2bc18d"
 dependencies = [
  "uuid",
+]
+
+[[package]]
+name = "demand-paged-cognition"
+version = "0.1.0"
+dependencies = [
+ "bincode 1.3.3",
+ "criterion 0.5.1",
+ "memmap2",
+ "metrics",
+ "serde",
+ "tempfile",
+ "tokio",
 ]
 
 [[package]]
@@ -3657,6 +3684,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1e6853b52649d4ac5c0bd02320cddc5ba956bdb407c4b75a2c6b75bf51500f8c"
 dependencies = [
  "simd-adler32",
+]
+
+[[package]]
+name = "federated-collective-phi"
+version = "0.1.0"
+dependencies = [
+ "criterion 0.5.1",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -5668,6 +5704,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "hyperbolic-attention"
+version = "0.1.0"
+dependencies = [
+ "approx",
+ "criterion 0.5.1",
+]
+
+[[package]]
 name = "iana-time-zone"
 version = "0.1.65"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6926,6 +6970,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8452105ba047068f40ff7093dd1d9da90898e63dd61736462e9cdda6a90ad3c3"
 
 [[package]]
+name = "meta-sim-consciousness"
+version = "0.1.0"
+dependencies = [
+ "criterion 0.5.1",
+ "rayon",
+]
+
+[[package]]
 name = "metal"
 version = "0.29.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6938,6 +6990,28 @@ dependencies = [
  "log",
  "objc",
  "paste",
+]
+
+[[package]]
+name = "metrics"
+version = "0.21.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fde3af1a009ed76a778cb84fdef9e7dbbdf5775ae3e4cc1f434a6a307f6f76c5"
+dependencies = [
+ "ahash",
+ "metrics-macros",
+ "portable-atomic",
+]
+
+[[package]]
+name = "metrics-macros"
+version = "0.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "38b4faf00617defe497754acde3024865bc143d44a86799b24e191ecff91354f"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.118",
 ]
 
 [[package]]
@@ -7662,6 +7736,14 @@ dependencies = [
  "serde-wasm-bindgen",
  "wasm-bindgen",
  "wasm-bindgen-test",
+]
+
+[[package]]
+name = "neuromorphic-spiking"
+version = "0.1.0"
+dependencies = [
+ "criterion 0.5.1",
+ "rand 0.8.6",
 ]
 
 [[package]]
@@ -9399,6 +9481,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "primal-check"
+version = "0.3.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dc0d895b311e3af9902528fbb8f928688abbd95872819320517cc24ca6b2bd08"
+dependencies = [
+ "num-integer",
+]
+
+[[package]]
 name = "prime-radiant"
 version = "0.1.0"
 dependencies = [
@@ -9863,6 +9954,16 @@ dependencies = [
  "wasi 0.11.1+wasi-snapshot-preview1",
  "web-sys",
  "winapi 0.3.9",
+]
+
+[[package]]
+name = "quantum-cognitive-superposition"
+version = "0.1.0"
+dependencies = [
+ "criterion 0.5.1",
+ "num-complex 0.4.6",
+ "rand 0.8.6",
+ "rand_distr 0.4.3",
 ]
 
 [[package]]
@@ -11072,6 +11173,20 @@ dependencies = [
  "speedy",
  "static_assertions",
  "thiserror 2.0.18",
+]
+
+[[package]]
+name = "rustfft"
+version = "6.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "21db5f9893e91f41798c88680037dba611ca6674703c1a18601b01a72c8adb89"
+dependencies = [
+ "num-complex 0.4.6",
+ "num-integer",
+ "num-traits",
+ "primal-check",
+ "strength_reduce",
+ "transpose",
 ]
 
 [[package]]
@@ -14969,6 +15084,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "sparse-persistent-homology"
+version = "0.1.0"
+dependencies = [
+ "criterion 0.5.1",
+ "rand 0.8.6",
+]
+
+[[package]]
 name = "speedy"
 version = "0.8.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -15354,6 +15477,12 @@ dependencies = [
  "tracing-subscriber",
  "wide",
 ]
+
+[[package]]
+name = "strength_reduce"
+version = "0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fe895eb47f22e2ddd4dabc02bce419d2e643c8e3b585c78158b349195bc24d82"
 
 [[package]]
 name = "string_cache"
@@ -15851,6 +15980,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8f50febec83f5ee1df3015341d8bd429f2d1cc62bcba7ea2076759d315084683"
 
 [[package]]
+name = "thermodynamic-learning"
+version = "0.1.0"
+dependencies = [
+ "criterion 0.5.1",
+ "rand 0.8.6",
+]
+
+[[package]]
 name = "thermorust"
 version = "0.1.0"
 dependencies = [
@@ -15957,6 +16094,16 @@ name = "time-core"
 version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9e1c906769ad99c88eaa54e728060edef082f8e358ff32030cb7c7d315e81109"
+
+[[package]]
+name = "time-crystal-cognition"
+version = "0.1.0"
+dependencies = [
+ "criterion 0.5.1",
+ "ndarray 0.15.6",
+ "rand 0.8.6",
+ "rustfft",
+]
 
 [[package]]
 name = "time-macros"
@@ -16542,6 +16689,16 @@ dependencies = [
  "serde_json",
  "tracing",
  "tracing-subscriber",
+]
+
+[[package]]
+name = "transpose"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1ad61aed86bc3faea4300c7aee358b4c6d0c8d6ccc36524c96e4c92ccf26e77e"
+dependencies = [
+ "num-integer",
+ "strength_reduce",
 ]
 
 [[package]]

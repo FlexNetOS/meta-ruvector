@@ -124,7 +124,7 @@ pub fn simd_batch_entropy(distributions: &[Vec<f64>]) -> Vec<f64> {
 pub fn simd_entropy(dist: &[f64]) -> f64 {
     #[cfg(target_arch = "x86_64")]
     unsafe {
-        return simd_entropy_avx2(dist);
+        simd_entropy_avx2(dist)
     }
 
     #[cfg(target_arch = "aarch64")]
@@ -387,10 +387,10 @@ impl SimulationTreeExplorer {
             let mut perturbation = vec![vec![0.0; n]; n];
 
             // Random small perturbations
-            for i in 0..n {
-                for j in 0..n {
+            for (i, row) in perturbation.iter_mut().enumerate() {
+                for (j, cell) in row.iter_mut().enumerate() {
                     if i != j && Self::rand() < 0.2 {
-                        perturbation[i][j] = (Self::rand() - 0.5) * 0.1;
+                        *cell = (Self::rand() - 0.5) * 0.1;
                     }
                 }
             }
@@ -404,7 +404,7 @@ impl SimulationTreeExplorer {
     fn rand() -> f64 {
         use std::cell::RefCell;
         thread_local! {
-            static SEED: RefCell<u64> = RefCell::new(0x853c49e6748fea9b);
+            static SEED: RefCell<u64> = const { RefCell::new(0x853c49e6748fea9b) };
         }
 
         SEED.with(|s| {
@@ -490,7 +490,7 @@ mod tests {
         let hotspots = explorer.explore(&initial);
         // Hotspots should contain at least some variations
         // The explorer may filter aggressively, so we just check it runs
-        assert!(hotspots.len() >= 0); // Always true, but validates no panic
+        // Just validate no panic; len() >= 0 is tautological for usize
         println!("Found {} hotspots", hotspots.len());
     }
 }

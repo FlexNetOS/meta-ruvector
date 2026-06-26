@@ -53,6 +53,8 @@ pub struct ThermodynamicState {
 }
 
 impl ThermodynamicState {
+    /// Create a fresh thermodynamic-accounting state at the given `temperature`
+    /// (Kelvin), with all energy/entropy/operation counters zeroed.
     pub fn new(temperature: f64) -> Self {
         Self {
             energy_dissipated: 0.0,
@@ -132,6 +134,8 @@ pub struct LandauerOptimizer {
 }
 
 impl LandauerOptimizer {
+    /// Create a Landauer-limit-aware optimizer with the given `learning_rate` and
+    /// `temperature` (Kelvin); defaults to reversible updates where possible.
     pub fn new(learning_rate: f64, temperature: f64) -> Self {
         Self {
             learning_rate,
@@ -229,6 +233,8 @@ pub struct InformationBottleneck {
 }
 
 impl InformationBottleneck {
+    /// Create an information bottleneck with compression/prediction trade-off
+    /// `beta` at the given `temperature` (Kelvin).
     pub fn new(beta: f64, temperature: f64) -> Self {
         Self { beta, temperature }
     }
@@ -261,6 +267,8 @@ pub struct AdiabaticLearner {
 }
 
 impl AdiabaticLearner {
+    /// Create an adiabatic learner that evolves parameters over `n_steps`
+    /// intermediate steps at the given `temperature` (Kelvin).
     pub fn new(n_steps: usize, temperature: f64) -> Self {
         Self {
             n_steps,
@@ -311,6 +319,8 @@ pub struct MaxwellDemon {
 }
 
 impl MaxwellDemon {
+    /// Create a Maxwell's-demon model at the given `temperature` (Kelvin), with
+    /// zero acquired information and zero extracted work.
     pub fn new(temperature: f64) -> Self {
         Self {
             information: 0.0,
@@ -357,6 +367,8 @@ pub struct SpeedEnergyTradeoff {
 }
 
 impl SpeedEnergyTradeoff {
+    /// Create a speed-energy trade-off at the given `temperature` (Kelvin),
+    /// seeding the minimum E×τ product from the thermal energy scale kT.
     pub fn new(temperature: f64) -> Self {
         // Minimum from uncertainty principle-like bound
         let min_product = constants::BOLTZMANN * temperature;
@@ -380,6 +392,42 @@ impl SpeedEnergyTradeoff {
     pub fn is_feasible(&self, energy: f64, time: f64) -> bool {
         energy * time >= self.min_product
     }
+}
+
+/// Example: Train a simple model with thermodynamic accounting
+pub fn example_thermodynamic_training() {
+    println!("=== Landauer-Optimal Learning Example ===\n");
+
+    let mut optimizer = LandauerOptimizer::new(0.01, constants::ROOM_TEMP);
+    optimizer.use_reversible = true;
+    optimizer.adiabatic_factor = 100.0;
+
+    // Simulate training
+    let mut params = vec![0.5; 100]; // 100 parameters
+
+    for epoch in 0..10 {
+        let gradient: Vec<f64> = (0..100).map(|i| (i as f64 * 0.01).sin()).collect();
+        optimizer.step(&gradient, &mut params);
+
+        if epoch % 3 == 0 {
+            println!(
+                "Epoch {}: Energy dissipated = {:.3e} J",
+                epoch, optimizer.state.energy_dissipated
+            );
+        }
+    }
+
+    println!("\n{}", optimizer.efficiency_report());
+
+    // Compare to theoretical minimum
+    let bits_learned = 100.0 * 32.0; // 100 params × 32 bits precision
+    let theoretical_min = constants::LANDAUER_LIMIT * bits_learned;
+    println!("\nTheoretical minimum: {:.3e} J", theoretical_min);
+    println!("Actual energy: {:.3e} J", optimizer.state.energy_dissipated);
+    println!(
+        "Efficiency: {:.2}x above Landauer limit",
+        optimizer.state.landauer_multiple()
+    );
 }
 
 #[cfg(test)]
@@ -478,40 +526,4 @@ mod tests {
         // Higher I(T;Y) should give better (lower) objective
         assert!(obj2 < obj1);
     }
-}
-
-/// Example: Train a simple model with thermodynamic accounting
-pub fn example_thermodynamic_training() {
-    println!("=== Landauer-Optimal Learning Example ===\n");
-
-    let mut optimizer = LandauerOptimizer::new(0.01, constants::ROOM_TEMP);
-    optimizer.use_reversible = true;
-    optimizer.adiabatic_factor = 100.0;
-
-    // Simulate training
-    let mut params = vec![0.5; 100]; // 100 parameters
-
-    for epoch in 0..10 {
-        let gradient: Vec<f64> = (0..100).map(|i| (i as f64 * 0.01).sin()).collect();
-        optimizer.step(&gradient, &mut params);
-
-        if epoch % 3 == 0 {
-            println!(
-                "Epoch {}: Energy dissipated = {:.3e} J",
-                epoch, optimizer.state.energy_dissipated
-            );
-        }
-    }
-
-    println!("\n{}", optimizer.efficiency_report());
-
-    // Compare to theoretical minimum
-    let bits_learned = 100.0 * 32.0; // 100 params × 32 bits precision
-    let theoretical_min = constants::LANDAUER_LIMIT * bits_learned;
-    println!("\nTheoretical minimum: {:.3e} J", theoretical_min);
-    println!("Actual energy: {:.3e} J", optimizer.state.energy_dissipated);
-    println!(
-        "Efficiency: {:.2}x above Landauer limit",
-        optimizer.state.landauer_multiple()
-    );
 }

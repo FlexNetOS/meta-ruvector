@@ -118,11 +118,9 @@ impl HyperbolicAttention {
         keys: &[Vec<f32>],
         values: &[Vec<f32>],
     ) -> Vec<Vec<f32>> {
-        let seq_len = queries.len();
-        let mut outputs = Vec::with_capacity(seq_len);
+        let mut outputs = Vec::with_capacity(queries.len());
 
-        for i in 0..seq_len {
-            let query = &queries[i];
+        for query in queries {
             let output = self.attention_for_query(query, keys, values, 0); // Use first head's curvature
             outputs.push(output);
         }
@@ -278,10 +276,10 @@ impl MultiHeadHyperbolicAttention {
         let mut heads = vec![Vec::new(); num_heads];
 
         for token in seq {
-            for h in 0..num_heads {
+            for (h, head) in heads.iter_mut().enumerate().take(num_heads) {
                 let start = h * head_dim;
                 let end = start + head_dim;
-                heads[h].push(token[start..end].to_vec());
+                head.push(token[start..end].to_vec());
             }
         }
 

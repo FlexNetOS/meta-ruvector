@@ -1,15 +1,15 @@
-/// Equilibrium Propagation: Thermodynamic Learning Algorithm
-///
-/// Implementation of Scellier & Bengio's equilibrium propagation algorithm,
-/// which learns by comparing equilibrium states of a physical system.
-///
-/// Key idea:
-/// - Free phase: Network relaxes to energy minimum
-/// - Nudged phase: Gently perturb toward target
-/// - Learning: Update weights based on activity differences
-///
-/// This is a physics-based alternative to backpropagation that can be
-/// implemented in analog hardware with natural thermodynamic dynamics.
+//! Equilibrium Propagation: Thermodynamic Learning Algorithm
+//!
+//! Implementation of Scellier & Bengio's equilibrium propagation algorithm,
+//! which learns by comparing equilibrium states of a physical system.
+//!
+//! Key idea:
+//! - Free phase: Network relaxes to energy minimum
+//! - Nudged phase: Gently perturb toward target
+//! - Learning: Update weights based on activity differences
+//!
+//! This is a physics-based alternative to backpropagation that can be
+//! implemented in analog hardware with natural thermodynamic dynamics.
 
 // Physical constants available from std::f64
 
@@ -39,6 +39,8 @@ pub struct EnergyBasedNetwork {
 }
 
 impl EnergyBasedNetwork {
+    /// Create a network with the given layer sizes, relaxation time constant
+    /// `tau`, and `temperature`, initializing weights via Xavier initialization.
     pub fn new(layer_sizes: Vec<usize>, tau: f64, temperature: f64) -> Self {
         let n_layers = layer_sizes.len();
         let mut weights = Vec::new();
@@ -52,9 +54,9 @@ impl EnergyBasedNetwork {
             let scale = (2.0 / (fan_in + fan_out) as f64).sqrt();
 
             let mut layer_weights = vec![vec![0.0; fan_in]; fan_out];
-            for j in 0..fan_out {
-                for k in 0..fan_in {
-                    layer_weights[j][k] = (rand::random::<f64>() - 0.5) * 2.0 * scale;
+            for row in layer_weights.iter_mut() {
+                for weight in row.iter_mut() {
+                    *weight = (rand::random() - 0.5) * 2.0 * scale;
                 }
             }
             weights.push(layer_weights);
@@ -114,6 +116,10 @@ impl EnergyBasedNetwork {
     }
 
     /// Compute energy gradient w.r.t. neuron states
+    // Index drives parallel per-neuron buffers (gradient, states, weights, biases)
+    // at differing tensor ranks/lengths; a zipped-iterator rewrite cannot preserve
+    // the indexed access pattern across these buffers.
+    #[allow(clippy::needless_range_loop)]
     pub fn energy_gradient(&self) -> Vec<Vec<f64>> {
         let mut gradient = vec![vec![0.0; self.layer_sizes[0]]; self.n_layers];
 
@@ -160,6 +166,9 @@ impl EnergyBasedNetwork {
     }
 
     /// Relax network to equilibrium (free phase)
+    // Index drives parallel per-neuron buffers (gradient, states) at differing
+    // lengths; a zipped-iterator rewrite cannot preserve the access pattern.
+    #[allow(clippy::needless_range_loop)]
     pub fn relax_to_equilibrium(&mut self, max_iters: usize, tolerance: f64) -> usize {
         let dt = 0.1; // Time step
 
@@ -190,6 +199,9 @@ impl EnergyBasedNetwork {
     }
 
     /// Nudged phase: relax with gentle push toward target
+    // Index drives parallel per-neuron buffers (gradient, states, target) at
+    // differing lengths; a zipped-iterator rewrite cannot preserve the pattern.
+    #[allow(clippy::needless_range_loop)]
     pub fn relax_nudged(
         &mut self,
         target: &[f64],
@@ -308,6 +320,8 @@ pub struct ThermodynamicNeuralNet {
 }
 
 impl ThermodynamicNeuralNet {
+    /// Create a thermodynamic network with thermal-noise scale derived from
+    /// `temperature` (≈ √(kT)), wrapping an [`EnergyBasedNetwork`].
     pub fn new(layer_sizes: Vec<usize>, tau: f64, temperature: f64) -> Self {
         // Thermal noise ~ sqrt(kT)
         let thermal_noise_std = (temperature * 1.38e-23_f64).sqrt();
@@ -322,13 +336,16 @@ impl ThermodynamicNeuralNet {
     fn add_thermal_noise(&mut self) {
         for layer in 1..self.network.n_layers {
             for i in 0..self.network.layer_sizes[layer] {
-                let noise = (rand::random::<f64>() - 0.5) * 2.0 * self.thermal_noise_std;
+                let noise = (rand::random() - 0.5) * 2.0 * self.thermal_noise_std;
                 self.network.states[layer][i] += noise;
             }
         }
     }
 
     /// Relax with thermal fluctuations (Langevin dynamics)
+    // Index drives parallel per-neuron buffers (gradient, states) at differing
+    // lengths; a zipped-iterator rewrite cannot preserve the access pattern.
+    #[allow(clippy::needless_range_loop)]
     pub fn langevin_relax(&mut self, max_iters: usize, tolerance: f64) -> usize {
         let dt = 0.1;
 
@@ -342,7 +359,7 @@ impl ThermodynamicNeuralNet {
                     let ds_dt = -gradient[layer][i] / self.network.tau;
 
                     // Thermal noise
-                    let noise = (rand::random::<f64>() - 0.5) * 2.0 * self.thermal_noise_std;
+                    let noise = (rand::random() - 0.5) * 2.0 * self.thermal_noise_std;
 
                     let old_state = self.network.states[layer][i];
                     let new_state = self.network.activate(old_state + (ds_dt + noise) * dt);
@@ -372,6 +389,8 @@ pub struct ContrastiveDivergence {
 }
 
 impl ContrastiveDivergence {
+    /// Create a contrastive-divergence learner with `k_steps` Gibbs sampling
+    /// steps at the given `temperature`.
     pub fn new(k_steps: usize, temperature: f64) -> Self {
         Self {
             k_steps,
@@ -380,6 +399,10 @@ impl ContrastiveDivergence {
     }
 
     /// Compute gradient: ⟨s_i s_j⟩_data - ⟨s_i s_j⟩_model
+    // Index drives parallel buffers (gradient outer-product, data/model states)
+    // at differing per-layer dimensions; an iterator rewrite cannot preserve the
+    // (i, j) outer-product indexing across these buffers.
+    #[allow(clippy::needless_range_loop)]
     pub fn gradient(
         &self,
         network: &EnergyBasedNetwork,
@@ -416,8 +439,53 @@ impl ContrastiveDivergence {
 
 // Mock rand for deterministic testing
 mod rand {
-    pub fn random<T>() -> f64 {
+    /// Deterministic stand-in for `rand::random()` returning a constant.
+    pub fn random() -> f64 {
         0.5
+    }
+}
+
+/// Example: XOR learning with equilibrium propagation
+pub fn example_xor_learning() {
+    println!("=== Equilibrium Propagation: XOR Learning ===\n");
+
+    let mut network = EnergyBasedNetwork::new(vec![2, 4, 1], 1.0, 300.0);
+
+    // XOR dataset
+    let inputs = [
+        vec![0.0, 0.0],
+        vec![0.0, 1.0],
+        vec![1.0, 0.0],
+        vec![1.0, 1.0],
+    ];
+    let targets = [vec![0.0], vec![1.0], vec![1.0], vec![0.0]];
+
+    let beta = 0.5;
+    let learning_rate = 0.01;
+    let epochs = 100;
+
+    for epoch in 0..epochs {
+        let mut total_loss = 0.0;
+
+        for (input, target) in inputs.iter().zip(targets.iter()) {
+            let loss = network.loss(input, target);
+            total_loss += loss;
+
+            network.equilibrium_propagation_step(input, target, beta, learning_rate);
+        }
+
+        if epoch % 20 == 0 {
+            println!("Epoch {}: Average Loss = {:.6}", epoch, total_loss / 4.0);
+        }
+    }
+
+    println!("\nFinal predictions:");
+    for (input, target) in inputs.iter().zip(targets.iter()) {
+        let pred = network.predict(input);
+        println!(
+            "Input: {:?} -> Prediction: {:.4}, Target: {:.4}",
+            input, pred[0], target[0]
+        );
     }
 }
 
@@ -484,7 +552,7 @@ mod tests {
         assert!((e_free - e_nudged).abs() > 0.0);
 
         // Weights should have changed
-        let initial_weight = network.weights[0][0][0];
+        let _initial_weight = network.weights[0][0][0];
         network.equilibrium_propagation_step(&input, &target, 0.5, 0.01);
         let updated_weight = network.weights[0][0][0];
 
@@ -503,49 +571,5 @@ mod tests {
         assert_eq!(output.len(), 1);
         assert!(output[0].is_finite());
         assert!(output[0] >= 0.0 && output[0] <= 1.0); // Bounded by activation
-    }
-}
-
-/// Example: XOR learning with equilibrium propagation
-pub fn example_xor_learning() {
-    println!("=== Equilibrium Propagation: XOR Learning ===\n");
-
-    let mut network = EnergyBasedNetwork::new(vec![2, 4, 1], 1.0, 300.0);
-
-    // XOR dataset
-    let inputs = vec![
-        vec![0.0, 0.0],
-        vec![0.0, 1.0],
-        vec![1.0, 0.0],
-        vec![1.0, 1.0],
-    ];
-    let targets = vec![vec![0.0], vec![1.0], vec![1.0], vec![0.0]];
-
-    let beta = 0.5;
-    let learning_rate = 0.01;
-    let epochs = 100;
-
-    for epoch in 0..epochs {
-        let mut total_loss = 0.0;
-
-        for (input, target) in inputs.iter().zip(targets.iter()) {
-            let loss = network.loss(input, target);
-            total_loss += loss;
-
-            network.equilibrium_propagation_step(input, target, beta, learning_rate);
-        }
-
-        if epoch % 20 == 0 {
-            println!("Epoch {}: Average Loss = {:.6}", epoch, total_loss / 4.0);
-        }
-    }
-
-    println!("\nFinal predictions:");
-    for (input, target) in inputs.iter().zip(targets.iter()) {
-        let pred = network.predict(input);
-        println!(
-            "Input: {:?} -> Prediction: {:.4}, Target: {:.4}",
-            input, pred[0], target[0]
-        );
     }
 }

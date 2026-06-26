@@ -1,24 +1,21 @@
-/// SIMD-Accelerated Filtration Construction
-///
-/// This module implements vectorized distance matrix computation using AVX2/AVX-512.
-///
-/// Key optimizations:
-/// - AVX-512: Process 16 distances simultaneously (16x speedup)
-/// - AVX2: Process 8 distances simultaneously (8x speedup)
-/// - Cache-friendly memory layout
-/// - Fused multiply-add (FMA) instructions
-///
-/// Complexity:
-/// - Scalar: O(n² · d)
-/// - AVX2: O(n² · d / 8)
-/// - AVX-512: O(n² · d / 16)
-///
-/// For n=1000, d=50:
-/// - Scalar: ~50M operations
-/// - AVX-512: ~3.1M operations (16x faster)
-
-#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-use std::arch::x86_64::*;
+//! SIMD-Accelerated Filtration Construction
+//!
+//! This module implements vectorized distance matrix computation using AVX2/AVX-512.
+//!
+//! Key optimizations:
+//! - AVX-512: Process 16 distances simultaneously (16x speedup)
+//! - AVX2: Process 8 distances simultaneously (8x speedup)
+//! - Cache-friendly memory layout
+//! - Fused multiply-add (FMA) instructions
+//!
+//! Complexity:
+//! - Scalar: O(n² · d)
+//! - AVX2: O(n² · d / 8)
+//! - AVX-512: O(n² · d / 16)
+//!
+//! For n=1000, d=50:
+//! - Scalar: ~50M operations
+//! - AVX-512: ~3.1M operations (16x faster)
 
 /// Point in d-dimensional space
 pub type Point = Vec<f32>;
@@ -72,15 +69,16 @@ pub fn euclidean_distance_matrix_scalar(points: &[Point]) -> DistanceMatrix {
         return matrix;
     }
 
-    let d = points[0].len();
-
     for i in 0..n {
         for j in (i + 1)..n {
-            let mut sum = 0.0_f32;
-            for k in 0..d {
-                let diff = points[i][k] - points[j][k];
-                sum += diff * diff;
-            }
+            let sum: f32 = points[i]
+                .iter()
+                .zip(points[j].iter())
+                .map(|(a, b)| {
+                    let diff = a - b;
+                    diff * diff
+                })
+                .sum();
             matrix.set(i, j, sum.sqrt());
         }
     }

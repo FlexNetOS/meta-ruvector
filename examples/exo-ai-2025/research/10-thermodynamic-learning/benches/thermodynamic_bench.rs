@@ -4,7 +4,6 @@ use thermodynamic_learning::free_energy_agent::*;
 use thermodynamic_learning::landauer_learning::*;
 use thermodynamic_learning::novel_algorithms::*;
 use thermodynamic_learning::reversible_neural::*;
-use thermodynamic_learning::*;
 
 #[cfg(feature = "simd")]
 use thermodynamic_learning::simd_ops::*;
@@ -218,7 +217,7 @@ fn bench_energy_calculations(c: &mut Criterion) {
         group.bench_with_input(
             BenchmarkId::new("landauer_limit", size),
             size,
-            |b, &size| {
+            |b, &_size| {
                 let state = ThermodynamicState::new(constants::ROOM_TEMP);
 
                 b.iter(|| {
