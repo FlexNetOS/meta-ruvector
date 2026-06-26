@@ -417,10 +417,17 @@ impl SpikingNetwork {
                 outputs.push(SpikeEvent::new(src as u32, self.current_time));
             }
 
-            // Schedule postsynaptic events
-            for &(target, ref synapse) in &self.connections[src] {
-                let arrival_time = self.current_time + synapse.delay;
-                let current = synapse.weight * synapse.sign();
+            // Schedule postsynaptic events (extract data first to avoid borrow conflict)
+            let outgoing: Vec<(usize, f32, f32)> = self.connections[src]
+                .iter()
+                .map(|&(target, ref synapse)| {
+                    let arrival_time = self.current_time + synapse.delay;
+                    let current = synapse.weight * synapse.sign();
+                    (target, arrival_time, current)
+                })
+                .collect();
+
+            for (target, arrival_time, current) in outgoing {
                 self.schedule_event(target, arrival_time, current);
             }
         }

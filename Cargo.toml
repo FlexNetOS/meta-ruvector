@@ -1,5 +1,6 @@
 [workspace]
-exclude = ["crates/micro-hnsw-wasm", "examples/ruvLLM/esp32", "examples/ruvLLM/esp32-flash", "examples/data", "examples/ruvLLM", "examples/delta-behavior", "crates/rvf", "crates/rvf/*", "crates/rvf/*/*",
+exclude = ["examples/ruvLLM/esp32", "examples/ruvLLM/esp32-flash", "examples/data", "examples/ruvLLM", "examples/delta-behavior",     "crates/micro-hnsw-wasm",  # wasm cdylib shell - needs nightly -Zbuild-std
+    "crates/rvf", "crates/rvf/*", "crates/rvf/*/*",
     # ruvector-postgres is a pgrx-based PostgreSQL extension. Its build script
     # requires `$PGRX_HOME` set up via `cargo install cargo-pgrx --version 0.12.9`
     # and `cargo pgrx init`, which downloads and builds multiple Postgres
@@ -21,11 +22,7 @@ exclude = ["crates/micro-hnsw-wasm", "examples/ruvLLM/esp32", "examples/ruvLLM/e
     # Standalone docker integration-test harness (ruvector-attention-integration-test);
     # run inside its container, not part of the host `cargo build --workspace`.
     "tests/docker-integration",
-    # spiking-network: WIP scaffold — its manifest declares a `spiking_bench`
-    # bench and three `[[example]]` targets whose source files do not exist, so
-    # it cannot build as a workspace member. Excluded (not silently orphaned)
-    # until the crate is completed; then move it back to `members`.
-    "examples/spiking-network",
+
     # ruvector-attention-cli / ruvector-sparse-inference-wasm: stale against
     # current ruvector-attention / sparse-model APIs (calls removed methods like
     # ScaledDotProductAttention::compute, SparseModel::{encode,forward_embedding,
@@ -352,6 +349,8 @@ members = [
     "examples/vibecast-7sense/tests",  # vibecast-tests: integration test suite (direct-version specs)
     "examples/vibecast-7sense/scripts",  # performance-report: CLI tools (direct-version specs)
     "vendor/cognitum-one",
+
+
 ]
 resolver = "2"
 
@@ -486,7 +485,7 @@ qdrant-client = "1.10"
 tower-http = { version = "0.5", features = ["trace", "cors", "compression-gzip"] }
 async-graphql = { version = "7.0", features = ["uuid", "chrono", "tracing"] }
 async-graphql-axum = "7.0"
-utoipa = { version = "5.3", features = ["axum_extras", "uuid", "chrono"] }
+utoipa = { version = "5.6", features = ["axum_extras", "uuid", "chrono"] }
 utoipa-swagger-ui = { version = "9.0", features = ["axum"] }
 governor = "0.6"
 tracing-opentelemetry = "0.24"

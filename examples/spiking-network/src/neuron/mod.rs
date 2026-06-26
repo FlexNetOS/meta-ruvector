@@ -23,7 +23,7 @@ mod traits;
 
 pub use lif::{LIFNeuron, LIFParams};
 pub use izhikevich::{IzhikevichNeuron, IzhikevichParams, IzhikevichType};
-pub use traits::{NeuronParams, SpikingNeuron, NeuronState};
+pub use traits::{EnergyModel, NeuronParams, SpikingNeuron, NeuronState};
 
 /// Default membrane time constant (ms)
 pub const DEFAULT_TAU_M: f32 = 20.0;

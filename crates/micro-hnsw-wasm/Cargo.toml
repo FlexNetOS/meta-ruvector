@@ -17,7 +17,6 @@ include = ["src/**/*", "README.md", "LICENSE*", "Cargo.toml"]
 [lib]
 crate-type = ["cdylib"]
 
-[workspace]
 
 [dependencies]
 

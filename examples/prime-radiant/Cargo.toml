@@ -156,4 +156,3 @@ path = "tests/integration_tests.rs"
 crate-type = ["cdylib", "rlib"]
 path = "src/lib.rs"
 
-[workspace]
