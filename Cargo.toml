@@ -1,5 +1,9 @@
 [workspace]
 exclude = ["crates/micro-hnsw-wasm", "crates/ruvector-hyperbolic-hnsw", "crates/ruvector-hyperbolic-hnsw-wasm", "examples/ruvLLM/esp32", "examples/ruvLLM/esp32-flash", "examples/edge-net", "examples/data", "examples/ruvLLM", "examples/delta-behavior", "crates/rvf", "crates/rvf/*", "crates/rvf/*/*",
+    # external/ruqu is a git SUBMODULE — its crate manifests are not present on a
+    # fresh CI checkout, so its sub-crates cannot be workspace members (the workspace
+    # would fail to load). Built from within the submodule; develop excludes it too.
+    "external/ruqu",
     # vendor/cognitum-one: vendored third-party SDK (UPSTREAM_VCS_INFO.json / VENDORED.md).
     # Excluded from the host strict-gated build — its upstream tests import a renamed crate
     # (`cognitum_rs`) and we do not patch vendored upstream code. develop excludes it too.
@@ -336,11 +340,6 @@ members = [
     "crates/ruos-thermal",
     # Recovered from GitHub (ruvnet/ruqu) — quantum execution intelligence engine, 93 Rust files, ~63K lines.
     # Source was deleted via commit 82c21c2a7 and never populated into submodules; reconstituted via tarball fetch.
-    "external/ruqu/crates/ruQu",
-    "external/ruqu/crates/ruqu-algorithms",
-    "external/ruqu/crates/ruqu-core",
-    "external/ruqu/crates/ruqu-exotic",
-    "external/ruqu/crates/ruqu-wasm",
     # Consumers of external/ruqu — re-included in workspace (was excluded due to broken path deps)
     # Now that external/ruqu source is recovered, their path deps resolve correctly.
     "examples/OSpipe",
