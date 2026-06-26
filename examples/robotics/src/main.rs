@@ -1,11 +1,11 @@
-/// RuVector Cognitive Robotics Examples
-///
-/// Each example demonstrates a distinct robotics capability built on top of
-/// the unified ruvector-robotics crate.
-///
-/// Run any example with:
-///
-///     cargo run --bin <example_name>
+//! RuVector Cognitive Robotics Examples
+//!
+//! Each example demonstrates a distinct robotics capability built on top of
+//! the unified ruvector-robotics crate.
+//!
+//! Run any example with:
+//!
+//!     cargo run --bin <example_name>
 fn main() {
     println!("==========================================================");
     println!("  RuVector Cognitive Robotics Examples");
