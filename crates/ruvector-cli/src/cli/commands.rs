@@ -1,9 +1,6 @@
 //! CLI command implementations
 
-use crate::cli::{
-    format_search_results, format_stats, format_success,
-    ProgressTracker,
-};
+use crate::cli::{format_search_results, format_stats, format_success, ProgressTracker};
 use crate::config::Config;
 use anyhow::{Context, Result};
 use colored::*;
