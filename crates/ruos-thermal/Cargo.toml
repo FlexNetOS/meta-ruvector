@@ -8,8 +8,9 @@ repository = "https://github.com/FlexNetOS/ruvector"
 keywords = ["ruos", "pi-5", "thermal", "overclock", "edge-ai"]
 categories = ["hardware-support", "embedded"]
 
-# Standalone — joins the workspace once a stable API lands.
-[workspace]
+# Joined parent workspace (2026-06-25): [workspace] removed so this crate
+# inherits parent [workspace.package] fields and can be a member. Zero deps,
+# so no conflict with parent [workspace.dependencies].
 
 [dependencies]
 # Pure-Rust, zero deps for the skeleton; only stdlib + clap-style arg
