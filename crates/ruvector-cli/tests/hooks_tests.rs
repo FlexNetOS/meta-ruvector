@@ -2,8 +2,6 @@
 
 use assert_cmd::Command;
 use predicates::prelude::*;
-use std::fs;
-use tempfile::TempDir;
 
 /// Helper to get the ruvector binary command
 fn ruvector_cmd() -> Command {

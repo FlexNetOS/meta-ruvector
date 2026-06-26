@@ -93,10 +93,10 @@ where
 /// ```no_run
 /// # #[cfg(feature = "seed")]
 /// # {
-/// use cognitum_rs::seed::{SeedClient, SeedTls};
-/// use cognitum_rs::seed::discovery::tailscale::TailscaleDiscovery;
+/// use cognitum_one::seed::{SeedClient, SeedTls};
+/// use cognitum_one::seed::discovery::tailscale::TailscaleDiscovery;
 ///
-/// # async fn _doc() -> Result<(), cognitum_rs::error::Error> {
+/// # async fn _doc() -> Result<(), cognitum_one::error::Error> {
 /// let client = SeedClient::builder()
 ///     .discovery(TailscaleDiscovery::new())
 ///     .tls(SeedTls::System)
@@ -183,7 +183,9 @@ impl TailscaleDiscovery {
             .as_deref()
             .or(peer.dns_name.as_deref())
             .unwrap_or("");
-        candidate.to_ascii_lowercase().starts_with(&self.prefix.to_ascii_lowercase())
+        candidate
+            .to_ascii_lowercase()
+            .starts_with(&self.prefix.to_ascii_lowercase())
     }
 
     fn peer_host(peer: &TailscalePeer) -> Option<String> {
@@ -195,7 +197,11 @@ impl TailscaleDiscovery {
         }
         peer.host_name.as_deref().and_then(|h| {
             let t = h.trim();
-            if t.is_empty() { None } else { Some(t.to_owned()) }
+            if t.is_empty() {
+                None
+            } else {
+                Some(t.to_owned())
+            }
         })
     }
 
@@ -208,7 +214,8 @@ impl TailscaleDiscovery {
             }
             if let Some(host) = Self::peer_host(peer) {
                 let url = format!("{}://{}:{}", self.scheme, host, self.port);
-                seen.entry(url.clone()).or_insert_with(|| DiscoveredPeer::new(url));
+                seen.entry(url.clone())
+                    .or_insert_with(|| DiscoveredPeer::new(url));
             }
         };
         for p in status.peer.values() {
@@ -267,11 +274,9 @@ impl Discovery for TailscaleDiscovery {
         let this = self.clone();
         let status = tokio::task::spawn_blocking(move || this.run_sync())
             .await
-            .map_err(|e| {
-                Error::Api {
-                    code: 0,
-                    message: format!("TailscaleDiscovery: discover task panicked: {e}"),
-                }
+            .map_err(|e| Error::Api {
+                code: 0,
+                message: format!("TailscaleDiscovery: discover task panicked: {e}"),
             })??;
         Ok(self.map_status(status))
     }
@@ -333,15 +338,10 @@ mod tests {
     fn custom_predicate_and_port_override() {
         let provider = TailscaleDiscovery::new()
             .with_port(18443)
-            .with_predicate(|p: &TailscalePeer| {
-                p.host_name.as_deref() == Some("cognitum-61bc")
-            });
+            .with_predicate(|p: &TailscalePeer| p.host_name.as_deref() == Some("cognitum-61bc"));
         let peers = provider.map_status(parse_fixture());
         assert_eq!(peers.len(), 1);
-        assert_eq!(
-            peers[0].url,
-            "https://cognitum-61bc.tail1234.ts.net:18443"
-        );
+        assert_eq!(peers[0].url, "https://cognitum-61bc.tail1234.ts.net:18443");
     }
 
     #[tokio::test]
@@ -362,9 +362,11 @@ mod tests {
         // Command::output() without pulling in a test-only mocker, but
         // the parse error path is trivially coverable.
         let err = serde_json::from_slice::<TailscaleStatus>(b"not json")
-            .map_err(|e| Error::Validation(format!(
-                "TailscaleDiscovery: failed to parse `tailscale status --json` output: {e}"
-            )))
+            .map_err(|e| {
+                Error::Validation(format!(
+                    "TailscaleDiscovery: failed to parse `tailscale status --json` output: {e}"
+                ))
+            })
             .expect_err("parse should fail");
         assert!(
             matches!(err, Error::Validation(ref m) if m.contains("failed to parse")),

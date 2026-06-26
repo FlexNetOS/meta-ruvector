@@ -72,7 +72,7 @@ fn bench_coarse_graining(c: &mut Criterion) {
         let matrix = generate_transition_matrix(*n);
 
         group.throughput(Throughput::Elements(*n as u64));
-        group.bench_with_input(BenchmarkId::from_parameter(n), n, |b, &n| {
+        group.bench_with_input(BenchmarkId::from_parameter(n), n, |b, &_n| {
             b.iter(|| ScaleHierarchy::build_sequential(black_box(matrix.clone()), black_box(2)));
         });
     }

@@ -178,7 +178,7 @@ impl SequentialPatternTracker {
         }
 
         // Sort by count descending (higher frequency first)
-        freq_vec.sort_by(|a, b| b.0.cmp(&a.0));
+        freq_vec.sort_by_key(|a| std::cmp::Reverse(a.0));
 
         // Update cache
         self.frequency_cache.insert(pattern, freq_vec);

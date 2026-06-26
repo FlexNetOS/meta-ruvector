@@ -196,7 +196,7 @@ mod tests {
         let emb = build_embedding(&src, &dst, &prior, 42);
         assert_eq!(emb.len(), DIM);
         for &v in &emb {
-            assert!(v >= 0.0 && v <= 1.0, "out-of-range value: {}", v);
+            assert!((0.0..=1.0).contains(&v), "out-of-range value: {v}");
         }
     }
 }

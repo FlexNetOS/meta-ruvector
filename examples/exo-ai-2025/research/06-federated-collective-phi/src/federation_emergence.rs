@@ -59,7 +59,7 @@ impl TopologyMetrics {
         let mut total_clustering = 0.0;
         let mut count = 0;
 
-        for (_node, neighbors) in adjacency {
+        for neighbors in adjacency.values() {
             if neighbors.len() < 2 {
                 // Nodes with < 2 neighbors have 0 clustering but still count
                 count += 1;
@@ -138,8 +138,9 @@ impl TopologyMetrics {
 
             if let Some(neighbors) = adjacency.get(&node) {
                 for &neighbor in neighbors {
-                    if !distances.contains_key(&neighbor) {
-                        distances.insert(neighbor, dist + 1);
+                    if let std::collections::hash_map::Entry::Vacant(e) = distances.entry(neighbor)
+                    {
+                        e.insert(dist + 1);
                         queue.push_back(neighbor);
                     }
                 }

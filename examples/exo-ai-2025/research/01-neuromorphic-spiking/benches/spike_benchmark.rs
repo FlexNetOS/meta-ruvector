@@ -1,4 +1,4 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId, Throughput};
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use neuromorphic_spiking::*;
 
 fn benchmark_spike_propagation(c: &mut Criterion) {
@@ -90,10 +90,7 @@ fn benchmark_polychronous_detection(c: &mut Criterion) {
             // Create repeating spike pattern
             for step in 0..50 {
                 for i in 0..10 {
-                    engine.add_spike(TemporalSpike::new(
-                        i,
-                        (step * 100_000 + i * 10_000) as u64,
-                    ));
+                    engine.add_spike(TemporalSpike::new(i, (step * 100_000 + i * 10_000) as u64));
                 }
                 engine.step();
             }
@@ -112,7 +109,8 @@ fn benchmark_bit_operations(c: &mut Criterion) {
 
     group.bench_function("spike_vector_propagate", |b| {
         let vec = SpikeVector::from_bits(0xAAAAAAAAAAAAAAAA);
-        let weights: [u64; 64] = std::array::from_fn(|i| (i as u64).wrapping_mul(0x123456789ABCDEF));
+        let weights: [u64; 64] =
+            std::array::from_fn(|i| (i as u64).wrapping_mul(0x123456789ABCDEF));
 
         b.iter(|| {
             black_box(vec.propagate(&weights));

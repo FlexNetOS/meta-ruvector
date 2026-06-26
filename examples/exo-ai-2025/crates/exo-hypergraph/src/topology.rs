@@ -81,7 +81,7 @@ impl SimplicialComplex {
         // Add the simplex itself
         self.simplices
             .entry(dim)
-            .or_insert_with(HashSet::new)
+            .or_default()
             .insert(simplex.clone());
 
         if dim > self.max_dimension {

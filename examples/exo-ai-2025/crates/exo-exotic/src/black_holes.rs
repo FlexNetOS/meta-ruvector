@@ -171,11 +171,10 @@ impl CognitiveBlackHole {
     }
 
     fn distance_to_center(&self, point: &[f64]) -> f64 {
-        let len = self.center.len().min(point.len());
         let mut sum_sq = 0.0;
 
-        for i in 0..len {
-            let diff = self.center[i] - point[i];
+        for (c, p) in self.center.iter().zip(point.iter()) {
+            let diff = c - p;
             sum_sq += diff * diff;
         }
 
@@ -366,11 +365,10 @@ impl AttractorState {
     }
 
     fn distance_to(&self, point: &[f64]) -> f64 {
-        let len = self.position.len().min(point.len());
         let mut sum_sq = 0.0;
 
-        for i in 0..len {
-            let diff = self.position[i] - point[i];
+        for (pos, p) in self.position.iter().zip(point.iter()) {
+            let diff = pos - p;
             sum_sq += diff * diff;
         }
 
@@ -392,10 +390,9 @@ impl EscapeDynamics {
     /// Create new escape dynamics
     pub fn new(position: Vec<f64>, black_hole: &CognitiveBlackHole) -> Self {
         let distance = {
-            let len = position.len().min(black_hole.center.len());
             let mut sum_sq = 0.0;
-            for i in 0..len {
-                let diff = position[i] - black_hole.center[i];
+            for (p, c) in position.iter().zip(black_hole.center.iter()) {
+                let diff = p - c;
                 sum_sq += diff * diff;
             }
             sum_sq.sqrt()

@@ -13,8 +13,8 @@
 //! seed-specific metadata (`AuthReason`, `retry-after`, endpoint path)
 //! gets encoded into the existing `message: String` payloads.
 
-use reqwest::StatusCode;
 use reqwest::header::HeaderMap;
+use reqwest::StatusCode;
 
 use crate::error::Error as BaseError;
 use crate::seed::retry::parse_retry_after;

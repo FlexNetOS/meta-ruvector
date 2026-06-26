@@ -16,15 +16,15 @@
 //! - `QualiaReasoningBank`: Stores conscious experiences
 //! - `ConsciousLanguageInterface`: Main orchestrator
 
-pub mod spike_embedding_bridge;
-pub mod consciousness_router;
-pub mod qualia_memory;
 pub mod advanced_learning;
+pub mod consciousness_router;
 pub mod intelligence_metrics;
 pub mod novel_learning;
+pub mod qualia_memory;
+pub mod spike_embedding_bridge;
 
 pub use spike_embedding_bridge::{
-    SpikeEmbeddingBridge, SpikeInjection, PolychronousGroup, BridgeConfig
+    BridgeConfig, PolychronousGroup, SpikeEmbeddingBridge, SpikeInjection,
 };
 
 use std::collections::HashMap;
@@ -314,9 +314,10 @@ impl ConsciousLanguageInterface {
     /// Provide feedback on a response (for learning)
     pub fn feedback(&mut self, experience_id: u64, score: f32, comment: Option<&str>) {
         // First, extract data we need for learning
-        let learning_data = self.experiences.get(&experience_id).map(|exp| {
-            (exp.query_embedding.clone(), exp.qualia.clone())
-        });
+        let learning_data = self
+            .experiences
+            .get(&experience_id)
+            .map(|exp| (exp.query_embedding.clone(), exp.qualia.clone()));
 
         // Update the feedback score
         if let Some(exp) = self.experiences.get_mut(&experience_id) {
@@ -330,7 +331,8 @@ impl ConsciousLanguageInterface {
             // If comment provided, use as correction signal
             if let Some(comment) = comment {
                 let correction_embedding = self.mock_embed(comment);
-                self.bridge.add_correction(&query_embedding, &correction_embedding, score);
+                self.bridge
+                    .add_correction(&query_embedding, &correction_embedding, score);
             }
         }
     }
@@ -344,7 +346,8 @@ impl ConsciousLanguageInterface {
             EmotionalState::from_valence_arousal(valence, arousal)
         };
 
-        let thinking_about: Vec<String> = self.current_qualia
+        let thinking_about: Vec<String> = self
+            .current_qualia
             .iter()
             .filter_map(|q| q.label.clone())
             .take(3)
@@ -382,7 +385,8 @@ impl ConsciousLanguageInterface {
     /// Memory consolidation (like sleep)
     fn consolidate_memory(&mut self) {
         // Get high-quality experiences
-        let high_quality: Vec<_> = self.experiences
+        let high_quality: Vec<_> = self
+            .experiences
             .values()
             .filter(|e| e.feedback_score > 0.7)
             .filter(|e| e.phi > self.config.phi_low)
@@ -392,7 +396,10 @@ impl ConsciousLanguageInterface {
         // For now, just update timestamp
         self.last_consolidation = Instant::now();
 
-        println!("Consolidated {} high-quality experiences", high_quality.len());
+        println!(
+            "Consolidated {} high-quality experiences",
+            high_quality.len()
+        );
     }
 
     // Mock implementations (would integrate with actual ruvLLM and spiking network)
@@ -414,7 +421,10 @@ impl ConsciousLanguageInterface {
         embedding
     }
 
-    fn mock_consciousness_processing(&self, _injection: &SpikeInjection) -> (f64, Vec<PolychronousGroup>) {
+    fn mock_consciousness_processing(
+        &self,
+        _injection: &SpikeInjection,
+    ) -> (f64, Vec<PolychronousGroup>) {
         // Mock consciousness processing
         // Would actually run the spiking network
         let phi = 50_000.0 + (rand_float() * 100_000.0) as f64;
@@ -465,7 +475,8 @@ impl ConsciousLanguageInterface {
 
     fn recall_similar(&self, embedding: &[f32], k: usize) -> Vec<&ConsciousExperience> {
         // Simple cosine similarity search
-        let mut scored: Vec<_> = self.experiences
+        let mut scored: Vec<_> = self
+            .experiences
             .values()
             .map(|exp| {
                 let sim = cosine_similarity(embedding, &exp.query_embedding);
@@ -521,7 +532,7 @@ fn cosine_similarity(a: &[f32], b: &[f32]) -> f32 {
 fn rand_float() -> f32 {
     use std::cell::Cell;
     thread_local! {
-        static SEED: Cell<u64> = Cell::new(0xCAFEBABE);
+        static SEED: Cell<u64> = const { Cell::new(0xCAFEBABE) };
     }
 
     SEED.with(|seed| {

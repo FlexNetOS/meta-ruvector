@@ -146,7 +146,7 @@ impl fmt::Display for DmaError {
         }?;
 
         if let Some(ch) = self.channel_id {
-            write!(f, " (channel {})", ch)?;
+            write!(f, " (channel {ch})")?;
         }
 
         Ok(())

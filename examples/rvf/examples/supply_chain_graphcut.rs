@@ -291,8 +291,8 @@ fn build_graph(events: &[Event], embs: &[Vec<f32>], alpha: f64, beta: f64, k: us
     }
     // Temporal chain: consecutive events in same product line
     let mut last_by_product = [usize::MAX; 5];
-    for i in 0..m {
-        let p = events[i].product;
+    for (i, ev) in events.iter().enumerate() {
+        let p = ev.product;
         if last_by_product[p] != usize::MAX {
             let prev = last_by_product[p];
             edges.push(Edge {
@@ -360,9 +360,9 @@ fn solve_mincut(lambdas: &[f64], edges: &[Edge], gamma: f64) -> Vec<bool> {
             adj[u].push((v, idx));
             adj[v].push((u, idx + 1));
         };
-    for i in 0..m {
-        let p0 = lambdas[i].max(0.0);
-        let p1 = (-lambdas[i]).max(0.0);
+    for (i, &lam) in lambdas.iter().enumerate() {
+        let p0 = lam.max(0.0);
+        let p1 = (-lam).max(0.0);
         if p0 > 1e-12 {
             ae(&mut adj, &mut caps, s, i, p0);
         }
@@ -541,8 +541,8 @@ fn main() {
     }
 
     // Extract embeddings and build graph
-    let embs: Vec<Vec<f32>> = events.iter().map(|e| extract_embedding(e)).collect();
-    let lam: Vec<f64> = events.iter().map(|e| unary_score(e)).collect();
+    let embs: Vec<Vec<f32>> = events.iter().map(extract_embedding).collect();
+    let lam: Vec<f64> = events.iter().map(unary_score).collect();
     let edges = build_graph(&events, &embs, alpha, beta, k_nn);
     println!("\n  Graph: {} nodes, {} edges", total, edges.len());
 

@@ -2,7 +2,7 @@
 //!
 //! Provides optimized routines for capturing deltas from vector pairs.
 
-use ruvector_delta_core::{Delta, DeltaOp, DeltaValue, VectorDelta};
+use ruvector_delta_core::{DeltaOp, VectorDelta};
 use smallvec::SmallVec;
 
 /// Configuration for delta capture
@@ -38,7 +38,7 @@ pub fn capture_delta(old: &[f32], new: &[f32], config: &CaptureConfig) -> Vector
     }
 
     // For larger vectors, sample to estimate sparsity
-    let sample_size = (dimensions / 10).max(16).min(256);
+    let sample_size = (dimensions / 10).clamp(16, 256);
     let mut non_zero_sample = 0;
 
     for i in (0..dimensions).step_by(dimensions / sample_size) {
@@ -162,6 +162,9 @@ pub fn capture_batch(
 #[cfg(test)]
 mod tests {
     use super::*;
+    // `Delta` (for `is_identity`) and `DeltaValue` are only used by these
+    // tests; importing them here keeps the non-test build warning-free.
+    use ruvector_delta_core::{Delta, DeltaValue};
 
     #[test]
     fn test_capture_sparse() {

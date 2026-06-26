@@ -9,8 +9,7 @@ use tracing::{info, Level};
 use tracing_subscriber::FmtSubscriber;
 
 use ruvix_qemu_swarm::{
-    ClusterConfig, QemuCluster, SwarmConfig, Topology,
-    orchestrator::scenarios,
+    orchestrator::scenarios, ClusterConfig, QemuCluster, SwarmConfig, Topology,
 };
 
 #[derive(Parser)]
@@ -154,8 +153,7 @@ fn setup_logging(verbosity: u8) {
         .with_target(false)
         .finish();
 
-    tracing::subscriber::set_global_default(subscriber)
-        .expect("Failed to set tracing subscriber");
+    tracing::subscriber::set_global_default(subscriber).expect("Failed to set tracing subscriber");
 }
 
 #[tokio::main]
@@ -175,7 +173,18 @@ async fn main() -> Result<()> {
             wait_pattern,
             timeout,
         } => {
-            cmd_launch(config, nodes, topology, kernel, memory, cpus, gdb, wait_pattern, timeout).await
+            cmd_launch(
+                config,
+                nodes,
+                topology,
+                kernel,
+                memory,
+                cpus,
+                gdb,
+                wait_pattern,
+                timeout,
+            )
+            .await
         }
         Commands::Test {
             scenario,
@@ -246,7 +255,9 @@ async fn cmd_launch(
     let timeout_duration = Duration::from_secs(timeout);
     if let Some(pattern) = wait_pattern {
         info!(pattern = %pattern, "Waiting for boot pattern");
-        cluster.wait_for_boot_message(&pattern, timeout_duration).await?;
+        cluster
+            .wait_for_boot_message(&pattern, timeout_duration)
+            .await?;
     } else {
         cluster.wait_for_ready(timeout_duration).await?;
     }
@@ -300,15 +311,18 @@ async fn cmd_test(
         _ => anyhow::bail!("Unknown scenario: {}", scenario),
     };
 
-    let result = cluster.orchestrator().run_chaos_scenario(chaos_scenario).await?;
+    let result = cluster
+        .orchestrator()
+        .run_chaos_scenario(chaos_scenario)
+        .await?;
 
     println!("\nChaos Test Results:");
     println!("  Scenario: {}", result.scenario_name);
     println!("  Faults injected: {}", result.faults_injected);
     println!("  Duration: {:?}", result.end_time - result.start_time);
-    println!("  Healthy nodes during: {}/{}",
-        result.metrics_during.cluster.healthy_nodes,
-        result.metrics_during.cluster.total_nodes
+    println!(
+        "  Healthy nodes during: {}/{}",
+        result.metrics_during.cluster.healthy_nodes, result.metrics_during.cluster.total_nodes
     );
 
     if let Some(output_path) = output {
@@ -321,7 +335,11 @@ async fn cmd_test(
     Ok(())
 }
 
-async fn cmd_deploy(rvf: PathBuf, config_path: Option<PathBuf>, nodes: Option<String>) -> Result<()> {
+async fn cmd_deploy(
+    rvf: PathBuf,
+    config_path: Option<PathBuf>,
+    nodes: Option<String>,
+) -> Result<()> {
     let config = if let Some(path) = config_path {
         ClusterConfig::from_file(&path)?
     } else {
@@ -460,10 +478,12 @@ fn cmd_topology(topology_type: String, nodes: usize) -> Result<()> {
     println!("\nSample paths:");
     for i in 0..nodes.min(3) {
         let distances = network_topology.shortest_paths(i);
-        let avg_dist: f64 = distances.iter()
+        let avg_dist: f64 = distances
+            .iter()
             .filter(|&&d| d != usize::MAX && d > 0)
             .map(|&d| d as f64)
-            .sum::<f64>() / (nodes - 1) as f64;
+            .sum::<f64>()
+            / (nodes - 1) as f64;
         println!("  Node {} average distance: {:.2}", i, avg_dist);
     }
 

@@ -593,6 +593,9 @@ mod tests {
     }
 
     #[test]
+    // 3.14 is the float literal under test (matches the input string "42 3.14"),
+    // not an approximation of PI.
+    #[allow(clippy::approx_constant)]
     fn test_number() {
         let tokens = tokenize("42 3.14").unwrap();
         assert_eq!(tokens[0].kind, TokenKind::Integer(42));

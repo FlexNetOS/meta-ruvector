@@ -275,10 +275,8 @@ impl SparseBoundaryMatrix {
 
                     // CLEARING: Zero out all later columns with this pivot
                     for k in (j + 1)..self.columns.len() {
-                        if !self.columns[k].cleared {
-                            if self.columns[k].pivot() == Some(pivot) {
-                                self.columns[k].clear();
-                            }
+                        if !self.columns[k].cleared && self.columns[k].pivot() == Some(pivot) {
+                            self.columns[k].clear();
                         }
                     }
 
@@ -323,10 +321,15 @@ impl Default for SparseBoundaryMatrix {
 /// Statistics about sparse matrix
 #[derive(Debug, Clone)]
 pub struct MatrixStats {
+    /// Total number of columns in the boundary matrix.
     pub ncols: usize,
+    /// Total number of non-zero entries across all columns.
     pub total_nnz: usize,
+    /// Average number of non-zero entries per column.
     pub avg_nnz_per_col: f64,
+    /// Number of columns cleared during boundary matrix reduction.
     pub cleared_cols: usize,
+    /// Number of apparent persistence pairs identified before reduction.
     pub apparent_pairs: usize,
 }
 

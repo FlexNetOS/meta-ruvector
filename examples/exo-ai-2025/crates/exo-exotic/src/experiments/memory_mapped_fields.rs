@@ -36,12 +36,11 @@ impl NeuralField {
         let n = pattern.len();
         let mut values = vec![0.0f32; n];
         // Each point in the field gets a Gaussian contribution from each pattern element
-        for (i, &center) in pattern.iter().enumerate() {
-            let _ = i;
-            for j in 0..n {
+        for &center in pattern.iter() {
+            for (j, v) in values.iter_mut().enumerate() {
                 let t = j as f32 / n as f32;
                 let exponent = -(t - center).powi(2) / (2.0 * bandwidth * bandwidth);
-                values[j] += exponent.exp();
+                *v += exponent.exp();
             }
         }
         // Normalize
@@ -127,6 +126,10 @@ impl FieldStore {
 
     pub fn len(&self) -> usize {
         self.fields.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.fields.is_empty()
     }
 }
 
@@ -221,7 +224,7 @@ mod tests {
         let field = NeuralField::encode_pattern(0, &pattern, 0.2);
         assert_eq!(field.values.len(), 5);
         // Field values should be normalized
-        assert!(field.values.iter().all(|&v| v >= 0.0 && v <= 1.0));
+        assert!(field.values.iter().all(|&v| (0.0..=1.0).contains(&v)));
     }
 
     #[test]

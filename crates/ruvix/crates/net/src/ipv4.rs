@@ -124,6 +124,10 @@ impl Ipv4Addr {
     }
 
     /// Parses an IPv4 address from a byte slice.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`NetError::PacketTooShort`] if `bytes` is shorter than 4 bytes.
     #[inline]
     pub fn parse(bytes: &[u8]) -> NetResult<Self> {
         if bytes.len() < 4 {
@@ -466,6 +470,10 @@ impl Ipv4Header {
     }
 
     /// Decrements TTL and returns whether the packet should be forwarded.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`NetError::TtlExpired`] if the TTL is already zero.
     #[inline]
     pub fn decrement_ttl(&mut self) -> NetResult<()> {
         if self.ttl == 0 {
@@ -784,12 +792,8 @@ mod tests {
 
     #[test]
     fn test_decrement_ttl() {
-        let mut header = Ipv4Header::new(
-            Ipv4Addr::LOCALHOST,
-            Ipv4Addr::LOCALHOST,
-            Protocol::Icmp,
-            0,
-        );
+        let mut header =
+            Ipv4Header::new(Ipv4Addr::LOCALHOST, Ipv4Addr::LOCALHOST, Protocol::Icmp, 0);
 
         header.ttl = 2;
         assert!(header.decrement_ttl().is_ok());

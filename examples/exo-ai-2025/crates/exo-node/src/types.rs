@@ -9,7 +9,7 @@ use std::collections::HashMap;
 #[napi(object)]
 #[derive(Clone)]
 pub struct JsPattern {
-    /// Vector embedding as Float32Array
+    /// Vector embedding as `Float32Array`
     pub embedding: Float32Array,
     /// Metadata as JSON string
     pub metadata: Option<String>,
@@ -25,7 +25,7 @@ impl TryFrom<JsPattern> for Pattern {
     fn try_from(pattern: JsPattern) -> Result<Self> {
         let metadata = if let Some(meta_str) = pattern.metadata {
             let fields: HashMap<String, serde_json::Value> = serde_json::from_str(&meta_str)
-                .map_err(|e| Error::from_reason(format!("Invalid metadata JSON: {}", e)))?;
+                .map_err(|e| Error::from_reason(format!("Invalid metadata JSON: {e}")))?;
 
             let mut meta = Metadata::default();
             for (key, value) in fields {
@@ -49,8 +49,12 @@ impl TryFrom<JsPattern> for Pattern {
             .antecedents
             .unwrap_or_default()
             .into_iter()
-            .filter_map(|s| uuid::Uuid::parse_str(&s).ok().map(|uuid| PatternId(uuid)))
+            .filter_map(|s| uuid::Uuid::parse_str(&s).ok().map(PatternId))
             .collect();
+
+        // JS numbers are f64; core `Pattern::salience` is f32 — intentional precision reduction.
+        #[allow(clippy::cast_possible_truncation)]
+        let salience = pattern.salience.unwrap_or(1.0) as f32;
 
         Ok(Pattern {
             id: PatternId::new(),
@@ -58,7 +62,7 @@ impl TryFrom<JsPattern> for Pattern {
             metadata,
             timestamp: SubstrateTime::now(),
             antecedents,
-            salience: pattern.salience.unwrap_or(1.0) as f32,
+            salience,
         })
     }
 }

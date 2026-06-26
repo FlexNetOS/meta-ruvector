@@ -3,6 +3,8 @@
 //! Generates markdown reports and console output for benchmark results.
 
 use crate::comparison::ComparisonSummary;
+// TargetVerification: kept for API compat
+#[allow(unused_imports)]
 use crate::targets::{TargetSummary, TargetVerification};
 use crate::{BenchmarkResult, Comparison, MemoryComparison};
 use std::fmt::Write;
@@ -41,7 +43,7 @@ impl From<&BenchmarkResult> for SyscallRow {
 
         let target = result
             .target_ns
-            .map(|t| format_ns(t))
+            .map(format_ns)
             .unwrap_or_else(|| "-".to_string());
         let status = if result.meets_target { "PASS" } else { "FAIL" };
 

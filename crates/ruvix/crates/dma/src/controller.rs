@@ -5,7 +5,7 @@ use crate::{DmaChannel, DmaChannelId, DmaConfig, DmaDescriptorChain, DmaResult, 
 /// Trait defining the interface for a DMA controller.
 ///
 /// Platform-specific implementations must implement this trait to provide
-/// DMA functionality to the RuVix kernel.
+/// DMA functionality to the `RuVix` kernel.
 pub trait DmaController {
     /// Allocate a free DMA channel.
     ///
@@ -237,7 +237,7 @@ pub trait DmaControllerExt: DmaController {
                     self.release_channel(&channel)?;
                     return Err(crate::DmaError::config_error());
                 }
-                _ => continue,
+                _ => {}
             }
         }
 
@@ -275,7 +275,7 @@ pub trait DmaControllerExt: DmaController {
                     self.release_channel(&channel)?;
                     return Err(crate::DmaError::config_error());
                 }
-                _ => continue,
+                _ => {}
             }
         }
 
@@ -312,7 +312,7 @@ pub trait DmaControllerExt: DmaController {
                     self.release_channel(&channel)?;
                     return Err(crate::DmaError::config_error());
                 }
-                _ => continue,
+                _ => {}
             }
         }
 
@@ -337,7 +337,9 @@ mod tests {
 
     impl MockDmaController {
         fn new() -> Self {
-            Self { channels: [false; 8] }
+            Self {
+                channels: [false; 8],
+            }
         }
     }
 

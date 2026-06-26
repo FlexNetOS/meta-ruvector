@@ -285,6 +285,7 @@ impl ArpCache {
     ///
     /// Returns `Some(mac)` if the entry exists and is valid, `None` otherwise.
     #[inline]
+    #[must_use]
     pub fn resolve(&self, ip: Ipv4Addr, current_time: u64) -> Option<MacAddress> {
         for entry in self.entries.iter().flatten() {
             if entry.ip == ip {
@@ -303,13 +304,9 @@ impl ArpCache {
 
     /// Looks up an entry by IP address.
     #[inline]
+    #[must_use]
     pub fn lookup(&self, ip: Ipv4Addr) -> Option<&ArpCacheEntry> {
-        for entry in self.entries.iter().flatten() {
-            if entry.ip == ip {
-                return Some(entry);
-            }
-        }
-        None
+        self.entries.iter().flatten().find(|entry| entry.ip == ip)
     }
 
     /// Inserts or updates an ARP cache entry.
@@ -360,6 +357,10 @@ impl ArpCache {
     }
 
     /// Marks an entry as pending (waiting for ARP reply).
+    ///
+    /// # Errors
+    ///
+    /// Returns [`NetError::ArpCacheFull`] if no slot is available for a new entry.
     pub fn mark_pending(&mut self, ip: Ipv4Addr, current_time: u64) -> NetResult<()> {
         // Check if entry already exists
         for entry in self.entries.iter_mut().flatten() {
@@ -400,6 +401,11 @@ impl ArpCache {
     }
 
     /// Processes an ARP reply and updates the cache.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`NetError::ArpCacheFull`] if the cache is full and the sender
+    /// entry cannot be inserted.
     pub fn process_reply(&mut self, packet: &ArpPacket, current_time: u64) -> NetResult<()> {
         if !packet.is_reply() {
             return Ok(());
@@ -498,7 +504,10 @@ mod tests {
     fn test_arp_operation_conversion() {
         assert_eq!(ArpOperation::from_u16(1), ArpOperation::Request);
         assert_eq!(ArpOperation::from_u16(2), ArpOperation::Reply);
-        assert!(matches!(ArpOperation::from_u16(99), ArpOperation::Unknown(99)));
+        assert!(matches!(
+            ArpOperation::from_u16(99),
+            ArpOperation::Unknown(99)
+        ));
 
         assert_eq!(ArpOperation::Request.to_u16(), 1);
         assert_eq!(ArpOperation::Reply.to_u16(), 2);
@@ -712,7 +721,7 @@ mod tests {
         for i in 0..ARP_CACHE_MAX_ENTRIES {
             cache
                 .insert(
-                    Ipv4Addr::from_u32(i as u32),
+                    Ipv4Addr::from_u32(u32::try_from(i).unwrap()),
                     MacAddress::new([0, 0, 0, 0, (i >> 8) as u8, i as u8]),
                     i as u64,
                 )

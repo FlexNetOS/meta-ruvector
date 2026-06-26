@@ -39,9 +39,10 @@ use std::collections::HashMap;
 use wasm_bindgen::prelude::*;
 
 /// Types of cells in the morphogenetic network
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
 pub enum CellType {
     /// Undifferentiated stem cell - can become any type
+    #[default]
     Stem,
     /// Signaling cell - produces growth factors
     Signaling,
@@ -53,12 +54,6 @@ pub enum CellType {
     Compute,
     /// Dead cell - marked for removal
     Dead,
-}
-
-impl Default for CellType {
-    fn default() -> Self {
-        CellType::Stem
-    }
 }
 
 /// A cell in the morphogenetic network
@@ -220,10 +215,7 @@ impl MorphogeneticNetwork {
 
     /// Add a growth factor source at a position
     pub fn add_growth_source(&mut self, x: i32, y: i32, factor: GrowthFactor) {
-        self.gradients
-            .entry((x, y))
-            .or_insert_with(Vec::new)
-            .push(factor);
+        self.gradients.entry((x, y)).or_default().push(factor);
     }
 
     /// Get cell count

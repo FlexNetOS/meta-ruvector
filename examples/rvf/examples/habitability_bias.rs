@@ -25,8 +25,8 @@ fn solve_mincut(lam: &[f64], edges: &[(usize, usize, f64)], gamma: f64) -> Vec<b
             adj[u].push((v, i));
             adj[v].push((u, i + 1));
         };
-    for i in 0..m {
-        let (p0, p1) = (lam[i].max(0.0), (-lam[i]).max(0.0));
+    for (i, &l) in lam.iter().enumerate() {
+        let (p0, p1) = (l.max(0.0), (-l).max(0.0));
         if p0 > 1e-12 {
             add(&mut adj, &mut caps, s, i, p0);
         }
@@ -338,8 +338,8 @@ fn main() {
             means[d] += f[d];
         }
     }
-    for d in 0..5 {
-        means[d] /= n_f;
+    for mean in &mut means {
+        *mean /= n_f;
     }
     let mut scales = [0.0f64; 5];
     for f in &features {
@@ -347,8 +347,8 @@ fn main() {
             scales[d] += (f[d] - means[d]).powi(2);
         }
     }
-    for d in 0..5 {
-        scales[d] = (scales[d] / n_f).sqrt().max(1e-6);
+    for scale in &mut scales {
+        *scale = (*scale / n_f).sqrt().max(1e-6);
     }
 
     // Group indices by method
@@ -617,7 +617,6 @@ fn main() {
         "", "", "", "", "", ""
     );
 
-    let mut shown = 0;
     // Sort bias-flagged by isolation score descending
     let mut bias_ranked: Vec<(usize, f64)> = scored
         .iter()
@@ -627,10 +626,7 @@ fn main() {
         .collect();
     bias_ranked.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
 
-    for &(si, iso) in &bias_ranked {
-        if shown >= 15 {
-            break;
-        }
+    for &(si, iso) in bias_ranked.iter().take(15) {
         let p = &planets[scored[si].idx];
         let per_str = p
             .period
@@ -658,7 +654,6 @@ fn main() {
             "  {:<28} {:<16} {:>7} {:>7} {:>7} {:>6.3}",
             name_short, method_short, per_str, r_str, t_str, iso
         );
-        shown += 1;
     }
 
     // ── 7. Discovery method statistics ──────────────────────────────────────
@@ -903,7 +898,7 @@ fn median(vals: &[f64]) -> f64 {
     if n == 0 {
         return 0.0;
     }
-    if n % 2 == 0 {
+    if n.is_multiple_of(2) {
         (sorted[n / 2 - 1] + sorted[n / 2]) / 2.0
     } else {
         sorted[n / 2]

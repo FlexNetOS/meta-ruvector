@@ -54,6 +54,8 @@ pub fn format_success(msg: &str) -> String {
 }
 
 /// Format warning message
+// Retained output-formatting helper; part of the public format toolkit not yet wired to a subcommand.
+#[allow(dead_code)]
 pub fn format_warning(msg: &str) -> String {
     format!("{} {}", "Warning:".yellow().bold(), msg)
 }
@@ -64,22 +66,26 @@ pub fn format_info(msg: &str) -> String {
 }
 
 /// Export vector entries to JSON
+// Retained export helper; part of the public format toolkit not yet wired to a subcommand.
+#[allow(dead_code)]
 pub fn export_json(entries: &[VectorEntry]) -> anyhow::Result<String> {
     serde_json::to_string_pretty(entries)
         .map_err(|e| anyhow::anyhow!("Failed to serialize to JSON: {}", e))
 }
 
 /// Export vector entries to CSV
+// Retained export helper; part of the public format toolkit not yet wired to a subcommand.
+#[allow(dead_code)]
 pub fn export_csv(entries: &[VectorEntry]) -> anyhow::Result<String> {
     let mut wtr = csv::Writer::from_writer(vec![]);
 
     // Write header
-    wtr.write_record(&["id", "vector", "metadata"])?;
+    wtr.write_record(["id", "vector", "metadata"])?;
 
     // Write entries
     for entry in entries {
-        wtr.write_record(&[
-            entry.id.as_ref().map(|s| s.as_str()).unwrap_or(""),
+        wtr.write_record([
+            entry.id.as_deref().unwrap_or(""),
             &serde_json::to_string(&entry.vector)?,
             &serde_json::to_string(&entry.metadata)?,
         ])?;
@@ -93,6 +99,8 @@ pub fn export_csv(entries: &[VectorEntry]) -> anyhow::Result<String> {
 // Graph-specific formatting functions
 
 /// Format graph node for display
+// Retained graph-output toolkit; not yet wired to a subcommand but part of the public format API.
+#[allow(dead_code)]
 pub fn format_graph_node(
     id: &str,
     labels: &[String],
@@ -113,8 +121,9 @@ pub fn format_graph_node(
 }
 
 /// Format graph relationship for display
+#[allow(dead_code)]
 pub fn format_graph_relationship(
-    id: &str,
+    _id: &str,
     rel_type: &str,
     start_node: &str,
     end_node: &str,
@@ -140,6 +149,7 @@ pub fn format_graph_relationship(
 }
 
 /// Format graph query results as table
+#[allow(dead_code)]
 pub fn format_graph_table(headers: &[String], rows: &[Vec<String>]) -> String {
     use prettytable::{Cell, Row, Table};
 
@@ -162,6 +172,7 @@ pub fn format_graph_table(headers: &[String], rows: &[Vec<String>]) -> String {
 }
 
 /// Format graph statistics
+#[allow(dead_code)]
 pub fn format_graph_stats(
     node_count: usize,
     rel_count: usize,

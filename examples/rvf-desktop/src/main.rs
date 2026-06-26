@@ -42,7 +42,11 @@ fn start_asset_server(port: u16) {
                 };
 
                 let url_path = request.url().trim_start_matches('/');
-                let path = if url_path.is_empty() { "index.html" } else { url_path };
+                let path = if url_path.is_empty() {
+                    "index.html"
+                } else {
+                    url_path
+                };
 
                 // Try to find the embedded file
                 let response = match DashboardAssets::get(path) {
@@ -58,11 +62,8 @@ fn start_asset_server(port: u16) {
                                 .unwrap(),
                             )
                             .with_header(
-                                tiny_http::Header::from_bytes(
-                                    b"Access-Control-Allow-Origin",
-                                    b"*",
-                                )
-                                .unwrap(),
+                                tiny_http::Header::from_bytes(b"Access-Control-Allow-Origin", b"*")
+                                    .unwrap(),
                             )
                     }
                     None => {
@@ -78,8 +79,9 @@ fn start_asset_server(port: u16) {
                                     .unwrap(),
                                 )
                             }
-                            None => tiny_http::Response::from_string("Not Found")
-                                .with_status_code(404),
+                            None => {
+                                tiny_http::Response::from_string("Not Found").with_status_code(404)
+                            }
                         }
                     }
                 };

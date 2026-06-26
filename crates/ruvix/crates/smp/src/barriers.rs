@@ -84,13 +84,21 @@
 /// ```
 #[inline]
 pub unsafe fn dmb() {
-    #[cfg(all(target_arch = "aarch64", feature = "aarch64", not(feature = "test-mode")))]
+    #[cfg(all(
+        target_arch = "aarch64",
+        feature = "aarch64",
+        not(feature = "test-mode")
+    ))]
     {
         // SAFETY: DMB is always safe to execute
         core::arch::asm!("dmb sy", options(nostack, nomem, preserves_flags));
     }
 
-    #[cfg(any(not(target_arch = "aarch64"), not(feature = "aarch64"), feature = "test-mode"))]
+    #[cfg(any(
+        not(target_arch = "aarch64"),
+        not(feature = "aarch64"),
+        feature = "test-mode"
+    ))]
     {
         // Use compiler fence in test mode
         core::sync::atomic::compiler_fence(core::sync::atomic::Ordering::SeqCst);
@@ -108,13 +116,21 @@ pub unsafe fn dmb() {
 /// Same safety considerations as [`dmb()`].
 #[inline]
 pub unsafe fn dmb_ish() {
-    #[cfg(all(target_arch = "aarch64", feature = "aarch64", not(feature = "test-mode")))]
+    #[cfg(all(
+        target_arch = "aarch64",
+        feature = "aarch64",
+        not(feature = "test-mode")
+    ))]
     {
         // SAFETY: DMB ISH is always safe to execute
         core::arch::asm!("dmb ish", options(nostack, nomem, preserves_flags));
     }
 
-    #[cfg(any(not(target_arch = "aarch64"), not(feature = "aarch64"), feature = "test-mode"))]
+    #[cfg(any(
+        not(target_arch = "aarch64"),
+        not(feature = "aarch64"),
+        feature = "test-mode"
+    ))]
     {
         core::sync::atomic::compiler_fence(core::sync::atomic::Ordering::SeqCst);
     }
@@ -130,13 +146,21 @@ pub unsafe fn dmb_ish() {
 /// Same safety considerations as [`dmb()`].
 #[inline]
 pub unsafe fn dmb_st() {
-    #[cfg(all(target_arch = "aarch64", feature = "aarch64", not(feature = "test-mode")))]
+    #[cfg(all(
+        target_arch = "aarch64",
+        feature = "aarch64",
+        not(feature = "test-mode")
+    ))]
     {
         // SAFETY: DMB ST is always safe to execute
         core::arch::asm!("dmb st", options(nostack, nomem, preserves_flags));
     }
 
-    #[cfg(any(not(target_arch = "aarch64"), not(feature = "aarch64"), feature = "test-mode"))]
+    #[cfg(any(
+        not(target_arch = "aarch64"),
+        not(feature = "aarch64"),
+        feature = "test-mode"
+    ))]
     {
         core::sync::atomic::compiler_fence(core::sync::atomic::Ordering::Release);
     }
@@ -177,13 +201,21 @@ pub unsafe fn dmb_st() {
 /// ```
 #[inline]
 pub unsafe fn dsb() {
-    #[cfg(all(target_arch = "aarch64", feature = "aarch64", not(feature = "test-mode")))]
+    #[cfg(all(
+        target_arch = "aarch64",
+        feature = "aarch64",
+        not(feature = "test-mode")
+    ))]
     {
         // SAFETY: DSB is always safe to execute
         core::arch::asm!("dsb sy", options(nostack, nomem, preserves_flags));
     }
 
-    #[cfg(any(not(target_arch = "aarch64"), not(feature = "aarch64"), feature = "test-mode"))]
+    #[cfg(any(
+        not(target_arch = "aarch64"),
+        not(feature = "aarch64"),
+        feature = "test-mode"
+    ))]
     {
         core::sync::atomic::compiler_fence(core::sync::atomic::Ordering::SeqCst);
     }
@@ -198,13 +230,21 @@ pub unsafe fn dsb() {
 /// Same safety considerations as [`dsb()`].
 #[inline]
 pub unsafe fn dsb_ish() {
-    #[cfg(all(target_arch = "aarch64", feature = "aarch64", not(feature = "test-mode")))]
+    #[cfg(all(
+        target_arch = "aarch64",
+        feature = "aarch64",
+        not(feature = "test-mode")
+    ))]
     {
         // SAFETY: DSB ISH is always safe to execute
         core::arch::asm!("dsb ish", options(nostack, nomem, preserves_flags));
     }
 
-    #[cfg(any(not(target_arch = "aarch64"), not(feature = "aarch64"), feature = "test-mode"))]
+    #[cfg(any(
+        not(target_arch = "aarch64"),
+        not(feature = "aarch64"),
+        feature = "test-mode"
+    ))]
     {
         core::sync::atomic::compiler_fence(core::sync::atomic::Ordering::SeqCst);
     }
@@ -240,13 +280,21 @@ pub unsafe fn dsb_ish() {
 /// ```
 #[inline]
 pub unsafe fn isb() {
-    #[cfg(all(target_arch = "aarch64", feature = "aarch64", not(feature = "test-mode")))]
+    #[cfg(all(
+        target_arch = "aarch64",
+        feature = "aarch64",
+        not(feature = "test-mode")
+    ))]
     {
         // SAFETY: ISB is always safe to execute
         core::arch::asm!("isb", options(nostack, nomem, preserves_flags));
     }
 
-    #[cfg(any(not(target_arch = "aarch64"), not(feature = "aarch64"), feature = "test-mode"))]
+    #[cfg(any(
+        not(target_arch = "aarch64"),
+        not(feature = "aarch64"),
+        feature = "test-mode"
+    ))]
     {
         // No direct equivalent - use compiler fence
         core::sync::atomic::compiler_fence(core::sync::atomic::Ordering::SeqCst);
@@ -279,13 +327,21 @@ pub unsafe fn isb() {
 /// the WFE protocol.
 #[inline]
 pub unsafe fn sev() {
-    #[cfg(all(target_arch = "aarch64", feature = "aarch64", not(feature = "test-mode")))]
+    #[cfg(all(
+        target_arch = "aarch64",
+        feature = "aarch64",
+        not(feature = "test-mode")
+    ))]
     {
         // SAFETY: SEV is always safe to execute
         core::arch::asm!("sev", options(nostack, nomem, preserves_flags));
     }
 
-    #[cfg(any(not(target_arch = "aarch64"), not(feature = "aarch64"), feature = "test-mode"))]
+    #[cfg(any(
+        not(target_arch = "aarch64"),
+        not(feature = "aarch64"),
+        feature = "test-mode"
+    ))]
     {
         // No equivalent needed in test mode
     }
@@ -301,13 +357,21 @@ pub unsafe fn sev() {
 /// Executing SEVL is always safe.
 #[inline]
 pub unsafe fn sevl() {
-    #[cfg(all(target_arch = "aarch64", feature = "aarch64", not(feature = "test-mode")))]
+    #[cfg(all(
+        target_arch = "aarch64",
+        feature = "aarch64",
+        not(feature = "test-mode")
+    ))]
     {
         // SAFETY: SEVL is always safe to execute
         core::arch::asm!("sevl", options(nostack, nomem, preserves_flags));
     }
 
-    #[cfg(any(not(target_arch = "aarch64"), not(feature = "aarch64"), feature = "test-mode"))]
+    #[cfg(any(
+        not(target_arch = "aarch64"),
+        not(feature = "aarch64"),
+        feature = "test-mode"
+    ))]
     {
         // No equivalent needed in test mode
     }
@@ -343,13 +407,21 @@ pub unsafe fn sevl() {
 /// the WFE will eventually be woken by a corresponding SEV.
 #[inline]
 pub unsafe fn wfe() {
-    #[cfg(all(target_arch = "aarch64", feature = "aarch64", not(feature = "test-mode")))]
+    #[cfg(all(
+        target_arch = "aarch64",
+        feature = "aarch64",
+        not(feature = "test-mode")
+    ))]
     {
         // SAFETY: WFE is always safe to execute (may block)
         core::arch::asm!("wfe", options(nostack, nomem, preserves_flags));
     }
 
-    #[cfg(any(not(target_arch = "aarch64"), not(feature = "aarch64"), feature = "test-mode"))]
+    #[cfg(any(
+        not(target_arch = "aarch64"),
+        not(feature = "aarch64"),
+        feature = "test-mode"
+    ))]
     {
         // Yield in test mode to prevent busy-wait
         core::hint::spin_loop();
@@ -386,13 +458,21 @@ pub unsafe fn wfe() {
 /// must ensure interrupts will eventually wake the CPU.
 #[inline]
 pub unsafe fn wfi() {
-    #[cfg(all(target_arch = "aarch64", feature = "aarch64", not(feature = "test-mode")))]
+    #[cfg(all(
+        target_arch = "aarch64",
+        feature = "aarch64",
+        not(feature = "test-mode")
+    ))]
     {
         // SAFETY: WFI is always safe to execute (may block)
         core::arch::asm!("wfi", options(nostack, nomem, preserves_flags));
     }
 
-    #[cfg(any(not(target_arch = "aarch64"), not(feature = "aarch64"), feature = "test-mode"))]
+    #[cfg(any(
+        not(target_arch = "aarch64"),
+        not(feature = "aarch64"),
+        feature = "test-mode"
+    ))]
     {
         // Yield in test mode
         core::hint::spin_loop();
@@ -410,13 +490,21 @@ pub unsafe fn wfi() {
 /// Always safe to execute.
 #[inline]
 pub unsafe fn cpu_yield() {
-    #[cfg(all(target_arch = "aarch64", feature = "aarch64", not(feature = "test-mode")))]
+    #[cfg(all(
+        target_arch = "aarch64",
+        feature = "aarch64",
+        not(feature = "test-mode")
+    ))]
     {
         // SAFETY: YIELD is always safe to execute
         core::arch::asm!("yield", options(nostack, nomem, preserves_flags));
     }
 
-    #[cfg(any(not(target_arch = "aarch64"), not(feature = "aarch64"), feature = "test-mode"))]
+    #[cfg(any(
+        not(target_arch = "aarch64"),
+        not(feature = "aarch64"),
+        feature = "test-mode"
+    ))]
     {
         core::hint::spin_loop();
     }

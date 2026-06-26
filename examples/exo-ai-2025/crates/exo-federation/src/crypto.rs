@@ -500,7 +500,7 @@ mod tests {
 
     #[test]
     fn test_key_exchange() {
-        let alice = PostQuantumKeypair::generate();
+        let _alice = PostQuantumKeypair::generate();
         let bob = PostQuantumKeypair::generate();
 
         // Alice encapsulates to Bob

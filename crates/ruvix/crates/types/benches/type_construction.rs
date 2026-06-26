@@ -16,7 +16,7 @@ fn bench_handle_construction(c: &mut Criterion) {
         b.iter(|| Handle::new(black_box(42), black_box(7)))
     });
 
-    group.bench_function("Handle::null", |b| b.iter(|| Handle::null()));
+    group.bench_function("Handle::null", |b| b.iter(Handle::null));
 
     group.bench_function("Handle::to_raw", |b| {
         let h = Handle::new(12345, 67890);
@@ -101,7 +101,7 @@ fn bench_region_policy(c: &mut Criterion) {
     let mut group = c.benchmark_group("region_policy");
 
     group.bench_function("RegionPolicy::immutable", |b| {
-        b.iter(|| RegionPolicy::immutable())
+        b.iter(RegionPolicy::immutable)
     });
 
     group.bench_function("RegionPolicy::append_only", |b| {
@@ -211,20 +211,18 @@ fn bench_capability_derivation_throughput(c: &mut Criterion) {
 fn bench_memory_layout(c: &mut Criterion) {
     let mut group = c.benchmark_group("memory_layout");
 
-    group.bench_function("size_of_Handle", |b| {
-        b.iter(|| std::mem::size_of::<Handle>())
-    });
+    group.bench_function("size_of_Handle", |b| b.iter(std::mem::size_of::<Handle>));
 
     group.bench_function("size_of_Capability", |b| {
-        b.iter(|| std::mem::size_of::<Capability>())
+        b.iter(std::mem::size_of::<Capability>)
     });
 
     group.bench_function("size_of_RegionPolicy", |b| {
-        b.iter(|| std::mem::size_of::<RegionPolicy>())
+        b.iter(std::mem::size_of::<RegionPolicy>)
     });
 
     group.bench_function("size_of_CapRights", |b| {
-        b.iter(|| std::mem::size_of::<CapRights>())
+        b.iter(std::mem::size_of::<CapRights>)
     });
 
     group.finish();

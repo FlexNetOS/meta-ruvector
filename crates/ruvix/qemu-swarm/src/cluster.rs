@@ -278,7 +278,9 @@ impl ClusterConfigBuilder {
     /// Build the configuration.
     pub fn build(self) -> SwarmResult<ClusterConfig> {
         if self.config.node_count == 0 {
-            return Err(SwarmError::InvalidNodeConfig("Node count cannot be 0".to_string()));
+            return Err(SwarmError::InvalidNodeConfig(
+                "Node count cannot be 0".to_string(),
+            ));
         }
         if self.config.node_count > MAX_SWARM_SIZE {
             return Err(SwarmError::MaxSwarmSizeExceeded {
@@ -441,9 +443,7 @@ impl QemuCluster {
                     // Register console
                     let node_id = node.id();
                     let socket_path = node.config().console_socket.clone();
-                    self.console
-                        .register_node(node_id, i, socket_path)
-                        .await?;
+                    self.console.register_node(node_id, i, socket_path).await?;
                 }
                 Err(e) => {
                     error!(node = i, error = %e, "Failed to start node");
@@ -565,11 +565,7 @@ impl QemuCluster {
     }
 
     /// Wait for a specific pattern in console output from all nodes.
-    pub async fn wait_for_boot_message(
-        &self,
-        pattern: &str,
-        timeout: Duration,
-    ) -> SwarmResult<()> {
+    pub async fn wait_for_boot_message(&self, pattern: &str, timeout: Duration) -> SwarmResult<()> {
         self.console
             .wait_for_all_nodes(self.nodes.len(), pattern, timeout)
             .await
@@ -623,7 +619,10 @@ impl QemuCluster {
             "Nodes: {} total ({} running, {} stopped, {} failed)",
             stats.node_count, stats.running_nodes, stats.stopped_nodes, stats.failed_nodes
         );
-        println!("Topology: {} (diameter: {})", stats.topology, stats.network_diameter);
+        println!(
+            "Topology: {} (diameter: {})",
+            stats.topology, stats.network_diameter
+        );
         println!("\nNetwork topology:");
         println!("{}", self.network.topology().ascii_diagram());
     }

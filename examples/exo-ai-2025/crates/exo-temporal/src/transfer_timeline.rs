@@ -41,9 +41,9 @@ fn build_embedding(src: &DomainId, dst: &DomainId, cycle: u64, delta_reward: f32
     emb[1] = dh;
     emb[2] = (cycle as f32).ln_1p() / (1_000.0_f32).ln_1p();
     emb[3] = delta_reward.clamp(0.0, 1.0);
-    for i in 4..DIM {
+    for (i, slot) in emb.iter_mut().enumerate().skip(4) {
         let phase = (sh + dh) * i as f32 * std::f32::consts::PI / DIM as f32;
-        emb[i] = phase.sin() * 0.5 + 0.5;
+        *slot = phase.sin() * 0.5 + 0.5;
     }
     emb
 }

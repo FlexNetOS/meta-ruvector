@@ -4,7 +4,7 @@
 // cognition. Decisions emerge from constructive/destructive interference of
 // amplitude paths rather than classical utility maximization.
 
-use crate::quantum_cognitive_state::{Amplitude, CognitiveState, SuperpositionBuilder};
+use crate::quantum_cognitive_state::{CognitiveState, SuperpositionBuilder};
 use num_complex::Complex64;
 use std::f64::consts::PI;
 
@@ -16,12 +16,17 @@ pub struct InterferenceDecisionMaker {
     history: Vec<DecisionRecord>,
 }
 
+/// Record of a single decision, exposed via [`InterferenceDecisionMaker::get_history`].
 #[derive(Clone, Debug)]
-struct DecisionRecord {
-    options: Vec<String>,
-    chosen: usize,
-    confidence: f64,
-    timestamp: f64,
+pub struct DecisionRecord {
+    /// Labels of the options that were available for this decision.
+    pub options: Vec<String>,
+    /// Index of the option that was chosen.
+    pub chosen: usize,
+    /// Born-rule probability of the chosen option (decision confidence).
+    pub confidence: f64,
+    /// Timestamp of the decision.
+    pub timestamp: f64,
 }
 
 impl InterferenceDecisionMaker {
@@ -184,7 +189,7 @@ impl InterferenceDecisionMaker {
         }
 
         // Answer Q2 with modified state
-        let (ans2, prob2, _) =
+        let (ans2, _prob2, _) =
             self.multi_alternative_choice(question2_options.clone(), modified_q2_phases);
 
         // Order effect magnitude
@@ -198,7 +203,7 @@ impl InterferenceDecisionMaker {
     /// Non-separable joint state enables cooperation
     pub fn quantum_prisoners_dilemma(
         &mut self,
-        player2_strategy: &str,     // "cooperate" or "defect"
+        _player2_strategy: &str,    // "cooperate" or "defect"
         entanglement_strength: f64, // Degree of non-separability
     ) -> (String, f64, f64) {
         // Classical strategies
@@ -309,7 +314,7 @@ mod tests {
         let mut dm = InterferenceDecisionMaker::new(initial);
 
         // Phase difference = 0 → constructive interference
-        let (choice, prob, interference) = dm.two_alternative_choice("option_a", "option_b", 0.0);
+        let (_choice, _prob, interference) = dm.two_alternative_choice("option_a", "option_b", 0.0);
 
         // With constructive interference, probabilities deviate from 0.5
         assert!(interference.abs() > 0.0);
@@ -321,7 +326,7 @@ mod tests {
         let mut dm = InterferenceDecisionMaker::new(initial);
 
         // Phase difference = π → destructive interference
-        let (choice, prob, interference) = dm.two_alternative_choice("option_a", "option_b", PI);
+        let (_choice, _prob, interference) = dm.two_alternative_choice("option_a", "option_b", PI);
 
         // Interference term should be negative (destructive)
         assert!(interference < 0.0);
@@ -334,7 +339,7 @@ mod tests {
         let mut dm = InterferenceDecisionMaker::new(initial);
 
         // High overlap → conjunction can exceed individual
-        let (probs, choice) = dm.conjunction_decision(
+        let (probs, _choice) = dm.conjunction_decision(
             "bank_teller",
             "feminist",
             "feminist_bank_teller",

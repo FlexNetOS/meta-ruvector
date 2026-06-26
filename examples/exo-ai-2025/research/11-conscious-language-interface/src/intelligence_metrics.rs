@@ -168,7 +168,7 @@ impl Default for QuantifierConfig {
     fn default() -> Self {
         Self {
             max_history: 10_000,
-            human_phi_baseline: 1e16, // Human brain estimated Φ
+            human_phi_baseline: 1e16,     // Human brain estimated Φ
             human_learning_baseline: 0.1, // Improvement per 100 trials
         }
     }
@@ -176,6 +176,8 @@ impl Default for QuantifierConfig {
 
 #[derive(Debug, Clone)]
 struct MemoryTestResult {
+    /// Test timestamp (retained as part of the test-result record)
+    #[allow(dead_code)]
     pub timestamp: Instant,
     pub items_presented: usize,
     pub items_recalled: usize,
@@ -184,6 +186,8 @@ struct MemoryTestResult {
 
 #[derive(Debug, Clone)]
 struct GeneralizationTestResult {
+    /// Test timestamp (retained as part of the test-result record)
+    #[allow(dead_code)]
     pub timestamp: Instant,
     pub training_domain: String,
     pub test_domain: String,
@@ -218,7 +222,12 @@ impl IntelligenceQuantifier {
     }
 
     /// Record memory test result
-    pub fn record_memory_test(&mut self, items_presented: usize, items_recalled: usize, delay_ms: u64) {
+    pub fn record_memory_test(
+        &mut self,
+        items_presented: usize,
+        items_recalled: usize,
+        delay_ms: u64,
+    ) {
         self.memory_tests.push_back(MemoryTestResult {
             timestamp: Instant::now(),
             items_presented,
@@ -232,12 +241,13 @@ impl IntelligenceQuantifier {
 
     /// Record generalization test
     pub fn record_generalization_test(&mut self, training: &str, test: &str, accuracy: f64) {
-        self.generalization_tests.push_back(GeneralizationTestResult {
-            timestamp: Instant::now(),
-            training_domain: training.to_string(),
-            test_domain: test.to_string(),
-            accuracy,
-        });
+        self.generalization_tests
+            .push_back(GeneralizationTestResult {
+                timestamp: Instant::now(),
+                training_domain: training.to_string(),
+                test_domain: test.to_string(),
+                accuracy,
+            });
         if self.generalization_tests.len() > 1000 {
             self.generalization_tests.pop_front();
         }
@@ -253,13 +263,12 @@ impl IntelligenceQuantifier {
         let coherence_metric = self.compute_coherence_metric();
 
         // Weighted overall score
-        let overall_score =
-            phi_metric.score * 0.25 +
-            learning_metric.score * 0.20 +
-            memory_metric.score * 0.15 +
-            generalization_metric.score * 0.15 +
-            adaptability_metric.score * 0.10 +
-            coherence_metric.score * 0.15;
+        let overall_score = phi_metric.score * 0.25
+            + learning_metric.score * 0.20
+            + memory_metric.score * 0.15
+            + generalization_metric.score * 0.15
+            + adaptability_metric.score * 0.10
+            + coherence_metric.score * 0.15;
 
         let metrics = IntelligenceMetrics {
             phi_level: phi_metric,
@@ -297,14 +306,15 @@ impl IntelligenceQuantifier {
         let average = values.iter().sum::<f64>() / values.len() as f64;
 
         // Stability = 1 - normalized standard deviation
-        let variance = values.iter().map(|p| (p - average).powi(2)).sum::<f64>() / values.len() as f64;
+        let variance =
+            values.iter().map(|p| (p - average).powi(2)).sum::<f64>() / values.len() as f64;
         let std_dev = variance.sqrt();
         let stability = 1.0 - (std_dev / (average.abs() + 1.0)).min(1.0);
 
         // Score based on log scale (Φ spans many orders of magnitude)
         let log_phi = (current + 1.0).log10();
         let log_human = (self.config.human_phi_baseline + 1.0).log10();
-        let score = (log_phi / log_human * 100.0).min(100.0).max(0.0);
+        let score = (log_phi / log_human * 100.0).clamp(0.0, 100.0);
 
         PhiMetric {
             current,
@@ -347,7 +357,8 @@ impl IntelligenceQuantifier {
         };
 
         // Convergence speed: first time we hit 90%
-        let convergence_speed = values.iter()
+        let convergence_speed = values
+            .iter()
             .position(|&a| a >= 0.9)
             .map(|p| p as f64)
             .unwrap_or(f64::INFINITY);
@@ -368,7 +379,8 @@ impl IntelligenceQuantifier {
         let plateau_resistance = 1.0 - (max_plateau as f64 / n as f64).min(1.0);
 
         // Compute score
-        let improvement_score = (improvement_rate / self.config.human_learning_baseline * 50.0).min(50.0);
+        let improvement_score =
+            (improvement_rate / self.config.human_learning_baseline * 50.0).min(50.0);
         let convergence_score = if convergence_speed.is_finite() {
             (1.0 - convergence_speed / 1000.0).max(0.0) * 30.0
         } else {
@@ -398,39 +410,53 @@ impl IntelligenceQuantifier {
         }
 
         // Short-term: tests with delay < 1000ms
-        let short_term: Vec<_> = self.memory_tests.iter()
+        let short_term: Vec<_> = self
+            .memory_tests
+            .iter()
             .filter(|t| t.recall_delay_ms < 1000)
             .collect();
 
-        let short_term_capacity = short_term.iter()
+        let short_term_capacity = short_term
+            .iter()
             .filter(|t| t.items_recalled as f64 / t.items_presented as f64 > 0.8)
             .map(|t| t.items_presented)
             .max()
             .unwrap_or(0);
 
         // Long-term: tests with delay > 60000ms
-        let long_term: Vec<_> = self.memory_tests.iter()
+        let long_term: Vec<_> = self
+            .memory_tests
+            .iter()
             .filter(|t| t.recall_delay_ms > 60000)
             .collect();
 
         let long_term_retention = if long_term.is_empty() {
             0.0
         } else {
-            long_term.iter()
+            long_term
+                .iter()
                 .map(|t| t.items_recalled as f64 / t.items_presented as f64)
-                .sum::<f64>() / long_term.len() as f64
+                .sum::<f64>()
+                / long_term.len() as f64
         };
 
         // Overall recall accuracy
-        let recall_accuracy = self.memory_tests.iter()
+        let recall_accuracy = self
+            .memory_tests
+            .iter()
             .map(|t| t.items_recalled as f64 / t.items_presented as f64)
-            .sum::<f64>() / self.memory_tests.len() as f64;
+            .sum::<f64>()
+            / self.memory_tests.len() as f64;
 
         // Consolidation rate: improvement from short to long term
-        let short_term_acc = if short_term.is_empty() { 0.0 } else {
-            short_term.iter()
+        let short_term_acc = if short_term.is_empty() {
+            0.0
+        } else {
+            short_term
+                .iter()
                 .map(|t| t.items_recalled as f64 / t.items_presented as f64)
-                .sum::<f64>() / short_term.len() as f64
+                .sum::<f64>()
+                / short_term.len() as f64
         };
 
         let consolidation_rate = if short_term_acc > 0.0 {
@@ -467,7 +493,9 @@ impl IntelligenceQuantifier {
         }
 
         // Transfer efficiency: accuracy on different domain
-        let cross_domain: Vec<_> = self.generalization_tests.iter()
+        let cross_domain: Vec<_> = self
+            .generalization_tests
+            .iter()
             .filter(|t| t.training_domain != t.test_domain)
             .collect();
 
@@ -478,16 +506,22 @@ impl IntelligenceQuantifier {
         };
 
         // Novel accuracy: all test results
-        let novel_accuracy = self.generalization_tests.iter()
+        let novel_accuracy = self
+            .generalization_tests
+            .iter()
             .map(|t| t.accuracy)
-            .sum::<f64>() / self.generalization_tests.len() as f64;
+            .sum::<f64>()
+            / self.generalization_tests.len() as f64;
 
         // Abstraction: variance in performance across domains
         // Lower variance = better abstraction (consistent across domains)
         let mean = novel_accuracy;
-        let variance = self.generalization_tests.iter()
+        let variance = self
+            .generalization_tests
+            .iter()
             .map(|t| (t.accuracy - mean).powi(2))
-            .sum::<f64>() / self.generalization_tests.len() as f64;
+            .sum::<f64>()
+            / self.generalization_tests.len() as f64;
         let abstraction = 1.0 - variance.sqrt().min(1.0);
 
         let score = transfer_efficiency * 40.0 + novel_accuracy * 35.0 + abstraction * 25.0;
@@ -514,7 +548,8 @@ impl IntelligenceQuantifier {
         // Response time: average time between learning steps
         let times: Vec<Instant> = self.learning_history.iter().map(|(t, _)| *t).collect();
         let avg_interval = if times.len() > 1 {
-            let total: u64 = times.windows(2)
+            let total: u64 = times
+                .windows(2)
                 .map(|w| w[1].duration_since(w[0]).as_millis() as u64)
                 .sum();
             total as f64 / (times.len() - 1) as f64
@@ -527,18 +562,22 @@ impl IntelligenceQuantifier {
         let mut drops = 0;
         let mut recoveries = 0;
         for i in 1..values.len() {
-            if values[i] < values[i-1] - 0.1 {
+            if values[i] < values[i - 1] - 0.1 {
                 drops += 1;
                 // Check if we recover in next 5 steps
-                for j in (i+1)..values.len().min(i+6) {
-                    if values[j] >= values[i-1] {
+                for j in (i + 1)..values.len().min(i + 6) {
+                    if values[j] >= values[i - 1] {
                         recoveries += 1;
                         break;
                     }
                 }
             }
         }
-        let recovery_accuracy = if drops > 0 { recoveries as f64 / drops as f64 } else { 1.0 };
+        let recovery_accuracy = if drops > 0 {
+            recoveries as f64 / drops as f64
+        } else {
+            1.0
+        };
 
         // Plasticity: rate of change in performance
         let changes: Vec<f64> = values.windows(2).map(|w| (w[1] - w[0]).abs()).collect();
@@ -577,20 +616,26 @@ impl IntelligenceQuantifier {
             1.0
         } else {
             let mean = learning_values.iter().sum::<f64>() / learning_values.len() as f64;
-            learning_values.iter().map(|v| (v - mean).powi(2)).sum::<f64>() / learning_values.len() as f64
+            learning_values
+                .iter()
+                .map(|v| (v - mean).powi(2))
+                .sum::<f64>()
+                / learning_values.len() as f64
         };
         let consistency = 1.0 - learning_variance.sqrt().min(1.0);
 
         // Logical coherence: correlation between Φ and learning
-        let logical_coherence = if phi_values.len() == learning_values.len() && !phi_values.is_empty() {
-            correlation(&phi_values, &learning_values).abs()
-        } else {
-            0.5 // Default assumption
-        };
+        let logical_coherence =
+            if phi_values.len() == learning_values.len() && !phi_values.is_empty() {
+                correlation(&phi_values, &learning_values).abs()
+            } else {
+                0.5 // Default assumption
+            };
 
         // Emotional coherence: smoothness of Φ transitions
         let emotional_coherence = if phi_values.len() > 1 {
-            let transitions: Vec<f64> = phi_values.windows(2)
+            let transitions: Vec<f64> = phi_values
+                .windows(2)
                 .map(|w| (w[1] - w[0]).abs() / (w[0].abs() + 1.0))
                 .collect();
             let avg_transition = transitions.iter().sum::<f64>() / transitions.len() as f64;
@@ -615,13 +660,18 @@ impl IntelligenceQuantifier {
 
         // vs. Simple NN (baseline ~30)
         let simple_nn_baseline = 30.0;
-        let vs_simple_nn = (metrics.phi_level.score + metrics.learning.score) / 2.0 / simple_nn_baseline * 100.0;
+        let vs_simple_nn =
+            (metrics.phi_level.score + metrics.learning.score) / 2.0 / simple_nn_baseline * 100.0;
 
         // vs. Transformer (baseline ~70)
         let transformer_baseline = 70.0;
-        let overall = (metrics.phi_level.score + metrics.learning.score +
-                      metrics.memory.score + metrics.generalization.score +
-                      metrics.adaptability.score + metrics.coherence.score) / 6.0;
+        let overall = (metrics.phi_level.score
+            + metrics.learning.score
+            + metrics.memory.score
+            + metrics.generalization.score
+            + metrics.adaptability.score
+            + metrics.coherence.score)
+            / 6.0;
         let vs_transformer = overall / transformer_baseline * 100.0;
 
         // Percentile rank (sigmoid curve)
@@ -645,9 +695,12 @@ fn correlation(x: &[f64], y: &[f64]) -> f64 {
     let x_mean = x.iter().sum::<f64>() / n;
     let y_mean = y.iter().sum::<f64>() / n;
 
-    let covariance: f64 = x.iter().zip(y.iter())
+    let covariance: f64 = x
+        .iter()
+        .zip(y.iter())
         .map(|(&xi, &yi)| (xi - x_mean) * (yi - y_mean))
-        .sum::<f64>() / n;
+        .sum::<f64>()
+        / n;
 
     let x_std = (x.iter().map(|xi| (xi - x_mean).powi(2)).sum::<f64>() / n).sqrt();
     let y_std = (y.iter().map(|yi| (yi - y_mean).powi(2)).sum::<f64>() / n).sqrt();
@@ -687,8 +740,8 @@ mod tests {
         let mut quantifier = IntelligenceQuantifier::new(config);
 
         // Record memory tests
-        quantifier.record_memory_test(7, 6, 500);   // Short-term
-        quantifier.record_memory_test(10, 8, 500);  // Short-term
+        quantifier.record_memory_test(7, 6, 500); // Short-term
+        quantifier.record_memory_test(10, 8, 500); // Short-term
         quantifier.record_memory_test(7, 3, 120000); // Long-term
 
         let assessment = quantifier.assess();

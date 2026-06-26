@@ -1,6 +1,6 @@
-//! # RuVix Symmetric Multi-Processing (SMP) Support
+//! # `RuVix` Symmetric Multi-Processing (SMP) Support
 //!
-//! This crate provides symmetric multi-processing primitives for the RuVix
+//! This crate provides symmetric multi-processing primitives for the `RuVix`
 //! Cognition Kernel as specified in ADR-087 Phase C. It supports up to 256 CPUs
 //! with efficient per-CPU data structures and synchronization primitives.
 //!
@@ -31,7 +31,7 @@
 //! 2. Primary initializes [`CpuTopology`] and marks itself as `Online`
 //! 3. Secondary CPUs are released from spin-table or PSCI
 //! 4. Each secondary CPU:
-//!    a. Reads its CPU ID from MPIDR_EL1
+//!    a. Reads its CPU ID from `MPIDR_EL1`
 //!    b. Initializes per-CPU data
 //!    c. Transitions: `Offline` -> `Booting` -> `Online`
 //! 5. Primary waits for all secondaries using WFE/SEV
@@ -66,8 +66,8 @@
 //!
 //! Most unsafe code is isolated to:
 //! - Memory barrier inline assembly ([`barriers`] module)
-//! - SpinLock internal atomics ([`SpinLock`])
-//! - MPIDR_EL1 register access ([`current_cpu`])
+//! - `SpinLock` internal atomics ([`SpinLock`])
+//! - `MPIDR_EL1` register access ([`current_cpu`])
 //!
 //! ## Features
 //!
@@ -82,6 +82,10 @@
 #![warn(clippy::pedantic)]
 #![allow(clippy::must_use_candidate)]
 #![allow(clippy::module_name_repetitions)]
+// CPU topology: CPU IDs are u8 by design (MAX_CPUS = 256, so IDs are 0..=255).
+// Casts of in-range CPU indices to u8 are lossless; the cast in the out-of-range
+// error path only records a diagnostic value. Casts are intentional, not bugs.
+#![allow(clippy::cast_possible_truncation)]
 
 #[cfg(feature = "alloc")]
 extern crate alloc;
@@ -96,9 +100,9 @@ mod percpu;
 mod spinlock;
 mod topology;
 
-pub use cpu::{cpu_count, cpu_online, current_cpu, CpuId, CpuState, MAX_CPUS};
-pub use ipi::{send_ipi, IpiMessage, IpiTarget};
-pub use percpu::PerCpu;
+pub use cpu::{cpu_count, cpu_online, current_cpu, set_cpu_count, CpuId, CpuState, MAX_CPUS};
+pub use ipi::{send_ipi, IpiHandler, IpiMessage, IpiStats, IpiTarget};
+pub use percpu::{CacheAligned, PerCpu};
 pub use spinlock::{SpinLock, SpinLockGuard};
 pub use topology::CpuTopology;
 

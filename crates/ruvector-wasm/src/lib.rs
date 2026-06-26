@@ -1,6 +1,8 @@
 //! WASM bindings for Ruvector
 //!
 //! This module provides browser bindings for the Ruvector vector database.
+
+#![allow(dead_code, unused_imports, unused_variables)]
 //!
 //! Features:
 //! - VectorDB API (insert, insert_batch, search, get, delete, len, is_empty)

@@ -103,8 +103,8 @@ impl Domain for StrangeLoopDomain {
         } else {
             v[7] = 1.0;
         }
-        for i in 8..64 {
-            v[i] = (score * i as f32 * std::f32::consts::PI / 64.0).sin().abs() * 0.5;
+        for (i, slot) in v.iter_mut().enumerate().take(64).skip(8) {
+            *slot = (score * i as f32 * std::f32::consts::PI / 64.0).sin().abs() * 0.5;
         }
         DomainEmbedding::new(v, self.id.clone())
     }

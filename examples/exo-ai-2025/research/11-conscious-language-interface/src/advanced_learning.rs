@@ -20,7 +20,8 @@ use std::time::Instant;
 pub struct AdaptiveLRController {
     /// Current learning rate
     pub current_lr: f32,
-    /// Base learning rate
+    /// Base learning rate (reference value; retained for controller state completeness)
+    #[allow(dead_code)]
     base_lr: f32,
     /// Minimum learning rate
     min_lr: f32,
@@ -71,7 +72,11 @@ impl AdaptiveLRController {
             let mean = recent.iter().sum::<f32>() / recent.len() as f32;
 
             // Coefficient of variation
-            let cv = if mean > 1e-6 { variance.sqrt() / mean } else { 0.0 };
+            let cv = if mean > 1e-6 {
+                variance.sqrt() / mean
+            } else {
+                0.0
+            };
 
             // Stability threshold: CV < 0.2 is stable
             if cv < 0.2 {
@@ -153,10 +158,10 @@ pub struct STDPGradientModulator {
 impl STDPGradientModulator {
     pub fn new() -> Self {
         Self {
-            tau_plus: 20.0,   // 20ms LTP window
-            tau_minus: 20.0,  // 20ms LTD window
-            a_plus: 1.0,      // LTP amplitude
-            a_minus: 0.5,     // LTD amplitude (asymmetric for stability)
+            tau_plus: 20.0,  // 20ms LTP window
+            tau_minus: 20.0, // 20ms LTD window
+            a_plus: 1.0,     // LTP amplitude
+            a_minus: 0.5,    // LTD amplitude (asymmetric for stability)
             spike_times: HashMap::new(),
             modulation_history: Vec::new(),
         }
@@ -196,7 +201,12 @@ impl STDPGradientModulator {
     }
 
     /// Modulate gradient based on spike timing
-    pub fn modulate_gradient(&mut self, gradient: f32, pre_neurons: &[u32], post_neurons: &[u32]) -> f32 {
+    pub fn modulate_gradient(
+        &mut self,
+        gradient: f32,
+        pre_neurons: &[u32],
+        post_neurons: &[u32],
+    ) -> f32 {
         if pre_neurons.is_empty() || post_neurons.is_empty() {
             return gradient;
         }
@@ -212,7 +222,11 @@ impl STDPGradientModulator {
             }
         }
 
-        let avg_mod = if count > 0 { total_mod / count as f32 } else { 0.0 };
+        let avg_mod = if count > 0 {
+            total_mod / count as f32
+        } else {
+            0.0
+        };
 
         // Apply modulation: gradient * (1 + modulation)
         let modulated = gradient * (1.0 + avg_mod);
@@ -342,7 +356,8 @@ impl PatternConsolidator {
         let quality_threshold = 0.7;
         let min_accesses = 2;
 
-        let to_consolidate: Vec<_> = self.short_term
+        let to_consolidate: Vec<_> = self
+            .short_term
             .iter()
             .filter(|p| p.quality >= quality_threshold && p.access_count >= min_accesses)
             .cloned()
@@ -381,7 +396,9 @@ impl PatternConsolidator {
 
     /// Find similar patterns
     pub fn find_similar(&self, embedding: &[f32], k: usize) -> Vec<&ConsolidationPattern> {
-        let mut all_patterns: Vec<_> = self.long_term.iter()
+        let mut all_patterns: Vec<_> = self
+            .long_term
+            .iter()
             .chain(self.short_term.iter())
             .map(|p| (p, cosine_similarity(&p.embedding, embedding)))
             .collect();
@@ -394,7 +411,9 @@ impl PatternConsolidator {
     fn prune_short_term(&mut self) {
         // Remove lowest quality patterns
         self.short_term.sort_by(|a, b| {
-            b.quality.partial_cmp(&a.quality).unwrap_or(std::cmp::Ordering::Equal)
+            b.quality
+                .partial_cmp(&a.quality)
+                .unwrap_or(std::cmp::Ordering::Equal)
         });
         self.short_term.truncate(self.max_short_term);
     }
@@ -404,7 +423,9 @@ impl PatternConsolidator {
         self.long_term.sort_by(|a, b| {
             let score_a = a.quality * a.access_count as f32;
             let score_b = b.quality * b.access_count as f32;
-            score_b.partial_cmp(&score_a).unwrap_or(std::cmp::Ordering::Equal)
+            score_b
+                .partial_cmp(&score_a)
+                .unwrap_or(std::cmp::Ordering::Equal)
         });
         self.long_term.truncate(self.max_long_term);
     }
@@ -460,7 +481,8 @@ impl EWCController {
         let fisher: Vec<f32> = gradients.iter().map(|g| g * g).collect();
 
         self.fisher_matrices.insert(self.current_task, fisher);
-        self.optimal_weights.insert(self.current_task, weights.to_vec());
+        self.optimal_weights
+            .insert(self.current_task, weights.to_vec());
 
         self.current_task += 1;
     }
@@ -564,7 +586,12 @@ impl HybridInferenceEngine {
     }
 
     /// Inference with optional online learning
-    pub fn infer(&mut self, input: &[f32], weights: &mut [Vec<f32>], target: Option<&[f32]>) -> Vec<f32> {
+    pub fn infer(
+        &mut self,
+        input: &[f32],
+        weights: &mut [Vec<f32>],
+        target: Option<&[f32]>,
+    ) -> Vec<f32> {
         let start = Instant::now();
 
         // Forward pass
@@ -619,9 +646,16 @@ impl HybridInferenceEngine {
         activation
     }
 
-    fn online_update(&self, _input: &[f32], output: &[f32], target: &[f32], weights: &mut [Vec<f32>]) {
+    fn online_update(
+        &self,
+        _input: &[f32],
+        output: &[f32],
+        target: &[f32],
+        weights: &mut [Vec<f32>],
+    ) {
         // Simple online gradient descent
-        let error: Vec<f32> = output.iter()
+        let error: Vec<f32> = output
+            .iter()
             .zip(target.iter())
             .map(|(&o, &t)| t - o)
             .collect();
@@ -651,7 +685,8 @@ impl HybridInferenceEngine {
         // Blend output with similar pattern
         if let Some(pattern) = best_pattern {
             let blend = 0.1; // 10% pattern influence
-            output.iter()
+            output
+                .iter()
                 .zip(pattern.iter())
                 .map(|(&o, &p)| o * (1.0 - blend) + p * blend)
                 .collect()
@@ -794,9 +829,12 @@ impl CapabilityAutoTuner {
     fn random_config(&self) -> TunerConfig {
         TunerConfig {
             lora_rank: self.search_space.lora_ranks[rand_idx(self.search_space.lora_ranks.len())],
-            learning_rate: self.search_space.learning_rates[rand_idx(self.search_space.learning_rates.len())],
-            batch_size: self.search_space.batch_sizes[rand_idx(self.search_space.batch_sizes.len())],
-            hidden_dim: self.search_space.hidden_dims[rand_idx(self.search_space.hidden_dims.len())],
+            learning_rate: self.search_space.learning_rates
+                [rand_idx(self.search_space.learning_rates.len())],
+            batch_size: self.search_space.batch_sizes
+                [rand_idx(self.search_space.batch_sizes.len())],
+            hidden_dim: self.search_space.hidden_dims
+                [rand_idx(self.search_space.hidden_dims.len())],
         }
     }
 
@@ -808,19 +846,23 @@ impl CapabilityAutoTuner {
 
         match mutation {
             0 => TunerConfig {
-                lora_rank: self.search_space.lora_ranks[rand_idx(self.search_space.lora_ranks.len())],
+                lora_rank: self.search_space.lora_ranks
+                    [rand_idx(self.search_space.lora_ranks.len())],
                 ..*best
             },
             1 => TunerConfig {
-                learning_rate: self.search_space.learning_rates[rand_idx(self.search_space.learning_rates.len())],
+                learning_rate: self.search_space.learning_rates
+                    [rand_idx(self.search_space.learning_rates.len())],
                 ..*best
             },
             2 => TunerConfig {
-                batch_size: self.search_space.batch_sizes[rand_idx(self.search_space.batch_sizes.len())],
+                batch_size: self.search_space.batch_sizes
+                    [rand_idx(self.search_space.batch_sizes.len())],
                 ..*best
             },
             _ => TunerConfig {
-                hidden_dim: self.search_space.hidden_dims[rand_idx(self.search_space.hidden_dims.len())],
+                hidden_dim: self.search_space.hidden_dims
+                    [rand_idx(self.search_space.hidden_dims.len())],
                 ..*best
             },
         }
@@ -848,7 +890,7 @@ fn cosine_similarity(a: &[f32], b: &[f32]) -> f32 {
 fn rand_idx(max: usize) -> usize {
     use std::cell::Cell;
     thread_local! {
-        static SEED: Cell<u64> = Cell::new(0xFEEDFACE12345678);
+        static SEED: Cell<u64> = const { Cell::new(0xFEEDFACE12345678) };
     }
 
     SEED.with(|seed| {
@@ -885,17 +927,25 @@ mod tests {
         // Record spikes with causal timing (pre before post)
         // Use absolute timestamps that won't get cleaned up (within 100ms window)
         let base_time = 100_000_000u64; // 100ms base
-        stdp.record_spike(1, base_time);           // pre at t=100ms
+        stdp.record_spike(1, base_time); // pre at t=100ms
         stdp.record_spike(2, base_time + 5_000_000); // post at t=105ms
 
         let modulation = stdp.compute_modulation(1, 2);
         // Should be LTP (positive) when post fires after pre
-        assert!(modulation > 0.0, "Expected positive modulation (LTP), got {}", modulation);
+        assert!(
+            modulation > 0.0,
+            "Expected positive modulation (LTP), got {}",
+            modulation
+        );
 
         // Anti-causal timing (pre fires after post)
         let anti_modulation = stdp.compute_modulation(2, 1);
         // Should be LTD (negative) when pre fires after post
-        assert!(anti_modulation < 0.0, "Expected negative modulation (LTD), got {}", anti_modulation);
+        assert!(
+            anti_modulation < 0.0,
+            "Expected negative modulation (LTD), got {}",
+            anti_modulation
+        );
     }
 
     #[test]

@@ -131,8 +131,8 @@ impl FeatureExtractor {
 
         // Compute deterministic embedding from event data
         let mut hasher = Sha256::new();
-        hasher.update(&event.data_hash);
-        hasher.update(&event.sequence.to_le_bytes());
+        hasher.update(event.data_hash);
+        hasher.update(event.sequence.to_le_bytes());
         let hash: [u8; 32] = hasher.finalize().into();
 
         // Generate embedding components from hash
@@ -182,8 +182,8 @@ impl FeatureExtractor {
             source_sequence: embedding.source_sequence,
             coherence: embedding.coherence,
         };
-        let bytes = msg.to_bytes();
-        kernel.queue_send(self.output_queue, &bytes, MsgPriority::Normal)?;
+        let _bytes = msg.to_bytes();
+        kernel.queue_send(self.output_queue, &_bytes, MsgPriority::Normal)?;
 
         self.events_processed += 1;
 
@@ -217,7 +217,7 @@ impl FeatureExtractor {
             }
 
             // Receive from queue (simulated - would block in real kernel)
-            let bytes = kernel.queue_recv(self.input_queue, 1_000_000)?;
+            let _bytes = kernel.queue_recv(self.input_queue, 1_000_000)?;
 
             // In real implementation, parse the message
             // For simulation, we'll use pending events instead

@@ -109,10 +109,10 @@ impl ForwardPushPpr {
             for (v, w) in neighbors {
                 let contribution = push_amount * w / d_u;
                 residual[v as usize] += contribution;
-                if residual[v as usize] >= threshold * out_weights[v as usize].max(1.0) {
-                    if !queue.contains(&v) {
-                        queue.push(v);
-                    }
+                if residual[v as usize] >= threshold * out_weights[v as usize].max(1.0)
+                    && !queue.contains(&v)
+                {
+                    queue.push(v);
                 }
             }
         }

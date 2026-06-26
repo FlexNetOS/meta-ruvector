@@ -4,7 +4,7 @@
 // cognitive superposition into definite conscious states. Implements
 // continuous weak measurement, Zeno effect, and entropy dynamics.
 
-use crate::quantum_cognitive_state::{Amplitude, CognitiveState, SuperpositionBuilder};
+use crate::quantum_cognitive_state::CognitiveState;
 use num_complex::Complex64;
 use std::collections::VecDeque;
 
@@ -28,7 +28,7 @@ impl AttentionOperator {
     /// * `focus_weights` - Attention distribution across basis states
     /// * `frequency_hz` - Attention refresh rate (4-10 Hz typical for consciousness)
     pub fn new(strength: f64, focus_weights: Vec<f64>, frequency_hz: f64) -> Self {
-        assert!(strength >= 0.0 && strength <= 1.0);
+        assert!((0.0..=1.0).contains(&strength));
         assert!(frequency_hz > 0.0);
 
         AttentionOperator {
@@ -348,6 +348,7 @@ impl ConsciousnessThreshold {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::quantum_cognitive_state::SuperpositionBuilder;
 
     #[test]
     fn test_full_attention_collapse() {

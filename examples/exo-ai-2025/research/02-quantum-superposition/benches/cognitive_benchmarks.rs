@@ -1,5 +1,4 @@
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
-use num_complex::Complex64;
 use quantum_cognition::{
     interference_pattern, tensor_product, AttentionOperator, CognitiveState,
     InterferenceDecisionMaker, SuperpositionBuilder,
@@ -93,7 +92,7 @@ fn bench_measurements(c: &mut Criterion) {
             b.iter(|| black_box(state.measure()));
         });
 
-        let observable: Vec<f64> = (0..*dim).map(|i| (i as f64) / (*dim as f64)).collect();
+        let observable: Vec<f64> = (0..dim).map(|i| (i as f64) / (dim as f64)).collect();
         group.bench_with_input(
             BenchmarkId::new("weak", dim),
             &(state, observable),
@@ -111,7 +110,7 @@ fn bench_tensor_products(c: &mut Criterion) {
     let mut group = c.benchmark_group("tensor_products");
 
     for dim in [5, 10, 20].iter() {
-        let labels: Vec<String> = (0..dim).map(|i| format!("state_{}", i)).collect();
+        let labels: Vec<String> = (0..*dim).map(|i| format!("state_{}", i)).collect();
         let state1 = CognitiveState::uniform(*dim, labels.clone());
         let state2 = CognitiveState::uniform(*dim, labels);
 
@@ -229,7 +228,7 @@ fn bench_attention(c: &mut Criterion) {
     let mut group = c.benchmark_group("attention");
 
     for dim in [5, 10, 20, 50].iter() {
-        let labels: Vec<String> = (0..dim).map(|i| format!("concept_{}", i)).collect();
+        let labels: Vec<String> = (0..*dim).map(|i| format!("concept_{}", i)).collect();
         let state = CognitiveState::uniform(*dim, labels);
 
         // Full attention (projective measurement)

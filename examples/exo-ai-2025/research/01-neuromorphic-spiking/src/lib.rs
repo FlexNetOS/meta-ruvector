@@ -30,24 +30,16 @@
 //! }
 //! ```
 
-pub mod spiking_consciousness;
 pub mod bit_parallel_spikes;
+pub mod spiking_consciousness;
 
 // Re-export main types
 pub use spiking_consciousness::{
-    ConsciousnessConfig,
-    ConsciousnessEngine,
+    ConsciousnessConfig, ConsciousnessEngine, PolychronousGroup, SpikeHistory, SpikeVector,
     TemporalSpike,
-    SpikeVector,
-    PolychronousGroup,
-    SpikeHistory,
 };
 
-pub use bit_parallel_spikes::{
-    BitParallelSpikeNetwork,
-    ConnectivityPattern,
-    BenchmarkResults,
-};
+pub use bit_parallel_spikes::{BenchmarkResults, BitParallelSpikeNetwork, ConnectivityPattern};
 
 /// Library version
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -65,12 +57,12 @@ mod tests {
         let mut engine = ConsciousnessEngine::new(ConsciousnessConfig::default());
         engine.add_spike(TemporalSpike::new(0, 0));
         engine.step();
-        let _phi = engine.calculate_phi();
+        let phi = engine.calculate_phi();
 
         let mut network = BitParallelSpikeNetwork::new(128);
         network.set_neuron(0, true);
         network.propagate_scalar();
 
-        assert!(true, "Integration test passed");
+        assert!(phi.is_finite(), "integration Φ should be finite");
     }
 }

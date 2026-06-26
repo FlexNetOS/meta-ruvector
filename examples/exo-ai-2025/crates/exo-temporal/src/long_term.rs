@@ -431,7 +431,7 @@ mod tests {
         let mut temporal_pattern =
             TemporalPattern::from_embedding(vec![1.0, 2.0, 3.0], Metadata::new());
         temporal_pattern.pattern.salience = 0.15; // Just above minimum
-        let id = temporal_pattern.pattern.id;
+        let _id = temporal_pattern.pattern.id;
 
         store.integrate(temporal_pattern);
         assert_eq!(store.len(), 1);

@@ -275,6 +275,10 @@ impl UdpSocket {
     ///
     /// This doesn't actually establish a connection (UDP is connectionless),
     /// but sets the default destination for `send()`.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`NetError::InvalidPort`] if `remote_port` is zero.
     pub fn connect(&mut self, remote_ip: Ipv4Addr, remote_port: u16) -> NetResult<()> {
         if remote_port == 0 {
             return Err(NetError::InvalidPort);
@@ -491,6 +495,11 @@ impl UdpDatagramBuilder {
     /// Builds the datagram with the given payload.
     ///
     /// Returns the total size written to the buffer.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`NetError::BufferTooSmall`] if `buf` cannot hold the UDP header
+    /// and payload.
     pub fn build(&self, payload: &[u8], buf: &mut [u8]) -> NetResult<usize> {
         let total_len = UDP_HEADER_SIZE + payload.len();
         if buf.len() < total_len {
@@ -608,7 +617,9 @@ mod tests {
         let dst_ip = Ipv4Addr::LOCALHOST;
 
         // Zero checksum should always verify as valid (means no checksum)
-        assert!(UdpHeader::verify_checksum(src_ip, dst_ip, &header, &payload));
+        assert!(UdpHeader::verify_checksum(
+            src_ip, dst_ip, &header, &payload
+        ));
     }
 
     #[test]

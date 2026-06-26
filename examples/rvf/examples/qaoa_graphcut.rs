@@ -86,8 +86,8 @@ fn solve_mincut_classical(
         };
 
     // Unary edges: source/sink connections based on lambda sign
-    for i in 0..num_nodes {
-        let (p0, p1) = (lambda[i].max(0.0), (-lambda[i]).max(0.0));
+    for (i, &lam_i) in lambda.iter().enumerate().take(num_nodes) {
+        let (p0, p1) = (lam_i.max(0.0), (-lam_i).max(0.0));
         if p0 > 1e-12 {
             add_edge(&mut adj, &mut caps, s, i, p0);
         }
@@ -268,6 +268,8 @@ struct TestCase {
     name: &'static str,
 }
 
+// example test-case builder; grouping args adds no clarity
+#[allow(clippy::too_many_arguments)]
 fn make_1d_chain(
     num_nodes: usize,
     fg_start: usize,

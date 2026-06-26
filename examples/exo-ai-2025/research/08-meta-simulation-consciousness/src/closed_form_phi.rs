@@ -215,8 +215,8 @@ impl ClosedFormPhi {
                 }
             } else {
                 // Uniform if no outgoing edges
-                for j in 0..n {
-                    stochastic[i][j] = 1.0 / n as f64;
+                for cell in stochastic[i].iter_mut() {
+                    *cell = 1.0 / n as f64;
                 }
             }
         }
@@ -275,6 +275,8 @@ impl ClosedFormPhi {
         let mut on_stack = vec![false; n];
         let mut sccs = Vec::new();
 
+        // Mathematical Tarjan SCC inner function requires all state variables as explicit parameters
+        #[allow(clippy::too_many_arguments)]
         fn strongconnect(
             v: usize,
             adjacency: &[Vec<f64>],
@@ -512,8 +514,8 @@ mod tests {
 
         // Fully connected (degenerate, high CEI)
         let mut full = vec![vec![1.0; 4]; 4];
-        for i in 0..4 {
-            full[i][i] = 0.0;
+        for (i, row) in full.iter_mut().enumerate() {
+            row[i] = 0.0;
         }
 
         let cei_full = calc.compute_cei(&full, 1.0);

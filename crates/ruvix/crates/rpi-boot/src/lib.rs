@@ -81,9 +81,9 @@ pub mod spin_table;
 pub use config::{parse_cmdline, BootConfig, ConfigError};
 pub use dtb::{parse_dtb_header, DtbHeader, DtbInfo};
 pub use early_uart::{early_print, early_uart_init};
-pub use spin_table::{get_cpu_id, wake_secondary_cpus, SpinTable, CpuState};
+pub use spin_table::{get_cpu_id, wake_secondary_cpus, CpuState, SpinTable};
 
-use ruvix_bcm2711::{GPIO_BASE, MINI_UART_BASE, MAILBOX_BASE};
+use ruvix_bcm2711::{GPIO_BASE, MAILBOX_BASE, MINI_UART_BASE};
 
 // =============================================================================
 // Boot Constants

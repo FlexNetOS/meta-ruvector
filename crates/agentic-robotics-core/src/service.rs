@@ -7,8 +7,7 @@ use std::sync::Arc;
 use tracing::debug;
 
 /// Service request handler
-pub type ServiceHandler<Req, Res> =
-    Arc<dyn Fn(Req) -> Result<Res> + Send + Sync + 'static>;
+pub type ServiceHandler<Req, Res> = Arc<dyn Fn(Req) -> Result<Res> + Send + Sync + 'static>;
 
 /// Queryable service (RPC)
 pub struct Queryable<Req: Message, Res: Message> {
@@ -85,7 +84,9 @@ impl<Req: Message, Res: Message> Service<Req, Res> {
     /// Call the service
     pub async fn call(&self, _request: Req) -> Result<Res> {
         // In real implementation, this would call via Zenoh
-        Err(Error::Other(anyhow::anyhow!("Service call not implemented")))
+        Err(Error::Other(anyhow::anyhow!(
+            "Service call not implemented"
+        )))
     }
 
     /// Get service name

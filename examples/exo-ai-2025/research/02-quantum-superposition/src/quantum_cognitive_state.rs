@@ -5,7 +5,6 @@
 // as complex-valued amplitude vectors in Hilbert space.
 
 use num_complex::Complex64;
-use std::ops::{Add, Mul};
 
 /// Complex amplitude representing a cognitive state component
 pub type Amplitude = Complex64;
@@ -232,6 +231,12 @@ pub struct SuperpositionBuilder {
     labels: Vec<String>,
 }
 
+impl Default for SuperpositionBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SuperpositionBuilder {
     pub fn new() -> Self {
         SuperpositionBuilder {
@@ -292,9 +297,6 @@ pub fn tensor_product(state1: &CognitiveState, state2: &CognitiveState) -> Cogni
 ///
 /// V = (P_max - P_min) / (P_max + P_min) ∈ [0, 1]
 pub fn interference_visibility(amplitude1: Amplitude, amplitude2: Amplitude) -> f64 {
-    let p1 = amplitude1.norm_sqr();
-    let p2 = amplitude2.norm_sqr();
-
     let p_max = (amplitude1 + amplitude2).norm_sqr();
     let p_min = (amplitude1 - amplitude2).norm_sqr();
 

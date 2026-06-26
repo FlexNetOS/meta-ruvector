@@ -180,9 +180,9 @@ mod derivation_tests {
     #[test]
     fn test_derivation_tree_add_root() {
         let tree: DerivationTree<64> = DerivationTree::new();
-        let handle = CapHandle::new(0, 0);
+        let _handle = CapHandle::new(0, 0);
 
-        // tree.add_root(handle).unwrap();
+        // tree.add_root(_handle).unwrap();
         // assert_eq!(tree.len(), 1);
         // assert!(tree.is_valid(handle));
 

@@ -1,4 +1,4 @@
-//! Path parsing utilities for the RuVix filesystem.
+//! Path parsing utilities for the `RuVix` filesystem.
 //!
 //! This module provides path manipulation utilities compatible with `no_std`
 //! environments. Paths are always forward-slash separated and support
@@ -24,7 +24,7 @@ impl Path {
     #[must_use]
     pub fn new<S: AsRef<str> + ?Sized>(s: &S) -> &Self {
         // SAFETY: Path is a transparent wrapper around str
-        unsafe { &*(s.as_ref() as *const str as *const Self) }
+        unsafe { &*(core::ptr::from_ref::<str>(s.as_ref()) as *const Self) }
     }
 
     /// Returns the path as a string slice.
@@ -136,6 +136,12 @@ impl Path {
     }
 
     /// Validates the path for filesystem use.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`FsError::PathTooLong`] if the path exceeds the maximum allowed length.
+    /// Returns [`FsError::NameTooLong`] if any path component exceeds the maximum name length.
+    /// Returns [`FsError::InvalidFilename`] if any path component contains a null byte.
     pub fn validate(&self) -> FsResult<()> {
         if self.len() > MAX_PATH_LEN {
             return Err(FsError::PathTooLong);
@@ -331,7 +337,7 @@ impl<'a> PathComponent<'a> {
     }
 }
 
-impl<'a> fmt::Display for PathComponent<'a> {
+impl fmt::Display for PathComponent<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.as_str())
     }
@@ -396,14 +402,14 @@ impl<'a> Iterator for PathIter<'a> {
 /// Normalize a path by removing `.` and resolving `..`.
 #[cfg(feature = "alloc")]
 #[must_use]
+#[allow(dead_code)] // retained as part of the path utility API surface
 pub fn normalize_path(path: &Path) -> PathBuf {
     let mut result = alloc::vec::Vec::new();
     let is_absolute = path.is_absolute();
 
     for component in path.components() {
         match component {
-            PathComponent::RootDir => {}
-            PathComponent::CurDir => {}
+            PathComponent::RootDir | PathComponent::CurDir => {}
             PathComponent::ParentDir => {
                 if !result.is_empty() && result.last() != Some(&"..") {
                     result.pop();
@@ -441,6 +447,7 @@ pub fn normalize_path(path: &Path) -> PathBuf {
 
 /// Split a path into parent and filename.
 #[must_use]
+#[allow(dead_code)] // retained as part of the path utility API surface
 pub fn split_path(path: &Path) -> (Option<&Path>, Option<&str>) {
     (path.parent(), path.file_name())
 }

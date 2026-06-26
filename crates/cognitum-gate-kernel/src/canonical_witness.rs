@@ -614,9 +614,7 @@ impl CanonicalPartition {
         for i in 0..32 {
             self.side[i] = !self.side[i];
         }
-        let tmp = self.cardinality_a;
-        self.cardinality_a = self.cardinality_b;
-        self.cardinality_b = tmp;
+        core::mem::swap(&mut self.cardinality_a, &mut self.cardinality_b);
     }
 
     /// Recount cardinalities from the bitset.
@@ -763,7 +761,8 @@ mod tests {
 
         // Single zero byte
         let h1 = fnv1a_hash(&[0]);
-        let expected = 0x811c9dc5u32 ^ 0;
+        // XOR with the single zero byte is identity for FNV-1a.
+        let expected = 0x811c9dc5u32;
         let expected = expected.wrapping_mul(0x01000193);
         assert_eq!(u32::from_le_bytes(h1), expected);
 
@@ -797,7 +796,7 @@ mod tests {
 
         // The partition should be trivial since there is only one component
         let partition = cactus.canonical_partition();
-        partition.canonical_hash; // Just ensure it doesn't panic
+        let _ = partition.canonical_hash; // touch the field to ensure it is computed
     }
 
     #[test]
@@ -815,10 +814,10 @@ mod tests {
         // same canonical witness fragment.
         let build_tile = || {
             let mut tile = TileState::new(42);
-            tile.ingest_delta(&crate::delta::Delta::edge_add(0, 1, 100));
-            tile.ingest_delta(&crate::delta::Delta::edge_add(1, 2, 100));
-            tile.ingest_delta(&crate::delta::Delta::edge_add(2, 3, 200));
-            tile.ingest_delta(&crate::delta::Delta::edge_add(3, 0, 200));
+            let _ = tile.ingest_delta(&crate::delta::Delta::edge_add(0, 1, 100));
+            let _ = tile.ingest_delta(&crate::delta::Delta::edge_add(1, 2, 100));
+            let _ = tile.ingest_delta(&crate::delta::Delta::edge_add(2, 3, 200));
+            let _ = tile.ingest_delta(&crate::delta::Delta::edge_add(3, 0, 200));
             tile.tick(10);
             tile
         };

@@ -1,4 +1,4 @@
-//! Virtual Filesystem (VFS) layer for RuVix.
+//! Virtual Filesystem (VFS) layer for `RuVix`.
 //!
 //! This module provides the core VFS abstractions including the `FileSystem` trait,
 //! `Inode` operations, and mount table management.
@@ -48,7 +48,7 @@ impl MountId {
 }
 
 /// File type enumeration.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum FileType {
     /// Regular file.
     Regular,
@@ -65,6 +65,7 @@ pub enum FileType {
     /// Unix domain socket.
     Socket,
     /// Unknown file type.
+    #[default]
     Unknown,
 }
 
@@ -73,13 +74,13 @@ impl FileType {
     #[must_use]
     pub const fn to_mode(self) -> u32 {
         match self {
-            Self::Regular => 0o100000,
-            Self::Directory => 0o040000,
-            Self::Symlink => 0o120000,
-            Self::BlockDevice => 0o060000,
-            Self::CharDevice => 0o020000,
-            Self::Fifo => 0o010000,
-            Self::Socket => 0o140000,
+            Self::Regular => 0o100_000,
+            Self::Directory => 0o040_000,
+            Self::Symlink => 0o120_000,
+            Self::BlockDevice => 0o060_000,
+            Self::CharDevice => 0o020_000,
+            Self::Fifo => 0o010_000,
+            Self::Socket => 0o140_000,
             Self::Unknown => 0,
         }
     }
@@ -87,22 +88,16 @@ impl FileType {
     /// Create a `FileType` from mode bits.
     #[must_use]
     pub const fn from_mode(mode: u32) -> Self {
-        match mode & 0o170000 {
-            0o100000 => Self::Regular,
-            0o040000 => Self::Directory,
-            0o120000 => Self::Symlink,
-            0o060000 => Self::BlockDevice,
-            0o020000 => Self::CharDevice,
-            0o010000 => Self::Fifo,
-            0o140000 => Self::Socket,
+        match mode & 0o170_000 {
+            0o100_000 => Self::Regular,
+            0o040_000 => Self::Directory,
+            0o120_000 => Self::Symlink,
+            0o060_000 => Self::BlockDevice,
+            0o020_000 => Self::CharDevice,
+            0o010_000 => Self::Fifo,
+            0o140_000 => Self::Socket,
             _ => Self::Unknown,
         }
-    }
-}
-
-impl Default for FileType {
-    fn default() -> Self {
-        Self::Unknown
     }
 }
 
@@ -296,6 +291,11 @@ impl OpenFile {
     }
 
     /// Seek to a new position.
+    ///
+    /// # Errors
+    ///
+    /// This implementation always succeeds; future implementors may return
+    /// [`FsError::InvalidSeek`] if the resulting position is out of bounds.
     pub fn seek(&mut self, pos: SeekFrom, file_size: u64) -> FsResult<u64> {
         let new_pos = match pos {
             SeekFrom::Start(offset) => offset,
@@ -354,6 +354,11 @@ pub trait InodeOps {
     /// # Returns
     ///
     /// Number of bytes read, or error.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`FsError::IoError`] if the underlying storage read fails, or
+    /// [`FsError::EndOfFile`] if the offset is at or beyond the end of the file.
     fn read(&self, offset: u64, buf: &mut [u8]) -> FsResult<usize>;
 
     /// Write data to the file.
@@ -366,21 +371,55 @@ pub trait InodeOps {
     /// # Returns
     ///
     /// Number of bytes written, or error.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`FsError::ReadOnly`] if the filesystem or inode is read-only,
+    /// [`FsError::NoSpace`] if the device is full, or [`FsError::IoError`] if
+    /// the underlying storage write fails.
     fn write(&self, offset: u64, buf: &[u8]) -> FsResult<usize>;
 
     /// Truncate the file to the specified size.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`FsError::ReadOnly`] if the filesystem or inode is read-only, or
+    /// [`FsError::IoError`] if the underlying storage operation fails.
     fn truncate(&self, size: u64) -> FsResult<()>;
 
     /// Lookup a child by name (for directories).
+    ///
+    /// # Errors
+    ///
+    /// Returns [`FsError::NotFound`] if no child with `name` exists, or
+    /// [`FsError::NotADirectory`] if this inode is not a directory.
     fn lookup(&self, name: &str) -> FsResult<InodeId>;
 
     /// Create a new child inode (for directories).
+    ///
+    /// # Errors
+    ///
+    /// Returns [`FsError::AlreadyExists`] if a child named `name` already exists,
+    /// [`FsError::NotADirectory`] if this inode is not a directory, or
+    /// [`FsError::NoSpace`] if there is insufficient space to create the inode.
     fn create(&self, name: &str, file_type: FileType, mode: u32) -> FsResult<InodeId>;
 
     /// Remove a child by name (for directories).
+    ///
+    /// # Errors
+    ///
+    /// Returns [`FsError::NotFound`] if no child named `name` exists,
+    /// [`FsError::NotADirectory`] if this inode is not a directory, or
+    /// [`FsError::DirectoryNotEmpty`] if the target is a non-empty directory.
     fn unlink(&self, name: &str) -> FsResult<()>;
 
     /// Link an existing inode as a child (for directories).
+    ///
+    /// # Errors
+    ///
+    /// Returns [`FsError::AlreadyExists`] if a child named `name` already exists,
+    /// [`FsError::NotADirectory`] if this inode is not a directory, or
+    /// [`FsError::NotFound`] if `inode_id` does not refer to an existing inode.
     fn link(&self, name: &str, inode_id: InodeId) -> FsResult<()>;
 
     /// Read directory entries.
@@ -393,21 +432,49 @@ pub trait InodeOps {
     /// # Returns
     ///
     /// Number of entries read, or error.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`FsError::NotADirectory`] if this inode is not a directory, or
+    /// [`FsError::IoError`] if the underlying storage read fails.
     #[cfg(feature = "alloc")]
     fn readdir(&self, offset: usize, entries: &mut Vec<DirEntry>) -> FsResult<usize>;
 
     /// Read the target of a symbolic link.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`FsError::InvalidArgument`] if this inode is not a symbolic link,
+    /// or [`FsError::IoError`] if the link target cannot be read from storage.
     #[cfg(feature = "alloc")]
     fn readlink(&self) -> FsResult<String>;
 
     /// Create a symbolic link.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`FsError::AlreadyExists`] if a child named `name` already exists,
+    /// [`FsError::NotADirectory`] if this inode is not a directory, or
+    /// [`FsError::NoSpace`] if there is insufficient space to store the link.
     #[cfg(feature = "alloc")]
     fn symlink(&self, name: &str, target: &str) -> FsResult<InodeId>;
 
     /// Rename a child entry.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`FsError::NotFound`] if `old_name` does not exist in this directory,
+    /// [`FsError::AlreadyExists`] if `new_name` already exists in `new_dir` and
+    /// cannot be atomically replaced, or [`FsError::NotADirectory`] if this inode
+    /// or `new_dir` is not a directory.
     fn rename(&self, old_name: &str, new_dir: InodeId, new_name: &str) -> FsResult<()>;
 
     /// Sync file data to storage.
+    ///
+    /// # Errors
+    ///
+    /// The default implementation always succeeds. Implementors may return
+    /// [`FsError::IoError`] if flushing dirty data to the underlying device fails.
     fn sync(&self) -> FsResult<()> {
         Ok(())
     }
@@ -507,12 +574,28 @@ impl Default for Inode {
 /// This trait defines the operations that must be implemented by any filesystem.
 pub trait FileSystem {
     /// Mount the filesystem.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`FsError::IoError`] if the device cannot be accessed, or
+    /// [`FsError::InvalidArgument`] if the filesystem image is malformed.
     fn mount(&mut self) -> FsResult<()>;
 
     /// Unmount the filesystem.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`FsError::IoError`] if pending writes cannot be flushed to the
+    /// device before unmounting.
     fn unmount(&mut self) -> FsResult<()>;
 
     /// Get the root inode.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`FsError::IoError`] if the root inode cannot be read from the
+    /// underlying device, or [`FsError::InodeNotFound`] if the root inode is
+    /// missing (indicating a corrupt filesystem).
     fn root(&self) -> FsResult<InodeId>;
 
     /// Get the filesystem name.
@@ -531,34 +614,100 @@ pub trait FileSystem {
     fn block_size(&self) -> u32;
 
     /// Sync all pending writes.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`FsError::IoError`] if flushing dirty blocks to the underlying
+    /// block device fails.
     fn sync(&self) -> FsResult<()>;
 
     /// Lookup an inode by path from the root.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`FsError::NotFound`] if any component of `path` does not exist,
+    /// [`FsError::NotADirectory`] if a non-terminal path component is not a
+    /// directory, or [`FsError::InvalidPath`] if `path` is syntactically invalid.
     fn lookup_path(&self, path: &Path) -> FsResult<InodeId>;
 
     /// Get inode information.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`FsError::InodeNotFound`] if `inode_id` does not exist in this
+    /// filesystem, or [`FsError::IoError`] if the inode metadata cannot be read
+    /// from the underlying device.
     fn stat(&self, inode_id: InodeId) -> FsResult<Inode>;
 
     /// Read from a file.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`FsError::InodeNotFound`] if `inode_id` does not exist,
+    /// [`FsError::IsADirectory`] if the inode is a directory, or
+    /// [`FsError::IoError`] if the underlying storage read fails.
     fn read(&self, inode_id: InodeId, offset: u64, buf: &mut [u8]) -> FsResult<usize>;
 
     /// Write to a file.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`FsError::InodeNotFound`] if `inode_id` does not exist,
+    /// [`FsError::ReadOnly`] if the filesystem is mounted read-only,
+    /// [`FsError::NoSpace`] if the device is full, or [`FsError::IoError`] if
+    /// the underlying storage write fails.
     fn write(&self, inode_id: InodeId, offset: u64, buf: &[u8]) -> FsResult<usize>;
 
     /// Truncate a file.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`FsError::InodeNotFound`] if `inode_id` does not exist,
+    /// [`FsError::ReadOnly`] if the filesystem is mounted read-only, or
+    /// [`FsError::IoError`] if the underlying storage operation fails.
     fn truncate(&self, inode_id: InodeId, size: u64) -> FsResult<()>;
 
     /// Lookup a child in a directory.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`FsError::NotFound`] if no entry named `name` exists in
+    /// `dir_inode`, or [`FsError::NotADirectory`] if `dir_inode` is not a
+    /// directory.
     fn lookup(&self, dir_inode: InodeId, name: &str) -> FsResult<InodeId>;
 
     /// Create a new file or directory.
-    fn create(&self, dir_inode: InodeId, name: &str, file_type: FileType, mode: u32)
-        -> FsResult<InodeId>;
+    ///
+    /// # Errors
+    ///
+    /// Returns [`FsError::AlreadyExists`] if an entry named `name` already exists
+    /// in `dir_inode`, [`FsError::NotADirectory`] if `dir_inode` is not a
+    /// directory, or [`FsError::NoSpace`] if there is insufficient space for the
+    /// new inode or directory entry.
+    fn create(
+        &self,
+        dir_inode: InodeId,
+        name: &str,
+        file_type: FileType,
+        mode: u32,
+    ) -> FsResult<InodeId>;
 
     /// Remove a file or empty directory.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`FsError::NotFound`] if no entry named `name` exists in
+    /// `dir_inode`, [`FsError::DirectoryNotEmpty`] if the target is a non-empty
+    /// directory, or [`FsError::NotADirectory`] if `dir_inode` is not a directory.
     fn unlink(&self, dir_inode: InodeId, name: &str) -> FsResult<()>;
 
     /// Read directory entries.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`FsError::NotADirectory`] if `dir_inode` is not a directory,
+    /// [`FsError::InodeNotFound`] if `dir_inode` does not exist, or
+    /// [`FsError::IoError`] if the directory data cannot be read from storage.
     #[cfg(feature = "alloc")]
     fn readdir(&self, dir_inode: InodeId, offset: usize) -> FsResult<Vec<DirEntry>>;
 }
@@ -629,6 +778,11 @@ impl VfsMountTable {
     }
 
     /// Add a mount point.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`FsError::TooManyMounts`] if the mount table is full, or
+    /// [`FsError::MountAlreadyExists`] if a mount point already exists at `path`.
     pub fn mount(&mut self, path: &str, device: &str, fs_type: &str) -> FsResult<MountId> {
         if self.mounts.len() >= MAX_MOUNTS {
             return Err(FsError::TooManyMounts);
@@ -649,6 +803,11 @@ impl VfsMountTable {
     }
 
     /// Remove a mount point by ID.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`FsError::MountNotFound`] if no mount point with the given `id`
+    /// exists in the table.
     pub fn unmount(&mut self, id: MountId) -> FsResult<()> {
         if let Some(pos) = self.mounts.iter().position(|m| m.id == id) {
             self.mounts.remove(pos);
@@ -713,6 +872,11 @@ impl OpenFileTable {
     }
 
     /// Allocate a new file descriptor.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`FsError::TooManyOpenFiles`] if the file descriptor table is full
+    /// and no free slot is available.
     pub fn alloc(&mut self, file: OpenFile) -> FsResult<usize> {
         for (fd, slot) in self.files.iter_mut().enumerate() {
             if slot.is_none() {
@@ -736,6 +900,11 @@ impl OpenFileTable {
     }
 
     /// Close a file descriptor.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`FsError::InvalidFileDescriptor`] if `fd` is out of range or
+    /// does not refer to an open file.
     pub fn close(&mut self, fd: usize) -> FsResult<()> {
         if fd >= MAX_OPEN_FILES {
             return Err(FsError::InvalidFileDescriptor);
@@ -783,12 +952,12 @@ mod tests {
 
     #[test]
     fn test_file_type_mode() {
-        assert_eq!(FileType::Regular.to_mode(), 0o100000);
-        assert_eq!(FileType::Directory.to_mode(), 0o040000);
-        assert_eq!(FileType::Symlink.to_mode(), 0o120000);
+        assert_eq!(FileType::Regular.to_mode(), 0o100_000);
+        assert_eq!(FileType::Directory.to_mode(), 0o040_000);
+        assert_eq!(FileType::Symlink.to_mode(), 0o120_000);
 
-        assert_eq!(FileType::from_mode(0o100644), FileType::Regular);
-        assert_eq!(FileType::from_mode(0o040755), FileType::Directory);
+        assert_eq!(FileType::from_mode(0o100_644), FileType::Regular);
+        assert_eq!(FileType::from_mode(0o040_755), FileType::Directory);
     }
 
     #[test]
@@ -847,8 +1016,12 @@ mod tests {
     fn test_open_file_table() {
         let mut table = OpenFileTable::new();
 
-        let fd1 = table.alloc(OpenFile::new(MountId(0), InodeId(1), OpenFlags::READ)).unwrap();
-        let fd2 = table.alloc(OpenFile::new(MountId(0), InodeId(2), OpenFlags::WRITE)).unwrap();
+        let fd1 = table
+            .alloc(OpenFile::new(MountId(0), InodeId(1), OpenFlags::READ))
+            .unwrap();
+        let fd2 = table
+            .alloc(OpenFile::new(MountId(0), InodeId(2), OpenFlags::WRITE))
+            .unwrap();
 
         assert_eq!(fd1, 0);
         assert_eq!(fd2, 1);

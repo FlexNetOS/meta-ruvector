@@ -5,14 +5,14 @@
 //! and deallocation with minimal fragmentation.
 
 use crate::{
-    AllocatorStats, PageFrame, PageOrder, PhysAddr, PhysMemError,
-    MAX_ORDER, PAGE_SIZE, order_to_pages, pages_to_order,
+    order_to_pages, pages_to_order, AllocatorStats, PageFrame, PageOrder, PhysAddr, PhysMemError,
+    MAX_ORDER, PAGE_SIZE,
 };
 
 /// Maximum number of blocks per free list.
 ///
 /// This limits memory usage for the free list arrays.
-/// Each FreeList is 8KB (1024 * 8 bytes per PhysAddr).
+/// Each `FreeList` is 8KB (1024 * 8 bytes per `PhysAddr`).
 /// Total: 10 orders * 8KB = 80KB for the full allocator.
 /// This supports managing up to 2GB per order with 2MB blocks.
 const MAX_FREE_BLOCKS: usize = 1024;
@@ -74,7 +74,7 @@ pub struct BuddyAllocator {
 ///
 /// This stores addresses of free blocks. In a real kernel, this would be
 /// implemented as an intrusive linked list stored in the free pages themselves.
-/// For this no_std implementation, we use a fixed-size array.
+/// For this `no_std` implementation, we use a fixed-size array.
 #[derive(Clone)]
 struct FreeList {
     /// Addresses of free blocks.
@@ -221,9 +221,16 @@ impl BuddyAllocator {
             base_addr: PhysAddr::NULL,
             total_pages: 0,
             free_lists: [
-                FreeList::new(), FreeList::new(), FreeList::new(), FreeList::new(),
-                FreeList::new(), FreeList::new(), FreeList::new(), FreeList::new(),
-                FreeList::new(), FreeList::new(),
+                FreeList::new(),
+                FreeList::new(),
+                FreeList::new(),
+                FreeList::new(),
+                FreeList::new(),
+                FreeList::new(),
+                FreeList::new(),
+                FreeList::new(),
+                FreeList::new(),
+                FreeList::new(),
             ],
             stats: AllocatorStats::new(0, 0),
             initialized: false,
@@ -268,7 +275,7 @@ impl BuddyAllocator {
         // Add blocks from largest to smallest
         while remaining_pages > 0 {
             // Find the largest order that fits
-            let order = self.largest_fitting_order(remaining_pages, current_addr);
+            let order = Self::largest_fitting_order(remaining_pages, current_addr);
             let pages = order_to_pages(order);
 
             // Add to free list (ignore error as we're initializing)
@@ -283,7 +290,7 @@ impl BuddyAllocator {
     }
 
     /// Finds the largest order that fits within remaining pages and alignment.
-    fn largest_fitting_order(&self, remaining_pages: usize, addr: PhysAddr) -> usize {
+    fn largest_fitting_order(remaining_pages: usize, addr: PhysAddr) -> usize {
         for order in (0..MAX_ORDER).rev() {
             let pages = order_to_pages(order);
             if pages <= remaining_pages && addr.is_order_aligned(order) {
@@ -499,7 +506,7 @@ impl BuddyAllocator {
 
         // Try to coalesce with buddies
         while current_order < MAX_ORDER - 1 {
-            let buddy_addr = self.buddy_addr(current_addr, current_order);
+            let buddy_addr = Self::buddy_addr(current_addr, current_order);
 
             // Check if buddy is free and in range
             if !buddy_addr.is_in_range(self.base_addr, self.end_addr()) {
@@ -528,7 +535,7 @@ impl BuddyAllocator {
     }
 
     /// Calculates the buddy address for a block.
-    fn buddy_addr(&self, addr: PhysAddr, order: usize) -> PhysAddr {
+    fn buddy_addr(addr: PhysAddr, order: usize) -> PhysAddr {
         let block_size = (order_to_pages(order) * PAGE_SIZE) as u64;
         PhysAddr::new(addr.as_u64() ^ block_size)
     }
@@ -674,7 +681,11 @@ impl BuddyAllocator {
     pub fn dump_free_lists(&self) {
         std::println!("Buddy Allocator State:");
         std::println!("  Base: {}", self.base_addr);
-        std::println!("  Total: {} pages ({} bytes)", self.total_pages, self.total_pages * PAGE_SIZE);
+        std::println!(
+            "  Total: {} pages ({} bytes)",
+            self.total_pages,
+            self.total_pages * PAGE_SIZE
+        );
         std::println!("  Free: {} pages", self.free_page_count());
         std::println!("  Used: {} pages", self.used_pages());
         std::println!();
@@ -684,8 +695,13 @@ impl BuddyAllocator {
             if count > 0 {
                 let pages = order_to_pages(order);
                 let bytes = pages * PAGE_SIZE;
-                std::println!("  Order {}: {} blocks ({} pages each, {} bytes)",
-                    order, count, pages, bytes);
+                std::println!(
+                    "  Order {}: {} blocks ({} pages each, {} bytes)",
+                    order,
+                    count,
+                    pages,
+                    bytes
+                );
             }
         }
     }
@@ -981,8 +997,8 @@ mod tests {
 
         // 512 pages = one block of order 9
         assert_eq!(stats[9].free_blocks, 1);
-        for i in 0..9 {
-            assert_eq!(stats[i].free_blocks, 0);
+        for stat in stats.iter().take(9) {
+            assert_eq!(stat.free_blocks, 0);
         }
     }
 
@@ -993,7 +1009,9 @@ mod tests {
         assert!(alloc.contains(PhysAddr::new(TEST_BASE)));
         assert!(alloc.contains(PhysAddr::new(TEST_BASE + 0x1000)));
         assert!(!alloc.contains(PhysAddr::new(TEST_BASE - 1)));
-        assert!(!alloc.contains(PhysAddr::new(TEST_BASE + TEST_PAGES as u64 * PAGE_SIZE as u64)));
+        assert!(!alloc.contains(PhysAddr::new(
+            TEST_BASE + TEST_PAGES as u64 * PAGE_SIZE as u64
+        )));
     }
 
     #[test]

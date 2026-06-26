@@ -72,8 +72,10 @@ impl ClassicalBackend {
 
     /// Create with default configuration
     pub fn with_dimensions(dimensions: usize) -> ExoResult<Self> {
-        let mut config = ClassicalConfig::default();
-        config.dimensions = dimensions;
+        let config = ClassicalConfig {
+            dimensions,
+            ..ClassicalConfig::default()
+        };
         Self::new(config)
     }
 

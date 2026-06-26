@@ -163,7 +163,10 @@ pub fn parse_cmdline(cmdline: &[u8]) -> BootConfig {
     let mut config = BootConfig::new();
 
     // Find the null terminator
-    let len = cmdline.iter().position(|&b| b == 0).unwrap_or(cmdline.len());
+    let len = cmdline
+        .iter()
+        .position(|&b| b == 0)
+        .unwrap_or(cmdline.len());
     let cmdline = &cmdline[..len];
 
     // Parse arguments

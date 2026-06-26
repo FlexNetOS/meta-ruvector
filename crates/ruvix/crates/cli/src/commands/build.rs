@@ -1,9 +1,9 @@
 //! Build command - compile RuVix kernel images
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use clap::Args;
 use colored::Colorize;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 /// Arguments for the build command
 #[derive(Args, Debug)]
@@ -128,12 +128,8 @@ pub fn execute(args: BuildArgs, verbose: bool) -> Result<()> {
     Ok(())
 }
 
-fn clean_build_dir(output: &PathBuf) -> Result<()> {
-    println!(
-        "  {} Would remove: {}",
-        "[stub]".yellow(),
-        output.display()
-    );
+fn clean_build_dir(output: &Path) -> Result<()> {
+    println!("  {} Would remove: {}", "[stub]".yellow(), output.display());
     Ok(())
 }
 
@@ -185,11 +181,7 @@ fn configure_build(args: &BuildArgs) -> Result<BuildConfig> {
         rustflags.push("-C relocation-model=pic".to_string());
     }
 
-    println!(
-        "  {} cargo {}",
-        "[stub]".yellow(),
-        cargo_args.join(" ")
-    );
+    println!("  {} cargo {}", "[stub]".yellow(), cargo_args.join(" "));
 
     Ok(BuildConfig {
         cargo_args,
@@ -197,7 +189,7 @@ fn configure_build(args: &BuildArgs) -> Result<BuildConfig> {
     })
 }
 
-fn compile_kernel(args: &BuildArgs, config: &BuildConfig) -> Result<()> {
+fn compile_kernel(_args: &BuildArgs, config: &BuildConfig) -> Result<()> {
     println!(
         "  {} Would run: cargo {}",
         "[stub]".yellow(),
@@ -224,7 +216,7 @@ fn sign_kernel(args: &BuildArgs) -> Result<()> {
     Ok(())
 }
 
-fn strip_symbols(args: &BuildArgs) -> Result<()> {
+fn strip_symbols(_args: &BuildArgs) -> Result<()> {
     println!(
         "  {} Would strip debug symbols from output",
         "[stub]".yellow()

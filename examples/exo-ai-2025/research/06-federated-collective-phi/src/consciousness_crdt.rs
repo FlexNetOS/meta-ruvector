@@ -116,10 +116,7 @@ impl QualiaSet {
             agent_id,
             timestamp,
         };
-        self.elements
-            .entry(quale)
-            .or_insert_with(HashSet::new)
-            .insert(elem_id);
+        self.elements.entry(quale).or_default().insert(elem_id);
     }
 
     /// Remove a quale (marks for removal, actual removal on merge)
@@ -132,7 +129,7 @@ impl QualiaSet {
         for (quale, elem_ids) in &other.elements {
             self.elements
                 .entry(quale.clone())
-                .or_insert_with(HashSet::new)
+                .or_default()
                 .extend(elem_ids.iter().cloned());
         }
     }

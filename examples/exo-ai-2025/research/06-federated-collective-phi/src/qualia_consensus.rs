@@ -73,9 +73,6 @@ pub struct QualiaConsensusNode {
     /// This node's agent ID
     agent_id: AgentId,
 
-    /// Total number of agents in the system
-    n_agents: usize,
-
     /// Maximum number of Byzantine agents (f < n/3)
     f_byzantine: usize,
 
@@ -105,7 +102,6 @@ impl QualiaConsensusNode {
 
         Self {
             agent_id,
-            n_agents,
             f_byzantine,
             current_view: 0,
             next_sequence: 0,
@@ -216,7 +212,7 @@ impl QualiaConsensusNode {
 
         self.prepare_messages
             .entry(sequence)
-            .or_insert_with(HashMap::new)
+            .or_default()
             .insert(agent_id, msg);
     }
 
@@ -241,7 +237,7 @@ impl QualiaConsensusNode {
 
         self.commit_messages
             .entry(sequence)
-            .or_insert_with(HashMap::new)
+            .or_default()
             .insert(agent_id, msg);
     }
 
@@ -287,7 +283,8 @@ impl QualiaConsensusNode {
 
         // Check commit messages
         if let Some(commits) = self.commit_messages.get(&sequence) {
-            if commits.len() >= 2 * self.f_byzantine + 1 {
+            // Byzantine quorum: 2f + 1 commits (equivalently, > 2f)
+            if commits.len() > 2 * self.f_byzantine {
                 // Consensus reached!
                 if let Some(qualia) = self.pending_proposals.get(&sequence) {
                     self.agreed_qualia.insert(sequence, qualia.clone());
@@ -345,10 +342,7 @@ impl QualiaVotingConsensus {
 
     /// Add a vote
     pub fn vote(&mut self, agent_id: AgentId, qualia: Quale) {
-        self.votes
-            .entry(qualia)
-            .or_insert_with(HashSet::new)
-            .insert(agent_id);
+        self.votes.entry(qualia).or_default().insert(agent_id);
     }
 
     /// Get consensus result
@@ -364,8 +358,8 @@ impl QualiaVotingConsensus {
             }
         }
 
-        // Need 2f + 1 votes for Byzantine tolerance
-        if max_votes >= 2 * self.f_byzantine + 1 {
+        // Need 2f + 1 votes for Byzantine tolerance (equivalently, > 2f)
+        if max_votes > 2 * self.f_byzantine {
             ConsensusResult::Agreed(consensus_quale.unwrap())
         } else if self.votes.values().map(|v| v.len()).sum::<usize>() >= self.n_agents {
             // All agents voted but no consensus

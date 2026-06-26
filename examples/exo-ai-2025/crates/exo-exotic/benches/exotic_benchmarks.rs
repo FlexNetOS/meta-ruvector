@@ -16,12 +16,11 @@ use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criteri
 use std::time::Duration;
 
 use exo_exotic::{
-    AggregationType, CognitiveBlackHole, CognitiveEmbryogenesis, CognitivePhase,
-    CognitiveThermodynamics, CollectiveConsciousness, DreamEngine, DreamState, EmergenceDetector,
-    EmotionalTone, EscapeMethod, FreeEnergyMinimizer, HiveMind, MorphogeneticField,
-    MultipleSelvesSystem, PredictiveModel, ReactionParams, SelfAspect, StrangeLoop, SubjectiveTime,
-    SubstrateSpecialization, TangledHierarchy, TemporalEvent, TemporalQualia, TimeCrystal,
-    TrapType,
+    AggregationType, CognitiveBlackHole, CognitiveEmbryogenesis, CognitiveThermodynamics,
+    CollectiveConsciousness, DreamEngine, EmergenceDetector, EmotionalTone, EscapeMethod,
+    FreeEnergyMinimizer, HiveMind, MorphogeneticField, MultipleSelvesSystem, SelfAspect,
+    StrangeLoop, SubjectiveTime, SubstrateSpecialization, TangledHierarchy, TemporalEvent,
+    TemporalQualia, TrapType,
 };
 
 use uuid::Uuid;
@@ -168,7 +167,7 @@ fn bench_free_energy(c: &mut Criterion) {
     group.bench_function("compute_free_energy", |b| {
         let mut fem = FreeEnergyMinimizer::with_dims(0.1, 16, 16);
         for _ in 0..10 {
-            fem.observe(&vec![0.3; 16]);
+            fem.observe(&[0.3; 16]);
         }
         b.iter(|| black_box(fem.compute_free_energy()))
     });
@@ -181,7 +180,9 @@ fn bench_free_energy(c: &mut Criterion) {
         fem.add_action("wait", vec![0.25, 0.25, 0.25, 0.25], 0.0);
         fem.add_action("explore", vec![0.3, 0.3, 0.2, 0.2], 0.15);
 
-        b.iter(|| black_box(fem.select_action()))
+        b.iter(|| {
+            black_box(fem.select_action());
+        })
     });
 
     // Learning convergence

@@ -39,6 +39,8 @@ pub struct EntropyRegularizedLearner {
 }
 
 impl EntropyRegularizedLearner {
+    /// Create an entropy-regularized learner at the given `temperature` (Kelvin),
+    /// weighting the entropy-production penalty by `entropy_weight`.
     pub fn new(temperature: f64, entropy_weight: f64) -> Self {
         Self {
             task_weight: 1.0,
@@ -118,6 +120,8 @@ pub struct FluctuationTheoremOptimizer {
 }
 
 impl FluctuationTheoremOptimizer {
+    /// Create a fluctuation-theorem optimizer at the given `temperature` (Kelvin)
+    /// with an empty energy-change history.
     pub fn new(temperature: f64) -> Self {
         Self {
             temperature,
@@ -178,7 +182,7 @@ impl FluctuationTheoremOptimizer {
         }
 
         // Clamp to reasonable range
-        self.learning_rate = self.learning_rate.max(1e-6).min(1.0);
+        self.learning_rate = self.learning_rate.clamp(1e-6, 1.0);
     }
 
     /// Perform optimization step
@@ -229,6 +233,8 @@ pub struct ThermodynamicMetaLearner {
 }
 
 impl ThermodynamicMetaLearner {
+    /// Create a thermodynamic meta-learner at the given `temperature` (Kelvin)
+    /// with `meta_dim` meta-parameters controlling per-task learning.
     pub fn new(temperature: f64, meta_dim: usize) -> Self {
         Self {
             temperature,
@@ -242,7 +248,7 @@ impl ThermodynamicMetaLearner {
     pub fn generate_learning_rate(&self, task_id: usize) -> f64 {
         // Simple: use meta-parameter directly
         let idx = task_id % self.meta_params.len();
-        self.meta_params[idx].abs().min(1.0).max(1e-6)
+        self.meta_params[idx].abs().clamp(1e-6, 1.0)
     }
 
     /// Learn on a task and return thermodynamic cost
@@ -315,6 +321,8 @@ pub struct QuantumInspiredOptimizer {
 }
 
 impl QuantumInspiredOptimizer {
+    /// Create a quantum-inspired optimizer at the given `temperature` (Kelvin)
+    /// (`_param_dim` reserved for future per-parameter state).
     pub fn new(temperature: f64, _param_dim: usize) -> Self {
         Self {
             temperature,
@@ -399,6 +407,8 @@ pub struct HeatEngineNetwork {
 }
 
 impl HeatEngineNetwork {
+    /// Create a heat-engine network with `param_dim` parameters operating between
+    /// a hot reservoir at `t_hot` and a cold reservoir at `t_cold` (Kelvin).
     pub fn new(param_dim: usize, t_hot: f64, t_cold: f64) -> Self {
         Self {
             t_hot,
@@ -428,8 +438,8 @@ impl HeatEngineNetwork {
         let q_hot = k * self.t_hot * LN_2 * self.hot_params.len() as f64;
         self.heat_absorbed += q_hot;
 
-        for i in 0..self.hot_params.len() {
-            self.hot_params[i] -= 0.01 * gradient_hot[i];
+        for (param, &g) in self.hot_params.iter_mut().zip(gradient_hot) {
+            *param -= 0.01 * g;
         }
 
         // 2. Adiabatic cooling (no heat exchange)
@@ -441,8 +451,8 @@ impl HeatEngineNetwork {
         // 3. Isothermal compression at T_cold
         let q_cold = k * self.t_cold * LN_2 * self.cold_params.len() as f64;
 
-        for i in 0..self.cold_params.len() {
-            self.cold_params[i] -= 0.01 * gradient_cold[i];
+        for (param, &g) in self.cold_params.iter_mut().zip(gradient_cold) {
+            *param -= 0.01 * g;
         }
 
         // 4. Work extracted = Q_hot - Q_cold

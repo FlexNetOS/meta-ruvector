@@ -25,8 +25,11 @@ use std::collections::HashMap;
 /// Persistence feature (birth-death pair)
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct PersistenceFeature {
+    /// Filtration value at which the topological feature is born.
     pub birth: f64,
+    /// Filtration value at which the feature dies; infinite for essential classes.
     pub death: f64,
+    /// Homological dimension: 0 = connected component, 1 = loop, 2 = void.
     pub dimension: usize,
 }
 
@@ -61,7 +64,7 @@ impl PersistenceDiagram {
     pub fn add_feature(&mut self, feature: PersistenceFeature) {
         self.features
             .entry(feature.dimension)
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(feature);
     }
 
@@ -411,7 +414,7 @@ mod tests {
         }
 
         let diagram = streaming.get_diagram();
-        assert!(diagram.total_features() >= 0); // May be 0 in simplified version
+        let _ = diagram.total_features(); // May be 0 in simplified version
     }
 
     #[test]
@@ -428,17 +431,15 @@ mod tests {
         assert!(phi_hat > 0.0);
 
         let consciousness = features.consciousness_level();
-        assert!(consciousness >= 0.0 && consciousness <= 1.0);
+        assert!((0.0..=1.0).contains(&consciousness));
     }
 
     #[test]
     fn test_consciousness_monitor() {
         let mut monitor = ConsciousnessMonitor::new(100, 0.3);
 
-        let mut alert_count = 0;
         monitor.set_alert_callback(move |level| {
             println!("Low consciousness detected: {}", level);
-            // In real test, would increment alert_count
         });
 
         // Simulate neural data

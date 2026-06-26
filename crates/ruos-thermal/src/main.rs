@@ -25,10 +25,22 @@ fn main() -> ExitCode {
     let mut i = 0;
     while i < args.len() {
         match args[i].as_str() {
-            "--json" => { json = true; i += 1; }
-            "--prom" => { prom = true; i += 1; }
-            "--show-profiles" => { show_profiles = true; i += 1; }
-            "--allow-cpufreq-write" => { allow_write = true; i += 1; }
+            "--json" => {
+                json = true;
+                i += 1;
+            }
+            "--prom" => {
+                prom = true;
+                i += 1;
+            }
+            "--show-profiles" => {
+                show_profiles = true;
+                i += 1;
+            }
+            "--allow-cpufreq-write" => {
+                allow_write = true;
+                i += 1;
+            }
             "--set-profile" => {
                 let name = match args.get(i + 1) {
                     Some(n) => n,
@@ -40,7 +52,10 @@ fn main() -> ExitCode {
                 match ClockProfile::from_name(name) {
                     Some(p) => set_profile = Some(p),
                     None => {
-                        eprintln!("ruos-thermal: unknown profile {:?} (use --show-profiles)", name);
+                        eprintln!(
+                            "ruos-thermal: unknown profile {:?} (use --show-profiles)",
+                            name
+                        );
                         return ExitCode::from(1);
                     }
                 }
@@ -77,7 +92,8 @@ fn main() -> ExitCode {
                 ClockProfile::Aggressive => "active fan",
                 ClockProfile::Max => "heatsink + fan, monitored",
             };
-            println!("{}\t{}\t{}\t{}",
+            println!(
+                "{}\t{}\t{}\t{}",
                 p.name(),
                 p.target_max_hz() / 1_000_000,
                 p.estimated_watts(),
@@ -99,10 +115,18 @@ fn main() -> ExitCode {
         let sensor = ThermalSensor::system();
         match sensor.apply_profile(profile) {
             Ok(n) => {
-                eprintln!("ruos-thermal: applied profile {:?} to {} cpufreq policies", profile.name(), n);
+                eprintln!(
+                    "ruos-thermal: applied profile {:?} to {} cpufreq policies",
+                    profile.name(),
+                    n
+                );
             }
             Err(e) => {
-                eprintln!("ruos-thermal: apply_profile {:?} failed: {}", profile.name(), e);
+                eprintln!(
+                    "ruos-thermal: apply_profile {:?} failed: {}",
+                    profile.name(),
+                    e
+                );
                 if e.kind() == std::io::ErrorKind::PermissionDenied {
                     eprintln!("  cpufreq writes need root or CAP_SYS_NICE.");
                 }
@@ -124,12 +148,16 @@ fn main() -> ExitCode {
         // Hand-rolled JSON to stay zero-dep for the skeleton.
         print!("{{\"cpu_temps\":[");
         for (i, t) in snap.cpu_temps_celsius.iter().enumerate() {
-            if i > 0 { print!(","); }
+            if i > 0 {
+                print!(",");
+            }
             print!("{{\"zone\":{},\"celsius\":{:.3}}}", t.zone, t.celsius);
         }
         print!("],\"cpu_policies\":[");
         for (i, p) in snap.cpu_policies.iter().enumerate() {
-            if i > 0 { print!(","); }
+            if i > 0 {
+                print!(",");
+            }
             print!(
                 "{{\"id\":{},\"cur_hz\":{},\"max_hz\":{},\"hw_max_hz\":{},\"governor\":{:?}}}",
                 p.id, p.cur_hz, p.max_hz, p.hw_max_hz, p.governor
@@ -147,12 +175,18 @@ fn main() -> ExitCode {
         println!("# HELP ruos_thermal_cpu_temp_celsius Per-zone CPU temperature.");
         println!("# TYPE ruos_thermal_cpu_temp_celsius gauge");
         for t in &snap.cpu_temps_celsius {
-            println!("ruos_thermal_cpu_temp_celsius{{zone=\"{}\"}} {:.3}", t.zone, t.celsius);
+            println!(
+                "ruos_thermal_cpu_temp_celsius{{zone=\"{}\"}} {:.3}",
+                t.zone, t.celsius
+            );
         }
         println!("# HELP ruos_thermal_cpu_freq_hz Per-policy current CPU frequency.");
         println!("# TYPE ruos_thermal_cpu_freq_hz gauge");
         for p in &snap.cpu_policies {
-            println!("ruos_thermal_cpu_freq_hz{{policy=\"{}\"}} {}", p.id, p.cur_hz);
+            println!(
+                "ruos_thermal_cpu_freq_hz{{policy=\"{}\"}} {}",
+                p.id, p.cur_hz
+            );
         }
         println!("# HELP ruos_thermal_cpu_max_freq_hz Per-policy configured max frequency.");
         println!("# TYPE ruos_thermal_cpu_max_freq_hz gauge");
@@ -169,8 +203,10 @@ fn main() -> ExitCode {
             println!("temp\t{}\t{:.3}\tcelsius\tzone", t.zone, t.celsius);
         }
         for p in &snap.cpu_policies {
-            println!("freq\t{}\t{}\thz\tcur (max={} hw={} gov={})",
-                     p.id, p.cur_hz, p.max_hz, p.hw_max_hz, p.governor);
+            println!(
+                "freq\t{}\t{}\thz\tcur (max={} hw={} gov={})",
+                p.id, p.cur_hz, p.max_hz, p.hw_max_hz, p.governor
+            );
         }
         if let Some(m) = snap.max_cpu_celsius() {
             println!("# max cpu temp: {:.1}°C", m);
