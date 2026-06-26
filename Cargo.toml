@@ -42,11 +42,9 @@ exclude = ["external/ruqu", "external/rvdna", "examples/OSpipe", "examples/rvf",
     # Standalone docker integration-test harness (ruvector-attention-integration-test);
     # run inside its container, not part of the host `cargo build --workspace`.
     "tests/docker-integration",
-    # spiking-network: WIP scaffold — its manifest declares a `spiking_bench`
-    # bench and three `[[example]]` targets whose source files do not exist, so
-    # it cannot build as a workspace member. Excluded (not silently orphaned)
-    # until the crate is completed; then move it back to `members`.
-    "examples/spiking-network",
+    # spiking-network was WIP skeleton — completed (source stubs added 2026-06-25); promoted to members above.
+    # Removed from exclude so it builds as a workspace member.
+
     # ruvector-attention-cli / ruvector-sparse-inference-wasm: stale against
     # current ruvector-attention / sparse-model APIs (calls removed methods like
     # ScaledDotProductAttention::compute, SparseModel::{encode,forward_embedding,
@@ -299,6 +297,10 @@ members = [
     # orphans that compile but still carry clippy debt are in `exclude` below.
     "crates/ruvector-temporal-tensor-wasm",
     "crates/ruvector-bet4-ivf-bench",
+    # spiking-network: event-driven SNN for ASIC neuromorphic computing
+    "examples/spiking-network",
+    # agentic-robotics-core: robotics substrate (stubbed, no external deps)
+    "crates/agentic-robotics-core",
 ]
 resolver = "2"
 
