@@ -42,8 +42,3 @@ anyhow = "1.0"
 [build-dependencies]
 napi-build = "2.1"
 
-[profile.release]
-lto = true
-strip = true
-codegen-units = 1
-opt-level = 3

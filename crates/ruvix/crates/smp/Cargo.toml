@@ -30,9 +30,3 @@ aarch64 = []
 # Enable test mode (uses atomics instead of inline assembly)
 test-mode = []
 
-[profile.release]
-opt-level = "z"
-lto = true
-codegen-units = 1
-panic = "abort"
-strip = true

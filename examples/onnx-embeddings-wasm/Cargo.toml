@@ -53,9 +53,3 @@ wasm-bindgen-test = "0.3"
 [features]
 default = ["console_error_panic_hook"]
 
-[profile.release]
-opt-level = "s"
-lto = true
-
-[package.metadata.wasm-pack.profile.release]
-wasm-opt = ["-Os", "--enable-mutable-globals"]

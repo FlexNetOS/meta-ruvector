@@ -29,17 +29,3 @@ getrandom = { version = "0.2", features = ["js"] }
 [dev-dependencies]
 wasm-bindgen-test = "0.3"
 
-[profile.release]
-opt-level = "s"
-lto = true
-
-# Research-tier crate, doc/style churn deferred. Correctness + suspicious lints
-# stay denied.
-[lints.rust]
-unexpected_cfgs = { level = "allow", priority = -1 }
-
-[lints.clippy]
-pedantic = { level = "allow", priority = -2 }
-all = { level = "warn", priority = -1 }
-correctness = "deny"
-suspicious = "deny"

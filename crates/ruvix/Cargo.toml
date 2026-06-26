@@ -99,17 +99,3 @@ chrono = "0.4"
 # Unix dependencies
 libc = "0.2"
 
-[profile.release]
-opt-level = 3
-lto = "fat"
-codegen-units = 1
-strip = true
-panic = "abort"
-
-[profile.bench]
-inherits = "release"
-debug = true
-
-[profile.dev]
-opt-level = 0
-debug = true

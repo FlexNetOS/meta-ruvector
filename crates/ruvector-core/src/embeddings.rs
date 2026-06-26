@@ -278,6 +278,49 @@ impl ApiEmbedding {
             dimensions,
         )
     }
+
+    /// Create Anthropic Messages API embedding provider
+    ///
+    /// Uses the Anthropic Messages API to generate embeddings. The model must support
+    /// JSON mode for consistent embedding vector output.
+    ///
+    /// # Arguments
+    /// * `api_key` - Anthropic API key (sk-ant-...)
+    /// * `model` - Model identifier (e.g., "claude-sonnet-4-5-20250929")
+    pub fn anthropic(api_key: &str, model: &str) -> Self {
+        // Anthropic doesn't have a dedicated embeddings endpoint.
+        // For semantic search, prefer OnnxEmbedding (onnx-embeddings feature).
+        let dimensions = if model.contains("sonnet") || model.contains("opus") {
+            4096
+        } else if model.contains("haiku") {
+            1024
+        } else {
+            4096 // default to sonnet dimensions
+        };
+
+        Self::new(
+            api_key.to_string(),
+            "https://api.anthropic.com/v1/messages".to_string(),
+            model.to_string(),
+            dimensions,
+        )
+    }
+
+    /// Create OpenRouter embedding provider
+    ///
+    /// Uses OpenRouter's embeddings endpoint (OpenAI-compatible format).
+    ///
+    /// # Arguments
+    /// * `api_key` - OpenRouter API key (sk-or-v1-...)
+    /// * `model` - Model identifier (e.g., "text-embedding-3-small" for OpenAI, or any provider model)
+    pub fn open_router(api_key: &str, model: &str) -> Self {
+        Self::new(
+            api_key.to_string(),
+            "https://openrouter.ai/api/v1/embeddings".to_string(),
+            model.to_string(),
+            768, // default for most OpenRouter embedding models
+        )
+    }
 }
 
 #[cfg(feature = "api-embeddings")]
@@ -395,7 +438,7 @@ pub mod onnx {
     use super::*;
     use crate::error::RuvectorError;
     use ort::session::Session;
-    use ort::value::{Tensor, ValueType};
+    use ort::value::Tensor;
     use parking_lot::RwLock;
     use std::path::PathBuf;
     use tokenizers::Tokenizer;
@@ -523,19 +566,7 @@ pub mod onnx {
                 id if id.contains("e5-base") => 768,
                 id if id.contains("e5-large") => 1024,
                 _ => {
-                    // Try to infer from output shape via session.outputs() method
-                    if let Some(output) = session.outputs().first() {
-                        if let ValueType::Tensor { shape, .. } = output.dtype() {
-                            let dims: Vec<i64> = shape.iter().copied().collect();
-                            if dims.len() >= 2 {
-                                let last_dim = dims[dims.len() - 1];
-                                if last_dim > 0 {
-                                    return Ok(last_dim as usize);
-                                }
-                            }
-                        }
-                    }
-                    // Default to 384 (most common)
+                    // Unknown model — default to 384 (all-MiniLM-L6-v2 / most sentence-transformers models)
                     384
                 }
             };

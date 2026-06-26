@@ -338,9 +338,21 @@ impl rvagent_tools::Backend for LocalFsBackend {
             "PATH", "HOME", "USER", "SHELL", "LANG", "LC_ALL", "LC_CTYPE", "TERM", "TMPDIR", "TZ",
         ];
         const SENSITIVE_PATTERNS: &[&str] = &[
-            "SECRET", "KEY", "TOKEN", "PASSWORD", "CREDENTIAL",
-            "AWS_", "AZURE_", "GCP_", "DATABASE_URL", "PRIVATE",
-            "API_KEY", "AUTH", "BEARER", "JWT", "SESSION",
+            "SECRET",
+            "KEY",
+            "TOKEN",
+            "PASSWORD",
+            "CREDENTIAL",
+            "AWS_",
+            "AZURE_",
+            "GCP_",
+            "DATABASE_URL",
+            "PRIVATE",
+            "API_KEY",
+            "AUTH",
+            "BEARER",
+            "JWT",
+            "SESSION",
         ];
 
         let mut cmd = Command::new("sh");
@@ -357,7 +369,11 @@ impl rvagent_tools::Backend for LocalFsBackend {
         }
         cmd.stdout(Stdio::piped()).stderr(Stdio::piped());
 
-        let timeout = Duration::from_secs(if timeout_secs == 0 { 30 } else { timeout_secs as u64 });
+        let timeout = Duration::from_secs(if timeout_secs == 0 {
+            30
+        } else {
+            timeout_secs as u64
+        });
 
         let mut child = cmd.spawn().map_err(|e| format!("execute failed: {}", e))?;
 
@@ -371,7 +387,10 @@ impl rvagent_tools::Backend for LocalFsBackend {
         let stdout_handle = std::thread::spawn(move || {
             let mut buf = Vec::new();
             if let Some(mut pipe) = stdout_pipe {
-                let _ = pipe.by_ref().take(MAX_OUTPUT_BYTES as u64).read_to_end(&mut buf);
+                let _ = pipe
+                    .by_ref()
+                    .take(MAX_OUTPUT_BYTES as u64)
+                    .read_to_end(&mut buf);
                 // Keep draining so the child doesn't get SIGPIPE.
                 let _ = std::io::copy(&mut pipe, &mut std::io::sink());
             }
@@ -380,7 +399,10 @@ impl rvagent_tools::Backend for LocalFsBackend {
         let stderr_handle = std::thread::spawn(move || {
             let mut buf = Vec::new();
             if let Some(mut pipe) = stderr_pipe {
-                let _ = pipe.by_ref().take(MAX_OUTPUT_BYTES as u64).read_to_end(&mut buf);
+                let _ = pipe
+                    .by_ref()
+                    .take(MAX_OUTPUT_BYTES as u64)
+                    .read_to_end(&mut buf);
                 let _ = std::io::copy(&mut pipe, &mut std::io::sink());
             }
             buf
@@ -389,7 +411,10 @@ impl rvagent_tools::Backend for LocalFsBackend {
         // Poll for exit with a deadline.
         let deadline = Instant::now() + timeout;
         let exit_code = loop {
-            match child.try_wait().map_err(|e| format!("wait failed: {}", e))? {
+            match child
+                .try_wait()
+                .map_err(|e| format!("wait failed: {}", e))?
+            {
                 Some(status) => break status.code().unwrap_or(-1),
                 None => {
                     if Instant::now() >= deadline {

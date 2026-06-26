@@ -30,8 +30,3 @@ chrono = "0.4"
 [build-dependencies]
 napi-build = "2.1"
 
-[profile.release]
-lto = true
-codegen-units = 1
-opt-level = 3
-strip = true

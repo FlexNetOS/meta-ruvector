@@ -1,0 +1,32 @@
+[package]
+name = "codex-env"
+version = "0.1.0"
+edition.workspace = true
+description = "Rust-native Codex environment mirror for the tracked .claude surface"
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "codex-env"
+path = "src/main.rs"
+
+[dependencies]
+anyhow.workspace = true
+clap.workspace = true
+mlua = { version = "0.10", features = ["lua54", "vendored"] }
+serde.workspace = true
+serde_json.workspace = true
+sha2 = "0.10"
+toml = "0.8"
+toml_edit = "0.22"
+walkdir = "2.5"
+
+[dev-dependencies]
+tempfile = "3.13"
+
+# Tooling crate: keep the repo-wide correctness/suspicious guarantees, but avoid
+# turning this small harness into a style-churn magnet.
+[lints.clippy]
+pedantic = { level = "allow", priority = -2 }
+correctness = { level = "deny", priority = -1 }
+suspicious = { level = "deny", priority = -1 }

@@ -58,14 +58,3 @@ simd = ["ruvector-core/simd"]
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 getrandom = { version = "0.2", features = ["js"] }
 
-[profile.release]
-opt-level = "z"
-lto = true
-codegen-units = 1
-panic = "abort"
-
-[profile.release.package."*"]
-opt-level = "z"
-
-[package.metadata.wasm-pack.profile.release]
-wasm-opt = ["-Oz", "--enable-simd"]

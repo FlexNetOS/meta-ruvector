@@ -27,7 +27,11 @@ impl Distance<f32> for DistanceFn {
         // hnsw_rs asserts `dist_to_ref >= 0` for non-negative metrics.
         // Clamp tiny FP-rounding negatives for Euclidean/Cosine/Manhattan,
         // but NOT DotProduct which intentionally returns negative values.
-        if self.metric == DistanceMetric::DotProduct { d } else { d.max(0.0) }
+        if self.metric == DistanceMetric::DotProduct {
+            d
+        } else {
+            d.max(0.0)
+        }
     }
 }
 

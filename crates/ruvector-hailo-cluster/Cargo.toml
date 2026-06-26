@@ -159,10 +159,3 @@ harness = false
 #
 # Default `cargo build --release` still uses the fast-compile profile;
 # opt in with `cargo build --profile=ultra` when you want the extra ~5-15%.
-[profile.ultra]
-inherits = "release"
-lto = "fat"
-codegen-units = 1
-panic = "abort"
-strip = "symbols"
-debug = false

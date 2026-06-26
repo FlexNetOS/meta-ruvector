@@ -943,7 +943,7 @@ checksum = "b39cdef0fa800fc44525c84ccb54a029961a8215f9619753635a9c0d2538d46d"
 
 [[package]]
 name = "ruvector-core"
-version = "2.1.0"
+version = "2.2.3"
 dependencies = [
  "anyhow",
  "bincode",
@@ -967,7 +967,7 @@ dependencies = [
 
 [[package]]
 name = "ruvector-graph"
-version = "2.1.0"
+version = "2.2.3"
 dependencies = [
  "anyhow",
  "bincode",

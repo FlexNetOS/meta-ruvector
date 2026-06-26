@@ -38,39 +38,3 @@ full = ["browser", "simd"]
 # Build Profiles
 # ============================================
 
-[profile.release]
-opt-level = "z"          # Maximum size optimization
-lto = "fat"              # Link-Time Optimization
-codegen-units = 1        # Single codegen unit
-panic = "abort"          # No unwinding
-strip = "symbols"        # Strip debug symbols
-incremental = false      # Better optimization
-
-[profile.release.package."*"]
-opt-level = "z"
-
-# Speed-optimized profile (larger binary, faster execution)
-[profile.release-fast]
-inherits = "release"
-opt-level = 3            # Speed optimization
-lto = "thin"             # Faster linking
-
-[profile.dev]
-opt-level = 1
-debug = true
-
-[profile.bench]
-inherits = "release"
-debug = false
-
-# ============================================
-# Benchmarks
-# ============================================
-
-[[bin]]
-name = "benchmark"
-path = "benches/performance.rs"
-
-[[bin]]
-name = "ios_simulation"
-path = "benches/ios_simulation.rs"

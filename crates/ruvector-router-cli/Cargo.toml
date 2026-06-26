@@ -27,7 +27,3 @@ anyhow = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 
-[profile.release]
-lto = true
-opt-level = 3
-codegen-units = 1

@@ -1,4 +1,8 @@
-```markdown
+---
+name: ruvector
+description: Use for ruvector repository development patterns, npm release workflows, package synchronization, CI guardrails, and supply-chain hardening.
+---
+
 # ruvector Development Patterns
 
 > Auto-generated skill from repository analysis
@@ -9,35 +13,35 @@ This skill teaches the core development conventions and workflows for the `ruvec
 
 ## Coding Conventions
 
-- **File Naming:**  
-  Use camelCase for file and module names.  
-  _Example:_  
+- **File Naming:**
+  Use camelCase for file and module names.
+  _Example:_
   ```
   src/vectorMath.rs
   src/fastTransform.rs
   ```
 
-- **Import Style:**  
-  Use relative imports for referencing modules within the project.  
-  _Example:_  
+- **Import Style:**
+  Use relative imports for referencing modules within the project.
+  _Example:_
   ```rust
   mod utils;
   use crate::vectorMath::Vector;
   ```
 
-- **Export Style:**  
-  Use named exports for modules and functions.  
-  _Example:_  
+- **Export Style:**
+  Use named exports for modules and functions.
+  _Example:_
   ```rust
   pub struct Vector { /* ... */ }
   pub fn dot(a: &Vector, b: &Vector) -> f64 { /* ... */ }
   ```
 
-- **Commit Patterns:**  
+- **Commit Patterns:**
   - Use [Conventional Commits](https://www.conventionalcommits.org/).
   - Prefixes: `chore`, `fix`, `style`, `ci`
   - Commit messages average ~59 characters.
-  - _Example:_  
+  - _Example:_
     ```
     fix: correct vector normalization edge case
     chore: update dependencies for security patch
@@ -46,7 +50,7 @@ This skill teaches the core development conventions and workflows for the `ruvec
 ## Workflows
 
 ### npm-package-version-bump-and-release
-**Trigger:** When a new feature or fix needs to be released to npm consumers.  
+**Trigger:** When a new feature or fix needs to be released to npm consumers.
 **Command:** `/release-npm`
 
 1. Update version numbers in all relevant `package.json` files:
@@ -65,7 +69,7 @@ This skill teaches the core development conventions and workflows for the `ruvec
 ---
 
 ### sync-readme-and-package-json-to-published-npm
-**Trigger:** When a package is published to npm but the updated files were not committed to git.  
+**Trigger:** When a package is published to npm but the updated files were not committed to git.
 **Command:** `/sync-npm-package`
 
 1. Verify the contents of the published npm package.
@@ -79,7 +83,7 @@ This skill teaches the core development conventions and workflows for the `ruvec
 ---
 
 ### ci-guard-and-supply-chain-hardening
-**Trigger:** When new supply chain security layers or regression guards are added or existing ones are updated.  
+**Trigger:** When new supply chain security layers or regression guards are added or existing ones are updated.
 **Command:** `/add-ci-guard`
 
 1. Add or update GitHub Actions workflow files for CI checks in `.github/workflows/*.yml`.
@@ -100,9 +104,9 @@ This skill teaches the core development conventions and workflows for the `ruvec
 - **Framework:** Not explicitly detected; likely uses Rust's built-in test framework.
 - **File Pattern:** Test files use the `*.test.*` naming convention.
   - _Example:_ `vectorMath.test.rs`
-- **Writing Tests:**  
-  Use Rust's `#[cfg(test)]` and `#[test]` attributes.  
-  _Example:_  
+- **Writing Tests:**
+  Use Rust's `#[cfg(test)]` and `#[test]` attributes.
+  _Example:_
   ```rust
   #[cfg(test)]
   mod tests {
@@ -124,4 +128,3 @@ This skill teaches the core development conventions and workflows for the `ruvec
 | /release-npm      | Bump npm package versions and trigger a release                |
 | /sync-npm-package | Sync README and package.json with the published npm package    |
 | /add-ci-guard     | Add or update CI workflows and supply chain security policies  |
-```

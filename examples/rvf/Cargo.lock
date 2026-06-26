@@ -936,7 +936,7 @@ dependencies = [
 
 [[package]]
 name = "rvf-index"
-version = "0.1.0"
+version = "0.2.0"
 
 [[package]]
 name = "rvf-kernel"
@@ -968,15 +968,18 @@ dependencies = [
 
 [[package]]
 name = "rvf-quant"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "rvf-types",
 ]
 
 [[package]]
 name = "rvf-runtime"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
+ "crc32fast",
+ "rvf-index",
+ "rvf-quant",
  "rvf-types",
 ]
 
@@ -997,7 +1000,7 @@ dependencies = [
 
 [[package]]
 name = "rvf-types"
-version = "0.2.0"
+version = "0.2.1"
 
 [[package]]
 name = "rvf-wire"
@@ -1005,6 +1008,8 @@ version = "0.1.0"
 dependencies = [
  "crc32c",
  "rvf-types",
+ "sha3",
+ "subtle",
  "xxhash-rust",
 ]
 

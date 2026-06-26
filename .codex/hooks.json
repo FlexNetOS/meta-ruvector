@@ -1,0 +1,157 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "command": "\"$(git rev-parse --show-toplevel)/.codex/helpers/run-claude-hook.sh\" hook-handler.cjs post-edit",
+            "timeout": 10,
+            "type": "command"
+          }
+        ],
+        "matcher": "Write|Edit|MultiEdit"
+      },
+      {
+        "hooks": [
+          {
+            "command": "\"$(git rev-parse --show-toplevel)/.codex/helpers/run-claude-hook.sh\" hook-handler.cjs post-bash",
+            "timeout": 5,
+            "type": "command"
+          }
+        ],
+        "matcher": "Bash"
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "command": "\"$(git rev-parse --show-toplevel)/.codex/helpers/run-claude-hook.sh\" hook-handler.cjs compact-manual",
+            "type": "command"
+          },
+          {
+            "command": "\"$(git rev-parse --show-toplevel)/.codex/helpers/run-claude-hook.sh\" hook-handler.cjs session-end",
+            "timeout": 5,
+            "type": "command"
+          }
+        ],
+        "matcher": "manual"
+      },
+      {
+        "hooks": [
+          {
+            "command": "\"$(git rev-parse --show-toplevel)/.codex/helpers/run-claude-hook.sh\" hook-handler.cjs compact-auto",
+            "type": "command"
+          },
+          {
+            "command": "\"$(git rev-parse --show-toplevel)/.codex/helpers/run-claude-hook.sh\" hook-handler.cjs session-end",
+            "timeout": 6,
+            "type": "command"
+          }
+        ],
+        "matcher": "auto"
+      }
+    ],
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "command": "\"$(git rev-parse --show-toplevel)/.codex/helpers/run-claude-hook.sh\" hook-handler.cjs pre-bash",
+            "timeout": 5,
+            "type": "command"
+          }
+        ],
+        "matcher": "Bash"
+      },
+      {
+        "hooks": [
+          {
+            "command": "\"$(git rev-parse --show-toplevel)/.codex/helpers/run-claude-hook.sh\" hook-handler.cjs pre-edit",
+            "timeout": 5,
+            "type": "command"
+          }
+        ],
+        "matcher": "Write|Edit|MultiEdit"
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "command": "\"$(git rev-parse --show-toplevel)/.codex/helpers/run-claude-hook.sh\" hook-handler.cjs session-restore",
+            "timeout": 15,
+            "type": "command"
+          },
+          {
+            "command": "\"$(git rev-parse --show-toplevel)/.codex/helpers/run-claude-hook.sh\" auto-memory-hook.mjs import",
+            "timeout": 8,
+            "type": "command"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "command": "sh -lc 'root=\"$(git rev-parse --show-toplevel)\"; exec rusty-idd next --base \"$root\"'",
+            "statusMessage": "Rusty IDD front door: computing the next step",
+            "timeout": 180,
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "command": "\"$(git rev-parse --show-toplevel)/.codex/helpers/run-claude-hook.sh\" hook-handler.cjs session-end",
+            "timeout": 10,
+            "type": "command"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "command": "\"$(git rev-parse --show-toplevel)/.codex/helpers/run-claude-hook.sh\" auto-memory-hook.mjs sync",
+            "timeout": 10,
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "command": "\"$(git rev-parse --show-toplevel)/.codex/helpers/run-claude-hook.sh\" hook-handler.cjs status",
+            "timeout": 3,
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "command": "\"$(git rev-parse --show-toplevel)/.codex/helpers/run-claude-hook.sh\" hook-handler.cjs post-task",
+            "timeout": 5,
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "command": "\"$(git rev-parse --show-toplevel)/.codex/helpers/run-claude-hook.sh\" hook-handler.cjs route",
+            "timeout": 10,
+            "type": "command"
+          }
+        ]
+      }
+    ]
+  }
+}
