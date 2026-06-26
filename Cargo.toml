@@ -1,5 +1,5 @@
 [workspace]
-exclude = ["crates/micro-hnsw-wasm", "crates/ruvector-hyperbolic-hnsw", "crates/ruvector-hyperbolic-hnsw-wasm", "examples/ruvLLM/esp32", "examples/ruvLLM/esp32-flash", "examples/edge-net", "examples/data", "examples/ruvLLM", "examples/delta-behavior", "crates/rvf", "crates/rvf/*", "crates/rvf/*/*", "examples/rvf-desktop", "crates/mcp-brain-server",
+exclude = ["crates/micro-hnsw-wasm", "crates/ruvector-hyperbolic-hnsw", "crates/ruvector-hyperbolic-hnsw-wasm", "examples/ruvLLM/esp32", "examples/ruvLLM/esp32-flash", "examples/edge-net", "examples/data", "examples/ruvLLM", "examples/delta-behavior", "crates/rvf", "crates/rvf/*", "crates/rvf/*/*",
     # ruvector-postgres is a pgrx-based PostgreSQL extension. Its build script
     # requires `$PGRX_HOME` set up via `cargo install cargo-pgrx --version 0.12.9`
     # and `cargo pgrx init`, which downloads and builds multiple Postgres
@@ -7,20 +7,12 @@ exclude = ["crates/micro-hnsw-wasm", "crates/ruvector-hyperbolic-hnsw", "crates/
     # works in stock environments. Build it explicitly with `cargo build -p ruvector-postgres`
     # after running pgrx init.
     "crates/ruvector-postgres",
-    # Vendored cognitum-one SDK source. Excluded from the workspace so it
-    # keeps its own (upstream) lint surface and `cargo {check,clippy} --workspace`
-    # never touches it. See `vendor/cognitum-one/VENDORED.md`.
-    "vendor/cognitum-one",
     # Iter 219 (closes ADR-178 Gap E folded into Gap B): the hailo
     # crates rejoined the workspace once the iter-218 ruvector-core
     # path dep + EmbeddingProvider impls landed. The `hailo` feature
     # stays opt-in (only `cargo build --features hailo,cpu-fallback`
     # pulls libhailort + candle), so workspace builds on stock x86
     # still compile without Pi-specific tooling.
-    # ruos-thermal: Pi 5 thermal supervisor skeleton (ADR-174). Standalone
-    # for now; joins workspace once daemon mode + Unix socket protocol
-    # land in iters 92-97.
-    "crates/ruos-thermal",
     # agentic-robotics-*: a self-contained DDS/ROS2 robotics-middleware cluster
     # (upstream ruvnet/vibecast) — 6 crates that only depend on each other, with
     # zero linkage to ruvector proper. They inherit workspace.package fields
@@ -357,6 +349,10 @@ members = [
     "examples/OSpipe",
     # Recovered — had its own [workspace] section (nested workspace root). Stripped it to allow parent membership.
     "examples/rvf",
+    # Standalone native desktop app with embedded Three.js dashboard (wry/tao) — zero workspace deps, compiles clean.
+    "examples/rvf-desktop",
+    # Cognitum Seed / Cloud SDK surface — vendored in-tree, already defined in [workspace.dependencies]. Enables seed (LAN appliance), mdns, stream, blocking features per-crate opt-in.
+    "vendor/cognitum-one",
 ]
 resolver = "2"
 
