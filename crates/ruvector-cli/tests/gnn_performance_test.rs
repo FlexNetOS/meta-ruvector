@@ -8,8 +8,6 @@
 //! NOTE: These tests use relaxed thresholds for debug builds.
 //! Run with `cargo test --release` for production performance numbers.
 
-use std::time::Instant;
-
 // Import from the crate being tested
 mod gnn_cache_tests {
     use ruvector_gnn::layer::RuvectorLayer;

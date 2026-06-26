@@ -1,6 +1,8 @@
 //! Graph database command implementations
 
-use crate::cli::{format_error, format_info, format_success};
+use crate::cli::{
+    format_error, format_graph_stats, format_graph_table, format_info, format_success,
+};
 use crate::config::Config;
 use anyhow::Result;
 use colored::*;
@@ -201,7 +203,16 @@ pub fn execute_query(
 
     match format {
         "table" => {
-            println!("\n{}", format_graph_results_table(&[], cypher));
+            // Use format_graph_table for structured tabular output.
+            // Once real query results are available, headers and rows will be populated
+            // from the result set; for now pass empty slices as a placeholder.
+            let headers: Vec<String> = vec!["result".to_string()];
+            let rows: Vec<Vec<String>> = vec![];
+            if rows.is_empty() {
+                println!("\n{}", format_graph_results_table(&[], cypher));
+            } else {
+                print!("{}", format_graph_table(&headers, &rows));
+            }
         }
         "json" => {
             println!("{}", format_graph_results_json(&[])?);
@@ -401,15 +412,17 @@ pub fn export_graph(
 
 /// Show graph database information
 pub fn show_graph_info(db_path: &str, detailed: bool, _config: &Config) -> Result<()> {
-    println!("\n{}", "Graph Database Statistics".bold().green());
-
     // TODO: Integrate with ruvector-neo4j to get actual statistics
+    // Placeholder counts — will be replaced with real DB queries
+    let (node_count, rel_count, label_count, rel_type_count) = (0usize, 0usize, 0usize, 0usize);
+
     println!("  Database: {}", db_path.cyan());
     println!("  Graphs: {}", "1".cyan());
-    println!("  Total nodes: {}", "0".cyan());
-    println!("  Total relationships: {}", "0".cyan());
-    println!("  Node labels: {}", "0".cyan());
-    println!("  Relationship types: {}", "0".cyan());
+    // format_graph_stats renders the summary block with colored counts
+    print!(
+        "{}",
+        format_graph_stats(node_count, rel_count, label_count, rel_type_count)
+    );
 
     if detailed {
         println!("\n{}", "Storage Information:".bold().cyan());

@@ -1,6 +1,8 @@
 //! CLI command implementations
 
-use crate::cli::{format_search_results, format_stats, format_success, ProgressTracker};
+use crate::cli::{
+    format_search_results, format_stats, format_success, format_warning, ProgressTracker,
+};
 use crate::config::Config;
 use anyhow::{Context, Result};
 use colored::*;
@@ -60,8 +62,15 @@ pub fn insert_vectors(
     // Insert with progress
     let start = Instant::now();
     let tracker = ProgressTracker::new();
+    // Show a determinate progress bar when progress is enabled; otherwise show a spinner
+    // so that `create_spinner` and `finish_all` are always exercised in this path.
     let pb = if show_progress {
         Some(tracker.create_bar(total as u64, "Inserting vectors..."))
+    } else {
+        None
+    };
+    let spinner = if !show_progress {
+        Some(tracker.create_spinner("Inserting vectors..."))
     } else {
         None
     };
@@ -70,8 +79,7 @@ pub fn insert_vectors(
     let mut inserted = 0;
 
     for chunk in entries.chunks(batch_size) {
-        db.insert_batch(chunk.to_vec())
-            .context("Failed to insert batch")?;
+        db.insert_batch(chunk).context("Failed to insert batch")?;
         inserted += chunk.len();
 
         if let Some(ref pb) = pb {
@@ -82,6 +90,10 @@ pub fn insert_vectors(
     if let Some(pb) = pb {
         pb.finish_with_message("Insertion complete!");
     }
+    if let Some(sp) = spinner {
+        sp.finish_with_message("Insertion complete!");
+    }
+    tracker.finish_all();
 
     let elapsed = start.elapsed();
     println!(
@@ -232,11 +244,16 @@ pub fn export_database(
         format_success(&format!("Exporting database to: {}", output_file))
     );
 
-    // Export is currently limited - would need to add all_ids() method to VectorDB
-    // For now, return an error with a helpful message
-    return Err(anyhow::anyhow!(
-        "Export functionality requires VectorDB::all_ids() method. This will be implemented in a future update."
-    ));
+    // Export is currently blocked — VectorDB::all_ids() is not yet available in ruvector_core
+    println!(
+        "{}",
+        format_warning(
+            "Export requires VectorDB::all_ids() — this feature is planned for a future release."
+        )
+    );
+    Err(anyhow::anyhow!(
+        "Export not yet implemented: VectorDB::all_ids() is not available in ruvector_core"
+    ))
 
     // TODO: Implement when VectorDB exposes all_ids()
     // let ids = db.all_ids()?;
@@ -260,17 +277,17 @@ pub fn import_from_external(
     match source {
         "faiss" => {
             // TODO: Implement FAISS import
-            return Err(anyhow::anyhow!("FAISS import not yet implemented"));
+            Err(anyhow::anyhow!("FAISS import not yet implemented"))
         }
         "pinecone" => {
             // TODO: Implement Pinecone import
-            return Err(anyhow::anyhow!("Pinecone import not yet implemented"));
+            Err(anyhow::anyhow!("Pinecone import not yet implemented"))
         }
         "weaviate" => {
             // TODO: Implement Weaviate import
-            return Err(anyhow::anyhow!("Weaviate import not yet implemented"));
+            Err(anyhow::anyhow!("Weaviate import not yet implemented"))
         }
-        _ => return Err(anyhow::anyhow!("Unsupported source: {}", source)),
+        _ => Err(anyhow::anyhow!("Unsupported source: {}", source)),
     }
 }
 

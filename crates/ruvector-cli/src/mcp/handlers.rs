@@ -326,6 +326,14 @@ impl McpHandler {
                     "required": ["query", "candidates", "k"]
                 }),
             },
+            McpTool {
+                name: "gnn_cache_clear".to_string(),
+                description: "Clear all cached GNN layers and query results".to_string(),
+                input_schema: json!({
+                    "type": "object",
+                    "properties": {}
+                }),
+            },
         ];
 
         McpResponse::success(id, json!({ "tools": tools }))
@@ -337,12 +345,25 @@ impl McpHandler {
             None => {
                 return McpResponse::error(
                     id,
-                    McpError::new(error_codes::INVALID_PARAMS, "Missing params"),
-                )
+                    // Use INVALID_REQUEST (not INVALID_PARAMS) when the entire params object
+                    // is absent — the call itself is malformed, not just individual parameters.
+                    McpError::new(error_codes::INVALID_REQUEST, "Missing params").with_data(
+                        json!({"expected": "params object with 'name' and 'arguments' fields"}),
+                    ),
+                );
             }
         };
 
         let tool_name = params["name"].as_str().unwrap_or("");
+        // INVALID_PARAMS: params object was provided but the required "name" field is absent/null.
+        // (Contrast with INVALID_REQUEST above where the whole params object was missing.)
+        if tool_name.is_empty() {
+            return McpResponse::error(
+                id,
+                McpError::new(error_codes::INVALID_PARAMS, "Missing required parameter 'name'")
+                    .with_data(json!({"expected": "params.name: string (tool name to invoke)"})),
+            );
+        }
         let arguments = &params["arguments"];
 
         let result = match tool_name {
@@ -360,6 +381,7 @@ impl McpHandler {
             "gnn_compress" => self.tool_gnn_compress(arguments).await,
             "gnn_decompress" => self.tool_gnn_decompress(arguments).await,
             "gnn_search" => self.tool_gnn_search(arguments).await,
+            "gnn_cache_clear" => self.tool_gnn_cache_clear().await,
             _ => Err(anyhow::anyhow!("Unknown tool: {}", tool_name)),
         };
 
@@ -375,19 +397,14 @@ impl McpHandler {
     }
 
     async fn handle_resources_list(&self, id: Option<Value>) -> McpResponse {
-        McpResponse::success(
-            id,
-            json!({
-                "resources": [
-                    {
-                        "uri": "database://local/default",
-                        "name": "Default Database",
-                        "description": "Default vector database",
-                        "mimeType": "application/x-ruvector-db"
-                    }
-                ]
-            }),
-        )
+        // Use McpResource struct for type-safe resource construction
+        let resources = vec![McpResource {
+            uri: "database://local/default".to_string(),
+            name: "Default Database".to_string(),
+            description: "Default vector database".to_string(),
+            mime_type: "application/x-ruvector-db".to_string(),
+        }];
+        McpResponse::success(id, json!({ "resources": resources }))
     }
 
     async fn handle_resources_read(
@@ -408,24 +425,17 @@ impl McpHandler {
     }
 
     async fn handle_prompts_list(&self, id: Option<Value>) -> McpResponse {
-        McpResponse::success(
-            id,
-            json!({
-                "prompts": [
-                    {
-                        "name": "semantic-search",
-                        "description": "Generate a semantic search query",
-                        "arguments": [
-                            {
-                                "name": "query",
-                                "description": "Natural language query",
-                                "required": true
-                            }
-                        ]
-                    }
-                ]
-            }),
-        )
+        // Use McpPrompt and PromptArgument structs for type-safe prompt construction
+        let prompts = vec![McpPrompt {
+            name: "semantic-search".to_string(),
+            description: "Generate a semantic search query".to_string(),
+            arguments: Some(vec![PromptArgument {
+                name: "query".to_string(),
+                description: "Natural language query".to_string(),
+                required: true,
+            }]),
+        }];
+        McpResponse::success(id, json!({ "prompts": prompts }))
     }
 
     async fn handle_prompts_get(&self, id: Option<Value>, _params: Option<Value>) -> McpResponse {
@@ -725,6 +735,10 @@ impl McpHandler {
         if params.include_details {
             result["estimated_memory_saved_ms"] = json!((stats.layer_hits as f64) * 2500.0);
             // ~2.5s per hit
+            // Report oldest cached layer age (uses CacheEntry::created_at for monitoring)
+            if let Some(age) = self.gnn_cache.oldest_layer_age_secs().await {
+                result["oldest_layer_age_secs"] = json!(age);
+            }
         }
 
         Ok(result.to_string())
@@ -772,6 +786,16 @@ impl McpHandler {
         Ok(json!({
             "embedding": decompressed_f64,
             "dimensions": decompressed.len()
+        })
+        .to_string())
+    }
+
+    /// Clear all cached GNN layers and query results
+    async fn tool_gnn_cache_clear(&self) -> Result<String> {
+        self.gnn_cache.clear().await;
+        Ok(json!({
+            "cleared": true,
+            "message": "All cached GNN layers and query results have been evicted"
         })
         .to_string())
     }
@@ -919,7 +943,7 @@ mod tests {
         let dir = tempdir().unwrap();
         let handler = handler_with_data_dir(dir.path());
 
-        let result = handler.validate_path("~/.ssh/id_rsa");
+        let _result = handler.validate_path("~/.ssh/id_rsa");
         // This is a relative path so it won't expand ~, but test the principle
         let result2 = handler.validate_path("/root/.ssh/id_rsa");
         assert!(result2.is_err(), "Should block /root/.ssh/id_rsa");
