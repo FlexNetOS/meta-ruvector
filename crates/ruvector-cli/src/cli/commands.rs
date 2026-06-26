@@ -1,17 +1,16 @@
 //! CLI command implementations
 
 use crate::cli::{
-    export_csv, export_json, format_error, format_search_results, format_stats, format_success,
+    format_search_results, format_stats, format_success,
     ProgressTracker,
 };
 use crate::config::Config;
 use anyhow::{Context, Result};
 use colored::*;
 use ruvector_core::{
-    types::{DbOptions, SearchQuery, VectorEntry},
+    types::{SearchQuery, VectorEntry},
     VectorDB,
 };
-use std::path::{Path, PathBuf};
 use std::time::Instant;
 
 /// Create a new database
@@ -223,13 +222,13 @@ pub fn run_benchmark(db_path: &str, config: &Config, num_queries: usize) -> Resu
 pub fn export_database(
     db_path: &str,
     output_file: &str,
-    format: &str,
+    _format: &str,
     config: &Config,
 ) -> Result<()> {
     let mut db_options = config.to_db_options();
     db_options.storage_path = db_path.to_string();
 
-    let db = VectorDB::new(db_options).context("Failed to open database")?;
+    let _db = VectorDB::new(db_options).context("Failed to open database")?;
 
     println!(
         "{}",
@@ -251,10 +250,10 @@ pub fn export_database(
 
 /// Import from other vector databases
 pub fn import_from_external(
-    db_path: &str,
+    _db_path: &str,
     source: &str,
-    source_path: &str,
-    config: &Config,
+    _source_path: &str,
+    _config: &Config,
 ) -> Result<()> {
     println!(
         "{}",

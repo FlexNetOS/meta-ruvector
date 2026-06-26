@@ -5,7 +5,7 @@ use super::protocol::*;
 use crate::config::Config;
 use anyhow::{Context, Result};
 use ruvector_core::{
-    types::{DbOptions, DistanceMetric, SearchQuery, VectorEntry},
+    types::{DistanceMetric, SearchQuery, VectorEntry},
     VectorDB,
 };
 use ruvector_gnn::{compress::TensorCompress, search::differentiable_search};

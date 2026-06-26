@@ -114,7 +114,7 @@ pub fn format_graph_node(
 
 /// Format graph relationship for display
 pub fn format_graph_relationship(
-    id: &str,
+    _id: &str,
     rel_type: &str,
     start_node: &str,
     end_node: &str,
