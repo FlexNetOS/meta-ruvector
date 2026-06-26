@@ -395,6 +395,10 @@ impl DeltaEngine {
 #[wasm_bindgen]
 pub struct JsDeltaStream {
     inner: DeltaStream<VectorDelta>,
+    // Retained from the constructor as part of the wasm public API surface
+    // (the `dimensions` arg is required by JS callers); kept for API symmetry
+    // with JsDeltaWindow and potential future inspection.
+    #[allow(dead_code)]
     dimensions: usize,
 }
 
@@ -476,6 +480,10 @@ impl JsDeltaStream {
 #[wasm_bindgen]
 pub struct JsDeltaWindow {
     inner: DeltaWindow<VectorDelta>,
+    // Retained from the constructors as part of the wasm public API surface
+    // (the `dimensions` arg is required by JS callers); the inner DeltaWindow
+    // does not store it, so it is kept here for API symmetry / future use.
+    #[allow(dead_code)]
     dimensions: usize,
 }
 
@@ -575,7 +583,7 @@ mod tests {
 
         let delta = engine.capture(old.clone(), new.clone()).unwrap();
 
-        let mut test_vec = Float32Array::from(&[1.0f32, 2.0, 3.0][..]);
+        let test_vec = Float32Array::from(&[1.0f32, 2.0, 3.0][..]);
         engine.apply(test_vec.clone(), &delta).unwrap();
 
         // Note: can't easily verify Float32Array equality in WASM tests

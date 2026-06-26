@@ -767,13 +767,13 @@ fn benchmark_gnn_forward(
                         new_features[node][d] += features[neighbor][d];
                     }
                 }
-                for d in 0..dims {
-                    new_features[node][d] /= neighbors.len() as f32;
+                for v in new_features[node].iter_mut() {
+                    *v /= neighbors.len() as f32;
                 }
 
                 // ReLU activation
-                for d in 0..dims {
-                    new_features[node][d] = new_features[node][d].max(0.0);
+                for v in new_features[node].iter_mut() {
+                    *v = v.max(0.0);
                 }
             }
 

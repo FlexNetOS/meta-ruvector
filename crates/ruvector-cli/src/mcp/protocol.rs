@@ -41,6 +41,8 @@ impl McpError {
         }
     }
 
+    // Builder for attaching structured data to a JSON-RPC error; part of the protocol API.
+    #[allow(dead_code)]
     pub fn with_data(mut self, data: Value) -> Self {
         self.data = Some(data);
         self
@@ -50,6 +52,8 @@ impl McpError {
 /// Standard MCP error codes
 pub mod error_codes {
     pub const PARSE_ERROR: i32 = -32700;
+    // Standard JSON-RPC 2.0 error code; kept for protocol completeness.
+    #[allow(dead_code)]
     pub const INVALID_REQUEST: i32 = -32600;
     pub const METHOD_NOT_FOUND: i32 = -32601;
     pub const INVALID_PARAMS: i32 = -32602;
@@ -86,6 +90,8 @@ pub struct McpTool {
 }
 
 /// MCP Resource definition
+// Protocol-completeness type for the MCP `resources/*` surface; not yet served by this CLI.
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct McpResource {
     pub uri: String,
@@ -96,6 +102,8 @@ pub struct McpResource {
 }
 
 /// MCP Prompt definition
+// Protocol-completeness type for the MCP `prompts/*` surface; not yet served by this CLI.
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct McpPrompt {
     pub name: String,
@@ -103,6 +111,8 @@ pub struct McpPrompt {
     pub arguments: Option<Vec<PromptArgument>>,
 }
 
+// Companion argument type for `McpPrompt`; kept for protocol completeness.
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PromptArgument {
     pub name: String,

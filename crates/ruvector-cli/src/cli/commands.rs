@@ -70,8 +70,7 @@ pub fn insert_vectors(
     let mut inserted = 0;
 
     for chunk in entries.chunks(batch_size) {
-        db.insert_batch(chunk.to_vec())
-            .context("Failed to insert batch")?;
+        db.insert_batch(chunk).context("Failed to insert batch")?;
         inserted += chunk.len();
 
         if let Some(ref pb) = pb {
@@ -234,9 +233,9 @@ pub fn export_database(
 
     // Export is currently limited - would need to add all_ids() method to VectorDB
     // For now, return an error with a helpful message
-    return Err(anyhow::anyhow!(
+    Err(anyhow::anyhow!(
         "Export functionality requires VectorDB::all_ids() method. This will be implemented in a future update."
-    ));
+    ))
 
     // TODO: Implement when VectorDB exposes all_ids()
     // let ids = db.all_ids()?;
@@ -260,17 +259,17 @@ pub fn import_from_external(
     match source {
         "faiss" => {
             // TODO: Implement FAISS import
-            return Err(anyhow::anyhow!("FAISS import not yet implemented"));
+            Err(anyhow::anyhow!("FAISS import not yet implemented"))
         }
         "pinecone" => {
             // TODO: Implement Pinecone import
-            return Err(anyhow::anyhow!("Pinecone import not yet implemented"));
+            Err(anyhow::anyhow!("Pinecone import not yet implemented"))
         }
         "weaviate" => {
             // TODO: Implement Weaviate import
-            return Err(anyhow::anyhow!("Weaviate import not yet implemented"));
+            Err(anyhow::anyhow!("Weaviate import not yet implemented"))
         }
-        _ => return Err(anyhow::anyhow!("Unsupported source: {}", source)),
+        _ => Err(anyhow::anyhow!("Unsupported source: {}", source)),
     }
 }
 

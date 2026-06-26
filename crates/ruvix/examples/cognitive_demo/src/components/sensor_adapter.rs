@@ -113,7 +113,7 @@ impl SensorAdapter {
         let hash_input = combined.to_le_bytes();
 
         let mut hasher = Sha256::new();
-        hasher.update(&hash_input);
+        hasher.update(hash_input);
         hasher.update(b"sensor_event");
         let hash_result: [u8; 32] = hasher.finalize().into();
 

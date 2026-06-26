@@ -36,3 +36,8 @@ audit-log = ["alloc"]
 # Enable metrics collection
 metrics = ["alloc"]
 
+# CVE-001 security guard: when enabled, bypasses boot-time verification.
+# Intended for test/dev builds only; never enable in production. Declared so
+# the conditional-compilation guard in `security.rs` is a recognized cfg value.
+disable-boot-verify = []
+

@@ -144,8 +144,8 @@ impl HealthcareModel {
 
     pub fn encode_symptoms(&self, symptoms: &[f32]) -> Vec<f32> {
         // Create keys and values for self-attention
-        let keys = vec![symptoms.to_vec()];
-        let values = vec![symptoms.to_vec()];
+        let keys = [symptoms.to_vec()];
+        let values = [symptoms.to_vec()];
 
         let keys_refs: Vec<&[f32]> = keys.iter().map(|k| k.as_slice()).collect();
         let values_refs: Vec<&[f32]> = values.iter().map(|v| v.as_slice()).collect();
@@ -227,8 +227,8 @@ impl FinancialModel {
     }
 
     pub fn analyze_market(&self, market_data: &[f32]) -> Vec<f32> {
-        let keys = vec![market_data.to_vec()];
-        let values = vec![market_data.to_vec()];
+        let keys = [market_data.to_vec()];
+        let values = [market_data.to_vec()];
 
         let keys_refs: Vec<&[f32]> = keys.iter().map(|k| k.as_slice()).collect();
         let values_refs: Vec<&[f32]> = values.iter().map(|v| v.as_slice()).collect();
@@ -538,8 +538,8 @@ impl SpikingNeuralNetwork {
         }
 
         // Propagate spikes
-        for i in 0..self.num_neurons {
-            if spikes[i] {
+        for (i, &spiked) in spikes.iter().enumerate() {
+            if spiked {
                 for j in 0..self.num_neurons {
                     if i != j {
                         self.membrane_potentials[j] += self.weights[i][j];
@@ -559,7 +559,7 @@ impl SpikingNeuralNetwork {
             -0.012 * (dt / self.tau_stdp).exp() // LTD
         };
 
-        self.weights[pre][post] = (self.weights[pre][post] + dw).max(0.0).min(1.0);
+        self.weights[pre][post] = (self.weights[pre][post] + dw).clamp(0.0, 1.0);
     }
 }
 
@@ -788,21 +788,21 @@ impl ReservoirComputer {
     pub fn step(&mut self, input: &[f32]) -> Vec<f32> {
         let mut new_state = vec![0.0; self.reservoir_size];
 
-        for i in 0..self.reservoir_size {
+        for (i, entry) in new_state.iter_mut().enumerate() {
             // Input contribution
             for (j, &inp) in input.iter().enumerate() {
                 if j < self.input_weights[i].len() {
-                    new_state[i] += self.input_weights[i][j] * inp;
+                    *entry += self.input_weights[i][j] * inp;
                 }
             }
 
             // Recurrent contribution
             for j in 0..self.reservoir_size {
-                new_state[i] += self.reservoir_weights[i][j] * self.state[j] * self.spectral_radius;
+                *entry += self.reservoir_weights[i][j] * self.state[j] * self.spectral_radius;
             }
 
             // Nonlinearity
-            new_state[i] = new_state[i].tanh();
+            *entry = entry.tanh();
         }
 
         self.state = new_state.clone();
