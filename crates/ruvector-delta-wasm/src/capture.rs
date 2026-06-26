@@ -38,7 +38,7 @@ pub fn capture_delta(old: &[f32], new: &[f32], config: &CaptureConfig) -> Vector
     }
 
     // For larger vectors, sample to estimate sparsity
-    let sample_size = (dimensions / 10).max(16).min(256);
+    let sample_size = (dimensions / 10).clamp(16, 256);
     let mut non_zero_sample = 0;
 
     for i in (0..dimensions).step_by(dimensions / sample_size) {

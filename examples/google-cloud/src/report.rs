@@ -53,7 +53,7 @@ fn load_results(dir: &Path) -> Result<Vec<BenchmarkResult>> {
         let entry = entry?;
         let path = entry.path();
 
-        if path.extension().map_or(false, |ext| ext == "json") {
+        if path.extension().is_some_and(|ext| ext == "json") {
             let file = File::open(&path)?;
             let reader = BufReader::new(file);
 

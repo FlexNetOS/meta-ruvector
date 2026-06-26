@@ -25,6 +25,12 @@ pub struct WasmQueryDag {
     inner: QueryDag,
 }
 
+impl Default for WasmQueryDag {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[wasm_bindgen]
 impl WasmQueryDag {
     /// Create a new empty DAG
@@ -45,7 +51,7 @@ impl WasmQueryDag {
     /// Node ID
     #[wasm_bindgen(js_name = addNode)]
     pub fn add_node(&mut self, op_type: &str, cost: f32) -> u32 {
-        let table_id = self.inner.node_count() as usize;
+        let table_id = self.inner.node_count();
         let mut node = match op_type {
             "scan" => OperatorNode::seq_scan(table_id, &format!("table_{}", table_id)),
             "filter" => OperatorNode::filter(table_id, "condition"),
@@ -554,7 +560,7 @@ impl WasmParallelBranchAttention {
             let is_branch_child = parents.iter().any(|&p| branch_starts.contains(&p));
 
             let children = dag.inner.children(node_id);
-            let is_sync_point = children.len() == 0 && parents.len() > 1;
+            let is_sync_point = children.is_empty() && parents.len() > 1;
 
             let score = if is_branch_child {
                 1.5 // Boost parallel branch nodes

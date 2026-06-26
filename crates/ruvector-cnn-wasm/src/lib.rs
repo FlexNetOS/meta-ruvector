@@ -282,7 +282,7 @@ impl WasmTripletLoss {
         negatives: &[f32],
         dim: usize,
     ) -> Result<f32, JsValue> {
-        if anchors.len() % dim != 0
+        if !anchors.len().is_multiple_of(dim)
             || positives.len() != anchors.len()
             || negatives.len() != anchors.len()
         {

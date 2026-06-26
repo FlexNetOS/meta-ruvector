@@ -93,6 +93,8 @@ pub fn try_parse_stdin() -> Option<HookInput> {
 }
 
 /// Output JSON for context injection (PostToolUse)
+// Retained hook helper for emitting PostToolUse context-injection JSON; not yet wired to a hook handler.
+#[allow(dead_code)]
 pub fn output_context_injection(context: &str) {
     let output = HookOutput {
         hook_specific_output: Some(HookSpecificOutput {
@@ -514,9 +516,12 @@ pub struct IntelligenceStats {
 pub struct Intelligence {
     data: IntelligenceData,
     data_path: PathBuf,
-    alpha: f32,                              // Learning rate
-    gamma: f32,                              // Discount factor
-    epsilon: f32,                            // Exploration rate
+    alpha: f32, // Learning rate
+    // Q-learning hyperparameters retained for the RL update rule; set at construction, not yet read.
+    #[allow(dead_code)]
+    gamma: f32, // Discount factor
+    #[allow(dead_code)]
+    epsilon: f32, // Exploration rate
     dirty: bool,                             // Track if data needs saving
     q_cache: RefCell<LruCache<String, f32>>, // LRU cache for Q-values
     use_compression: bool,                   // Use gzip compression
@@ -544,6 +549,8 @@ impl Intelligence {
     }
 
     /// Create lightweight instance for read-only operations (lazy loading)
+    // Retained read-only constructor; the default path uses `new()`/`with_options()`.
+    #[allow(dead_code)]
     pub fn lazy() -> Self {
         Self {
             data: IntelligenceData::default(),
@@ -617,6 +624,8 @@ impl Intelligence {
     }
 
     /// Check if data needs saving
+    // Retained accessor over the dirty flag; not yet read by a flush path.
+    #[allow(dead_code)]
     pub fn is_dirty(&self) -> bool {
         self.dirty
     }
@@ -928,6 +937,8 @@ impl Intelligence {
     // === File Sequence Prediction ===
 
     /// Record file edit
+    // Retained file-sequence learning API; not yet wired to the edit-hook handler.
+    #[allow(dead_code)]
     pub fn record_file_edit(&mut self, file: &str, previous_file: Option<&str>) {
         if let Some(prev) = previous_file {
             let existing = self
@@ -958,7 +969,7 @@ impl Intelligence {
             .map(|s| (s.to_file.as_str(), s.count))
             .collect();
 
-        suggestions.sort_by(|a, b| b.1.cmp(&a.1));
+        suggestions.sort_by_key(|b| std::cmp::Reverse(b.1));
         suggestions.into_iter().take(count).collect()
     }
 
@@ -1088,11 +1099,15 @@ impl Intelligence {
     }
 
     /// Get pattern count
+    // Retained stats accessor; not yet surfaced by a status/metrics subcommand.
+    #[allow(dead_code)]
     pub fn pattern_count(&self) -> usize {
         self.data.patterns.len()
     }
 
     /// Get memory count
+    // Retained stats accessor; not yet surfaced by a status/metrics subcommand.
+    #[allow(dead_code)]
     pub fn memory_count(&self) -> usize {
         self.data.memories.len()
     }
@@ -2135,7 +2150,7 @@ pub fn lsp_diagnostic_cmd(
     let state = format!(
         "lsp:{}:{}",
         severity,
-        file.split('/').last().unwrap_or(file)
+        file.split('/').next_back().unwrap_or(file)
     );
     intel.learn(
         &state,
