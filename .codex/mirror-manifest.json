@@ -1,5 +1,5 @@
 {
-  "fileCount": 994,
+  "fileCount": 988,
   "files": [
     ".codex/mirror/.claude/agentic-flow-fast.sh",
     ".codex/mirror/.claude/agents/analysis/analyze-code-quality.md",
@@ -810,12 +810,6 @@
     ".codex/helpers/worker-manager.sh",
     ".codex/helpers/install-prompts.sh",
     ".codex/helpers/run-claude-hook.sh",
-    ".codex/hooks.json",
-    ".codex/hooks/bench-runner.sh",
-    ".codex/hooks/crate-context.sh",
-    ".codex/hooks/post-rust-edit.sh",
-    ".codex/hooks/rust-check.sh",
-    ".codex/hooks/wasm-size-check.sh",
     ".agents/skills/agentdb-advanced/SKILL.md",
     ".agents/skills/agentdb-learning/SKILL.md",
     ".agents/skills/agentdb-memory-patterns/SKILL.md",

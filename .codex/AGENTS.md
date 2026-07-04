@@ -8,8 +8,8 @@ repository, not a vendor harness and not a user-global prompt dump.
 evidence/debug material. The crate-owned runtime target is the compact,
 deterministic automation layer generated under `.codex`, especially
 `.codex/automation-graph.json`, `.codex/agent-teams.json`,
-`.codex/hooks.json`, `.codex/hooks/`, `.codex/prompts/`, and
-`.codex/agents/`.
+`.codex/prompts/`, and `.codex/agents/`. Codex lifecycle hooks from the
+pre-clean-room generator are deliberately not emitted.
 
 ## Refresh
 
@@ -29,8 +29,8 @@ cargo run -p codex-env -- doctor
 - `.claude/**` -> `.codex/mirror/.claude/**` byte-for-byte
 - `.claude/**` -> `.codex/mirror-symbols.json` deterministic file/symbol evidence inventory
 - `.claude/**` -> `.codex/automation-graph.json` compact crate-owned capability graph
-- `.claude/settings.json` -> `.codex/hooks.json` and shell environment defaults
-- `.claude/hooks/` -> normalized `.codex/hooks/` runtime scripts
+- `.claude/settings.json` -> `.codex/config.toml` and shell environment defaults
+- legacy `.claude/hooks/` inputs remain evidence only until clean-room hooks are rebuilt
 - `.claude/skills/` -> `.agents/skills/`
 - `.claude/commands/**/*.md` -> `.agents/skills/source-command-*`
 - `.claude/commands/**/*.md` -> repo-local `.codex/prompts/*.md` for `/prompts:*`,

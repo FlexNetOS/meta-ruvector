@@ -9,7 +9,7 @@ Compare the actual repo state against Codex-native behavior, not Claude assumpti
 
 - commands and prompts: .claude/commands, .agents/skills/source-command-*, repo-local .codex/prompts
 - agents and teams: .claude/agents, .codex/agents, custom-agent schema, explicit subagent workflows
-- hooks and helpers: .claude/settings.json, .codex/hooks.json, .codex/hooks, .codex/helpers, supported Codex hook events
+- hooks and helpers: .claude/settings.json, .codex/helpers, and the explicit zero-runtime-hook policy until clean-room hooks are rebuilt
 - settings and MCP: .codex/config.toml, active MCP servers, features, model and sandbox defaults
 - auto loop: AGENTS.md, ICM recall/store, verification gates, commit/push/PR workflow
 
