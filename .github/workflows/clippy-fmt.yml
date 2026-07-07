@@ -19,7 +19,13 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install system dependencies
-        run: sudo apt-get update && sudo apt-get install -y libfontconfig1-dev
+        # Drop the broken third-party (Microsoft) apt repos preinstalled on the
+        # ubuntu-26.04 runner image: their InRelease signatures intermittently
+        # fail ("no longer signed" / NOSPLIT), which aborts `apt-get update`
+        # (exit 100) even though our packages come from the main Ubuntu repos.
+        run: |
+          sudo rm -f /etc/apt/sources.list.d/microsoft-prod.list /etc/apt/sources.list.d/azure-cli.list
+          sudo apt-get update && sudo apt-get install -y libfontconfig1-dev
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
