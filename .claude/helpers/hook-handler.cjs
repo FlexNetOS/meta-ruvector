@@ -78,8 +78,11 @@ async function main() {
     try { hookInput = JSON.parse(stdinData); } catch (e) { /* ignore parse errors */ }
   }
 
-  // Merge stdin data into prompt resolution: prefer stdin fields, then env, then argv
-  const prompt = hookInput.prompt || hookInput.command || hookInput.toolInput
+  // Merge stdin data into prompt resolution: prefer stdin fields, then env, then argv.
+  // Claude Code delivers tool payloads snake_cased (tool_input.command); older
+  // callers used camelCase toolInput — accept both.
+  const toolInput = hookInput.tool_input || hookInput.toolInput || {};
+  const prompt = hookInput.prompt || hookInput.command || toolInput.command
     || process.env.PROMPT || process.env.TOOL_INPUT_command || args.join(' ') || '';
 
 const handlers = {
@@ -154,12 +157,31 @@ const handlers = {
     // Record edit for intelligence consolidation — prefer stdin data from Claude Code
     if (intelligence && intelligence.recordEdit) {
       try {
-        const file = hookInput.file_path || (hookInput.toolInput && hookInput.toolInput.file_path)
+        const file = hookInput.file_path || toolInput.file_path
           || process.env.TOOL_INPUT_file_path || args[0] || '';
         intelligence.recordEdit(file);
       } catch (e) { /* non-fatal */ }
     }
     console.log('[OK] Edit recorded');
+  },
+
+  'post-bash': () => {
+    // Record command outcome for intelligence consolidation
+    if (session && session.metric) {
+      try { session.metric('commands'); } catch (e) { /* no active session */ }
+    }
+    if (intelligence && intelligence.recordCommand) {
+      try {
+        const cmd = hookInput.command || toolInput.command
+          || process.env.TOOL_INPUT_command || args.join(' ') || '';
+        const resp = hookInput.tool_response || hookInput.toolResponse || {};
+        const failed = resp.success === false || resp.is_error === true
+          || (typeof resp.exitCode === 'number' && resp.exitCode !== 0)
+          || (typeof resp.exit_code === 'number' && resp.exit_code !== 0);
+        intelligence.recordCommand(cmd, !failed);
+      } catch (e) { /* non-fatal */ }
+    }
+    console.log('[OK] Command recorded');
   },
 
   'session-restore': () => {

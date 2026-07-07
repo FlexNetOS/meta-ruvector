@@ -469,6 +469,22 @@ function recordEdit(file) {
 }
 
 /**
+ * recordCommand(command, success) — Called from post-bash. Budget: <2ms.
+ * Appends to pending-insights.jsonl.
+ */
+function recordCommand(command, success) {
+  ensureDataDir();
+  const entry = JSON.stringify({
+    type: 'command',
+    command: (command || 'unknown').slice(0, 500),
+    success: success !== false,
+    timestamp: Date.now(),
+    sessionId: sessionGet('sessionId') || null,
+  });
+  fs.appendFileSync(PENDING_PATH, entry + '\n', 'utf-8');
+}
+
+/**
  * feedback(success) — Called from post-task. Budget: <10ms.
  * Boosts or decays confidence for last-matched patterns.
  */
@@ -890,7 +906,7 @@ function stats(outputJson) {
   return report;
 }
 
-module.exports = { init, getContext, recordEdit, feedback, consolidate, stats };
+module.exports = { init, getContext, recordEdit, recordCommand, feedback, consolidate, stats };
 
 // ── CLI entrypoint ──────────────────────────────────────────────────────────
 if (require.main === module) {
