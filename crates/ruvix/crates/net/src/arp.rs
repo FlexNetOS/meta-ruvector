@@ -306,7 +306,11 @@ impl ArpCache {
     #[inline]
     #[must_use]
     pub fn lookup(&self, ip: Ipv4Addr) -> Option<&ArpCacheEntry> {
-        self.entries.iter().flatten().find(|&entry| entry.ip == ip).map(|v| v as _)
+        self.entries
+            .iter()
+            .flatten()
+            .find(|&entry| entry.ip == ip)
+            .map(|v| v as _)
     }
 
     /// Inserts or updates an ARP cache entry.

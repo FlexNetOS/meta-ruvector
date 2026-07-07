@@ -610,8 +610,8 @@ impl<B: BlockDevice> Fat32Fs<B> {
         let mut current = start;
 
         // Safety limit to prevent infinite loops
-        let max_clusters =
-            (self.boot_sector.total_sectors / u32::from(self.boot_sector.sectors_per_cluster)) as usize;
+        let max_clusters = (self.boot_sector.total_sectors
+            / u32::from(self.boot_sector.sectors_per_cluster)) as usize;
 
         while (2..FAT32_EOC_MIN).contains(&current) && clusters.len() < max_clusters {
             clusters.push(current);

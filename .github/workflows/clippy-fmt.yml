@@ -21,7 +21,7 @@ jobs:
           submodules: recursive
 
       - name: Install system dependencies
-        run: sudo apt-get update && sudo apt-get install -y libfontconfig1-dev libglib2.0-dev libgtk-3-dev libwebkit2gtk-4.1-dev librsvg2-dev
+        run: sudo apt-get update && sudo apt-get install -y libfontconfig1-dev libglib2.0-dev libgtk-3-dev libwebkit2gtk-4.1-dev librsvg2-dev libudev-dev libhdf5-dev libfreetype6-dev
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable

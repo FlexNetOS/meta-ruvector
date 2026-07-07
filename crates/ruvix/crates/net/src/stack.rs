@@ -531,9 +531,10 @@ impl<D: NetworkDevice> NetworkStack<D> {
                 ip_header.dst_addr,
                 &udp_header,
                 udp_payload,
-            ) {
-                return Err(NetError::UdpChecksumError);
-            }
+            )
+        {
+            return Err(NetError::UdpChecksumError);
+        }
 
         Ok(Some(ReceivedPacket {
             src_mac,

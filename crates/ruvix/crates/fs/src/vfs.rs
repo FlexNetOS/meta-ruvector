@@ -48,8 +48,7 @@ impl MountId {
 }
 
 /// File type enumeration.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[derive(Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum FileType {
     /// Regular file.
     Regular,
@@ -101,7 +100,6 @@ impl FileType {
         }
     }
 }
-
 
 /// Directory entry structure.
 #[derive(Debug, Clone)]
