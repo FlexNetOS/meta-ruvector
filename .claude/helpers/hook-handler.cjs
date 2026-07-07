@@ -175,9 +175,12 @@ const handlers = {
         const cmd = hookInput.command || toolInput.command
           || process.env.TOOL_INPUT_command || args.join(' ') || '';
         const resp = hookInput.tool_response || hookInput.toolResponse || {};
+        // exit codes may arrive as numbers or strings; coerce before testing
+        const rawExit = resp.exit_code !== undefined ? resp.exit_code : resp.exitCode;
+        const exitNum = rawExit === undefined || rawExit === null || rawExit === ''
+          ? 0 : Number(rawExit);
         const failed = resp.success === false || resp.is_error === true
-          || (typeof resp.exitCode === 'number' && resp.exitCode !== 0)
-          || (typeof resp.exit_code === 'number' && resp.exit_code !== 0);
+          || (!Number.isNaN(exitNum) && exitNum !== 0);
         intelligence.recordCommand(cmd, !failed);
       } catch (e) { /* non-fatal */ }
     }
