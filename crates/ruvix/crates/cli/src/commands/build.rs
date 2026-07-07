@@ -129,11 +129,7 @@ pub fn execute(args: BuildArgs, verbose: bool) -> Result<()> {
 }
 
 fn clean_build_dir(output: &PathBuf) -> Result<()> {
-    println!(
-        "  {} Would remove: {}",
-        "[stub]".yellow(),
-        output.display()
-    );
+    println!("  {} Would remove: {}", "[stub]".yellow(), output.display());
     Ok(())
 }
 
@@ -185,11 +181,7 @@ fn configure_build(args: &BuildArgs) -> Result<BuildConfig> {
         rustflags.push("-C relocation-model=pic".to_string());
     }
 
-    println!(
-        "  {} cargo {}",
-        "[stub]".yellow(),
-        cargo_args.join(" ")
-    );
+    println!("  {} cargo {}", "[stub]".yellow(), cargo_args.join(" "));
 
     Ok(BuildConfig {
         cargo_args,

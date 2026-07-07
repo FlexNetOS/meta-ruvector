@@ -443,8 +443,14 @@ mod tests {
     fn test_null_device_invalid_lba() {
         let dev = NullBlockDevice::new(512, 100);
         let mut buf = [0u8; 512];
-        assert_eq!(dev.read_block(100, &mut buf), Err(FsError::BlockDeviceError));
-        assert_eq!(dev.read_block(101, &mut buf), Err(FsError::BlockDeviceError));
+        assert_eq!(
+            dev.read_block(100, &mut buf),
+            Err(FsError::BlockDeviceError)
+        );
+        assert_eq!(
+            dev.read_block(101, &mut buf),
+            Err(FsError::BlockDeviceError)
+        );
     }
 
     #[test]
@@ -452,8 +458,14 @@ mod tests {
         let dev = NullBlockDevice::new(512, 100);
         let mut small_buf = [0u8; 256];
         let mut large_buf = [0u8; 1024];
-        assert_eq!(dev.read_block(0, &mut small_buf), Err(FsError::InvalidArgument));
-        assert_eq!(dev.read_block(0, &mut large_buf), Err(FsError::InvalidArgument));
+        assert_eq!(
+            dev.read_block(0, &mut small_buf),
+            Err(FsError::InvalidArgument)
+        );
+        assert_eq!(
+            dev.read_block(0, &mut large_buf),
+            Err(FsError::InvalidArgument)
+        );
     }
 
     #[test]

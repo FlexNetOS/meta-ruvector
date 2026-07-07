@@ -808,7 +808,8 @@ fn clean_codex_hooks(codex_dir: &Path) -> Result<()> {
         Ok(()) => {}
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
         Err(error) => {
-            return Err(error).with_context(|| format!("failed to remove {}", hooks_json.display()));
+            return Err(error)
+                .with_context(|| format!("failed to remove {}", hooks_json.display()));
         }
     }
     let hooks_dir = codex_dir.join("hooks");

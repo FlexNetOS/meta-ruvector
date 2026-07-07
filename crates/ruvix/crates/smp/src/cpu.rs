@@ -230,7 +230,11 @@ static mut CPU_COUNT: usize = 1;
 /// ```
 #[inline]
 pub fn current_cpu() -> CpuId {
-    #[cfg(all(target_arch = "aarch64", feature = "aarch64", not(feature = "test-mode")))]
+    #[cfg(all(
+        target_arch = "aarch64",
+        feature = "aarch64",
+        not(feature = "test-mode")
+    ))]
     {
         let mpidr: u64;
         // SAFETY: Reading MPIDR_EL1 is always safe
@@ -247,7 +251,11 @@ pub fn current_cpu() -> CpuId {
         unsafe { CpuId::new_unchecked(cpu_id) }
     }
 
-    #[cfg(any(not(target_arch = "aarch64"), not(feature = "aarch64"), feature = "test-mode"))]
+    #[cfg(any(
+        not(target_arch = "aarch64"),
+        not(feature = "aarch64"),
+        feature = "test-mode"
+    ))]
     {
         // In test mode or non-ARM64, return CPU 0
         CpuId::BOOT_CPU

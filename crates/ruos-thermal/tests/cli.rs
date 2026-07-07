@@ -22,7 +22,10 @@ fn version_flag_prints_pkg_name_and_version() {
 
 #[test]
 fn show_profiles_lists_all_five_profiles() {
-    let out = Command::new(RUOS_THERMAL).arg("--show-profiles").output().unwrap();
+    let out = Command::new(RUOS_THERMAL)
+        .arg("--show-profiles")
+        .output()
+        .unwrap();
     assert!(out.status.success());
     let stdout = String::from_utf8_lossy(&out.stdout);
     let lines: Vec<&str> = stdout.lines().collect();
@@ -30,7 +33,12 @@ fn show_profiles_lists_all_five_profiles() {
     assert_eq!(lines.len(), 6, "expected 6 lines, got: {}", stdout);
     assert!(lines[0].starts_with("name\ttarget-mhz"));
     for name in &["eco", "default", "safe-overclock", "aggressive", "max"] {
-        assert!(stdout.contains(name), "missing profile {}: {}", name, stdout);
+        assert!(
+            stdout.contains(name),
+            "missing profile {}: {}",
+            name,
+            stdout
+        );
     }
 }
 
@@ -43,7 +51,11 @@ fn set_profile_without_allow_cpufreq_write_refuses() {
     assert!(!out.status.success(), "expected non-zero exit");
     assert_eq!(out.status.code(), Some(1));
     let stderr = String::from_utf8_lossy(&out.stderr);
-    assert!(stderr.contains("--allow-cpufreq-write"), "stderr: {}", stderr);
+    assert!(
+        stderr.contains("--allow-cpufreq-write"),
+        "stderr: {}",
+        stderr
+    );
 }
 
 #[test]
@@ -74,5 +86,9 @@ fn unknown_arg_exits_one_with_usage_hint() {
     assert_eq!(out.status.code(), Some(1));
     let stderr = String::from_utf8_lossy(&out.stderr);
     assert!(stderr.contains("unknown arg"), "stderr: {}", stderr);
-    assert!(stderr.contains("--help"), "stderr should hint at --help: {}", stderr);
+    assert!(
+        stderr.contains("--help"),
+        "stderr should hint at --help: {}",
+        stderr
+    );
 }

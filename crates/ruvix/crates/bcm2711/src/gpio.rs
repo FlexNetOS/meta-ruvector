@@ -579,8 +579,14 @@ mod tests {
     #[test]
     fn test_invalid_pin() {
         let mut gpio = Gpio::new();
-        assert_eq!(gpio.set_function(58, Function::Output), Err(GpioError::InvalidPin));
-        assert_eq!(gpio.set_function(255, Function::Output), Err(GpioError::InvalidPin));
+        assert_eq!(
+            gpio.set_function(58, Function::Output),
+            Err(GpioError::InvalidPin)
+        );
+        assert_eq!(
+            gpio.set_function(255, Function::Output),
+            Err(GpioError::InvalidPin)
+        );
     }
 
     #[test]

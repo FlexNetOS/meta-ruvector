@@ -608,7 +608,9 @@ mod tests {
         let dst_ip = Ipv4Addr::LOCALHOST;
 
         // Zero checksum should always verify as valid (means no checksum)
-        assert!(UdpHeader::verify_checksum(src_ip, dst_ip, &header, &payload));
+        assert!(UdpHeader::verify_checksum(
+            src_ip, dst_ip, &header, &payload
+        ));
     }
 
     #[test]
