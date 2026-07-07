@@ -29,7 +29,9 @@ use rustls::pki_types::{CertificateDer, ServerName, UnixTime};
 use rustls::RootCertStore;
 
 use cognitum_one::error::Error;
-use cognitum_one::seed::tls_pin::{build_pin_map, parse_hex_sha256, FingerprintPinVerifier, PinMap};
+use cognitum_one::seed::tls_pin::{
+    build_pin_map, parse_hex_sha256, FingerprintPinVerifier, PinMap,
+};
 use cognitum_one::seed::{DiscoveredPeer, Discovery, SeedClient, SeedTls};
 
 // ---------- Helpers --------------------------------------------------------
