@@ -15,7 +15,7 @@ readme = "README.md"
 
 [dependencies]
 # Ruvector SDK dependencies
-ruvector-core = "0.1"
+ruvector-core = { path = "../../../../crates/ruvector-core" }
 ruvector-graph = "0.1"
 
 # Serialization
