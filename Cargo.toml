@@ -1,5 +1,9 @@
 [workspace]
 exclude = ["crates/micro-hnsw-wasm", "crates/ruvector-hyperbolic-hnsw", "crates/ruvector-hyperbolic-hnsw-wasm", "examples/ruvLLM/esp32", "examples/ruvLLM/esp32-flash", "examples/edge-net", "examples/data", "examples/ruvLLM", "examples/delta-behavior", "crates/rvf", "crates/rvf/*", "crates/rvf/*/*",
+    # emergent-time-wasm: standalone cdylib with own opt-level=z, panic=abort (upstream)
+    "crates/emergent-time-wasm",
+    # sonic-ct crates: self-contained detached workspaces (upstream)
+    "crates/sonic-ct", "crates/sonic-ct-wasm",
     # ruvector-postgres is a pgrx-based PostgreSQL extension. Its build script
     # requires `$PGRX_HOME` set up via `cargo install cargo-pgrx --version 0.12.9`
     # and `cargo pgrx init`, which downloads and builds multiple Postgres
@@ -219,6 +223,10 @@ members = [
     "examples/a2a-swarm",
     # ETL pipeline example
     "examples/train-discoveries",
+    # RuView SkyGraph appliance core (ADR-199 Phases 1-4, synthetic ADS-B)
+    "examples/sky-monitor",
+    # Browser-facing WASM projection engine for the SkyGraph dashboard (ADR-199 presentation plane)
+    "examples/sky-monitor/wasm",
     # Spectral graph sparsification
     "crates/ruvector-sparsifier",
     "crates/ruvector-sparsifier-wasm",
@@ -283,6 +291,8 @@ members = [
     "crates/ruvector-rairs",
     # Hybrid sparse-dense search: BM25 + ANN + RRF / RSF / ScoreFusion (ADR-256)
     "crates/ruvector-hybrid",
+    # LSM-ANN: write-optimized streaming vector index for agent memory (ADR-264)
+    "crates/ruvector-lsm-ann",
     # Structure-preserving graph condensation via dynamic min-cut communities
     "crates/ruvector-graph-condense",
     "crates/ruvector-graph-condense-wasm",
@@ -353,6 +363,20 @@ members = [
     "examples/rvf-desktop",
     # Cognitum Seed / Cloud SDK surface — vendored in-tree, already defined in [workspace.dependencies]. Enables seed (LAN appliance), mdns, stream, blocking features per-crate opt-in.
     "vendor/cognitum-one",
+    # Matryoshka coarse-to-fine ANN search: three-variant funnel with recall/latency tradeoffs (ADR-264)
+    "crates/ruvector-matryoshka",
+    # PQ-ADC: Product Quantization with Asymmetric Distance Computation (64× compression)
+    "crates/ruvector-pq-search",
+    # SOTA benchmark suite (ADR-265)
+    "crates/ruvector-sota-bench",
+    # Capability-gated ANN: per-vector read access control with bitset tokens (ADR-268)
+    "crates/ruvector-capgated",
+    # SPANN partition spilling for boundary-safe ANN (ADR-268)
+    "crates/ruvector-spann",
+    # TimesFM 1.0 200M decoder-only patched time-series Transformer (candle, ADR-189/191)
+    "crates/timesfm",
+    # RuVector integration for TimesFM: Forecaster + anomaly bands + sweep early-stopping
+    "crates/ruvector-timesfm",
 ]
 resolver = "2"
 
