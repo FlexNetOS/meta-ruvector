@@ -224,7 +224,7 @@ impl PageOrder {
             return None;
         }
 
-        let pages = (bytes + PAGE_SIZE - 1) / PAGE_SIZE;
+        let pages = bytes.div_ceil(PAGE_SIZE);
         Self::from_pages(pages)
     }
 }

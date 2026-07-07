@@ -1,4 +1,4 @@
-//! Block device abstraction for RuVix filesystems.
+//! Block device abstraction for `RuVix` filesystems.
 //!
 //! This module provides the `BlockDevice` trait which abstracts over
 //! different storage backends (memory, disk, etc.) for filesystem implementations.
@@ -190,7 +190,7 @@ impl BlockDevice for NullBlockDevice {
     }
 }
 
-/// A memory-backed block device for testing and RamFS.
+/// A memory-backed block device for testing and `RamFS`.
 ///
 /// This block device stores all data in a contiguous memory buffer,
 /// making it suitable for testing and in-memory filesystems.
@@ -317,7 +317,7 @@ impl BlockDevice for MemoryBlockDevice {
     }
 }
 
-/// A mutable memory-backed block device using RefCell for interior mutability.
+/// A mutable memory-backed block device using `RefCell` for interior mutability.
 #[cfg(feature = "alloc")]
 #[derive(Debug)]
 pub struct MemoryBlockDeviceMut {

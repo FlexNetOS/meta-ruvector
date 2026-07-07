@@ -12,10 +12,9 @@ use ed25519_dalek::{
 };
 use rand::rngs::OsRng;
 use sha2::{Digest, Sha256, Sha384, Sha512};
-use std::fs::{self, File};
-use std::io::{Read, Write};
+use std::fs::{self};
+use std::io::Write;
 use std::path::PathBuf;
-use zeroize::Zeroize;
 
 /// Key management actions
 #[derive(Subcommand, Debug)]

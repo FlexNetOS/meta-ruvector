@@ -339,7 +339,7 @@ impl DmaConfig {
     pub const fn burst_count(&self) -> u64 {
         let transfers = self.transfer_count();
         let burst_size = self.burst_size.count() as u64;
-        (transfers + burst_size - 1) / burst_size
+        transfers.div_ceil(burst_size)
     }
 }
 

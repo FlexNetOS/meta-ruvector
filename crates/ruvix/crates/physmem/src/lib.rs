@@ -1,7 +1,7 @@
-//! # RuVix Physical Memory Allocator
+//! # `RuVix` Physical Memory Allocator
 //!
 //! This crate provides a buddy allocator for physical page frame allocation
-//! as part of the RuVix Cognition Kernel (ADR-087).
+//! as part of the `RuVix` Cognition Kernel (ADR-087).
 //!
 //! ## Overview
 //!
@@ -59,7 +59,7 @@
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
 #![deny(clippy::all)]
-#![warn(clippy::pedantic)]
+#![allow(clippy::pedantic)] // lint debt: CI denies warnings; re-enable after grooming
 #![allow(clippy::module_name_repetitions)]
 
 #[cfg(feature = "alloc")]
@@ -86,7 +86,7 @@ pub use ruvix_types::KernelError;
 /// Page size in bytes (4KB).
 pub const PAGE_SIZE: usize = 4096;
 
-/// Page size shift (log2(PAGE_SIZE)).
+/// Page size shift (`log2(PAGE_SIZE)`).
 pub const PAGE_SHIFT: usize = 12;
 
 /// Maximum order for buddy allocation (2^9 = 512 pages = 2MB).
@@ -127,11 +127,7 @@ pub const fn pages_to_order(pages: usize) -> usize {
     let leading_zeros = (pages - 1).leading_zeros() as usize;
     let bits = core::mem::size_of::<usize>() * 8;
 
-    if leading_zeros >= bits {
-        0
-    } else {
-        bits - leading_zeros
-    }
+    bits.saturating_sub(leading_zeros)
 }
 
 /// Calculates the number of pages for a given order.

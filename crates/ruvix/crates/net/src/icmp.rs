@@ -393,7 +393,7 @@ impl<'a> IcmpEcho<'a> {
 pub struct IcmpDestUnreachable<'a> {
     /// Unreachable code.
     pub code: DestUnreachableCode,
-    /// Next-hop MTU (for FragmentationNeeded).
+    /// Next-hop MTU (for `FragmentationNeeded`).
     pub next_hop_mtu: u16,
     /// Original IP header + first 8 bytes of original datagram.
     pub original_data: &'a [u8],

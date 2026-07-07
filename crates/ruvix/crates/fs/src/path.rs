@@ -1,4 +1,4 @@
-//! Path parsing utilities for the RuVix filesystem.
+//! Path parsing utilities for the `RuVix` filesystem.
 //!
 //! This module provides path manipulation utilities compatible with `no_std`
 //! environments. Paths are always forward-slash separated and support
@@ -24,7 +24,7 @@ impl Path {
     #[must_use]
     pub fn new<S: AsRef<str> + ?Sized>(s: &S) -> &Self {
         // SAFETY: Path is a transparent wrapper around str
-        unsafe { &*(s.as_ref() as *const str as *const Self) }
+        unsafe { &*(core::ptr::from_ref::<str>(s.as_ref()) as *const Self) }
     }
 
     /// Returns the path as a string slice.
@@ -301,7 +301,7 @@ impl core::ops::Deref for PathBuf {
 #[cfg(feature = "alloc")]
 impl fmt::Display for PathBuf {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", &self.inner)
+        write!(f, "{}", self.inner)
     }
 }
 
@@ -331,7 +331,7 @@ impl<'a> PathComponent<'a> {
     }
 }
 
-impl<'a> fmt::Display for PathComponent<'a> {
+impl fmt::Display for PathComponent<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.as_str())
     }

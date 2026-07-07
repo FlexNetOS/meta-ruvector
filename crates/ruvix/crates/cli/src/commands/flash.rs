@@ -1,6 +1,6 @@
 //! Flash command - write kernel images to target devices
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result};
 use clap::Args;
 use colored::Colorize;
 use std::path::PathBuf;

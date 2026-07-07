@@ -9,7 +9,7 @@ use crate::{property::RegIter, DtbError, DtbResult, RegEntry, MAX_PATH_LEN};
 pub struct Node<'a> {
     /// Node name
     name: &'a str,
-    /// Offset into the structure block where this node starts (after BeginNode token and name)
+    /// Offset into the structure block where this node starts (after `BeginNode` token and name)
     content_offset: usize,
     /// Depth in the tree (0 = root)
     depth: usize,
@@ -117,7 +117,7 @@ impl PathBuilder {
     /// Append a path component.
     pub fn push(&mut self, component: &str) -> DtbResult<()> {
         // Calculate new length (add 1 for separator if not at root)
-        let sep_len = if self.len == 1 { 0 } else { 1 };
+        let sep_len = usize::from(self.len != 1);
         let new_len = self.len + sep_len + component.len();
 
         if new_len >= MAX_PATH_LEN {

@@ -1,6 +1,6 @@
 //! Security command - audit and scan kernel security
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use clap::Subcommand;
 use colored::Colorize;
 use std::path::PathBuf;
@@ -445,7 +445,7 @@ fn execute_audit(
         );
     }
 
-    let result = if critical > 0 || high > 0 || (strict && medium > 0) {
+    if critical > 0 || high > 0 || (strict && medium > 0) {
         println!();
         println!("{} Security issues found", "FAIL".red().bold());
         if strict {
@@ -637,7 +637,7 @@ fn execute_check_boot(
     image: Option<&PathBuf>,
     key: Option<&PathBuf>,
     hardware: bool,
-    verbose: bool,
+    _verbose: bool,
 ) -> Result<()> {
     println!("{}", "Secure Boot Check".cyan().bold());
     println!();
@@ -678,7 +678,7 @@ fn execute_memory_check(
     deep: bool,
     regions: &[String],
     capabilities: bool,
-    verbose: bool,
+    _verbose: bool,
 ) -> Result<()> {
     println!("{}", "Memory Safety Analysis".cyan().bold());
     println!();

@@ -1,4 +1,4 @@
-//! Virtual Filesystem (VFS) layer for RuVix.
+//! Virtual Filesystem (VFS) layer for `RuVix`.
 //!
 //! This module provides the core VFS abstractions including the `FileSystem` trait,
 //! `Inode` operations, and mount table management.
@@ -49,6 +49,7 @@ impl MountId {
 
 /// File type enumeration.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Default)]
 pub enum FileType {
     /// Regular file.
     Regular,
@@ -65,6 +66,7 @@ pub enum FileType {
     /// Unix domain socket.
     Socket,
     /// Unknown file type.
+    #[default]
     Unknown,
 }
 
@@ -100,11 +102,6 @@ impl FileType {
     }
 }
 
-impl Default for FileType {
-    fn default() -> Self {
-        Self::Unknown
-    }
-}
 
 /// Directory entry structure.
 #[derive(Debug, Clone)]

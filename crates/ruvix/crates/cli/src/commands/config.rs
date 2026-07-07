@@ -1,6 +1,6 @@
 //! Config command - manage RuVix kernel configuration
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use clap::Subcommand;
 use colored::Colorize;
 use serde::{Deserialize, Serialize};

@@ -78,7 +78,7 @@ pub struct CpuTopology {
     online_count: AtomicUsize,
     /// Boot order tracking (CPU IDs in boot order)
     boot_order: [AtomicU8; MAX_CPUS],
-    /// Index into boot_order for next boot
+    /// Index into `boot_order` for next boot
     boot_index: AtomicUsize,
 }
 
@@ -392,7 +392,7 @@ impl CpuTopology {
         })
     }
 
-    /// Convert raw u8 to CpuState
+    /// Convert raw u8 to `CpuState`
     #[inline]
     const fn raw_to_state(raw: u8) -> CpuState {
         match raw {

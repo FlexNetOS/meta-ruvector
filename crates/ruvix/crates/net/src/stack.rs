@@ -525,8 +525,8 @@ impl<D: NetworkDevice> NetworkStack<D> {
         let (udp_header, udp_payload) = UdpHeader::parse(payload)?;
 
         // Verify checksum if present
-        if udp_header.checksum != 0 {
-            if !UdpHeader::verify_checksum(
+        if udp_header.checksum != 0
+            && !UdpHeader::verify_checksum(
                 ip_header.src_addr,
                 ip_header.dst_addr,
                 &udp_header,
@@ -534,7 +534,6 @@ impl<D: NetworkDevice> NetworkStack<D> {
             ) {
                 return Err(NetError::UdpChecksumError);
             }
-        }
 
         Ok(Some(ReceivedPacket {
             src_mac,

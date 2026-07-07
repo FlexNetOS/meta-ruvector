@@ -1,6 +1,6 @@
 //! Build command - compile RuVix kernel images
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use clap::Args;
 use colored::Colorize;
 use std::path::PathBuf;
@@ -189,7 +189,7 @@ fn configure_build(args: &BuildArgs) -> Result<BuildConfig> {
     })
 }
 
-fn compile_kernel(args: &BuildArgs, config: &BuildConfig) -> Result<()> {
+fn compile_kernel(_args: &BuildArgs, config: &BuildConfig) -> Result<()> {
     println!(
         "  {} Would run: cargo {}",
         "[stub]".yellow(),
@@ -216,7 +216,7 @@ fn sign_kernel(args: &BuildArgs) -> Result<()> {
     Ok(())
 }
 
-fn strip_symbols(args: &BuildArgs) -> Result<()> {
+fn strip_symbols(_args: &BuildArgs) -> Result<()> {
     println!(
         "  {} Would strip debug symbols from output",
         "[stub]".yellow()

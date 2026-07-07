@@ -4,7 +4,6 @@
 //! that all RuVix kernel features are exercised.
 
 use crate::components::KernelInterface;
-use crate::config;
 use crate::manifest::DemoManifest;
 
 /// Syscall statistics collected during pipeline execution.

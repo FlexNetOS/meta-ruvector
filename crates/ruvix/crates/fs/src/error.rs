@@ -1,4 +1,4 @@
-//! Filesystem error types for RuVix.
+//! Filesystem error types for `RuVix`.
 //!
 //! This module provides error types used throughout the filesystem layer,
 //! designed to be compatible with both `no_std` and `std` environments.

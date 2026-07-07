@@ -1,4 +1,4 @@
-//! In-memory filesystem (RamFS) implementation for RuVix.
+//! In-memory filesystem (`RamFS`) implementation for `RuVix`.
 //!
 //! This module provides a fully read-write in-memory filesystem suitable
 //! for `/tmp` and other temporary storage needs. All data is lost on unmount.
@@ -12,13 +12,13 @@ use core::cell::RefCell;
 #[cfg(feature = "alloc")]
 use alloc::{collections::BTreeMap, string::String, vec::Vec};
 
-/// Maximum file size in RamFS (64 MB default).
+/// Maximum file size in `RamFS` (64 MB default).
 const MAX_FILE_SIZE: u64 = 64 * 1024 * 1024;
 
-/// Maximum number of inodes in RamFS.
+/// Maximum number of inodes in `RamFS`.
 const MAX_INODES: usize = 65536;
 
-/// Type of RamFS inode.
+/// Type of `RamFS` inode.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RamInodeType {
     /// Regular file.
@@ -50,7 +50,7 @@ impl From<FileType> for RamInodeType {
     }
 }
 
-/// A RamFS inode representing a file, directory, or symlink.
+/// A `RamFS` inode representing a file, directory, or symlink.
 #[cfg(feature = "alloc")]
 #[derive(Debug, Clone)]
 pub struct RamInode {
@@ -356,13 +356,13 @@ pub struct RamFs {
 
 #[cfg(feature = "alloc")]
 impl RamFs {
-    /// Create a new RamFS with default settings.
+    /// Create a new `RamFS` with default settings.
     #[must_use]
     pub fn new() -> Self {
         Self::with_max_size(64 * 1024 * 1024) // 64 MB default
     }
 
-    /// Create a new RamFS with a specified maximum size.
+    /// Create a new `RamFS` with a specified maximum size.
     #[must_use]
     pub fn with_max_size(max_size: u64) -> Self {
         let root_inode = InodeId(1);
@@ -476,7 +476,7 @@ impl FileSystem for RamFs {
         Ok(self.root_inode)
     }
 
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "ramfs"
     }
 
@@ -552,7 +552,7 @@ impl FileSystem for RamFs {
             mtime: ram_inode.mtime,
             ctime: ram_inode.ctime,
             blksize: 4096,
-            blocks: (ram_inode.size() + 511) / 512,
+            blocks: ram_inode.size().div_ceil(512),
         })
     }
 

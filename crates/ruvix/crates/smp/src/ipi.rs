@@ -20,10 +20,10 @@
 //! | SGI | Message | Purpose |
 //! |-----|---------|---------|
 //! | 0 | Reschedule | Wake idle CPU for scheduling |
-//! | 1 | TlbFlush | Invalidate TLB entries |
-//! | 2 | FunctionCall | Execute function on target |
+//! | 1 | `TlbFlush` | Invalidate TLB entries |
+//! | 2 | `FunctionCall` | Execute function on target |
 //! | 3 | Halt | Stop CPU (for debugging) |
-//! | 4 | CallFunction | Generic function call |
+//! | 4 | `CallFunction` | Generic function call |
 //!
 //! ## Example
 //!
@@ -165,16 +165,16 @@ impl fmt::Display for IpiMessage {
             IpiMessage::Reschedule => write!(f, "RESCHED"),
             IpiMessage::TlbFlush { asid } => {
                 if let Some(a) = asid {
-                    write!(f, "TLB_FLUSH(ASID={})", a)
+                    write!(f, "TLB_FLUSH(ASID={a})")
                 } else {
                     write!(f, "TLB_FLUSH(ALL)")
                 }
             }
-            IpiMessage::FunctionCall { func_id } => write!(f, "FUNC_CALL({})", func_id),
+            IpiMessage::FunctionCall { func_id } => write!(f, "FUNC_CALL({func_id})"),
             IpiMessage::Halt => write!(f, "HALT"),
             IpiMessage::WakeUp => write!(f, "WAKE"),
             IpiMessage::TimerSync => write!(f, "TIMER_SYNC"),
-            IpiMessage::Data { payload } => write!(f, "DATA({:#x})", payload),
+            IpiMessage::Data { payload } => write!(f, "DATA({payload:#x})"),
             IpiMessage::PerfSnapshot => write!(f, "PERF"),
             IpiMessage::DebugBreak => write!(f, "DEBUG"),
             IpiMessage::Heartbeat => write!(f, "HEARTBEAT"),
@@ -218,10 +218,10 @@ impl IpiTarget {
 impl fmt::Display for IpiTarget {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            IpiTarget::Cpu(cpu) => write!(f, "{}", cpu),
+            IpiTarget::Cpu(cpu) => write!(f, "{cpu}"),
             IpiTarget::All => write!(f, "ALL"),
             IpiTarget::AllOther => write!(f, "ALL_OTHER"),
-            IpiTarget::Mask(mask) => write!(f, "MASK({:#x})", mask),
+            IpiTarget::Mask(mask) => write!(f, "MASK({mask:#x})"),
         }
     }
 }
@@ -290,8 +290,8 @@ impl fmt::Display for IpiResult {
 ///
 /// # Platform Notes
 ///
-/// On ARM64 with GICv3:
-/// - Uses ICC_SGI1R_EL1 for SGI generation
+/// On ARM64 with `GICv3`:
+/// - Uses `ICC_SGI1R_EL1` for SGI generation
 /// - Target list encoded in affinity fields
 /// - SGI number from message type
 ///

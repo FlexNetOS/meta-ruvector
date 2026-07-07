@@ -285,6 +285,7 @@ impl ArpCache {
     ///
     /// Returns `Some(mac)` if the entry exists and is valid, `None` otherwise.
     #[inline]
+    #[must_use]
     pub fn resolve(&self, ip: Ipv4Addr, current_time: u64) -> Option<MacAddress> {
         for entry in self.entries.iter().flatten() {
             if entry.ip == ip {
@@ -303,13 +304,9 @@ impl ArpCache {
 
     /// Looks up an entry by IP address.
     #[inline]
+    #[must_use]
     pub fn lookup(&self, ip: Ipv4Addr) -> Option<&ArpCacheEntry> {
-        for entry in self.entries.iter().flatten() {
-            if entry.ip == ip {
-                return Some(entry);
-            }
-        }
-        None
+        self.entries.iter().flatten().find(|&entry| entry.ip == ip).map(|v| v as _)
     }
 
     /// Inserts or updates an ARP cache entry.

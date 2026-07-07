@@ -12,7 +12,7 @@ use crate::{
 /// Maximum number of blocks per free list.
 ///
 /// This limits memory usage for the free list arrays.
-/// Each FreeList is 8KB (1024 * 8 bytes per PhysAddr).
+/// Each `FreeList` is 8KB (1024 * 8 bytes per `PhysAddr`).
 /// Total: 10 orders * 8KB = 80KB for the full allocator.
 /// This supports managing up to 2GB per order with 2MB blocks.
 const MAX_FREE_BLOCKS: usize = 1024;
@@ -74,7 +74,7 @@ pub struct BuddyAllocator {
 ///
 /// This stores addresses of free blocks. In a real kernel, this would be
 /// implemented as an intrusive linked list stored in the free pages themselves.
-/// For this no_std implementation, we use a fixed-size array.
+/// For this `no_std` implementation, we use a fixed-size array.
 #[derive(Clone)]
 struct FreeList {
     /// Addresses of free blocks.

@@ -363,13 +363,13 @@ impl DmaDescriptorChain {
         self.count > 0
             && self.descriptors[..self.count]
                 .iter()
-                .all(|d| d.is_completed())
+                .all(DmaDescriptor::is_completed)
     }
 
     /// Check if any descriptor has an error.
     #[must_use]
     pub fn has_error(&self) -> bool {
-        self.descriptors[..self.count].iter().any(|d| d.has_error())
+        self.descriptors[..self.count].iter().any(DmaDescriptor::has_error)
     }
 
     /// Validate the entire chain.

@@ -20,7 +20,7 @@ pub enum NetError {
     /// Invalid Ethernet frame format.
     InvalidEthernetFrame = 3,
 
-    /// Unknown or unsupported EtherType.
+    /// Unknown or unsupported `EtherType`.
     UnsupportedEtherType = 4,
 
     /// Invalid IPv4 header format or checksum.

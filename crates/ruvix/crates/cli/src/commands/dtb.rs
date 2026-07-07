@@ -955,7 +955,7 @@ fn print_structure_summary(data: &[u8], off_struct: usize, off_strings: usize) -
 
 fn format_property_bytes(data: &[u8]) -> String {
     // Try as string
-    if data.iter().all(|&b| b == 0 || (b >= 0x20 && b < 0x7f)) {
+    if data.iter().all(|&b| b == 0 || (0x20..0x7f).contains(&b)) {
         if let Some(s) = data.split(|&b| b == 0).next() {
             if let Ok(text) = std::str::from_utf8(s) {
                 if !text.is_empty() {
@@ -1075,7 +1075,7 @@ fn format_dts_property(data: &[u8]) -> String {
     }
 
     // Try as string
-    if data.iter().all(|&b| b == 0 || (b >= 0x20 && b < 0x7f)) {
+    if data.iter().all(|&b| b == 0 || (0x20..0x7f).contains(&b)) {
         let strings: Vec<&str> = data
             .split(|&b| b == 0)
             .filter(|s| !s.is_empty())

@@ -8,7 +8,7 @@ use crate::{
 /// Maximum number of nodes we can store during parsing.
 const MAX_NODES: usize = 512;
 
-/// Maximum path components for find_node.
+/// Maximum path components for `find_node`.
 const MAX_PATH_COMPONENTS: usize = 16;
 
 /// Parsed device tree.
@@ -129,6 +129,7 @@ impl<'a> DeviceTree<'a> {
     /// Find all nodes with a given compatible string.
     ///
     /// Returns an iterator over matching nodes.
+    #[must_use]
     pub fn find_compatible<'b>(&'b self, compatible: &'b str) -> CompatibleIter<'a, 'b> {
         CompatibleIter {
             dt: self,
@@ -140,6 +141,7 @@ impl<'a> DeviceTree<'a> {
     /// Find all nodes with a given node name.
     ///
     /// Returns an iterator over matching nodes.
+    #[must_use]
     pub fn find_by_name<'b>(&'b self, name: &'b str) -> NameIter<'a, 'b> {
         NameIter {
             dt: self,
@@ -189,7 +191,7 @@ impl<'a> DeviceTree<'a> {
                     // Skip child node
                     break;
                 }
-                Some(FdtToken::EndNode) | Some(FdtToken::End) => {
+                Some(FdtToken::EndNode | FdtToken::End) => {
                     break;
                 }
                 Some(FdtToken::Nop) => {
@@ -271,7 +273,7 @@ impl<'a> DeviceTree<'a> {
                     }
                 }
                 Some(FdtToken::BeginNode) => break,
-                Some(FdtToken::EndNode) | Some(FdtToken::End) => break,
+                Some(FdtToken::EndNode | FdtToken::End) => break,
                 Some(FdtToken::Nop) => continue,
                 None => return Err(DtbError::InvalidToken { value: token_val }),
             }

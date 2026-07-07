@@ -282,7 +282,7 @@ impl CognitivePipeline {
         }
 
         // 5. Process in reasoning engine
-        let (engine_processed, mutations) = self
+        let (engine_processed, _mutations) = self
             .reasoning_engine
             .process_batch(&mut self.kernel, batch_size)?;
 
@@ -298,7 +298,7 @@ impl CognitivePipeline {
         }
 
         // 7. Process attestations
-        let attested = self.attestor.process_batch(&mut self.kernel, batch_size)?;
+        let _attested = self.attestor.process_batch(&mut self.kernel, batch_size)?;
 
         // 8. Timer coordination
         if self.coordinator.stats().timer_waits < config::TIMER_WAITS as u64 {

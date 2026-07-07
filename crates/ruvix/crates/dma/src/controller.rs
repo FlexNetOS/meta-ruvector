@@ -5,7 +5,7 @@ use crate::{DmaChannel, DmaChannelId, DmaConfig, DmaDescriptorChain, DmaResult, 
 /// Trait defining the interface for a DMA controller.
 ///
 /// Platform-specific implementations must implement this trait to provide
-/// DMA functionality to the RuVix kernel.
+/// DMA functionality to the `RuVix` kernel.
 pub trait DmaController {
     /// Allocate a free DMA channel.
     ///
