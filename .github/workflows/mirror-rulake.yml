@@ -42,11 +42,13 @@ jobs:
       - name: Checkout monorepo
         uses: actions/checkout@v4
         with:
+          submodules: recursive
           fetch-depth: 1
 
       - name: Checkout RuLake mirror
         uses: actions/checkout@v4
         with:
+          submodules: recursive
           repository: ruvnet/RuLake
           token: ${{ secrets.RULAKE_MIRROR_PAT }}
           path: rulake-mirror

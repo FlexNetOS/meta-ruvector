@@ -21,6 +21,8 @@ jobs:
     runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - name: Forbid reentrant parking_lot lock acquisition in a single statement
         run: |
           set -e
@@ -56,6 +58,8 @@ jobs:
     runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - name: Detect case-only filename collisions
         run: |
           set -e
@@ -72,6 +76,8 @@ jobs:
     runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: '1.89.0'
@@ -89,6 +95,8 @@ jobs:
     runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - name: ruvector-router-core unit tests (release)
@@ -113,6 +121,8 @@ jobs:
     runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - name: Forbid ef_construction.min(m * 2) clamp in HNSW insert beam
         run: |
           set -e
@@ -132,6 +142,8 @@ jobs:
     runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - name: Require calculate_distance() inside HNSW overflow gate
         run: |
           set -e
@@ -160,6 +172,8 @@ jobs:
     runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - name: Require storage.get_all_ids() rebuild path in VectorDB::new
         run: |
           set -e
@@ -182,6 +196,8 @@ jobs:
           - npm/packages/rvf-wasm
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -239,6 +255,8 @@ jobs:
     runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - name: Forbid execSync('npx ruvector …') inside hooks_route_enhanced case
         run: |
           set -e
@@ -265,6 +283,8 @@ jobs:
     runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - name: Forbid unsanitized ${args.X} in exec*/spawn* calls
         run: |
           set -e
@@ -281,6 +301,8 @@ jobs:
     runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - name: Reject SystemTime/Instant in wasm32-targeted crates
         run: |
           set -e
@@ -315,6 +337,8 @@ jobs:
     runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - name: Forbid hardcoded devcontainer path in checked-in config
         run: |
           set -e
@@ -340,6 +364,8 @@ jobs:
     runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - name: Assert hydration counter log lines exist
         run: |
           set -e
@@ -365,6 +391,8 @@ jobs:
     runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -413,6 +441,8 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - name: cargo test graph-condense + perception
@@ -432,6 +462,8 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - name: ruvector-mincut pin must not regress to 2.0.x
         run: |
           set -e
