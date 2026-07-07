@@ -47,7 +47,8 @@ jobs:
         # fail ("no longer signed" / NOSPLIT), which aborts `apt-get update`
         # (exit 100) even though our packages come from the main Ubuntu repos.
         run: |
-          sudo rm -f /etc/apt/sources.list.d/microsoft-prod.list /etc/apt/sources.list.d/azure-cli.list
+          sudo find /etc/apt/sources.list.d -maxdepth 1 -type f \
+            \( -iname '*microsoft*' -o -iname '*azure*' \) -print -delete
           sudo apt-get update && sudo apt-get install -y libfontconfig1-dev
 
       - name: Install Rust stable
@@ -72,7 +73,8 @@ jobs:
         # fail ("no longer signed" / NOSPLIT), which aborts `apt-get update`
         # (exit 100) even though our packages come from the main Ubuntu repos.
         run: |
-          sudo rm -f /etc/apt/sources.list.d/microsoft-prod.list /etc/apt/sources.list.d/azure-cli.list
+          sudo find /etc/apt/sources.list.d -maxdepth 1 -type f \
+            \( -iname '*microsoft*' -o -iname '*azure*' \) -print -delete
           sudo apt-get update && sudo apt-get install -y libfontconfig1-dev
 
       - name: Install Rust stable
@@ -376,7 +378,8 @@ jobs:
         # fail ("no longer signed" / NOSPLIT), which aborts `apt-get update`
         # (exit 100) even though our packages come from the main Ubuntu repos.
         run: |
-          sudo rm -f /etc/apt/sources.list.d/microsoft-prod.list /etc/apt/sources.list.d/azure-cli.list
+          sudo find /etc/apt/sources.list.d -maxdepth 1 -type f \
+            \( -iname '*microsoft*' -o -iname '*azure*' \) -print -delete
           sudo apt-get update && sudo apt-get install -y libfontconfig1-dev
 
       - name: Install Rust stable
