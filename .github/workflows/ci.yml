@@ -260,6 +260,14 @@ jobs:
               --exclude ruvix-shell
               --exclude ruvix-types
               --exclude ruvix-vecgraph
+              --exclude ruvix-bcm2711
+              --exclude ruvix-cli
+              --exclude cognitum-one
+              --exclude demand-paged-cognition
+              --exclude federated-collective-phi
+              --exclude quantum-cognitive-superposition
+              --exclude thermodynamic-learning
+              --exclude time-crystal-cognition
               --exclude ruvector-attention
               --exclude ruvector-mincut
               --exclude ruvector-scipix
