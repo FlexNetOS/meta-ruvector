@@ -30,6 +30,8 @@ jobs:
     runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - uses: dtolnay/rust-toolchain@stable
       - name: build host-test
         working-directory: examples/ruvLLM/esp32-flash
@@ -80,6 +82,8 @@ jobs:
             toolchain: nightly
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: install rust nightly + rust-src (RISC-V)
         if: matrix.toolchain == 'nightly'
