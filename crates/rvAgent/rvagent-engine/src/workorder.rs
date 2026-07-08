@@ -8,11 +8,12 @@
 //! them. TEASTASK-003 regenerates this type's JSON Schema via `schemars` and adds a
 //! drift gate proving it stays byte-equal to the canonical schema.
 
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 /// Task lifecycle state. Serde form is lowercase — matches handoff's `Status`
 /// (`work-order/src/lib.rs:20`) and the canonical schema `status` enum.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 pub enum Status {
     Backlog,
@@ -25,7 +26,7 @@ pub enum Status {
 }
 
 /// Task priority. Serde form is `P0`..`P3` (matches the canonical schema).
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 pub enum Priority {
     P0,
     P1,
@@ -36,7 +37,7 @@ pub enum Priority {
 /// Value object: the five blake3 hashes that pin the immutable contract surface.
 /// Each is serialized in `blake3:<hex>` form (canonical schema); kept as opaque
 /// strings so the round-trip is byte-exact and the drift sentinel is preserved.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 pub struct IntentLock {
     pub objective_hash: String,
     pub path_scope_hash: String,
@@ -52,7 +53,7 @@ pub struct IntentLock {
 /// A faithful Rust projection of the canonical schema's load-bearing fields —
 /// enough for the S3 adapter round-trip and IntentLock preservation. TEASTASK-003
 /// completes the remaining schema fields and adds the schemars drift gate.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 pub struct WorkOrder {
     /// Schema tag; canonically the const `"handoff.task.v1"`.
     pub schema: String,

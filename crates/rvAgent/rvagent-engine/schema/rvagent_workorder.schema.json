@@ -1,0 +1,172 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "WorkOrder",
+  "description": "The canonical unit-of-work aggregate (`handoff.task.v1`).\n\nA faithful Rust projection of the canonical schema's load-bearing fields —\nenough for the S3 adapter round-trip and IntentLock preservation. TEASTASK-003\ncompletes the remaining schema fields and adds the schemars drift gate.",
+  "type": "object",
+  "properties": {
+    "acceptance_criteria": {
+      "type": "array",
+      "default": [],
+      "items": {
+        "type": "string"
+      }
+    },
+    "allows_dependency_addition": {
+      "type": "boolean",
+      "default": false
+    },
+    "allows_network": {
+      "type": "boolean",
+      "default": false
+    },
+    "blocked_by": {
+      "type": "array",
+      "default": [],
+      "items": {
+        "type": "string"
+      }
+    },
+    "correlation_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "dependencies": {
+      "type": "array",
+      "default": [],
+      "items": {
+        "type": "string"
+      }
+    },
+    "human_approval_required": {
+      "type": "boolean",
+      "default": false
+    },
+    "id": {
+      "type": "string"
+    },
+    "intent_lock": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/IntentLock"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "objective": {
+      "type": "string"
+    },
+    "owner_lane": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "path_scope": {
+      "type": "array",
+      "default": [],
+      "items": {
+        "type": "string"
+      }
+    },
+    "priority": {
+      "$ref": "#/$defs/Priority"
+    },
+    "role": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "rollback_plan": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "schema": {
+      "description": "Schema tag; canonically the const `\"handoff.task.v1\"`.",
+      "type": "string"
+    },
+    "status": {
+      "$ref": "#/$defs/Status"
+    },
+    "title": {
+      "type": "string"
+    },
+    "verification_command": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "schema",
+    "id",
+    "title",
+    "objective",
+    "status",
+    "priority"
+  ],
+  "$defs": {
+    "IntentLock": {
+      "description": "Value object: the five blake3 hashes that pin the immutable contract surface.\nEach is serialized in `blake3:<hex>` form (canonical schema); kept as opaque\nstrings so the round-trip is byte-exact and the drift sentinel is preserved.",
+      "type": "object",
+      "properties": {
+        "acceptance_hash": {
+          "type": "string"
+        },
+        "constraint_hash": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "northstar_revision": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "objective_hash": {
+          "type": "string"
+        },
+        "path_scope_hash": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "objective_hash",
+        "path_scope_hash",
+        "acceptance_hash"
+      ]
+    },
+    "Priority": {
+      "description": "Task priority. Serde form is `P0`..`P3` (matches the canonical schema).",
+      "type": "string",
+      "enum": [
+        "P0",
+        "P1",
+        "P2",
+        "P3"
+      ]
+    },
+    "Status": {
+      "description": "Task lifecycle state. Serde form is lowercase — matches handoff's `Status`\n(`work-order/src/lib.rs:20`) and the canonical schema `status` enum.",
+      "type": "string",
+      "enum": [
+        "backlog",
+        "active",
+        "claimed",
+        "blocked",
+        "checkpointed",
+        "review",
+        "done"
+      ]
+    }
+  }
+}

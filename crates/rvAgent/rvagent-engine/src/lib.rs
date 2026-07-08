@@ -16,9 +16,15 @@
 //! - **TEASTASK-004:** write the resulting `ProofRecord` to the handoff witnessed ledger.
 
 pub mod adapter;
+pub mod csv;
+pub mod proof;
+pub mod schema;
 pub mod workorder;
 
 pub use adapter::{taskspec_to_workorder, workorder_to_taskspec, AdapterError};
+pub use csv::workorders_to_csv;
+pub use proof::{ProofRecord, ProofStatus, PROOF_SCHEMA_VERSION};
+pub use schema::{proof_record_schema, workorder_schema};
 pub use workorder::{IntentLock, Priority, Status, WorkOrder};
 
 use async_trait::async_trait;

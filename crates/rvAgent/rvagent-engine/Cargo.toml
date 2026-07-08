@@ -14,3 +14,6 @@ chrono = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
+# JSON Schema emission for the WorkOrder/ProofRecord types (TEASTASK-003 drift gate).
+# Version reused from the existing workspace lock (1.2.1) — no new version added.
+schemars = "1"
