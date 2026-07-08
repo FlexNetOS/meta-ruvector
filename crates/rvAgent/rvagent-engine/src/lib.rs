@@ -17,17 +17,21 @@
 
 pub mod adapter;
 pub mod csv;
+pub mod ledger;
 pub mod proof;
 pub mod schema;
 pub mod workorder;
 
 pub use adapter::{taskspec_to_workorder, workorder_to_taskspec, AdapterError};
 pub use csv::workorders_to_csv;
+pub use ledger::{LedgerError, ProofLedger};
 pub use proof::{ProofRecord, ProofStatus, PROOF_SCHEMA_VERSION};
 pub use schema::{proof_record_schema, workorder_schema};
 pub use workorder::{IntentLock, Priority, Status, WorkOrder};
 
+use std::collections::BTreeMap;
 use std::path::PathBuf;
+use std::sync::Arc;
 
 use async_trait::async_trait;
 use chrono::Utc;
@@ -43,14 +47,34 @@ use rvagent_backends::{LocalShellBackend, LocalShellConfig, SandboxBackend};
 /// [`LocalShellBackend`], and maps the exit verdict onto the returned [`Task`]. There
 /// is **no paper completion** — a task only reaches [`TaskState::Completed`] when a
 /// verification command actually ran and exited 0. Construct with [`RvAgentEngine::new`].
+///
+/// TEASTASK-004: when constructed with [`RvAgentEngine::with_ledger`], every *real* run
+/// outcome (Completed / Failed — not InputRequired, not a missing envelope) is witnessed
+/// by appending a [`ProofRecord`] to the self-contained JSONL proof ledger. Under the
+/// "no proof, no done" doctrine, if a ledger is configured and the append fails, [`run`]
+/// returns an error rather than a completion that could never be witnessed.
 #[derive(Debug, Default, Clone)]
-pub struct RvAgentEngine;
+pub struct RvAgentEngine {
+    /// Optional witnessed proof ledger. `None` reproduces the exact TEASTASK-011
+    /// behavior (no proof written). `Arc` so the engine stays cheaply `Clone`.
+    ledger: Option<Arc<ProofLedger>>,
+}
 
 impl RvAgentEngine {
-    /// Construct a new engine.
+    /// Construct a new engine with no proof ledger (TEASTASK-011 behavior — no proof
+    /// written).
     #[must_use]
     pub fn new() -> Self {
-        Self
+        Self { ledger: None }
+    }
+
+    /// Construct an engine that witnesses every real run outcome to the JSONL proof
+    /// ledger at `path` (created on first append).
+    #[must_use]
+    pub fn with_ledger(path: PathBuf) -> Self {
+        Self {
+            ledger: Some(Arc::new(ProofLedger::new(path))),
+        }
     }
 }
 
@@ -101,6 +125,63 @@ fn choose_cwd(wo: &WorkOrder) -> PathBuf {
     std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."))
 }
 
+impl RvAgentEngine {
+    /// Witness a *real* run outcome by appending a [`ProofRecord`] to the ledger.
+    ///
+    /// A no-op when no ledger is configured (reproducing TEASTASK-011 exactly). When a
+    /// ledger IS configured, "no proof, no done" applies: if the append fails, this
+    /// returns [`A2aError::Internal`] so the caller aborts the completion — a run that
+    /// cannot be witnessed is not a real completion.
+    fn record_proof(
+        &self,
+        task_id: &str,
+        status: ProofStatus,
+        started_at: String,
+        command: String,
+        output: String,
+        failure_reason: Option<String>,
+    ) -> Result<(), A2aError> {
+        let Some(ledger) = self.ledger.as_ref() else {
+            return Ok(());
+        };
+        let record = ProofRecord {
+            proof_schema_version: PROOF_SCHEMA_VERSION.to_string(),
+            task_id: task_id.to_string(),
+            correlation_id: None,
+            cell_id: None,
+            status,
+            started_at,
+            completed_at: Utc::now().to_rfc3339(),
+            actor: "rvagent-engine".to_string(),
+            helper_id: None,
+            model_tag: None,
+            repo_path: None,
+            git_head_before: None,
+            git_head_after: None,
+            diff_summary: None,
+            files_changed: Vec::new(),
+            commands_run: vec![command],
+            verification_output: serde_json::Value::String(output),
+            checksums: BTreeMap::new(),
+            action_hash: String::new(),
+            prev_action_hash: None,
+            ledger_seq: None,
+            logs_uri: None,
+            rollback_point: None,
+            evidence: Vec::new(),
+            failed_checks: Vec::new(),
+            failure_reason,
+            next_action: "select-next".to_string(),
+        };
+        ledger.append(record).map_err(|e| {
+            A2aError::Internal(format!(
+                "no proof, no done: failed to witness ProofRecord for {task_id}: {e}"
+            ))
+        })?;
+        Ok(())
+    }
+}
+
 #[async_trait]
 impl TaskRunner for RvAgentEngine {
     /// Execute the WorkOrder's `verification_command` and map the verdict to a [`Task`].
@@ -120,6 +201,9 @@ impl TaskRunner for RvAgentEngine {
     /// `tokio::process::Command` — to inherit its environment sanitization (secrets
     /// stripped), timeout, and output-truncation hardening (ADR-103 C2).
     async fn run(&self, spec: TaskSpec) -> Result<Task, A2aError> {
+        // Capture the run start BEFORE any execution, for the ProofRecord's started_at.
+        let started_at = Utc::now().to_rfc3339();
+
         // 1. Recover the WorkOrder envelope carried in TaskSpec.metadata.
         let wo = crate::adapter::taskspec_to_workorder(&spec)
             .map_err(|e| A2aError::Internal(format!("no WorkOrder envelope on TaskSpec: {e}")))?;
@@ -139,9 +223,19 @@ impl TaskRunner for RvAgentEngine {
         let backend = LocalShellBackend::new(cwd, LocalShellConfig::default());
         let result = backend.execute(&command, None).await;
 
-        // 4. Map the exit verdict onto the returned Task.
+        // 4. Map the exit verdict onto the returned Task, witnessing a ProofRecord for
+        //    the real run outcome first (no-op when no ledger is configured). Under
+        //    "no proof, no done", a failed witness aborts the completion.
         match result.exit_code {
             Some(0) => {
+                self.record_proof(
+                    &spec.id,
+                    ProofStatus::Completed,
+                    started_at,
+                    command.clone(),
+                    result.output.clone(),
+                    None,
+                )?;
                 let artifact = Artifact {
                     name: Some("verification".to_string()),
                     description: Some(format!("stdout/stderr of verification_command `{command}`")),
@@ -164,6 +258,14 @@ impl TaskRunner for RvAgentEngine {
                     "verification_command `{command}` failed ({verdict}): {}",
                     result.output
                 );
+                self.record_proof(
+                    &spec.id,
+                    ProofStatus::Failed,
+                    started_at,
+                    command,
+                    result.output,
+                    Some(reason.clone()),
+                )?;
                 Ok(make_task(
                     spec,
                     TaskState::Failed,
@@ -275,5 +377,57 @@ mod tests {
         spec.metadata = serde_json::Value::Null;
         let err = RvAgentEngine::new().run(spec).await.expect_err("must error");
         assert!(matches!(err, A2aError::Internal(_)));
+    }
+
+    // ---- TEASTASK-004: witnessed proof ledger integration ----
+
+    #[tokio::test]
+    async fn with_ledger_passing_run_witnesses_a_completed_proof() {
+        let tmp = tempfile::NamedTempFile::new().expect("temp file");
+        let engine = RvAgentEngine::with_ledger(tmp.path().to_path_buf());
+        let spec = crate::adapter::workorder_to_taskspec(&work_order(Some("true")))
+            .expect("to taskspec");
+
+        let task = engine.run(spec).await.expect("run ok");
+        assert_eq!(task.status.state, TaskState::Completed);
+
+        let ledger = crate::ledger::ProofLedger::new(tmp.path().to_path_buf());
+        let records = ledger.read_all().expect("read_all");
+        assert_eq!(records.len(), 1, "a passing run must witness exactly one proof");
+        assert_eq!(records[0].status, ProofStatus::Completed);
+        assert_eq!(records[0].task_id, "TEASTASK-011-test");
+        assert_eq!(records[0].actor, "rvagent-engine");
+        assert_eq!(records[0].commands_run, vec!["true".to_string()]);
+        assert_eq!(ledger.verify_witness_chain().expect("verify"), 1);
+    }
+
+    #[tokio::test]
+    async fn with_ledger_failing_run_witnesses_a_failed_proof() {
+        let tmp = tempfile::NamedTempFile::new().expect("temp file");
+        let engine = RvAgentEngine::with_ledger(tmp.path().to_path_buf());
+        let spec = crate::adapter::workorder_to_taskspec(&work_order(Some("false")))
+            .expect("to taskspec");
+
+        let task = engine.run(spec).await.expect("run ok");
+        assert_eq!(task.status.state, TaskState::Failed);
+
+        let ledger = crate::ledger::ProofLedger::new(tmp.path().to_path_buf());
+        let records = ledger.read_all().expect("read_all");
+        assert_eq!(records.len(), 1);
+        assert_eq!(records[0].status, ProofStatus::Failed);
+        assert!(
+            records[0].failure_reason.is_some(),
+            "a failed run's proof must carry a failure_reason"
+        );
+        assert_eq!(ledger.verify_witness_chain().expect("verify"), 1);
+    }
+
+    #[tokio::test]
+    async fn without_ledger_completes_and_writes_nothing() {
+        // Unchanged TEASTASK-011 behavior: no ledger → Completed, no proof written.
+        let task = run_wo(&work_order(Some("true"))).await;
+        assert_eq!(task.status.state, TaskState::Completed);
+        // (RvAgentEngine::new() has no ledger; nothing to read — asserted by the fact
+        // that the run succeeded without any ledger path configured.)
     }
 }

@@ -20,7 +20,13 @@ thiserror = { workspace = true }
 # JSON Schema emission for the WorkOrder/ProofRecord types (TEASTASK-003 drift gate).
 # Version reused from the existing workspace lock (1.2.1) — no new version added.
 schemars = "1"
+# TEASTASK-004: blake3 witness-chain hashing for the self-contained proof ledger.
+# Version reused from the existing workspace lock (1.8.5) — no new version added.
+blake3 = "1"
 
 [dev-dependencies]
 # TEASTASK-011: drive the async TaskRunner in integration tests (#[tokio::test]).
 tokio = { workspace = true }
+# TEASTASK-004: temp ledger files for the ProofLedger + engine-integration tests.
+# Version reused from the existing workspace lock (3.27.0) — no new version added.
+tempfile = "3"
