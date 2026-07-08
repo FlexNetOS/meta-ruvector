@@ -133,7 +133,7 @@ impl SqlEngine {
         let db_options = ruvector_core::types::DbOptions {
             dimensions: vector_dimensions,
             distance_metric: ruvector_core::DistanceMetric::Cosine,
-            storage_path: "memory://".to_string(),
+            storage_path: crate::transient_storage_path(&format!("sql-{name}")),
             hnsw_config: None,
             quantization: None,
         };
