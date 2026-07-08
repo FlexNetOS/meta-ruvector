@@ -20,6 +20,7 @@ pub mod csv;
 pub mod ledger;
 pub mod proof;
 pub mod schema;
+pub mod selection;
 pub mod workorder;
 
 pub use adapter::{taskspec_to_workorder, workorder_to_taskspec, AdapterError};
@@ -27,6 +28,10 @@ pub use csv::workorders_to_csv;
 pub use ledger::{LedgerError, ProofLedger};
 pub use proof::{ProofRecord, ProofStatus, PROOF_SCHEMA_VERSION};
 pub use schema::{proof_record_schema, workorder_schema};
+pub use selection::{
+    parse_ready, top_ready, ClaimedTask, CommandOutput, CommandRunner, ReadyTask, SelectionError,
+    Selector, SystemRunner,
+};
 pub use workorder::{IntentLock, Priority, Status, WorkOrder};
 
 use std::collections::BTreeMap;
