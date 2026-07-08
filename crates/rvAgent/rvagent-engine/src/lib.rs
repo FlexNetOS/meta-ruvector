@@ -15,6 +15,12 @@
 //!   the pass/fail verdict.
 //! - **TEASTASK-004:** write the resulting `ProofRecord` to the handoff witnessed ledger.
 
+pub mod adapter;
+pub mod workorder;
+
+pub use adapter::{taskspec_to_workorder, workorder_to_taskspec, AdapterError};
+pub use workorder::{IntentLock, Priority, Status, WorkOrder};
+
 use async_trait::async_trait;
 use chrono::Utc;
 use rvagent_a2a::error::A2aError;
