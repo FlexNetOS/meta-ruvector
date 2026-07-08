@@ -8,7 +8,7 @@ use js_sys::{Object, Reflect};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::JsFuture;
-use web_sys::{IdbDatabase, IdbObjectStore, IdbRequest, IdbTransaction, IdbTransactionMode};
+use web_sys::{IdbDatabase, IdbRequest, IdbTransactionMode};
 
 const DB_NAME: &str = "rvlite_db";
 const DB_VERSION: u32 = 1;

@@ -234,7 +234,7 @@ impl PropertyGraph {
         for label in &node.labels {
             self.label_index
                 .entry(label.clone())
-                .or_insert_with(Vec::new)
+                .or_default()
                 .push(id.clone());
         }
 
@@ -290,18 +290,15 @@ impl PropertyGraph {
         // Update indexes
         self.edge_type_index
             .entry(edge_type)
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(id.clone());
 
         self.outgoing_edges
             .entry(from)
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(id.clone());
 
-        self.incoming_edges
-            .entry(to)
-            .or_insert_with(Vec::new)
-            .push(id.clone());
+        self.incoming_edges.entry(to).or_default().push(id.clone());
 
         self.edges.insert(id.clone(), edge);
         Ok(id)
