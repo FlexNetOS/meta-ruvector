@@ -12087,6 +12087,7 @@ dependencies = [
  "async-trait",
  "blake3",
  "chrono",
+ "ruvector-sona 0.2.0",
  "rvagent-a2a",
  "rvagent-backends",
  "schemars 1.2.1",

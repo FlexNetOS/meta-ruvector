@@ -22,7 +22,12 @@ thiserror = { workspace = true }
 schemars = "1"
 # TEASTASK-004: blake3 witness-chain hashing for the self-contained proof ledger.
 # Version reused from the existing workspace lock (1.8.5) — no new version added.
+# TEASTASK-008 also reuses blake3 for the deterministic trajectory pseudo-embedding.
 blake3 = "1"
+# TEASTASK-008: capture each real run as a learning trajectory. REUSE ruvector-sona's
+# ReasoningBank + TrajectoryBuilder — no reimplementation of trajectory logic. Default
+# features (serde-support) are required for sona's serde derives; wasm/napi stay off.
+ruvector-sona = { path = "../../sona" }
 
 [dev-dependencies]
 # TEASTASK-011: drive the async TaskRunner in integration tests (#[tokio::test]).

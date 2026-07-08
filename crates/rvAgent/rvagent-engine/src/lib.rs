@@ -17,6 +17,7 @@
 
 pub mod adapter;
 pub mod csv;
+pub mod learning;
 pub mod ledger;
 pub mod proof;
 pub mod schema;
@@ -25,6 +26,7 @@ pub mod workorder;
 
 pub use adapter::{taskspec_to_workorder, workorder_to_taskspec, AdapterError};
 pub use csv::workorders_to_csv;
+pub use learning::{LearningError, RecordedRun, TrajectoryRecorder};
 pub use ledger::{LedgerError, ProofLedger};
 pub use proof::{ProofRecord, ProofStatus, PROOF_SCHEMA_VERSION};
 pub use schema::{proof_record_schema, workorder_schema};
@@ -58,19 +60,36 @@ use rvagent_backends::{LocalShellBackend, LocalShellConfig, SandboxBackend};
 /// by appending a [`ProofRecord`] to the self-contained JSONL proof ledger. Under the
 /// "no proof, no done" doctrine, if a ledger is configured and the append fails, [`run`]
 /// returns an error rather than a completion that could never be witnessed.
+///
+/// TEASTASK-008 (capability-gain law): attach a [`TrajectoryRecorder`] with
+/// [`RvAgentEngine::with_recorder`] to capture every *real* run outcome as a learning
+/// trajectory in a sona `ReasoningBank`, so each cycle can inform the next.
+///
+/// ## Proof is mandatory; trajectory is best-effort (deliberate asymmetry)
+/// The two seams are intentionally *not* symmetric. Proof is load-bearing evidence: a run
+/// that cannot be witnessed is not a completion, so a ledger append failure aborts
+/// [`run`]. Learning is an optimization: a run's *outcome* stands on its own whether or
+/// not it was recorded, so a recorder failure is swallowed and never fails the task.
 #[derive(Debug, Default, Clone)]
 pub struct RvAgentEngine {
     /// Optional witnessed proof ledger. `None` reproduces the exact TEASTASK-011
     /// behavior (no proof written). `Arc` so the engine stays cheaply `Clone`.
     ledger: Option<Arc<ProofLedger>>,
+    /// Optional learning-trajectory recorder (TEASTASK-008). `None` reproduces the exact
+    /// pre-TEASTASK-008 behavior (no trajectory recorded). `Arc` keeps the engine cheaply
+    /// `Clone` and lets a caller hold a handle to inspect what was recorded.
+    recorder: Option<Arc<TrajectoryRecorder>>,
 }
 
 impl RvAgentEngine {
-    /// Construct a new engine with no proof ledger (TEASTASK-011 behavior — no proof
-    /// written).
+    /// Construct a new engine with no proof ledger and no learning recorder
+    /// (TEASTASK-011 behavior — no proof written, no trajectory recorded).
     #[must_use]
     pub fn new() -> Self {
-        Self { ledger: None }
+        Self {
+            ledger: None,
+            recorder: None,
+        }
     }
 
     /// Construct an engine that witnesses every real run outcome to the JSONL proof
@@ -79,7 +98,17 @@ impl RvAgentEngine {
     pub fn with_ledger(path: PathBuf) -> Self {
         Self {
             ledger: Some(Arc::new(ProofLedger::new(path))),
+            recorder: None,
         }
+    }
+
+    /// Attach a learning-trajectory recorder (TEASTASK-008), composably with any existing
+    /// ledger. Every *real* run outcome is then recorded as a trajectory — best-effort, so
+    /// a recorder failure never fails the task (see the type-level asymmetry note).
+    #[must_use]
+    pub fn with_recorder(mut self, recorder: Arc<TrajectoryRecorder>) -> Self {
+        self.recorder = Some(recorder);
+        self
     }
 }
 
@@ -185,6 +214,19 @@ impl RvAgentEngine {
         })?;
         Ok(())
     }
+
+    /// Record a *real* run outcome as a learning trajectory (TEASTASK-008).
+    ///
+    /// A no-op when no recorder is configured. Unlike [`record_proof`](Self::record_proof),
+    /// this is **best-effort**: a recording error is intentionally swallowed and never
+    /// propagated, so learning can never turn a real Completed/Failed outcome into a task
+    /// failure. `reward` is the honest signal — `1.0` Completed, `0.0` Failed.
+    fn record_trajectory(&self, task_id: &str, objective: &str, reward: f32) {
+        if let Some(recorder) = self.recorder.as_ref() {
+            // Best-effort: swallow the result. Proof is mandatory; trajectory is not.
+            let _ = recorder.record_run(task_id, objective, reward);
+        }
+    }
 }
 
 #[async_trait]
@@ -241,6 +283,9 @@ impl TaskRunner for RvAgentEngine {
                     result.output.clone(),
                     None,
                 )?;
+                // TEASTASK-008: capture the real Completed outcome as a learning
+                // trajectory (best-effort — see record_trajectory). reward = 1.0.
+                self.record_trajectory(&spec.id, &wo.objective, 1.0);
                 let artifact = Artifact {
                     name: Some("verification".to_string()),
                     description: Some(format!("stdout/stderr of verification_command `{command}`")),
@@ -271,6 +316,9 @@ impl TaskRunner for RvAgentEngine {
                     result.output,
                     Some(reason.clone()),
                 )?;
+                // TEASTASK-008: capture the real Failed outcome as a learning trajectory
+                // (best-effort — see record_trajectory). reward = 0.0.
+                self.record_trajectory(&spec.id, &wo.objective, 0.0);
                 Ok(make_task(
                     spec,
                     TaskState::Failed,
@@ -434,5 +482,95 @@ mod tests {
         assert_eq!(task.status.state, TaskState::Completed);
         // (RvAgentEngine::new() has no ledger; nothing to read — asserted by the fact
         // that the run succeeded without any ledger path configured.)
+    }
+
+    // ---- TEASTASK-008: learning-trajectory recorder integration ----
+
+    #[tokio::test]
+    async fn with_recorder_passing_run_records_reward_one() {
+        let recorder = Arc::new(crate::learning::TrajectoryRecorder::new());
+        let engine = RvAgentEngine::new().with_recorder(recorder.clone());
+        let spec = crate::adapter::workorder_to_taskspec(&work_order(Some("true")))
+            .expect("to taskspec");
+
+        let task = engine.run(spec).await.expect("run ok");
+        assert_eq!(task.status.state, TaskState::Completed);
+
+        assert_eq!(
+            recorder.trajectory_count(),
+            1,
+            "a Completed run must record exactly one trajectory"
+        );
+        let recorded = recorder.recorded();
+        assert_eq!(recorded.len(), 1);
+        assert_eq!(
+            recorded[0].reward, 1.0,
+            "a Completed run's trajectory carries reward 1.0"
+        );
+    }
+
+    #[tokio::test]
+    async fn with_recorder_failing_run_records_reward_zero() {
+        let recorder = Arc::new(crate::learning::TrajectoryRecorder::new());
+        let engine = RvAgentEngine::new().with_recorder(recorder.clone());
+        let spec = crate::adapter::workorder_to_taskspec(&work_order(Some("false")))
+            .expect("to taskspec");
+
+        let task = engine.run(spec).await.expect("run ok");
+        assert_eq!(task.status.state, TaskState::Failed);
+
+        assert_eq!(recorder.trajectory_count(), 1);
+        let recorded = recorder.recorded();
+        assert_eq!(recorded.len(), 1);
+        assert_eq!(
+            recorded[0].reward, 0.0,
+            "a Failed run's trajectory carries reward 0.0"
+        );
+    }
+
+    #[tokio::test]
+    async fn with_recorder_input_required_records_nothing() {
+        // No verification_command → InputRequired is NOT a real outcome, so nothing is
+        // recorded (matches the proof-ledger seam: only Completed/Failed are witnessed).
+        let recorder = Arc::new(crate::learning::TrajectoryRecorder::new());
+        let engine = RvAgentEngine::new().with_recorder(recorder.clone());
+        let spec =
+            crate::adapter::workorder_to_taskspec(&work_order(None)).expect("to taskspec");
+
+        let task = engine.run(spec).await.expect("run ok");
+        assert_eq!(task.status.state, TaskState::InputRequired);
+        assert_eq!(
+            recorder.trajectory_count(),
+            0,
+            "InputRequired is not a real outcome — record nothing"
+        );
+    }
+
+    #[tokio::test]
+    async fn without_recorder_run_is_unaffected() {
+        // No recorder → run behaves exactly as before; nothing is recorded and the
+        // outcome is unchanged.
+        let task = run_wo(&work_order(Some("true"))).await;
+        assert_eq!(task.status.state, TaskState::Completed);
+        let failing = run_wo(&work_order(Some("false"))).await;
+        assert_eq!(failing.status.state, TaskState::Failed);
+    }
+
+    #[tokio::test]
+    async fn recorder_and_ledger_compose() {
+        // Proof (mandatory) and trajectory (best-effort) coexist on one engine.
+        let tmp = tempfile::NamedTempFile::new().expect("temp file");
+        let recorder = Arc::new(crate::learning::TrajectoryRecorder::new());
+        let engine =
+            RvAgentEngine::with_ledger(tmp.path().to_path_buf()).with_recorder(recorder.clone());
+        let spec = crate::adapter::workorder_to_taskspec(&work_order(Some("true")))
+            .expect("to taskspec");
+
+        let task = engine.run(spec).await.expect("run ok");
+        assert_eq!(task.status.state, TaskState::Completed);
+
+        let ledger = crate::ledger::ProofLedger::new(tmp.path().to_path_buf());
+        assert_eq!(ledger.read_all().expect("read_all").len(), 1);
+        assert_eq!(recorder.trajectory_count(), 1);
     }
 }
