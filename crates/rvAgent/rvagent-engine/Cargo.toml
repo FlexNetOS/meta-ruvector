@@ -28,6 +28,9 @@ blake3 = "1"
 # ReasoningBank + TrajectoryBuilder — no reimplementation of trajectory logic. Default
 # features (serde-support) are required for sona's serde derives; wasm/napi stay off.
 ruvector-sona = { path = "../../sona" }
+# TEAS durable state lives in a SQLite DATABASE (tables), like gitkb + envctl:
+# proof_records (witnessed proof ledger) and task_graph (WorkOrders). Version from lock.
+rusqlite = "0.32"
 
 [dev-dependencies]
 # TEASTASK-011: drive the async TaskRunner in integration tests (#[tokio::test]).
