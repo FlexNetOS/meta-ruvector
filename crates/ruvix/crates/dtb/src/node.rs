@@ -270,10 +270,9 @@ impl<'a> ParsedReg<'a> {
     #[must_use]
     pub const fn entry_count(&self) -> usize {
         let entry_size = ((self.address_cells + self.size_cells) * 4) as usize;
-        if entry_size == 0 {
-            0
-        } else {
-            self.data.len() / entry_size
+        match self.data.len().checked_div(entry_size) {
+            Some(count) => count,
+            None => 0,
         }
     }
 
