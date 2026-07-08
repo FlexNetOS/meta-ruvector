@@ -12081,6 +12081,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "rvagent-engine"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "chrono",
+ "rvagent-a2a",
+]
+
+[[package]]
 name = "rvagent-mcp"
 version = "0.1.0"
 dependencies = [

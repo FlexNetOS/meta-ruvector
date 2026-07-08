@@ -1,0 +1,13 @@
+[package]
+name = "rvagent-engine"
+version = "0.1.0"
+edition = "2021"
+description = "rvAgent Engine — the unified LifeOS TEAS TaskRunner over handoff.task.v1. TEASTASK-001 ships the scaffold + a stub TaskRunner; real execution lands in TEASTASK-011."
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/FlexNetOS/ruvector"
+
+[dependencies]
+# Implement the EXISTING TaskRunner trait — no parallel task type (ADR-159).
+rvagent-a2a = { path = "../rvagent-a2a" }
+async-trait = "0.1"
+chrono = { workspace = true }
