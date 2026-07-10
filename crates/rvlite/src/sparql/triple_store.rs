@@ -428,7 +428,7 @@ impl TripleStore {
         }
         {
             let mut graphs = self.graphs.write().unwrap();
-            for (_, ids) in graphs.iter_mut() {
+            for ids in graphs.values_mut() {
                 ids.remove(&id);
             }
         }
