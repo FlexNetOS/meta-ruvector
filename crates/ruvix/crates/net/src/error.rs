@@ -219,7 +219,10 @@ mod tests {
 
     #[test]
     fn test_error_as_str() {
-        assert_eq!(NetError::PacketTooShort.as_str(), "Packet too short for header");
+        assert_eq!(
+            NetError::PacketTooShort.as_str(),
+            "Packet too short for header"
+        );
         assert_eq!(NetError::ArpNotFound.as_str(), "ARP entry not found");
     }
 

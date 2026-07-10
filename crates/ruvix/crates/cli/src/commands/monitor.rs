@@ -10,9 +10,11 @@ use crossterm::{
     event::{self, Event, KeyCode, KeyEvent, KeyModifiers},
     terminal::{disable_raw_mode, enable_raw_mode},
 };
-use serialport::{DataBits, FlowControl as SerialFlowControl, Parity as SerialParity, StopBits, SerialPort};
+use serialport::{
+    DataBits, FlowControl as SerialFlowControl, Parity as SerialParity, SerialPort, StopBits,
+};
 use std::fs::{File, OpenOptions};
-use std::io::{Read, Write, BufWriter};
+use std::io::{BufWriter, Read, Write};
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -236,12 +238,8 @@ fn list_ports(_verbose: bool) -> Result<()> {
             serialport::SerialPortType::BluetoothPort => {
                 ("Bluetooth Serial".to_string(), "Bluetooth".to_string())
             }
-            serialport::SerialPortType::PciPort => {
-                ("PCI Serial".to_string(), "PCI".to_string())
-            }
-            serialport::SerialPortType::Unknown => {
-                ("Unknown".to_string(), "System".to_string())
-            }
+            serialport::SerialPortType::PciPort => ("PCI Serial".to_string(), "PCI".to_string()),
+            serialport::SerialPortType::Unknown => ("Unknown".to_string(), "System".to_string()),
         };
 
         println!(
@@ -352,7 +350,8 @@ fn run_monitor_loop(serial: &mut Box<dyn SerialPort>, args: &MonitorArgs) -> Res
     // Setup Ctrl+C handler
     ctrlc::set_handler(move || {
         r.store(false, Ordering::SeqCst);
-    }).ok();
+    })
+    .ok();
 
     // Open log file if requested
     let mut log_file: Option<BufWriter<File>> = if let Some(ref log_path) = args.log {
@@ -383,7 +382,11 @@ fn run_monitor_loop(serial: &mut Box<dyn SerialPort>, args: &MonitorArgs) -> Res
             if let Some(timeout_secs) = args.timeout {
                 if start_time.elapsed().as_secs() >= timeout_secs {
                     println!();
-                    println!("{} Timeout reached ({} seconds)", "[monitor]".cyan(), timeout_secs);
+                    println!(
+                        "{} Timeout reached ({} seconds)",
+                        "[monitor]".cyan(),
+                        timeout_secs
+                    );
                     break;
                 }
             }
@@ -391,7 +394,9 @@ fn run_monitor_loop(serial: &mut Box<dyn SerialPort>, args: &MonitorArgs) -> Res
             // Check for keyboard input
             if event::poll(Duration::from_millis(10))? {
                 if let Event::Key(key_event) = event::read()? {
-                    if let Some(action) = handle_key_event(key_event, &mut show_timestamps, &mut show_hex) {
+                    if let Some(action) =
+                        handle_key_event(key_event, &mut show_timestamps, &mut show_hex)
+                    {
                         match action {
                             KeyAction::Quit => {
                                 println!();
@@ -413,12 +418,22 @@ fn run_monitor_loop(serial: &mut Box<dyn SerialPort>, args: &MonitorArgs) -> Res
                                 }
                             }
                             KeyAction::TimestampToggled => {
-                                eprintln!("\r{} Timestamps: {}", "[monitor]".cyan(),
-                                    if show_timestamps { "ON".green() } else { "OFF".red() });
+                                eprintln!(
+                                    "\r{} Timestamps: {}",
+                                    "[monitor]".cyan(),
+                                    if show_timestamps {
+                                        "ON".green()
+                                    } else {
+                                        "OFF".red()
+                                    }
+                                );
                             }
                             KeyAction::HexToggled => {
-                                eprintln!("\r{} Hex mode: {}", "[monitor]".cyan(),
-                                    if show_hex { "ON".green() } else { "OFF".red() });
+                                eprintln!(
+                                    "\r{} Hex mode: {}",
+                                    "[monitor]".cyan(),
+                                    if show_hex { "ON".green() } else { "OFF".red() }
+                                );
                             }
                         }
                     }
@@ -444,7 +459,10 @@ fn run_monitor_loop(serial: &mut Box<dyn SerialPort>, args: &MonitorArgs) -> Res
                                 // End of line
                                 if show_timestamps {
                                     let now = chrono::Local::now();
-                                    print!("\r{} ", now.format("%H:%M:%S%.3f").to_string().dimmed());
+                                    print!(
+                                        "\r{} ",
+                                        now.format("%H:%M:%S%.3f").to_string().dimmed()
+                                    );
                                 }
                                 println!("{}", line_buffer);
 

@@ -248,8 +248,12 @@ impl<D: NetworkDevice> NetworkStack<D> {
 
         // Build IPv4 header
         let ip_payload_len = UDP_HEADER_SIZE + payload.len();
-        let mut ip_header =
-            Ipv4Header::new(self.config.ip_addr, dst_ip, Protocol::Udp, ip_payload_len as u16);
+        let mut ip_header = Ipv4Header::new(
+            self.config.ip_addr,
+            dst_ip,
+            Protocol::Udp,
+            ip_payload_len as u16,
+        );
         ip_header.identification = self.next_ip_id();
         ip_header.ttl = self.config.default_ttl;
 
@@ -264,12 +268,8 @@ impl<D: NetworkDevice> NetworkStack<D> {
         buf[offset + udp_len..offset + udp_len + payload.len()].copy_from_slice(payload);
 
         // Compute and fill UDP checksum
-        let checksum = UdpHeader::compute_checksum(
-            self.config.ip_addr,
-            dst_ip,
-            &udp_header,
-            payload,
-        );
+        let checksum =
+            UdpHeader::compute_checksum(self.config.ip_addr, dst_ip, &udp_header, payload);
         buf[offset + 6..offset + 8].copy_from_slice(&checksum.to_be_bytes());
 
         offset += udp_len + payload.len();
@@ -354,10 +354,7 @@ impl<D: NetworkDevice> NetworkStack<D> {
 
         // Check if it's for us
         let our_mac = self.device.mac_address();
-        if !dest_mac.is_broadcast()
-            && dest_mac != our_mac
-            && !dest_mac.is_multicast()
-        {
+        if !dest_mac.is_broadcast() && dest_mac != our_mac && !dest_mac.is_multicast() {
             return Ok(None);
         }
 
@@ -381,8 +378,12 @@ impl<D: NetworkDevice> NetworkStack<D> {
 
         // If this is a request for our IP, send a reply
         if arp.is_request() && arp.target_ip == self.config.ip_addr {
-            let reply =
-                ArpPacket::reply(self.device.mac_address(), self.config.ip_addr, arp.sender_mac, arp.sender_ip);
+            let reply = ArpPacket::reply(
+                self.device.mac_address(),
+                self.config.ip_addr,
+                arp.sender_mac,
+                arp.sender_ip,
+            );
 
             let mut buf = [0u8; 64];
 
@@ -455,7 +456,12 @@ impl<D: NetworkDevice> NetworkStack<D> {
             let echo = IcmpEcho::parse(&icmp_header, icmp_payload)?;
 
             // Send echo reply
-            self.send_icmp_echo_reply(ip_header.src_addr, echo.identifier, echo.sequence, echo.data)?;
+            self.send_icmp_echo_reply(
+                ip_header.src_addr,
+                echo.identifier,
+                echo.sequence,
+                echo.data,
+            )?;
         }
 
         Ok(())
@@ -536,9 +542,7 @@ impl<D: NetworkDevice> NetworkStack<D> {
             src_port: udp_header.src_port,
             dst_port: udp_header.dst_port,
             protocol: Protocol::Udp,
-            payload_offset: ETHERNET_HEADER_SIZE
-                + ip_header.header_len()
-                + UDP_HEADER_SIZE,
+            payload_offset: ETHERNET_HEADER_SIZE + ip_header.header_len() + UDP_HEADER_SIZE,
             payload_len: udp_payload.len(),
         }))
     }

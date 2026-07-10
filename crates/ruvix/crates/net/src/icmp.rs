@@ -341,8 +341,7 @@ impl<'a> IcmpEcho<'a> {
             return Err(NetError::InvalidIcmpHeader);
         }
 
-        let identifier =
-            u16::from_be_bytes([header.rest_of_header[0], header.rest_of_header[1]]);
+        let identifier = u16::from_be_bytes([header.rest_of_header[0], header.rest_of_header[1]]);
         let sequence = u16::from_be_bytes([header.rest_of_header[2], header.rest_of_header[3]]);
 
         Ok(Self {
@@ -431,8 +430,7 @@ impl<'a> IcmpDestUnreachable<'a> {
         }
 
         let code = DestUnreachableCode::from_u8(header.code);
-        let next_hop_mtu =
-            u16::from_be_bytes([header.rest_of_header[2], header.rest_of_header[3]]);
+        let next_hop_mtu = u16::from_be_bytes([header.rest_of_header[2], header.rest_of_header[3]]);
 
         Ok(Self {
             code,
@@ -612,10 +610,7 @@ mod tests {
 
     #[test]
     fn test_time_exceeded_codes() {
-        assert_eq!(
-            TimeExceededCode::from_u8(0),
-            TimeExceededCode::TtlExceeded
-        );
+        assert_eq!(TimeExceededCode::from_u8(0), TimeExceededCode::TtlExceeded);
         assert_eq!(
             TimeExceededCode::from_u8(1),
             TimeExceededCode::FragmentReassemblyExceeded

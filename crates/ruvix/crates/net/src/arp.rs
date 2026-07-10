@@ -498,7 +498,10 @@ mod tests {
     fn test_arp_operation_conversion() {
         assert_eq!(ArpOperation::from_u16(1), ArpOperation::Request);
         assert_eq!(ArpOperation::from_u16(2), ArpOperation::Reply);
-        assert!(matches!(ArpOperation::from_u16(99), ArpOperation::Unknown(99)));
+        assert!(matches!(
+            ArpOperation::from_u16(99),
+            ArpOperation::Unknown(99)
+        ));
 
         assert_eq!(ArpOperation::Request.to_u16(), 1);
         assert_eq!(ArpOperation::Reply.to_u16(), 2);

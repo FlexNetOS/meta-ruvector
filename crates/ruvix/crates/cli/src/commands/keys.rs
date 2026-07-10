@@ -7,11 +7,11 @@ use anyhow::{bail, Context, Result};
 use clap::Subcommand;
 use colored::Colorize;
 use ed25519_dalek::{
-    Signature, Signer, SigningKey, Verifier, VerifyingKey,
-    SECRET_KEY_LENGTH, PUBLIC_KEY_LENGTH, SIGNATURE_LENGTH,
+    Signature, Signer, SigningKey, Verifier, VerifyingKey, PUBLIC_KEY_LENGTH, SECRET_KEY_LENGTH,
+    SIGNATURE_LENGTH,
 };
 use rand::rngs::OsRng;
-use sha2::{Sha256, Sha384, Sha512, Digest};
+use sha2::{Digest, Sha256, Sha384, Sha512};
 use std::fs::{self, File};
 use std::io::{Read, Write};
 use std::path::PathBuf;
@@ -242,24 +242,49 @@ struct SignedImageHeader {
 /// Execute the keys command
 pub fn execute(action: KeysAction, verbose: bool) -> Result<()> {
     match action {
-        KeysAction::Generate { output, name, algorithm, bits, passphrase, force } => {
-            execute_generate(&output, &name, algorithm, bits, passphrase, force, verbose)
-        }
-        KeysAction::Sign { key, image, output, embed_cert, hash } => {
-            execute_sign(&key, &image, output.as_ref(), embed_cert.as_ref(), hash, verbose)
-        }
-        KeysAction::Verify { key, cert, image, verbose: verb } => {
-            execute_verify(key.as_ref(), cert.as_ref(), &image, verb || verbose)
-        }
-        KeysAction::List { dir, details, format } => {
-            execute_list(&dir, details, format, verbose)
-        }
-        KeysAction::Export { key, output, format } => {
-            execute_export(&key, &output, format, verbose)
-        }
-        KeysAction::Import { file, output, validate } => {
-            execute_import(&file, &output, validate, verbose)
-        }
+        KeysAction::Generate {
+            output,
+            name,
+            algorithm,
+            bits,
+            passphrase,
+            force,
+        } => execute_generate(&output, &name, algorithm, bits, passphrase, force, verbose),
+        KeysAction::Sign {
+            key,
+            image,
+            output,
+            embed_cert,
+            hash,
+        } => execute_sign(
+            &key,
+            &image,
+            output.as_ref(),
+            embed_cert.as_ref(),
+            hash,
+            verbose,
+        ),
+        KeysAction::Verify {
+            key,
+            cert,
+            image,
+            verbose: verb,
+        } => execute_verify(key.as_ref(), cert.as_ref(), &image, verb || verbose),
+        KeysAction::List {
+            dir,
+            details,
+            format,
+        } => execute_list(&dir, details, format, verbose),
+        KeysAction::Export {
+            key,
+            output,
+            format,
+        } => execute_export(&key, &output, format, verbose),
+        KeysAction::Import {
+            file,
+            output,
+            validate,
+        } => execute_import(&file, &output, validate, verbose),
     }
 }
 
@@ -293,10 +318,16 @@ fn execute_generate(
     // Check for existing keys
     if !force {
         if priv_path.exists() {
-            bail!("Private key already exists: {}. Use --force to overwrite.", priv_path.display());
+            bail!(
+                "Private key already exists: {}. Use --force to overwrite.",
+                priv_path.display()
+            );
         }
         if pub_path.exists() {
-            bail!("Public key already exists: {}. Use --force to overwrite.", pub_path.display());
+            bail!(
+                "Public key already exists: {}. Use --force to overwrite.",
+                pub_path.display()
+            );
         }
     }
 
@@ -339,7 +370,8 @@ fn execute_generate(
             }
 
             // Write public key
-            let pub_bytes = create_key_file(&verifying_key.to_bytes(), KeyType::PublicEd25519, false);
+            let pub_bytes =
+                create_key_file(&verifying_key.to_bytes(), KeyType::PublicEd25519, false);
             fs::write(&pub_path, pub_bytes).context("Failed to write public key")?;
 
             println!("{} Verifying keypair...", "[3/3]".cyan());
@@ -347,7 +379,8 @@ fn execute_generate(
             // Test sign/verify cycle
             let test_message = b"RuVix key verification test";
             let signature = signing_key.sign(test_message);
-            verifying_key.verify(test_message, &signature)
+            verifying_key
+                .verify(test_message, &signature)
                 .context("Key verification failed")?;
 
             // Compute fingerprint
@@ -362,10 +395,13 @@ fn execute_generate(
         KeyAlgorithm::Rsa => {
             #[cfg(feature = "rsa")]
             {
-                use rsa::{RsaPrivateKey, RsaPublicKey};
                 use rsa::pkcs8::{EncodePrivateKey, EncodePublicKey, LineEnding};
+                use rsa::{RsaPrivateKey, RsaPublicKey};
 
-                println!("  Generating RSA-{} keypair (this may take a moment)...", bits);
+                println!(
+                    "  Generating RSA-{} keypair (this may take a moment)...",
+                    bits
+                );
                 let mut rng = OsRng;
                 let private_key = RsaPrivateKey::new(&mut rng, bits as usize)
                     .context("Failed to generate RSA key")?;
@@ -374,12 +410,14 @@ fn execute_generate(
                 println!("{} Writing keys to disk...", "[2/3]".cyan());
 
                 // Write private key in PEM format
-                let priv_pem = private_key.to_pkcs8_pem(LineEnding::LF)
+                let priv_pem = private_key
+                    .to_pkcs8_pem(LineEnding::LF)
                     .context("Failed to encode private key")?;
                 fs::write(&priv_path, priv_pem.as_bytes())?;
 
                 // Write public key in PEM format
-                let pub_pem = public_key.to_public_key_pem(LineEnding::LF)
+                let pub_pem = public_key
+                    .to_public_key_pem(LineEnding::LF)
                     .context("Failed to encode public key")?;
                 fs::write(&pub_path, pub_pem)?;
 
@@ -408,17 +446,15 @@ fn execute_sign(
     hash: HashAlgorithm,
     verbose: bool,
 ) -> Result<()> {
-    let output_path = output
-        .cloned()
-        .unwrap_or_else(|| {
-            let stem = image.file_stem().unwrap_or_default();
-            let ext = image.extension().unwrap_or_default();
-            image.with_file_name(format!(
-                "{}.signed.{}",
-                stem.to_string_lossy(),
-                ext.to_string_lossy()
-            ))
-        });
+    let output_path = output.cloned().unwrap_or_else(|| {
+        let stem = image.file_stem().unwrap_or_default();
+        let ext = image.extension().unwrap_or_default();
+        image.with_file_name(format!(
+            "{}.signed.{}",
+            stem.to_string_lossy(),
+            ext.to_string_lossy()
+        ))
+    });
 
     if verbose {
         println!("{}", "Signing Configuration:".cyan().bold());
@@ -478,13 +514,14 @@ fn execute_sign(
         public_key: verifying_key.to_bytes(),
     };
 
-    let mut output_data = Vec::with_capacity(std::mem::size_of::<SignedImageHeader>() + image_data.len());
+    let mut output_data =
+        Vec::with_capacity(std::mem::size_of::<SignedImageHeader>() + image_data.len());
 
     // Write header (unsafe but okay for POD struct)
     let header_bytes: &[u8] = unsafe {
         std::slice::from_raw_parts(
             &header as *const SignedImageHeader as *const u8,
-            std::mem::size_of::<SignedImageHeader>()
+            std::mem::size_of::<SignedImageHeader>(),
         )
     };
     output_data.extend_from_slice(header_bytes);
@@ -498,7 +535,10 @@ fn execute_sign(
         "SUCCESS".green().bold(),
         output_path.display().to_string().yellow()
     );
-    println!("  Signature: {}", hex::encode(&signature.to_bytes()[..16]).dimmed());
+    println!(
+        "  Signature: {}",
+        hex::encode(&signature.to_bytes()[..16]).dimmed()
+    );
     println!("  Image size: {} bytes", image_data.len());
 
     Ok(())
@@ -527,9 +567,8 @@ fn execute_verify(
     }
 
     // Parse header
-    let header: SignedImageHeader = unsafe {
-        std::ptr::read(image_data.as_ptr() as *const SignedImageHeader)
-    };
+    let header: SignedImageHeader =
+        unsafe { std::ptr::read(image_data.as_ptr() as *const SignedImageHeader) };
 
     if &header.magic != b"RUVIXSIG" {
         bail!("Invalid signature header magic");
@@ -540,8 +579,7 @@ fn execute_verify(
         load_public_key(k)?
     } else {
         // Use embedded public key from header
-        VerifyingKey::from_bytes(&header.public_key)
-            .context("Invalid embedded public key")?
+        VerifyingKey::from_bytes(&header.public_key).context("Invalid embedded public key")?
     };
 
     println!("{} Computing image hash...", "[3/4]".cyan());
@@ -578,7 +616,10 @@ fn execute_verify(
             println!();
             println!("{} Signature verified successfully", "VALID".green().bold());
             println!("  Payload size: {} bytes", header.payload_size);
-            println!("  Fingerprint: {}", compute_fingerprint(&verifying_key.to_bytes()).dimmed());
+            println!(
+                "  Fingerprint: {}",
+                compute_fingerprint(&verifying_key.to_bytes()).dimmed()
+            );
         }
         Err(e) => {
             println!();
@@ -608,8 +649,16 @@ fn execute_list(dir: &PathBuf, details: bool, format: ListFormat, verbose: bool)
         if let Some(ext) = path.extension() {
             let ext_str = ext.to_string_lossy();
             if ext_str == "priv" || ext_str == "pub" {
-                let name = path.file_name().unwrap_or_default().to_string_lossy().to_string();
-                let key_type = if ext_str == "priv" { "Private" } else { "Public" };
+                let name = path
+                    .file_name()
+                    .unwrap_or_default()
+                    .to_string_lossy()
+                    .to_string();
+                let key_type = if ext_str == "priv" {
+                    "Private"
+                } else {
+                    "Public"
+                };
 
                 // Try to determine algorithm and fingerprint
                 let (algo, fingerprint) = if let Ok(data) = fs::read(&path) {
@@ -619,7 +668,11 @@ fn execute_list(dir: &PathBuf, details: bool, format: ListFormat, verbose: bool)
                 };
 
                 let metadata = fs::metadata(&path)?;
-                let created: chrono::DateTime<chrono::Utc> = chrono::DateTime::from(metadata.created().unwrap_or(std::time::SystemTime::UNIX_EPOCH));
+                let created: chrono::DateTime<chrono::Utc> = chrono::DateTime::from(
+                    metadata
+                        .created()
+                        .unwrap_or(std::time::SystemTime::UNIX_EPOCH),
+                );
                 let created_str = created.format("%Y-%m-%d").to_string();
 
                 keys.push((name, algo, key_type.to_string(), created_str, fingerprint));
@@ -663,7 +716,11 @@ fn execute_list(dir: &PathBuf, details: bool, format: ListFormat, verbose: bool)
                     };
                     println!(
                         "  {:<20} {:<12} {:<10} {:<12} {}",
-                        name, algo, typ_colored, date, fp.dimmed()
+                        name,
+                        algo,
+                        typ_colored,
+                        date,
+                        fp.dimmed()
                     );
                 }
             } else {
@@ -692,7 +749,12 @@ fn execute_list(dir: &PathBuf, details: bool, format: ListFormat, verbose: bool)
     Ok(())
 }
 
-fn execute_export(key: &PathBuf, output: &PathBuf, format: ExportFormat, verbose: bool) -> Result<()> {
+fn execute_export(
+    key: &PathBuf,
+    output: &PathBuf,
+    format: ExportFormat,
+    verbose: bool,
+) -> Result<()> {
     if verbose {
         println!(
             "{} Exporting public key from {} to {} ({:?} format)",
@@ -711,12 +773,8 @@ fn execute_export(key: &PathBuf, output: &PathBuf, format: ExportFormat, verbose
             let pem = pem::Pem::new("ED25519 PUBLIC KEY", verifying_key.to_bytes().to_vec());
             pem::encode(&pem).into_bytes()
         }
-        ExportFormat::Der => {
-            verifying_key.to_bytes().to_vec()
-        }
-        ExportFormat::Raw => {
-            verifying_key.to_bytes().to_vec()
-        }
+        ExportFormat::Der => verifying_key.to_bytes().to_vec(),
+        ExportFormat::Raw => verifying_key.to_bytes().to_vec(),
     };
 
     fs::write(output, output_bytes).context("Failed to write public key")?;
@@ -795,15 +853,19 @@ fn create_key_file(key_bytes: &[u8], key_type: KeyType, encrypted: bool) -> Vec<
     data
 }
 
-fn encrypt_private_key(key_bytes: &[u8; SECRET_KEY_LENGTH], encryption_key: &[u8; 32]) -> Result<Vec<u8>> {
-    use aes_gcm::{Aes256Gcm, Key, Nonce};
+fn encrypt_private_key(
+    key_bytes: &[u8; SECRET_KEY_LENGTH],
+    encryption_key: &[u8; 32],
+) -> Result<Vec<u8>> {
     use aes_gcm::aead::{Aead, KeyInit};
+    use aes_gcm::{Aes256Gcm, Key, Nonce};
 
     let cipher = Aes256Gcm::new(Key::<Aes256Gcm>::from_slice(encryption_key));
     let nonce_bytes: [u8; 12] = rand::random();
     let nonce = Nonce::from_slice(&nonce_bytes);
 
-    let ciphertext = cipher.encrypt(nonce, key_bytes.as_ref())
+    let ciphertext = cipher
+        .encrypt(nonce, key_bytes.as_ref())
         .map_err(|e| anyhow::anyhow!("Encryption failed: {}", e))?;
 
     let mut data = Vec::new();
@@ -819,15 +881,16 @@ fn encrypt_private_key(key_bytes: &[u8; SECRET_KEY_LENGTH], encryption_key: &[u8
 }
 
 fn derive_key_from_passphrase(passphrase: &str) -> Result<[u8; 32]> {
-    use argon2::{Argon2, PasswordHasher};
     use argon2::password_hash::SaltString;
+    use argon2::{Argon2, PasswordHasher};
 
     // Use a fixed salt for deterministic key derivation
     // In production, you'd store the salt with the encrypted key
     let salt = SaltString::encode_b64(b"RuVixKeyDerive16").unwrap();
 
     let argon2 = Argon2::default();
-    let hash = argon2.hash_password(passphrase.as_bytes(), &salt)
+    let hash = argon2
+        .hash_password(passphrase.as_bytes(), &salt)
         .map_err(|e| anyhow::anyhow!("Key derivation failed: {}", e))?;
 
     let hash_output = hash.hash.unwrap();
@@ -867,7 +930,11 @@ fn load_private_key(path: &PathBuf) -> Result<SigningKey> {
     let key_bytes = parse_key_bytes(&data)?;
 
     if key_bytes.len() != SECRET_KEY_LENGTH {
-        bail!("Invalid private key length: expected {}, got {}", SECRET_KEY_LENGTH, key_bytes.len());
+        bail!(
+            "Invalid private key length: expected {}, got {}",
+            SECRET_KEY_LENGTH,
+            key_bytes.len()
+        );
     }
 
     let mut bytes = [0u8; SECRET_KEY_LENGTH];
@@ -880,7 +947,11 @@ fn load_public_key(path: &PathBuf) -> Result<VerifyingKey> {
     let key_bytes = parse_key_bytes(&data)?;
 
     if key_bytes.len() != PUBLIC_KEY_LENGTH {
-        bail!("Invalid public key length: expected {}, got {}", PUBLIC_KEY_LENGTH, key_bytes.len());
+        bail!(
+            "Invalid public key length: expected {}, got {}",
+            PUBLIC_KEY_LENGTH,
+            key_bytes.len()
+        );
     }
 
     let mut bytes = [0u8; PUBLIC_KEY_LENGTH];
@@ -983,7 +1054,8 @@ mod tests {
             false,
             true,
             false,
-        ).unwrap();
+        )
+        .unwrap();
 
         // Create test image
         let image_path = dir.path().join("test.img");
@@ -998,7 +1070,8 @@ mod tests {
             None,
             HashAlgorithm::Sha256,
             false,
-        ).unwrap();
+        )
+        .unwrap();
 
         // Verify signature
         let result = execute_verify(
@@ -1023,7 +1096,8 @@ mod tests {
             false,
             true,
             false,
-        ).unwrap();
+        )
+        .unwrap();
 
         let result = execute_list(&dir.path().to_path_buf(), false, ListFormat::Table, false);
         assert!(result.is_ok());
