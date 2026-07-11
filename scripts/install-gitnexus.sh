@@ -21,9 +21,24 @@
 set -euo pipefail
 
 GITNEXUS_VERSION="${GITNEXUS_VERSION:-latest}"
+GITNEXUS_MODE="${GITNEXUS_MODE:-full}"
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+# A peer checkout normally lives at <meta-root>/src/<repo>. Discover that
+# control-plane root instead of baking a user-specific pre-Meta path into the
+# generated launcher. Standalone clones fall back to XDG data ownership.
+meta_root_candidate="$(cd "$REPO_ROOT/../.." 2>/dev/null && pwd || true)"
+if [[ -n "${META_ROOT:-}" ]]; then
+  GITNEXUS_META_ROOT="$META_ROOT"
+elif [[ -f "$meta_root_candidate/.meta.yaml" ]]; then
+  GITNEXUS_META_ROOT="$meta_root_candidate"
+else
+  GITNEXUS_META_ROOT="${XDG_DATA_HOME:-$HOME/.local/share}/meta"
+fi
+
 # Persistent CLI host for the bun path (native lbugjs.node is built once here and
 # reused). Overridable so CI / alternate machines can relocate it.
-GITNEXUS_HOME="${GITNEXUS_HOME:-$HOME/.local/share/gitnexus-cli}"
+GITNEXUS_HOME="${GITNEXUS_HOME:-$GITNEXUS_META_ROOT/var/lib/gitnexus-cli}"
 GITNEXUS_LAUNCHER="${GITNEXUS_LAUNCHER:-$HOME/.local/bin/gitnexus}"
 
 # All helpers route to stderr so callers can capture script output without
@@ -31,6 +46,11 @@ GITNEXUS_LAUNCHER="${GITNEXUS_LAUNCHER:-$HOME/.local/bin/gitnexus}"
 log()  { printf '\033[1;34m[gitnexus]\033[0m %s\n' "$*" >&2; }
 warn() { printf '\033[1;33m[gitnexus]\033[0m %s\n' "$*" >&2; }
 fail() { printf '\033[1;31m[gitnexus]\033[0m %s\n' "$*" >&2; exit 1; }
+
+case "$GITNEXUS_MODE" in
+  full|launcher) ;;
+  *) fail "GITNEXUS_MODE must be 'full' or 'launcher' (got '$GITNEXUS_MODE')" ;;
+esac
 
 # ── Preflight ────────────────────────────────────────────────────────
 # Node 20+ is the hard requirement (GitNexus package.json engines field);
@@ -55,14 +75,19 @@ fi
 #      15 native postinstalls), drop a launcher on PATH, and invoke via node.
 #
 # GN is an array so callers splat it: "${GN[@]}" analyze …
-declare -a GN
-if command -v gitnexus >/dev/null 2>&1; then
-  GN=(gitnexus)
-  log "using gitnexus already on PATH ($(command -v gitnexus))"
-elif command -v npx >/dev/null 2>&1; then
+declare -a GN=()
+if gitnexus_path="$(command -v gitnexus 2>/dev/null)" &&
+  "$gitnexus_path" --version >/dev/null 2>&1; then
+  GN=("$gitnexus_path")
+  log "using healthy gitnexus already on PATH ($gitnexus_path)"
+elif [[ -n "${gitnexus_path:-}" ]]; then
+  warn "ignoring broken gitnexus frontdoor at $gitnexus_path; regenerating it from the owning installer"
+fi
+
+if [[ ${#GN[@]} -eq 0 ]] && command -v npx >/dev/null 2>&1; then
   GN=(npx -y "gitnexus@${GITNEXUS_VERSION}")
   log "using npx → gitnexus@${GITNEXUS_VERSION}"
-elif command -v bun >/dev/null 2>&1; then
+elif [[ ${#GN[@]} -eq 0 ]] && command -v bun >/dev/null 2>&1; then
   log "npx absent; bootstrapping a bun-built gitnexus at ${GITNEXUS_HOME}"
   mkdir -p "$GITNEXUS_HOME"
   # A package.json with trustedDependencies is not sufficient on bun 1.3 (it
@@ -70,7 +95,14 @@ elif command -v bun >/dev/null 2>&1; then
   if [[ ! -f "$GITNEXUS_HOME/package.json" ]]; then
     printf '{\n  "name": "gitnexus-cli-host",\n  "private": true,\n  "trustedDependencies": ["@ladybugdb/core", "gitnexus", "tree-sitter", "node-tree-sitter"]\n}\n' > "$GITNEXUS_HOME/package.json"
   fi
-  ( cd "$GITNEXUS_HOME" && bun add "gitnexus@${GITNEXUS_VERSION}" >&2 && bun pm trust --all >&2 )
+  (
+    cd "$GITNEXUS_HOME"
+    bun add "gitnexus@${GITNEXUS_VERSION}" >&2
+    # Bun exits non-zero when no blocked scripts remain. That is a healthy,
+    # idempotent state as long as the installed CLI and native module validate
+    # below, so do not turn a no-op trust pass into an installer failure.
+    bun pm trust --all >&2 || log "bun reports no pending trust scripts; validating the existing native install"
+  )
   gn_entry="$GITNEXUS_HOME/node_modules/gitnexus/dist/cli/index.js"
   node_abs="$(command -v node)"
   [[ -f "$gn_entry" ]] || fail "bun install did not produce $gn_entry"
@@ -90,12 +122,17 @@ EOF
     *) warn "launcher at $GITNEXUS_LAUNCHER is not on PATH — add $(dirname "$GITNEXUS_LAUNCHER") to PATH for the hooks to find it" ;;
   esac
   log "gitnexus (bun) ready: $("${GN[@]}" --version 2>/dev/null)"
-else
+elif [[ ${#GN[@]} -eq 0 ]]; then
   fail "need one of: gitnexus on PATH, npx, or bun. On the nix foundation toolchain, run under 'bash -lc' so bun resolves."
 fi
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
+
+if [[ "$GITNEXUS_MODE" == "launcher" ]]; then
+  log "launcher-only repair complete: ${GN[*]}"
+  "${GN[@]}" --version
+  exit 0
+fi
 
 # ── Index ────────────────────────────────────────────────────────────
 # `analyze` is idempotent: it checks git HEAD against the indexed
