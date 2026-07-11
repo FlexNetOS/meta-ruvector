@@ -47,6 +47,33 @@ log()  { printf '\033[1;34m[gitnexus]\033[0m %s\n' "$*" >&2; }
 warn() { printf '\033[1;33m[gitnexus]\033[0m %s\n' "$*" >&2; }
 fail() { printf '\033[1;31m[gitnexus]\033[0m %s\n' "$*" >&2; exit 1; }
 
+rewrite_claude_mcp_config() {
+  local config_path="${1:-$HOME/.claude.json}"
+  [[ -f "$config_path" ]] || return 0
+  GITNEXUS_LAUNCHER="$GITNEXUS_LAUNCHER" node - "$config_path" <<'NODE'
+const fs = require("fs");
+const configPath = process.argv[2];
+const launcher = process.env.GITNEXUS_LAUNCHER;
+if (!launcher) {
+  throw new Error("GITNEXUS_LAUNCHER was not exported to the Claude MCP rewrite");
+}
+const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
+if (config.mcpServers && config.mcpServers.gitnexus) {
+  config.mcpServers.gitnexus = { command: launcher, args: ["mcp"] };
+  fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + "\n");
+}
+NODE
+}
+
+# Tests source this file to exercise the config rewrite without running package
+# installation, indexing, or editor setup.
+if [[ "${GITNEXUS_LIBRARY_ONLY:-0}" == "1" ]]; then
+  if [[ "${BASH_SOURCE[0]}" != "$0" ]]; then
+    return 0
+  fi
+  exit 0
+fi
+
 case "$GITNEXUS_MODE" in
   full|launcher) ;;
   *) fail "GITNEXUS_MODE must be 'full' or 'launcher' (got '$GITNEXUS_MODE')" ;;
@@ -167,14 +194,7 @@ if [[ "${GN[0]}" == "$GITNEXUS_LAUNCHER" ]]; then
   log "rewriting setup's npx MCP command → launcher ($GITNEXUS_LAUNCHER)"
   # ~/.claude.json (JSON, user scope)
   if [[ -f "$HOME/.claude.json" ]]; then
-    node -e '
-      const fs=require("fs"), f=process.env.HOME+"/.claude.json";
-      const j=JSON.parse(fs.readFileSync(f,"utf8"));
-      if (j.mcpServers && j.mcpServers.gitnexus) {
-        j.mcpServers.gitnexus = {command: process.env.GITNEXUS_LAUNCHER, args:["mcp"]};
-        fs.writeFileSync(f, JSON.stringify(j,null,2)+"\n");
-      }
-    ' || warn "could not rewrite ~/.claude.json gitnexus command"
+    rewrite_claude_mcp_config || warn "could not rewrite ~/.claude.json gitnexus command"
   fi
   # ~/.codex/config.toml ([mcp_servers.gitnexus])
   if [[ -f "$HOME/.codex/config.toml" ]] && command -v python3 >/dev/null 2>&1; then
