@@ -1,3 +1,4 @@
+# AUTOMATION DISABLED: port every automatic command to Nushell before reactivation.
 name: thermorust CI
 
 on:
@@ -29,16 +30,6 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy, rustfmt
-
-      - name: Cache cargo registry
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-thermorust-${{ hashFiles('crates/thermorust/Cargo.toml') }}
-          restore-keys: ${{ runner.os }}-cargo-thermorust-
 
       - name: Check formatting
         run: cargo fmt --package thermorust -- --check

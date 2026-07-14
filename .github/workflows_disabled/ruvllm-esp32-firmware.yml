@@ -1,3 +1,4 @@
+# AUTOMATION DISABLED: port every automatic command to Nushell before reactivation.
 name: ruvllm-esp32 firmware (ADR-165)
 
 # Builds the tiny-agent firmware for every ESP32 variant and attaches the

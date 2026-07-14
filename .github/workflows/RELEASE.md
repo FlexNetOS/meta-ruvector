@@ -75,9 +75,9 @@ Options:
   - `ruvector-tiny-dancer-wasm` (tiny dancer)
 - Upload WASM artifacts for later stages
 
-**Caching**:
-- Rust dependencies via `Swatinem/rust-cache`
-- wasm-pack binary
+**Build reuse**:
+- Kache is the only permitted persistent build-reuse layer.
+- This stage remains disabled until it is native Nushell and Kache-backed.
 
 ### Stage 4: Build Native Modules (`build-native`)
 
@@ -260,32 +260,12 @@ The workflow uses GitHub Environments for additional security:
 2. Create `crates-io` and `npm` environments
 3. (Optional) Add required reviewers for production releases
 
-## Caching Strategy
+## Build reuse policy
 
-### Rust Cache
-```yaml
-uses: Swatinem/rust-cache@v2
-with:
-  prefix-key: 'v1-rust'
-  shared-key: 'validate|build-crates|wasm'
-```
-
-**Caches**:
-- `~/.cargo/registry`
-- `~/.cargo/git`
-- `target/` directory
-
-**Benefits**: 2-5x faster builds
-
-### Node.js Cache
-```yaml
-uses: actions/setup-node@v4
-with:
-  cache: 'npm'
-  cache-dependency-path: npm/package-lock.json
-```
-
-**Caches**: `~/.npm` directory
+Kache is the sole persistent build-reuse layer. GitHub-hosted caches, package-manager
+caches, and compiler-wrapper caches other than Kache are prohibited. The retained
+release workflow is migration source only and must not be reactivated until every
+automatic command is native Nushell and all build reuse routes through Kache.
 
 ## Build Matrix
 
@@ -433,26 +413,10 @@ The workflow runs these jobs in parallel:
 
 Total time: ~15-25 minutes (vs. 60+ minutes sequential)
 
-### Cache Hit Rates
-
-With proper caching:
-- Rust builds: 70-90% cache hit rate
-- npm installs: 90-95% cache hit rate
-
 ### Build Time Breakdown
 
-| Job | Uncached | Cached |
-|-----|----------|--------|
-| Validate | 8-12 min | 3-5 min |
-| Build Crates | 15-20 min | 5-8 min |
-| Build WASM | 10-15 min | 4-6 min |
-| Build Native (per platform) | 8-12 min | 3-5 min |
-| Publish Crates | 5-10 min | 5-10 min |
-| Publish npm | 3-5 min | 2-3 min |
-| Create Release | 2-3 min | 2-3 min |
-
-**Total (worst case)**: ~25-30 minutes with cache
-**Total (cold start)**: ~45-60 minutes without cache
+Historical timing claims depended on prohibited cache layers and are intentionally
+retired. New timing evidence must be measured only after the Nushell/Kache migration.
 
 ## Best Practices
 

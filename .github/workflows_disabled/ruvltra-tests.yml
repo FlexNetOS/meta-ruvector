@@ -1,3 +1,4 @@
+# AUTOMATION DISABLED: port every automatic command to Nushell before reactivation.
 name: RuvLTRA-Small Tests
 
 on:
@@ -57,12 +58,6 @@ jobs:
         with:
           components: clippy, rustfmt
 
-      - name: Cache Cargo
-        uses: Swatinem/rust-cache@v2
-        with:
-          key: ${{ matrix.os }}-unit-tests
-          cache-on-failure: true
-
       - name: Run RuvLTRA Unit Tests
         shell: bash
         run: |
@@ -106,11 +101,6 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Cache Cargo
-        uses: Swatinem/rust-cache@v2
-        with:
-          key: ${{ matrix.os }}-e2e-tests
-
       - name: Run E2E Pipeline Tests
         run: |
           cargo test --package ruvllm ruvltra_e2e::full_inference_pipeline \
@@ -143,11 +133,6 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-
-      - name: Cache Cargo
-        uses: Swatinem/rust-cache@v2
-        with:
-          key: macos-arm64-tests
 
       - name: Check Architecture
         run: |
@@ -187,11 +172,6 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Cache Cargo
-        uses: Swatinem/rust-cache@v2
-        with:
-          key: quantization-tests
-
       - name: Test All Quantization Formats
         run: |
           cargo test --package ruvllm quantization \
@@ -225,11 +205,6 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Cache Cargo
-        uses: Swatinem/rust-cache@v2
-        with:
-          key: thread-safety-tests
-
       - name: Run Thread Safety Tests
         run: |
           cargo test --package ruvllm thread_safety \
@@ -253,11 +228,6 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-
-      - name: Cache Cargo
-        uses: Swatinem/rust-cache@v2
-        with:
-          key: benchmarks
 
       - name: Run Performance Benchmarks
         run: |
@@ -284,11 +254,6 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Cache Cargo
-        uses: Swatinem/rust-cache@v2
-        with:
-          key: stress-tests
-
       - name: Run Stress Tests
         run: |
           cargo test --package ruvllm --release \
@@ -309,11 +274,6 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy, rustfmt
-
-      - name: Cache Cargo
-        uses: Swatinem/rust-cache@v2
-        with:
-          key: code-quality
 
       - name: Check Formatting
         run: |
@@ -346,11 +306,6 @@ jobs:
 
       - name: Install cargo-llvm-cov
         uses: taiki-e/install-action@cargo-llvm-cov
-
-      - name: Cache Cargo
-        uses: Swatinem/rust-cache@v2
-        with:
-          key: coverage
 
       - name: Generate Coverage Report
         run: |

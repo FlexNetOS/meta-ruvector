@@ -1,3 +1,4 @@
+# AUTOMATION DISABLED: port every automatic command to Nushell before reactivation.
 # RuVector-Postgres CI/CD Pipeline
 # Build, test, and package the PostgreSQL vector extension
 #
@@ -67,16 +68,6 @@ jobs:
           wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
           sudo apt-get update
           sudo apt-get install -y postgresql-17 postgresql-server-dev-17
-
-      - name: Cache cargo registry
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-          key: ${{ runner.os }}-cargo-lint-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-lint-
 
       - name: Install cargo-pgrx
         run: cargo install cargo-pgrx --version ${{ env.PGRX_VERSION }} --locked
@@ -148,18 +139,6 @@ jobs:
           brew install postgresql@${{ matrix.pg_version }}
           echo "/opt/homebrew/opt/postgresql@${{ matrix.pg_version }}/bin" >> $GITHUB_PATH
 
-      - name: Cache cargo
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-test-pg${{ matrix.pg_version }}-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-test-pg${{ matrix.pg_version }}-
-            ${{ runner.os }}-cargo-test-
-
       - name: Install cargo-pgrx
         run: cargo install cargo-pgrx --version ${{ env.PGRX_VERSION }} --locked
 
@@ -208,15 +187,6 @@ jobs:
           wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
           sudo apt-get update
           sudo apt-get install -y postgresql-17 postgresql-server-dev-17
-
-      - name: Cache cargo
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-allfeatures-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Install cargo-pgrx
         run: cargo install cargo-pgrx --version ${{ env.PGRX_VERSION }} --locked
@@ -267,8 +237,6 @@ jobs:
           push: false
           load: true
           tags: ruvector-postgres:pg${{ matrix.pg_version }}-test
-          cache-from: type=gha,scope=pg${{ matrix.pg_version }}
-          cache-to: type=gha,mode=max,scope=pg${{ matrix.pg_version }}
 
       - name: Start PostgreSQL container
         run: |
@@ -354,15 +322,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y postgresql-17 postgresql-server-dev-17
 
-      - name: Cache cargo
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-bench-${{ hashFiles('**/Cargo.lock') }}
-
       - name: Install cargo-pgrx
         run: cargo install cargo-pgrx --version ${{ env.PGRX_VERSION }} --locked
 
@@ -443,15 +402,6 @@ jobs:
           wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
           sudo apt-get update
           sudo apt-get install -y postgresql-${{ matrix.pg_version }} postgresql-server-dev-${{ matrix.pg_version }}
-
-      - name: Cache cargo
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-package-pg${{ matrix.pg_version }}-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Install cargo-pgrx
         run: cargo install cargo-pgrx --version ${{ env.PGRX_VERSION }} --locked

@@ -1,3 +1,4 @@
+# AUTOMATION DISABLED: port every automatic command to Nushell before reactivation.
 name: RuvLLM Build & Publish
 
 on:
@@ -85,11 +86,6 @@ jobs:
         if: ${{ !matrix.settings.docker }}
         with:
           targets: ${{ matrix.settings.target }}
-
-      - name: Cache Cargo
-        uses: Swatinem/rust-cache@v2
-        with:
-          key: ${{ matrix.settings.target }}
 
       - name: Build (Native)
         if: ${{ !matrix.settings.docker }}

@@ -1,3 +1,4 @@
+# AUTOMATION DISABLED: port every automatic command to Nushell before reactivation.
 name: Publish ruvector to npm
 
 # Publishes the `ruvector` npm package. Triggered manually (workflow_dispatch)

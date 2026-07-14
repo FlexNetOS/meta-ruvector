@@ -1,3 +1,4 @@
+# AUTOMATION DISABLED: port every automatic command to Nushell before reactivation.
 name: SONA Drift Protection
 
 # Guards the three SONA implementations against behavioral drift
@@ -60,22 +61,6 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Cache Rust
-        uses: Swatinem/rust-cache@v2
-        with:
-          # crates/sona is a root-workspace member, so napi's
-          # --cargo-cwd build lands in the shared ./target dir.
-          key: sona-drift
-
-      - name: Cache npm
-        uses: actions/cache@v4
-        with:
-          path: ~/.npm
-          key: npm-sona-drift-${{ runner.os }}-${{ hashFiles('npm/packages/sona/package-lock.json', 'npm/packages/ruvllm/package.json') }}
-          restore-keys: |
-            npm-sona-drift-${{ runner.os }}-
-
-      # ── Gate 1: static no-op seam detector (cheapest — fail before building) ──
       - name: Stub tripwire (static no-op seam detector)
         run: node scripts/sona-drift/stub-tripwire.mjs
 
