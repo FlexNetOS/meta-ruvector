@@ -1,3 +1,4 @@
+# AUTOMATION DISABLED: port every automatic command to Nushell before reactivation.
 name: Release Pipeline
 
 on:
@@ -46,14 +47,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-          cache: 'npm'
-          cache-dependency-path: npm/package-lock.json
-
-      - name: Cache Rust dependencies
-        uses: Swatinem/rust-cache@v2
-        with:
-          prefix-key: 'v1-rust'
-          shared-key: 'validate'
 
       - name: Check formatting
         run: cargo fmt --all -- --check
@@ -100,12 +93,6 @@ jobs:
         with:
           toolchain: stable
 
-      - name: Cache Rust dependencies
-        uses: Swatinem/rust-cache@v2
-        with:
-          prefix-key: 'v1-rust'
-          shared-key: 'build-crates'
-
       - name: Build all crates
         run: cargo build --workspace --release
 
@@ -142,26 +129,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-          cache: 'npm'
-          cache-dependency-path: npm/package-lock.json
 
       - name: Install wasm-pack
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
-
-      - name: Cache Rust dependencies
-        uses: Swatinem/rust-cache@v2
-        with:
-          prefix-key: 'v1-rust'
-          shared-key: 'wasm'
-
-      - name: Cache wasm-pack
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/.crates.toml
-            ~/.cargo/.crates2.json
-            ~/.cargo/bin/wasm-pack
-          key: ${{ runner.os }}-wasm-pack-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Build ruvector-wasm
         working-directory: crates/ruvector-wasm
@@ -232,12 +202,6 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: stable
-
-      - name: Cache Rust dependencies
-        uses: Swatinem/rust-cache@v2
-        with:
-          prefix-key: 'v1-rust'
-          shared-key: 'publish'
 
       - name: Verify CARGO_REGISTRY_TOKEN
         run: |
