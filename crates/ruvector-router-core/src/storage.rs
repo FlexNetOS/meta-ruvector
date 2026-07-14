@@ -3,7 +3,7 @@
 use crate::error::{Result, VectorDbError};
 use crate::types::VectorEntry;
 use parking_lot::RwLock;
-use redb::{Database, ReadableTable, ReadableTableMetadata, TableDefinition};
+use redb::{Database, ReadableDatabase, ReadableTable, ReadableTableMetadata, TableDefinition};
 use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Arc;

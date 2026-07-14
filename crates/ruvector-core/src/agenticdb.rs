@@ -32,7 +32,7 @@ use crate::error::{Result, RuvectorError};
 use crate::types::*;
 use crate::vector_db::VectorDB;
 use parking_lot::RwLock;
-use redb::{Database, TableDefinition};
+use redb::{Database, ReadableDatabase, TableDefinition};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -166,9 +166,7 @@ impl AgenticDB {
 
     #[cfg(not(feature = "onnx-embeddings"))]
     fn default_embedding_provider(dimensions: usize) -> BoxedEmbeddingProvider {
-        tracing::info!(
-            "AgenticDB: using hash embeddings (feature onnx-embeddings not enabled)"
-        );
+        tracing::info!("AgenticDB: using hash embeddings (feature onnx-embeddings not enabled)");
         Arc::new(HashEmbedding::new(dimensions))
     }
 
