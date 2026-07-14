@@ -59,6 +59,8 @@ jobs:
       quantizations: ${{ steps.set-matrix.outputs.quantizations }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Set model matrix
         id: set-matrix
@@ -98,6 +100,8 @@ jobs:
         quantization: ${{ fromJson(needs.prepare.outputs.quantizations) }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -182,6 +186,8 @@ jobs:
     if: github.event.inputs.upload_gcs != 'false'
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Download all artifacts
         uses: actions/download-artifact@v4
@@ -223,6 +229,8 @@ jobs:
     if: github.event.inputs.upload_ipfs == 'true'
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Download all artifacts
         uses: actions/download-artifact@v4
@@ -283,6 +291,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          submodules: recursive
           ref: ${{ github.head_ref || github.ref_name }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -378,6 +387,8 @@ jobs:
     if: github.event_name == 'release'
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Setup Node.js
         uses: actions/setup-node@v4

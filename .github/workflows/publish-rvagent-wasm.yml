@@ -25,6 +25,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          submodules: recursive
           ref: release/rvagent-wasm-0.2.0
 
       - name: Setup Rust
