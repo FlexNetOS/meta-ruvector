@@ -1,0 +1,40 @@
+[package]
+name = "rvagent-engine"
+version = "0.1.0"
+edition = "2021"
+description = "rvAgent Engine — the unified LifeOS TEAS TaskRunner over handoff.task.v1. TEASTASK-001 ships the scaffold + a stub TaskRunner; real execution lands in TEASTASK-011."
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/FlexNetOS/ruvector"
+
+[dependencies]
+# Implement the EXISTING TaskRunner trait — no parallel task type (ADR-159).
+rvagent-a2a = { path = "../rvagent-a2a" }
+# TEASTASK-011: real execution — dispatch the WorkOrder's verification_command
+# through the hardened LocalShellBackend (env sanitization, timeout, truncation).
+rvagent-backends = { path = "../rvagent-backends" }
+async-trait = "0.1"
+chrono = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+# JSON Schema emission for the WorkOrder/ProofRecord types (TEASTASK-003 drift gate).
+# Version reused from the existing workspace lock (1.2.1) — no new version added.
+schemars = "1"
+# TEASTASK-004: blake3 witness-chain hashing for the self-contained proof ledger.
+# Version reused from the existing workspace lock (1.8.5) — no new version added.
+# TEASTASK-008 also reuses blake3 for the deterministic trajectory pseudo-embedding.
+blake3 = "1"
+# TEASTASK-008: capture each real run as a learning trajectory. REUSE ruvector-sona's
+# ReasoningBank + TrajectoryBuilder — no reimplementation of trajectory logic. Default
+# features (serde-support) are required for sona's serde derives; wasm/napi stay off.
+ruvector-sona = { path = "../../sona" }
+# TEAS durable state lives in a SQLite DATABASE (tables), like gitkb + envctl:
+# proof_records (witnessed proof ledger) and task_graph (WorkOrders). Version from lock.
+rusqlite = "0.32"
+
+[dev-dependencies]
+# TEASTASK-011: drive the async TaskRunner in integration tests (#[tokio::test]).
+tokio = { workspace = true }
+# TEASTASK-004: temp ledger files for the ProofLedger + engine-integration tests.
+# Version reused from the existing workspace lock (3.27.0) — no new version added.
+tempfile = "3"
