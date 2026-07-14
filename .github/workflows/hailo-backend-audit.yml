@@ -37,6 +37,8 @@ jobs:
     runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - name: Install protoc
         run: |
           sudo find /etc/apt/sources.list.d -maxdepth 1 -type f \
@@ -63,6 +65,8 @@ jobs:
     runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - name: Install protoc
         run: |
           sudo find /etc/apt/sources.list.d -maxdepth 1 -type f \
@@ -93,6 +97,8 @@ jobs:
     runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - name: Install protoc
         run: |
           sudo find /etc/apt/sources.list.d -maxdepth 1 -type f \
@@ -122,6 +128,8 @@ jobs:
     runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - name: Install protoc
         run: |
           sudo find /etc/apt/sources.list.d -maxdepth 1 -type f \
@@ -198,6 +206,8 @@ jobs:
     runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - name: Install protoc + aarch64 cross-toolchain
         run: |
           sudo find /etc/apt/sources.list.d -maxdepth 1 -type f \
@@ -229,6 +239,8 @@ jobs:
     runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - name: Install protoc
         run: |
           sudo find /etc/apt/sources.list.d -maxdepth 1 -type f \

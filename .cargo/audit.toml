@@ -19,6 +19,20 @@ ignore = [
     # Re-evaluate when the `rsa` crate ships a constant-time implementation.
     "RUSTSEC-2023-0071",
 
+    # quick-xml 0.26.0 — two parser advisories (RUSTSEC-2026-0194/0195),
+    # fixed only in quick-xml releases far out of range for our sole
+    # dependent: inferno 0.11.21 (flamegraph rendering) pins ^0.26, and
+    # inferno is itself pulled only through pprof's profiling features —
+    # the same bench/profiling-only, never-in-production path already
+    # documented for RUSTSEC-2026-0002 below. `cargo update -p quick-xml`
+    # and `-p inferno` both resolve 0 newer compatible packages
+    # (verified 2026-07-10). quick-xml never parses untrusted input here:
+    # inferno renders our own profiler output. envctl's org-wide audit
+    # gate ignores RUSTSEC-2026-0194 on the same basis. Re-evaluate when
+    # pprof/inferno bump their quick-xml range.
+    "RUSTSEC-2026-0194",
+    "RUSTSEC-2026-0195",
+
     # lz4_flex 0.10.0 — decompressing invalid data can leak uninitialized
     # memory. Pulled ONLY transitively: zenoh-transport 1.9.0 pins
     # `lz4_flex = "^0.10.0"` (cannot resolve to the patched 0.11.6+), and
@@ -56,6 +70,16 @@ ignore = [
     "RUSTSEC-2026-0163",  # pqcrypto-internals — unmaintained; parent PQ migration pending
     "RUSTSEC-2026-0173",  # proc-macro-error2 — transitive proc-macro, build-time only
     "RUSTSEC-2026-0192",  # ttf-parser — unmaintained; transitive font/rendering paths only
+
+    # quick-xml 0.26 — quadratic duplicate-attribute check (2026-0194) and
+    # NsReader namespace-allocation DoS (2026-0195). Reachable ONLY via
+    # pprof -> inferno 0.11 behind ruvector-bench's optional `profiling`
+    # feature; the XML parsed is locally generated flamegraph SVG, never
+    # attacker-controlled input. Upstream-blocked: fix needs quick-xml
+    # >=0.41 (inferno 0.12.7), but even pprof 0.15.0 still pins inferno
+    # ^0.11. Re-evaluate when pprof releases with inferno >=0.12.
+    "RUSTSEC-2026-0194",
+    "RUSTSEC-2026-0195",
 
     # ------------------------------------------------------------------
     # Soundness/unsoundness notices in deps we do not directly control

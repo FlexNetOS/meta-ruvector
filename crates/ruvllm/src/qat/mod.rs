@@ -136,6 +136,12 @@ mod lora_qat;
 mod reasoning_loss;
 mod ste;
 mod training_loop;
+// ADR-261 candle-autodiff QAT engine (FakeQuant CustomOp1 bridging the
+// straight-through estimator into candle autograd). Grafted from the _archive
+// branch (24b191e4) during the ruvllm superset reconciliation 2026-07-09 —
+// it was authored there but never wired into the module tree (orphaned file).
+#[cfg(feature = "candle")]
+mod candle_qat;
 
 // ============================================================================
 // Public Re-exports
@@ -143,6 +149,10 @@ mod training_loop;
 
 // Configuration types
 pub use config::{QatConfig, QatLossWeights, QuantGranularity, SteVariant};
+
+// Candle-autodiff QAT engine (candle feature only)
+#[cfg(feature = "candle")]
+pub use candle_qat::{FakeQuant, QuantizedMlp, fake_quantize, train_qat_mse};
 
 // Differentiable quantization
 pub use differentiable_quant::{

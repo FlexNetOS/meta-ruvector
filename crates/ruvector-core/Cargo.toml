@@ -94,6 +94,10 @@ harness = false
 name = "bench_memory"
 harness = false
 
+[[bench]]
+name = "quantized_index_tradeoff"
+harness = false
+
 [features]
 default = ["simd", "simd-avx512", "storage", "hnsw", "api-embeddings", "parallel"]
 simd = ["simsimd"]  # SIMD acceleration (not available in WASM)
