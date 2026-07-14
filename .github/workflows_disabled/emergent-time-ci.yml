@@ -45,9 +45,6 @@ jobs:
         with:
           components: rustfmt, clippy
 
-      # Guard: the falsifiability / pre-registered tests must exist.
-      # If any grep fails, a test that keeps a claim honest was removed or
-      # renamed; fail loudly instead of letting the regression pass.
       - name: Guard — falsifiability tests present
         run: |
           cd crates/emergent-time
