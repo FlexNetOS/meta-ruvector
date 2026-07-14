@@ -1,3 +1,4 @@
+# AUTOMATION DISABLED: port every automatic command to Nushell before reactivation.
 name: emergent-time CI
 
 # Dedicated, fast gate for the dependency-free `emergent-time` crate. Runs its
@@ -44,14 +45,9 @@ jobs:
         with:
           components: rustfmt, clippy
 
-      - name: Cache Rust
-        uses: Swatinem/rust-cache@v2
-        with:
-          key: emergent-time
-
-      # ── Guard: the falsifiability / pre-registered tests must exist ──
-      # If any of these greps fail, a test that keeps a claim honest has been
-      # removed or renamed — fail loudly rather than let it slip.
+      # Guard: the falsifiability / pre-registered tests must exist.
+      # If any grep fails, a test that keeps a claim honest was removed or
+      # renamed; fail loudly instead of letting the regression pass.
       - name: Guard — falsifiability tests present
         run: |
           cd crates/emergent-time

@@ -1,3 +1,4 @@
+# AUTOMATION DISABLED: port every automatic command to Nushell before reactivation.
 name: regression-guard
 
 # Guards against the six classes of regressions resolved in the
@@ -98,7 +99,6 @@ jobs:
         with:
           submodules: recursive
       - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
       - name: ruvector-router-core unit tests (release)
         run: |
           # cargo test only accepts one TESTNAME filter per invocation —
@@ -444,7 +444,6 @@ jobs:
         with:
           submodules: recursive
       - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
       - name: cargo test graph-condense + perception
         run: |
           set -e

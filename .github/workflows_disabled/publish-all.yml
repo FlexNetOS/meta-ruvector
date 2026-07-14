@@ -47,9 +47,6 @@ jobs:
         with:
           components: rustfmt, clippy
 
-      - name: Cache Rust
-        uses: Swatinem/rust-cache@v2
-
       - name: Run tests
         run: |
           cargo test -p ruvector-math -p ruvector-attention --all-features
@@ -101,11 +98,6 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.settings.target }}
-
-      - name: Cache Rust
-        uses: Swatinem/rust-cache@v2
-        with:
-          key: native-${{ matrix.settings.target }}
 
       - name: Install cross-compilation tools (Linux ARM64)
         if: matrix.settings.platform == 'linux-arm64-gnu'
@@ -167,11 +159,6 @@ jobs:
 
       - name: Install wasm-pack
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
-
-      - name: Cache Rust
-        uses: Swatinem/rust-cache@v2
-        with:
-          key: wasm-${{ matrix.package.name }}
 
       - name: Build WASM (web target)
         working-directory: ${{ matrix.package.path }}
