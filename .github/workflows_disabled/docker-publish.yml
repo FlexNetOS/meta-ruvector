@@ -1,3 +1,4 @@
+# AUTOMATION DISABLED: port every automatic command to Nushell before reactivation.
 # RuVector-Postgres Docker Hub Publication
 # Publishes multi-arch Docker images to Docker Hub on release
 #
@@ -117,8 +118,6 @@ jobs:
           build-args: |
             PG_VERSION=${{ matrix.pg_version }}
             RUST_VERSION=${{ env.RUST_VERSION }}
-          cache-from: type=gha,scope=pg${{ matrix.pg_version }}
-          cache-to: type=gha,mode=max,scope=pg${{ matrix.pg_version }}
 
       - name: Test published image
         run: |

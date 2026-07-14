@@ -1,3 +1,4 @@
+# AUTOMATION DISABLED: port every automatic command to Nushell before reactivation.
 # ruvector-hailo CI: cargo-audit + cargo-deny + clippy + test pyramid
 #
 # Closes ADR-172 §5c (no cargo-audit in CI). Runs on every push +
@@ -90,20 +91,6 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install protoc
         run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
-      - name: Cache cargo
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            crates/ruvector-hailo-cluster/target
-          # Iter 227 — cache key now points at the workspace-root
-          # Cargo.lock since iter-219 removed the per-crate
-          # `crates/ruvector-hailo-cluster/Cargo.lock`. Keeping the
-          # stale reference would have resolved to an empty hash via
-          # `hashFiles()` of a missing path, collapsing every branch's
-          # cache to the same key → false hits on unrelated trees.
-          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.lock') }}
       - name: Run clippy
         working-directory: crates/ruvector-hailo-cluster
         run: cargo clippy --all-targets -- -D warnings
@@ -115,15 +102,6 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install protoc
         run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
-      - name: Cache cargo
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            crates/ruvector-hailo-cluster/target
-          # Iter 227 — workspace-root Cargo.lock (see clippy job).
-          key: ${{ runner.os }}-cargo-test-${{ hashFiles('Cargo.lock') }}
       - name: Run all suites
         working-directory: crates/ruvector-hailo-cluster
         run: cargo test

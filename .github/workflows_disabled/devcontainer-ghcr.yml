@@ -1,3 +1,4 @@
+# AUTOMATION DISABLED: port every automatic command to Nushell before reactivation.
 name: devcontainer GHCR
 
 on:
@@ -61,8 +62,6 @@ jobs:
           load: ${{ github.event_name == 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha,scope=devcontainer
-          cache-to: type=gha,mode=max,scope=devcontainer
 
       - name: Smoke test PR image
         if: github.event_name == 'pull_request'
