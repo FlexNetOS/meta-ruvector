@@ -1,3 +1,11 @@
+//! WebAssembly attention kernels for transformers and LLMs.
+//!
+//! This crate exposes Multi-Head, Flash, Hyperbolic, Linear, Local-Global, and
+//! Mixture-of-Experts attention mechanisms to JavaScript through `wasm-bindgen`.
+//! Call [`init`] once to install the panic hook, [`version`] for the crate
+//! version, and [`available_mechanisms`] to enumerate the supported kernels. The
+//! [`attention`], [`training`], and [`utils`] modules hold the implementations.
+
 #![allow(dead_code, unused_imports, unused_variables)]
 use wasm_bindgen::prelude::*;
 

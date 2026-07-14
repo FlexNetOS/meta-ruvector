@@ -325,7 +325,7 @@ impl GraphDB {
         if removed {
             // Clean up indices
             let mut labels_index = self.labels_index.lock();
-            for (_, node_ids) in labels_index.iter_mut() {
+            for node_ids in labels_index.values_mut() {
                 node_ids.retain(|nid| nid != &id);
             }
 
@@ -389,7 +389,7 @@ impl GraphDB {
         let mut cypher = String::new();
 
         // Export nodes
-        for (_id, node) in self.nodes.lock().iter() {
+        for node in self.nodes.lock().values() {
             let labels = if node.labels.is_empty() {
                 String::new()
             } else {
@@ -413,7 +413,7 @@ impl GraphDB {
         }
 
         // Export edges
-        for (_id, edge) in self.edges.lock().iter() {
+        for edge in self.edges.lock().values() {
             let props = if edge.properties.is_empty() {
                 String::new()
             } else {

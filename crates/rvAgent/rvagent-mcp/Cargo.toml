@@ -14,6 +14,11 @@ path = "src/main.rs"
 rvagent-core = { path = "../rvagent-core" }
 rvagent-tools = { path = "../rvagent-tools" }
 rvagent-middleware = { path = "../rvagent-middleware" }
+# TEAS engine surface exposed as MCP tools (TEASTASK-010). Cycle-free: rvagent-engine
+# depends on rvagent-a2a/backends/sona — none depend on rvagent-mcp. rvagent-a2a is
+# pulled in directly so the `TaskRunner` trait is in scope to drive `engine.run(spec)`.
+rvagent-engine = { path = "../rvagent-engine" }
+rvagent-a2a = { path = "../rvagent-a2a" }
 serde = { workspace = true }
 serde_json = { workspace = true }
 tokio = { version = "1.41", features = ["rt-multi-thread", "sync", "macros", "io-util", "io-std", "signal"] }
@@ -38,6 +43,7 @@ tokio = { version = "1.41", features = ["rt-multi-thread", "sync", "macros", "io
 mockall = { workspace = true }
 proptest = { workspace = true }
 reqwest = { version = "0.11", features = ["json"] }
+tempfile = "3"
 
 # Workspace cleanup pass: research-tier crate, doc/style churn deferred. Correctness + suspicious lints stay denied.
 [lints.rust]

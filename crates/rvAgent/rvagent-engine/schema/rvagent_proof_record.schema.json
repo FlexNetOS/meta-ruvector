@@ -1,0 +1,177 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ProofRecord",
+  "description": "Evidence-with-checksum that a WorkOrder ran and passed. Reconciles handoff's\nwitnessed `LedgerEvent`, the execution-framework `*.proof.json`, and the\nplanning-spine proof-record shapes into one versioned record (DOMAIN_MODEL §4).\n\nNo `Eq` — `verification_output` is a `serde_json::Value` (may contain floats).",
+  "type": "object",
+  "properties": {
+    "action_hash": {
+      "description": "blake3 witness hash linking this record into the ledger witness chain.",
+      "type": "string"
+    },
+    "actor": {
+      "type": "string"
+    },
+    "cell_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "checksums": {
+      "description": "`path -> sha256`. `BTreeMap` for deterministic ordering.",
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "commands_run": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "completed_at": {
+      "type": "string"
+    },
+    "correlation_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "diff_summary": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "evidence": {
+      "type": "array",
+      "default": [],
+      "items": {
+        "type": "string"
+      }
+    },
+    "failed_checks": {
+      "type": "array",
+      "default": [],
+      "items": {
+        "type": "string"
+      }
+    },
+    "failure_reason": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "files_changed": {
+      "type": "array",
+      "default": [],
+      "items": {
+        "type": "string"
+      }
+    },
+    "git_head_after": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "git_head_before": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "helper_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "ledger_seq": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "format": "uint64",
+      "minimum": 0
+    },
+    "logs_uri": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "model_tag": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "next_action": {
+      "type": "string"
+    },
+    "prev_action_hash": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "proof_schema_version": {
+      "description": "Canonically `\"teas.proof_record.v1\"` (see [`PROOF_SCHEMA_VERSION`]).",
+      "type": "string"
+    },
+    "repo_path": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "rollback_point": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "started_at": {
+      "type": "string"
+    },
+    "status": {
+      "$ref": "#/$defs/ProofStatus"
+    },
+    "task_id": {
+      "type": "string"
+    },
+    "verification_output": {
+      "description": "Raw verification output (string) or a structured result object."
+    }
+  },
+  "required": [
+    "proof_schema_version",
+    "task_id",
+    "status",
+    "started_at",
+    "completed_at",
+    "actor",
+    "commands_run",
+    "verification_output",
+    "checksums",
+    "action_hash",
+    "next_action"
+  ],
+  "$defs": {
+    "ProofStatus": {
+      "description": "Terminal outcome of a run. Serde form matches the canonical schema `status` enum\n(`completed`/`passed` = success; `failed`/`error` = failure; `rolled_back` = reverted).",
+      "type": "string",
+      "enum": [
+        "completed",
+        "passed",
+        "failed",
+        "error",
+        "rolled_back"
+      ]
+    }
+  }
+}

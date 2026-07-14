@@ -20,6 +20,7 @@ pub mod registry;
 pub mod resources;
 pub mod server;
 pub mod skills_bridge;
+pub mod teas;
 pub mod topology;
 pub mod transport;
 
@@ -33,6 +34,7 @@ pub use protocol::{
 pub use registry::{McpToolDefinition, McpToolHandler, McpToolRegistry};
 pub use resources::{ResourceProvider, ResourceRegistry};
 pub use server::{McpServer, McpServerConfig};
+pub use teas::register_teas_tools;
 pub use topology::{
     ConsensusType, NodeRole, NodeStatus, TopologyConfig, TopologyNode, TopologyRouter, TopologyType,
 };
