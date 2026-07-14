@@ -1,3 +1,4 @@
+# AUTOMATION DISABLED: port every automatic command to Nushell before reactivation.
 name: UI CI (RuVocal)
 
 on:
@@ -29,7 +30,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: ""
 
       - name: Install dependencies
         run: npm install --no-audit
@@ -50,7 +50,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: ""
 
       - name: Install dependencies
         run: npm install --no-audit
@@ -71,7 +70,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: ""
 
       - name: Install dependencies
         run: npm install --no-audit
@@ -92,7 +90,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: ""
 
       - name: Install dependencies
         run: npm install --no-audit

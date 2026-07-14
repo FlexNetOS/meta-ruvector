@@ -1,3 +1,4 @@
+# AUTOMATION DISABLED: port every automatic command to Nushell before reactivation.
 name: supply-chain
 
 # Defence-in-depth against supply-chain attacks on the ruvector
@@ -94,7 +95,6 @@ jobs:
         with:
           submodules: recursive
       - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
       - name: install cargo-audit
         run: cargo install --locked cargo-audit
       - name: cargo audit (vulnerabilities only)
@@ -120,7 +120,6 @@ jobs:
         with:
           submodules: recursive
       - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
       - name: install cargo-deny
         run: cargo install --locked cargo-deny
       - name: cargo deny check
