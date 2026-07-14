@@ -1,3 +1,4 @@
+# AUTOMATION DISABLED: port every automatic command to Nushell before reactivation.
 name: Self-learning loop
 
 # Phase 6 of the cross-repo self-learning roadmap. Walks the canonical
@@ -56,11 +57,6 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy,rustfmt
-
-      - name: Cache Rust
-        uses: Swatinem/rust-cache@v2
-        with:
-          shared-key: attractor-self-learning
 
       - name: Validate pipeline graph (strict)
         run: scripts/attractor.sh validate --strict
