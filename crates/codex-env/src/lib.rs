@@ -1,3 +1,15 @@
+//! Rust-native mirror of the tracked `.claude` surface into a Codex environment.
+//!
+//! `codex-env` reads the canonical `.claude` configuration — agent roles, command
+//! prompts, hooks, skills, and workflow definitions — and materializes the
+//! equivalent Codex surface, keeping the two environments in sync. It also ships
+//! a doctor that audits drift between the surfaces ([`doctor_codex_surface`]) and
+//! inventory helpers that compare expected versus actually-generated artifacts.
+//!
+//! The primary operations are configured through [`MirrorOptions`],
+//! [`PromptInstallOptions`], [`CodexInstallOptions`], and the team/loop/TDD
+//! workflow option structs, each returning a matching report type.
+
 use std::collections::BTreeSet;
 use std::fs;
 use std::io::Write;

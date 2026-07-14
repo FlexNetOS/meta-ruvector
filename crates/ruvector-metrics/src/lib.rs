@@ -1,3 +1,11 @@
+//! Prometheus-compatible metrics collection for Ruvector vector databases.
+//!
+//! This crate defines a global Prometheus [`REGISTRY`] together with the search,
+//! indexing, and resource metrics emitted across Ruvector services. Use
+//! [`gather_metrics`] to render the current metrics in Prometheus text exposition
+//! format, [`MetricsRecorder`] to record measurements, and the [`health`] module's
+//! [`HealthChecker`] for readiness and liveness probes.
+
 use lazy_static::lazy_static;
 use prometheus::{
     register_counter, register_counter_vec, register_gauge, register_gauge_vec,

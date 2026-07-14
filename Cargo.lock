@@ -12081,6 +12081,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "rvagent-engine"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "blake3",
+ "chrono",
+ "rusqlite",
+ "ruvector-sona 0.2.0",
+ "rvagent-a2a",
+ "rvagent-backends",
+ "schemars 1.2.1",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 2.0.18",
+ "tokio",
+]
+
+[[package]]
 name = "rvagent-mcp"
 version = "0.1.0"
 dependencies = [
@@ -12094,11 +12113,14 @@ dependencies = [
  "mockall",
  "proptest",
  "reqwest 0.11.27",
+ "rvagent-a2a",
  "rvagent-core",
+ "rvagent-engine",
  "rvagent-middleware",
  "rvagent-tools",
  "serde",
  "serde_json",
+ "tempfile",
  "thiserror 2.0.18",
  "tokio",
  "tokio-stream",
