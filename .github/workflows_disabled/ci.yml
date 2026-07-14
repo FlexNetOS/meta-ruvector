@@ -1,3 +1,4 @@
+# AUTOMATION DISABLED: port every automatic command to Nushell before reactivation.
 name: Workspace CI
 
 on:
@@ -46,9 +47,6 @@ jobs:
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Cache Rust
-        uses: Swatinem/rust-cache@v2
-
       - name: Cargo check (workspace)
         run: cargo check --workspace --exclude ruvector-postgres
 
@@ -69,9 +67,6 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy
-
-      - name: Cache Rust
-        uses: Swatinem/rust-cache@v2
 
       - name: Clippy (workspace)
         run: cargo clippy --workspace --exclude ruvector-postgres --all-targets -- -W warnings
@@ -313,11 +308,6 @@ jobs:
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
-
-      - name: Cache Rust
-        uses: Swatinem/rust-cache@v2
-        with:
-          key: test-${{ matrix.name }}
 
       - name: Install cargo-nextest
         uses: taiki-e/install-action@v2

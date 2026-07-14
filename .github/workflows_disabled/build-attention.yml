@@ -1,3 +1,4 @@
+# AUTOMATION DISABLED: port every automatic command to Nushell before reactivation.
 name: Build Attention Native Modules
 # Trigger build for v0.1.30 release
 
@@ -61,11 +62,6 @@ jobs:
         with:
           toolchain: stable
           targets: ${{ matrix.settings.target }}
-
-      - name: Cache Rust
-        uses: Swatinem/rust-cache@v2
-        with:
-          key: attention-${{ matrix.settings.target }}
 
       - name: Install cross-compilation tools (Linux ARM64)
         if: matrix.settings.platform == 'linux-arm64-gnu'
@@ -175,11 +171,6 @@ jobs:
 
       - name: Install wasm-pack
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
-
-      - name: Cache Rust
-        uses: Swatinem/rust-cache@v2
-        with:
-          key: attention-wasm
 
       - name: Build WASM
         working-directory: crates/ruvector-attention-wasm
