@@ -1,3 +1,4 @@
+# AUTOMATION DISABLED: port every automatic command to Nushell before reactivation.
 name: ruvector-verified CI
 
 on:
@@ -30,7 +31,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
       - name: Check (${{ matrix.feature-set || 'default' }})
         run: cargo check -p ruvector-verified ${{ matrix.feature-set }}
 
@@ -40,7 +40,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
       - name: Run tests (all features)
         run: cargo test -p ruvector-verified --all-features
       - name: Run tests (default features)
@@ -52,7 +51,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
       - name: Run benchmarks (dry-run)
         run: cargo bench -p ruvector-verified --all-features -- --test
 
@@ -63,6 +61,5 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy
-      - uses: Swatinem/rust-cache@v2
       - name: Clippy (all features)
         run: cargo clippy -p ruvector-verified --all-features -- -D warnings

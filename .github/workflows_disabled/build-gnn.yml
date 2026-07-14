@@ -1,3 +1,4 @@
+# AUTOMATION DISABLED: port every automatic command to Nushell before reactivation.
 name: Build GNN Native Modules
 
 on:
@@ -66,11 +67,6 @@ jobs:
         with:
           toolchain: stable
           targets: ${{ matrix.settings.target }}
-
-      - name: Cache Rust
-        uses: Swatinem/rust-cache@v2
-        with:
-          key: gnn-${{ matrix.settings.target }}
 
       - name: Install cross-compilation tools (Linux ARM64 GNU)
         if: matrix.settings.platform == 'linux-arm64-gnu'
