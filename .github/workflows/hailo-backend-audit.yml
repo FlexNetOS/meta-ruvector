@@ -40,7 +40,11 @@ jobs:
         with:
           submodules: recursive
       - name: Install protoc
-        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
+        run: |
+          sudo find /etc/apt/sources.list.d -maxdepth 1 -type f \
+            \( -iname '*microsoft*' -o -iname '*azure*' \) -print -delete
+          sudo apt-get update
+          sudo apt-get install -y protobuf-compiler
       - name: Install cargo-audit
         run: cargo install --locked cargo-audit
       - name: Run cargo audit
@@ -51,13 +55,10 @@ jobs:
         # workspace-wide anyway (it's the lock that defines the dep
         # tree, not the cluster crate's manifest).
         run: |
-          cargo audit --deny warnings \
-              --ignore RUSTSEC-2024-0436 `# paste — unmaintained, transitive via candle` \
-              --ignore RUSTSEC-2025-0134 `# rustls-pemfile — transitive via tonic-tls` \
-              --ignore RUSTSEC-2025-0141 `# bincode 1.x — workspace-wide pin via rkyv etc.` \
-              --ignore RUSTSEC-2026-0115 `# imageproc 0.25 — unsound, transitive via ruvector-scipix; outside hailo scope` \
-              --ignore RUSTSEC-2026-0116 `# imageproc 0.25 — unsound, transitive via ruvector-scipix; outside hailo scope` \
-              --ignore RUSTSEC-2026-0117 `# imageproc 0.25 — unsound, transitive via ruvector-scipix; outside hailo scope`
+          # Use the workspace audit policy in .cargo/audit.toml. Keeping a
+          # second inline ignore subset here drifted behind the required
+          # Workspace CI security audit and broke this hailo-specific gate.
+          cargo audit --deny warnings
 
   deny:
     name: cargo-deny (license + bans + sources)
@@ -67,7 +68,11 @@ jobs:
         with:
           submodules: recursive
       - name: Install protoc
-        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
+        run: |
+          sudo find /etc/apt/sources.list.d -maxdepth 1 -type f \
+            \( -iname '*microsoft*' -o -iname '*azure*' \) -print -delete
+          sudo apt-get update
+          sudo apt-get install -y protobuf-compiler
       - name: Install cargo-deny
         run: cargo install --locked cargo-deny
       - name: Run cargo deny check (cluster)
@@ -95,7 +100,11 @@ jobs:
         with:
           submodules: recursive
       - name: Install protoc
-        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
+        run: |
+          sudo find /etc/apt/sources.list.d -maxdepth 1 -type f \
+            \( -iname '*microsoft*' -o -iname '*azure*' \) -print -delete
+          sudo apt-get update
+          sudo apt-get install -y protobuf-compiler
       - name: Cache cargo
         uses: actions/cache@v4
         with:
@@ -122,7 +131,11 @@ jobs:
         with:
           submodules: recursive
       - name: Install protoc
-        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
+        run: |
+          sudo find /etc/apt/sources.list.d -maxdepth 1 -type f \
+            \( -iname '*microsoft*' -o -iname '*azure*' \) -print -delete
+          sudo apt-get update
+          sudo apt-get install -y protobuf-compiler
       - name: Cache cargo
         uses: actions/cache@v4
         with:
@@ -197,6 +210,8 @@ jobs:
           submodules: recursive
       - name: Install protoc + aarch64 cross-toolchain
         run: |
+          sudo find /etc/apt/sources.list.d -maxdepth 1 -type f \
+            \( -iname '*microsoft*' -o -iname '*azure*' \) -print -delete
           sudo apt-get update
           sudo apt-get install -y protobuf-compiler gcc-aarch64-linux-gnu
       - name: Add aarch64 rustup target
@@ -227,7 +242,11 @@ jobs:
         with:
           submodules: recursive
       - name: Install protoc
-        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
+        run: |
+          sudo find /etc/apt/sources.list.d -maxdepth 1 -type f \
+            \( -iname '*microsoft*' -o -iname '*azure*' \) -print -delete
+          sudo apt-get update
+          sudo apt-get install -y protobuf-compiler
       - name: Build docs with -D missing-docs
         working-directory: crates/ruvector-hailo-cluster
         env:

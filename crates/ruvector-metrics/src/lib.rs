@@ -83,6 +83,20 @@ lazy_static! {
 
 /// Gather all metrics in Prometheus text format
 pub fn gather_metrics() -> String {
+    // The prometheus `register_*` macros run when each lazy_static is first
+    // initialized. Force initialization so a cold gather includes the
+    // ruvector metric families instead of returning an empty default registry.
+    lazy_static::initialize(&SEARCH_REQUESTS_TOTAL);
+    lazy_static::initialize(&SEARCH_LATENCY_SECONDS);
+    lazy_static::initialize(&INSERT_REQUESTS_TOTAL);
+    lazy_static::initialize(&INSERT_LATENCY_SECONDS);
+    lazy_static::initialize(&VECTORS_INSERTED_TOTAL);
+    lazy_static::initialize(&DELETE_REQUESTS_TOTAL);
+    lazy_static::initialize(&VECTORS_TOTAL);
+    lazy_static::initialize(&COLLECTIONS_TOTAL);
+    lazy_static::initialize(&MEMORY_USAGE_BYTES);
+    lazy_static::initialize(&UPTIME_SECONDS);
+
     let encoder = TextEncoder::new();
     let metric_families = prometheus::gather();
     let mut buffer = Vec::new();

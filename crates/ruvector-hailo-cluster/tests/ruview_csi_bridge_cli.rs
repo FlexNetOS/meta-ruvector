@@ -10,9 +10,7 @@ use std::process::{Command, Stdio};
 use std::time::Duration;
 
 mod common;
-use common::{free_port, spawn_fakeworker};
-
-const BRIDGE: &str = env!("CARGO_BIN_EXE_ruview-csi-bridge");
+use common::{cargo_bin, free_port, spawn_fakeworker};
 
 /// Synthesize an ADR-018 v6 (feature-state) CSI packet header.
 /// Returns 20-byte header + zeroed I/Q payload of the requested size.
@@ -35,7 +33,7 @@ fn synth_csi_v6_packet(node_id: u8, channel: u8, rssi: i8, n_subc: u16) -> Vec<u
 #[test]
 fn ruview_bridge_emits_jsonl_for_synthetic_csi_packet() {
     let udp_port = free_port();
-    let mut child = Command::new(BRIDGE)
+    let mut child = Command::new(cargo_bin("ruview-csi-bridge"))
         .args(["--listen", &format!("127.0.0.1:{}", udp_port), "--quiet"])
         .stdout(Stdio::piped())
         .stderr(Stdio::null())
@@ -83,7 +81,7 @@ fn ruview_bridge_posts_to_cluster_when_workers_set() {
     let mut worker = spawn_fakeworker(cluster_port, 4, "fp:csi-cluster");
 
     let udp_port = free_port();
-    let mut child = Command::new(BRIDGE)
+    let mut child = Command::new(cargo_bin("ruview-csi-bridge"))
         .args([
             "--listen",
             &format!("127.0.0.1:{}", udp_port),
@@ -131,7 +129,7 @@ fn ruview_bridge_posts_to_cluster_when_workers_set() {
 
 #[test]
 fn ruview_bridge_rejects_workers_without_fingerprint() {
-    let out = Command::new(BRIDGE)
+    let out = Command::new(cargo_bin("ruview-csi-bridge"))
         .args([
             "--listen",
             "127.0.0.1:1",
@@ -158,7 +156,7 @@ fn ruview_bridge_drops_malformed_packets_silently() {
     // Bridge must not crash on garbage UDP. Send 3 random packets,
     // then 1 valid one; assert exactly 1 JSONL line on stdout.
     let udp_port = free_port();
-    let mut child = Command::new(BRIDGE)
+    let mut child = Command::new(cargo_bin("ruview-csi-bridge"))
         .args(["--listen", &format!("127.0.0.1:{}", udp_port), "--quiet"])
         .stdout(Stdio::piped())
         .stderr(Stdio::null())
@@ -194,7 +192,7 @@ fn ruview_bridge_drops_malformed_packets_silently() {
 
 #[test]
 fn ruview_bridge_help_prints_synopsis() {
-    let out = Command::new(BRIDGE)
+    let out = Command::new(cargo_bin("ruview-csi-bridge"))
         .arg("--help")
         .output()
         .expect("run bridge --help");
@@ -214,7 +212,7 @@ fn ruview_bridge_help_prints_synopsis() {
 /// ruvllm-bridge.
 #[test]
 fn ruview_bridge_cache_without_fingerprint_refused() {
-    let out = Command::new(BRIDGE)
+    let out = Command::new(cargo_bin("ruview-csi-bridge"))
         .args(["--workers", "127.0.0.1:1", "--dim", "4", "--cache", "1024"])
         .output()
         .expect("run bridge");
@@ -232,7 +230,7 @@ fn ruview_bridge_cache_without_fingerprint_refused() {
 
 #[test]
 fn ruview_bridge_version_prints_pkg_name_and_version() {
-    let out = Command::new(BRIDGE)
+    let out = Command::new(cargo_bin("ruview-csi-bridge"))
         .arg("--version")
         .output()
         .expect("run bridge --version");

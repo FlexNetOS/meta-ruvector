@@ -1,0 +1,77 @@
+name: agent-env lock
+
+# Drift gate for the agent-env skill config (see envctl runbook: docs/runbook/agent-env/ci.md).
+# `envctl agent lock --check --locked` re-audits agent-env.yaml against agent-env.lock and
+# exits non-zero on drift, without writing or fetching. envctl lives in its own public repo
+# (FlexNetOS/envctl) and is not part of this workspace, so it is checked out and built here.
+# envctl's engine/cli carry path deps on two sibling crates (loop_lib, meta_plugin_protocol);
+# both are public and self-contained, and are co-checked-out into the layout envctl expects
+# (../../../<crate> from crates/*/ resolves to $GITHUB_WORKSPACE/<crate>).
+
+on:
+  pull_request:
+    paths:
+      - agent-env.yaml
+      - agent-env.lock
+      - agent-skills/**
+      - .github/workflows/agent-env-lock.yml
+  push:
+    branches: [main, develop]
+    paths:
+      - agent-env.yaml
+      - agent-env.lock
+      - agent-skills/**
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  lock-check:
+    name: agent-env lock --check
+    runs-on: ubuntu-26.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout meta-ruvector
+        uses: actions/checkout@v4
+
+      - name: Checkout envctl (public)
+        uses: actions/checkout@v4
+        with:
+          repository: FlexNetOS/envctl
+          path: .envctl-src
+
+      - name: Checkout loop_lib (envctl engine path dep)
+        uses: actions/checkout@v4
+        with:
+          repository: FlexNetOS/loop_lib
+          path: loop_lib
+
+      - name: Checkout meta_plugin_protocol (envctl cli path dep)
+        uses: actions/checkout@v4
+        with:
+          repository: FlexNetOS/meta_plugin_protocol
+          path: meta_plugin_protocol
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: .envctl-src
+
+      - name: Build envctl
+        working-directory: .envctl-src
+        run: cargo build -p envctl --release
+
+      # envctl resolves its manifest/ from the cwd, so run from the envctl checkout
+      # and point --config at this repo's agent-env.yaml (absolute path).
+      - name: Verify lock (zero-network drift audit)
+        working-directory: .envctl-src
+        run: ./target/release/envctl agent lock --config "$GITHUB_WORKSPACE/agent-env.yaml" --check --locked --color never
+
+      - name: Validate sync plan (preview, writes nothing)
+        working-directory: .envctl-src
+        run: ./target/release/envctl agent sync --config "$GITHUB_WORKSPACE/agent-env.yaml" --json --color never

@@ -8,16 +8,14 @@ use std::process::Command;
 use std::time::{Duration, Instant};
 
 mod common;
-use common::{free_port, spawn_fakeworker};
-
-const BENCH: &str = env!("CARGO_BIN_EXE_ruvector-hailo-cluster-bench");
+use common::{cargo_bin, free_port, spawn_fakeworker};
 
 #[test]
 fn bench_cli_default_stdout_includes_percentile_block() {
     let port = free_port();
     let mut worker = spawn_fakeworker(port, 4, "");
 
-    let out = Command::new(BENCH)
+    let out = Command::new(cargo_bin("ruvector-hailo-cluster-bench"))
         .args([
             "--workers",
             &format!("127.0.0.1:{}", port),
@@ -64,7 +62,7 @@ fn bench_cli_quiet_silences_stdout_but_still_runs() {
     let port = free_port();
     let mut worker = spawn_fakeworker(port, 4, "");
 
-    let out = Command::new(BENCH)
+    let out = Command::new(cargo_bin("ruvector-hailo-cluster-bench"))
         .args([
             "--workers",
             &format!("127.0.0.1:{}", port),
@@ -99,7 +97,7 @@ fn bench_cli_prom_file_contains_throughput_metric() {
     let prom_path = std::env::temp_dir().join(format!("bench-cli-iter72-{}.prom", port));
     let prom_str = prom_path.to_string_lossy().to_string();
 
-    let out = Command::new(BENCH)
+    let out = Command::new(cargo_bin("ruvector-hailo-cluster-bench"))
         .args([
             "--workers",
             &format!("127.0.0.1:{}", port),
@@ -148,7 +146,7 @@ fn bench_cli_validate_fleet_with_wrong_fingerprint_exits_two() {
     let port = free_port();
     let mut worker = spawn_fakeworker(port, 4, "fp:current");
 
-    let out = Command::new(BENCH)
+    let out = Command::new(cargo_bin("ruvector-hailo-cluster-bench"))
         .args([
             "--workers",
             &format!("127.0.0.1:{}", port),
@@ -186,7 +184,10 @@ fn bench_cli_validate_fleet_with_wrong_fingerprint_exits_two() {
 #[test]
 fn bench_cli_version_flag_prints_pkg_name_and_version() {
     for arg in &["--version", "-V"] {
-        let out = Command::new(BENCH).arg(arg).output().expect("run bench");
+        let out = Command::new(cargo_bin("ruvector-hailo-cluster-bench"))
+            .arg(arg)
+            .output()
+            .expect("run bench");
         assert!(out.status.success());
         let line = String::from_utf8_lossy(&out.stdout).trim().to_string();
         assert!(line.starts_with("ruvector-hailo-cluster"), "got: {}", line);
@@ -203,7 +204,7 @@ fn bench_cli_duration_secs_actually_bounds_runtime() {
     let mut worker = spawn_fakeworker(port, 4, "");
 
     let start = Instant::now();
-    let out = Command::new(BENCH)
+    let out = Command::new(cargo_bin("ruvector-hailo-cluster-bench"))
         .args([
             "--workers",
             &format!("127.0.0.1:{}", port),

@@ -168,10 +168,43 @@ impl RvLiteConfig {
         DbOptions {
             dimensions: self.dimensions,
             distance_metric: metric,
-            storage_path: "memory://".to_string(),
+            storage_path: transient_storage_path("rvlite"),
             hnsw_config: None,
             quantization: None,
         }
+    }
+}
+
+pub(crate) fn transient_storage_path(label: &str) -> String {
+    #[cfg(target_arch = "wasm32")]
+    {
+        let _ = label;
+        "memory://".to_string()
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        let safe_label: String = label
+            .chars()
+            .map(|ch| {
+                if ch.is_ascii_alphanumeric() || ch == '-' || ch == '_' {
+                    ch
+                } else {
+                    '-'
+                }
+            })
+            .collect();
+        let nanos = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|duration| duration.as_nanos())
+            .unwrap_or_default();
+        std::env::temp_dir()
+            .join(format!(
+                "rvlite-{safe_label}-{}-{nanos}.redb",
+                std::process::id()
+            ))
+            .to_string_lossy()
+            .into_owned()
     }
 }
 
