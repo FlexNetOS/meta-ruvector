@@ -216,3 +216,4 @@ crates/ruvector-mmwave/Cargo.lock
 # These nested JS projects use package-lock.json as their committed lockfile.
 /npm/bun.lock
 /ui/ruvocal/bun.lock
+.claude/helpers/ruvltra-anchors.cache.json
