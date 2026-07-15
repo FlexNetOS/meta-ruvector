@@ -1,2445 +1,5 @@
 [
   {
-    "id": "pretrain-cmd-7446",
-    "state": "test_in_general",
-    "action": "command-succeeded",
-    "outcome": "cd /workspaces/ruvector/npm && node tests/run-all-tests.js --only=unit 2>&1 | head -200",
-    "reward": 1,
-    "timestamp": "2025-11-21T03:03:13.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7447",
-    "state": "cargo_in_general",
-    "action": "command-succeeded",
-    "outcome": "cargo build -p ruvector-node --lib 2>&1 | tail -100",
-    "reward": 1,
-    "timestamp": "2025-11-21T03:02:51.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7448",
-    "state": "build_in_general",
-    "action": "command-succeeded",
-    "outcome": "cd /workspaces/ruvector/crates/ruvector-node && cargo build --lib 2>&1 | grep -A 5 \"error\\[E\"",
-    "reward": 1,
-    "timestamp": "2025-11-21T03:02:34.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7449",
-    "state": "test_in_general",
-    "action": "command-succeeded",
-    "outcome": "chmod +x /workspaces/ruvector/npm/tests/run-all-tests.js",
-    "reward": 1,
-    "timestamp": "2025-11-21T03:02:31.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7450",
-    "state": "test_in_general",
-    "action": "command-succeeded",
-    "outcome": "cd /workspaces/ruvector/npm/packages/ruvector && node test/standalone-test.js",
-    "reward": 1,
-    "timestamp": "2025-11-21T03:02:31.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7451",
-    "state": "cargo_in_general",
-    "action": "command-succeeded",
-    "outcome": "cargo tree -i getrandom@0.3.4 2>&1 | grep -v \"warning:\" | head -30",
-    "reward": 1,
-    "timestamp": "2025-11-21T03:01:11.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7452",
-    "state": "cargo_in_ruvector-core",
-    "action": "command-succeeded",
-    "outcome": "cargo build -p ruvector-core --release 2>&1 | tail -50",
-    "reward": 1,
-    "timestamp": "2025-11-21T03:00:54.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7453",
-    "state": "other_in_wasm",
-    "action": "command-succeeded",
-    "outcome": "cd /workspaces/ruvector/npm/wasm && npm pack --dry-run 2>&1 | tail -20",
-    "reward": 1,
-    "timestamp": "2025-11-21T03:00:03.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7454",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "cd /workspaces/ruvector/npm/ruvector && npm pack --dry-run 2>&1 | tail -20",
-    "reward": 1,
-    "timestamp": "2025-11-21T02:59:43.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7455",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "cd /workspaces/ruvector/npm/packages/ruvector && npm install && npx tsc",
-    "reward": 1,
-    "timestamp": "2025-11-21T02:59:39.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7456",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "cd /workspaces/ruvector/npm/core && npm pack --dry-run 2>&1 | tail -20",
-    "reward": 1,
-    "timestamp": "2025-11-21T02:59:20.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7457",
-    "state": "cargo_in_general",
-    "action": "command-succeeded",
-    "outcome": "cargo update -p getrandom@0.2.16 --precise 0.2.15",
-    "reward": 1,
-    "timestamp": "2025-11-21T02:58:54.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7458",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "ls -la /workspaces/ruvector/npm/",
-    "reward": 1,
-    "timestamp": "2025-11-21T02:58:45.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7459",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "cat /workspaces/ruvector/npm/tsconfig.json",
-    "reward": 1,
-    "timestamp": "2025-11-21T02:58:30.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7460",
-    "state": "cargo_in_general",
-    "action": "command-succeeded",
-    "outcome": "cargo tree -i getrandom@0.2.16 2>&1 | grep -v \"warning:\" | head -30",
-    "reward": 1,
-    "timestamp": "2025-11-21T02:58:23.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7461",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "grep -A5 \"\\[workspace.dependencies\\]\" Cargo.toml | grep -E \"napi|tokio\"",
-    "reward": 1,
-    "timestamp": "2025-11-21T02:58:14.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7462",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "cat /workspaces/ruvector/npm/package.json",
-    "reward": 1,
-    "timestamp": "2025-11-21T02:57:55.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7463",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "uname -m && uname -s",
-    "reward": 1,
-    "timestamp": "2025-11-21T02:57:43.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7464",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "ls -la /workspaces/ruvector/npm/core/platforms/linux-x64-gnu/",
-    "reward": 1,
-    "timestamp": "2025-11-21T02:57:42.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7465",
-    "state": "cargo_in_general",
-    "action": "command-succeeded",
-    "outcome": "cargo tree -p getrandom@0.2.16 | head -20",
-    "reward": 1,
-    "timestamp": "2025-11-21T02:57:33.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7466",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "tree -L 3 /workspaces/ruvector/npm/packages 2>/dev/null || find /workspaces/ruvector/npm/packages -m",
-    "reward": 1,
-    "timestamp": "2025-11-21T02:57:22.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7467",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "cd /workspaces/ruvector/npm/packages/ruvector && tree -L 3 -I 'node_modules'",
-    "reward": 1,
-    "timestamp": "2025-11-21T02:57:20.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7468",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "ls -la /workspaces/ruvector/npm/core/platforms/",
-    "reward": 1,
-    "timestamp": "2025-11-21T02:57:08.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7469",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "find /workspaces/ruvector/npm/core/platforms -name \"*.node\" 2>/dev/null",
-    "reward": 1,
-    "timestamp": "2025-11-21T02:57:07.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7470",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "ls -la /workspaces/ruvector/npm/packages/",
-    "reward": 1,
-    "timestamp": "2025-11-21T02:56:48.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7471",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "find /workspaces/ruvector -name \"*.node\" 2>/dev/null | head -5",
-    "reward": 1,
-    "timestamp": "2025-11-21T02:56:34.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7472",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "find /workspaces/ruvector/crates/ruvector-node -name \"*.node\" 2>/dev/null",
-    "reward": 1,
-    "timestamp": "2025-11-21T02:56:27.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7473",
-    "state": "other_in_wasm",
-    "action": "command-succeeded",
-    "outcome": "ls -la /workspaces/ruvector/npm/wasm/pkg/ 2>&1 && echo \"---\" && ls -la /workspaces/ruvector/npm/wasm",
-    "reward": 1,
-    "timestamp": "2025-11-21T02:56:18.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7474",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "tree -L 4 /workspaces/ruvector/npm 2>/dev/null || find /workspaces/ruvector/npm -type f -o -type d |",
-    "reward": 1,
-    "timestamp": "2025-11-21T02:56:17.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7475",
-    "state": "other_in_wasm",
-    "action": "command-succeeded",
-    "outcome": "mkdir -p /workspaces/ruvector/npm/packages/core/src && mkdir -p /workspaces/ruvector/npm/packages/wa",
-    "reward": 1,
-    "timestamp": "2025-11-21T02:55:44.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7476",
-    "state": "test_in_general",
-    "action": "command-succeeded",
-    "outcome": "mkdir -p /workspaces/ruvector/npm/tests/{unit,integration,performance,fixtures}",
-    "reward": 1,
-    "timestamp": "2025-11-21T02:55:44.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7477",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "ls -lh /workspaces/ruvector/npm/core/platforms/",
-    "reward": 1,
-    "timestamp": "2025-11-21T02:55:31.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7478",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "cd /workspaces/ruvector/npm/ruvector && npm pack --dry-run 2>&1 | head -50",
-    "reward": 1,
-    "timestamp": "2025-11-21T02:54:56.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7479",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "cd /workspaces/ruvector/crates/ruvector-node && npm install",
-    "reward": 1,
-    "timestamp": "2025-11-21T02:54:36.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7480",
-    "state": "other_in_wasm",
-    "action": "command-succeeded",
-    "outcome": "cd /workspaces/ruvector/npm/wasm && npm pack --dry-run 2>&1 | head -50",
-    "reward": 1,
-    "timestamp": "2025-11-21T02:54:19.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7481",
-    "state": "build_in_wasm",
-    "action": "command-succeeded",
-    "outcome": "cd /workspaces/ruvector/crates/ruvector-wasm && wasm-pack build --target nodejs --out-dir ../../npm/",
-    "reward": 1,
-    "timestamp": "2025-11-21T02:53:58.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7482",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "cd /workspaces/ruvector/npm/core && npm pack --dry-run 2>&1 | head -50",
-    "reward": 1,
-    "timestamp": "2025-11-21T02:53:46.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7483",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "ls -la /workspaces/ruvector/npm/ruvector/src/",
-    "reward": 1,
-    "timestamp": "2025-11-21T02:53:46.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7484",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "ls -la /workspaces/ruvector/npm/ruvector/",
-    "reward": 1,
-    "timestamp": "2025-11-21T02:53:44.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7485",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "ls -la /workspaces/ruvector/npm/core/",
-    "reward": 1,
-    "timestamp": "2025-11-21T02:53:39.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7486",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "ls -la /workspaces/ruvector/npm/ruvector/bin/",
-    "reward": 1,
-    "timestamp": "2025-11-21T02:53:06.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7487",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "ls -la /workspaces/ruvector/npm/packages/core/",
-    "reward": 1,
-    "timestamp": "2025-11-21T02:53:05.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7488",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "find /workspaces/ruvector/npm -name \"*.d.ts\" -type f | head -20",
-    "reward": 1,
-    "timestamp": "2025-11-21T02:52:41.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7489",
-    "state": "other_in_wasm",
-    "action": "command-succeeded",
-    "outcome": "ls -lh /workspaces/ruvector/npm/core/dist/ && ls -lh /workspaces/ruvector/npm/wasm/pkg/ && ls -lh /w",
-    "reward": 1,
-    "timestamp": "2025-11-21T02:52:40.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7490",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "ls -la /workspaces/ruvector/npm/packages/",
-    "reward": 1,
-    "timestamp": "2025-11-21T02:52:25.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7491",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "find /workspaces/ruvector/npm -name \"package.json\" | head -10",
-    "reward": 1,
-    "timestamp": "2025-11-21T02:52:24.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7492",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "ls -la /workspaces/ruvector/npm/packages/",
-    "reward": 1,
-    "timestamp": "2025-11-21T02:52:24.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7493",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "mkdir -p /workspaces/ruvector/npm/packages/ruvector/{src,bin,dist}",
-    "reward": 1,
-    "timestamp": "2025-11-21T02:51:50.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7494",
-    "state": "other_in_wasm",
-    "action": "command-succeeded",
-    "outcome": "ls -la /workspaces/ruvector/npm/core/ && ls -la /workspaces/ruvector/npm/wasm/ && ls -la /workspaces",
-    "reward": 1,
-    "timestamp": "2025-11-21T02:51:39.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7495",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "find /workspaces/ruvector/npm -type d -name \"packages\" 2>/dev/null | head -5",
-    "reward": 1,
-    "timestamp": "2025-11-21T02:51:37.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7496",
-    "state": "other_in_wasm",
-    "action": "command-succeeded",
-    "outcome": "mkdir -p /workspaces/ruvector/npm/packages/wasm/{nodejs,bundler,web}",
-    "reward": 1,
-    "timestamp": "2025-11-21T02:51:36.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7497",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "ls -la /workspaces/ruvector/npm 2>/dev/null || echo \"npm directory not found\"",
-    "reward": 1,
-    "timestamp": "2025-11-21T02:51:36.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7498",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "find /workspaces/ruvector/npm -name \"package.json\" -type f",
-    "reward": 1,
-    "timestamp": "2025-11-21T02:51:35.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7499",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "ls -la /workspaces/ruvector/npm/",
-    "reward": 1,
-    "timestamp": "2025-11-21T02:51:34.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7500",
-    "state": "other_in_wasm",
-    "action": "command-succeeded",
-    "outcome": "mkdir -p /workspaces/ruvector/npm/packages/{core,wasm,cli,ruvector}",
-    "reward": 1,
-    "timestamp": "2025-11-21T02:51:14.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7501",
-    "state": "cargo_in_wasm",
-    "action": "command-succeeded",
-    "outcome": "cargo install wasm-pack",
-    "reward": 1,
-    "timestamp": "2025-11-21T02:51:11.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7502",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "find /workspaces/ruvector -type f -name \"package.json\" | head -20",
-    "reward": 1,
-    "timestamp": "2025-11-21T02:51:10.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7503",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "find npm -type f -name \"*.js\" -o -name \"*.json\" -o -name \"*.ts\" | head -30",
-    "reward": 1,
-    "timestamp": "2025-11-21T02:51:08.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7504",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "ls -la /workspaces/ruvector/crates/ruvector-node",
-    "reward": 1,
-    "timestamp": "2025-11-21T02:51:08.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7505",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "ls -la /workspaces/ruvector/npm/packages/core 2>/dev/null || echo \"npm/packages/core directory not f",
-    "reward": 1,
-    "timestamp": "2025-11-21T02:51:07.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7506",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "ls -la /workspaces/ruvector/npm/",
-    "reward": 1,
-    "timestamp": "2025-11-21T02:51:07.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7507",
-    "state": "cargo_in_general",
-    "action": "command-succeeded",
-    "outcome": "cargo build --release --workspace 2>&1 | tail -100",
-    "reward": 1,
-    "timestamp": "2025-11-20T23:02:55.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7508",
-    "state": "test_in_general",
-    "action": "command-succeeded",
-    "outcome": "cd /workspaces/ruvector/npm/ruvector && node test-cli-mock.js",
-    "reward": 1,
-    "timestamp": "2025-11-20T23:01:37.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7509",
-    "state": "other_in_wasm",
-    "action": "command-succeeded",
-    "outcome": "cd /workspaces/ruvector/npm/wasm && npm install --save-dev typescript @types/node 2>&1 | tail -10",
-    "reward": 1,
-    "timestamp": "2025-11-20T23:01:25.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7510",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "Do not install this package directly - use @ruvector/core instead.\" > /workspaces/ruvector/npm/core/",
-    "reward": 1,
-    "timestamp": "2025-11-20T23:00:47.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7511",
-    "state": "build_in_general",
-    "action": "command-succeeded",
-    "outcome": "The actual .node file will be added during the build/publish process.",
-    "reward": 1,
-    "timestamp": "2025-11-20T23:00:34.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7512",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "This package contains the compiled native bindings for the current platform. ",
-    "reward": 1,
-    "timestamp": "2025-11-20T23:00:28.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7513",
-    "state": "test_in_general",
-    "action": "command-succeeded",
-    "outcome": "cd /workspaces/ruvector/npm/ruvector && node test-basic.js",
-    "reward": 1,
-    "timestamp": "2025-11-20T23:00:25.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7514",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "echo \"# Platform-specific native bindings for @ruvector/core",
-    "reward": 1,
-    "timestamp": "2025-11-20T23:00:15.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7515",
-    "state": "cargo_in_wasm",
-    "action": "command-succeeded",
-    "outcome": "cargo install wasm-pack 2>&1 | tail -30",
-    "reward": 1,
-    "timestamp": "2025-11-20T23:00:15.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7516",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "ls -la /workspaces/ruvector/target/release/*.so 2>/dev/null | head -5",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:59:18.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7517",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "tree -L 3 -I 'node_modules' /workspaces/ruvector/npm/core/",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:58:47.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7518",
-    "state": "cargo_in_general",
-    "action": "command-succeeded",
-    "outcome": "cargo build --release -p ruvector-node",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:57:37.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7519",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "cd /workspaces/ruvector/npm/ruvector && node bin/ruvector.js --help",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:56:16.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7520",
-    "state": "cargo_in_general",
-    "action": "command-succeeded",
-    "outcome": "cargo build --release --workspace 2>&1 | tee /tmp/build-rust.log",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:56:06.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7521",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "ls -la /workspaces/ruvector/npm/ruvector/dist/",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:55:56.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7522",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "cd /workspaces/ruvector/npm/ruvector && npx tsc",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:55:08.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7523",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "ls -la ~/.cargo/bin/ 2>&1 | head -20",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:54:59.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7524",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "cd /workspaces/ruvector/npm/ruvector && npm install --no-optional 2>&1 | tail -10",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:54:45.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7525",
-    "state": "other_in_wasm",
-    "action": "command-succeeded",
-    "outcome": "ps aux | grep \"cargo install wasm-pack\" | grep -v grep | wc -l",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:54:28.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7526",
-    "state": "other_in_wasm",
-    "action": "command-succeeded",
-    "outcome": "ps aux | grep -E \"cargo install|wasm-pack\" | grep -v grep",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:54:08.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7527",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "cd /workspaces/ruvector/npm/ruvector && npm install --no-optional 2>&1 | tail -20",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:53:54.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7528",
-    "state": "test_in_general",
-    "action": "command-succeeded",
-    "outcome": "cd /workspaces/ruvector/npm/ruvector && node bin/ruvector.js info 2>&1 || echo \"CLI test completed (",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:53:02.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7529",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "chmod +x /workspaces/ruvector/npm/ruvector/bin/ruvector.js",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:52:48.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7530",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "find /workspaces/ruvector/target -name \"*.node\" -o -name \"libruvector*.so\" -o -name \"libruvector*.dy",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:52:14.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7531",
-    "state": "build_in_general",
-    "action": "command-succeeded",
-    "outcome": "cd /workspaces/ruvector/npm/core && npm run build",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:52:02.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7532",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "cd /workspaces/ruvector/npm/core && npm install typescript @types/node --save-dev",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:51:42.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7533",
-    "state": "other_in_wasm",
-    "action": "command-succeeded",
-    "outcome": "while ! command -v wasm-pack &> /dev/null; do sleep 2; done; echo \"wasm-pack installed\"; wasm-pack -",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:50:52.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7534",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "mkdir -p /workspaces/ruvector/npm/ruvector/{src,bin,examples,types}",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:49:53.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7535",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "mkdir -p /workspaces/ruvector/npm/core/src && mkdir -p /workspaces/ruvector/npm/core/platforms",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:49:18.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7536",
-    "state": "other_in_wasm",
-    "action": "command-succeeded",
-    "outcome": "ls -la ~/.cargo/bin/wasm-pack 2>&1 || echo \"Not installed\"",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:48:29.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7537",
-    "state": "other_in_wasm",
-    "action": "command-succeeded",
-    "outcome": "which wasm-pack || echo \"Not in PATH\"",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:48:28.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7538",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "ls -la /workspaces/ruvector/docs/ 2>/dev/null || echo \"docs directory structure not found\"",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:48:21.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7539",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "find /workspaces/ruvector -name \"index.d.ts\" | head -5",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:48:21.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7540",
-    "state": "other_in_wasm",
-    "action": "command-succeeded",
-    "outcome": "mkdir -p /workspaces/ruvector/npm/wasm/{src,pkg,pkg-node}",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:48:08.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7541",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "mkdir -p /workspaces/ruvector/npm",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:48:07.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7542",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "find /workspaces/ruvector -name \"*.d.ts\" | head -10",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:48:06.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7543",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "cat /workspaces/ruvector/Cargo.toml | grep -A 20 \"\\[workspace\\]\"",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:48:02.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7544",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "ls -la /workspaces/ruvector/crates/ruvector-node/",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:47:53.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7545",
-    "state": "cargo_in_wasm",
-    "action": "command-succeeded",
-    "outcome": "cargo install wasm-pack 2>&1 | head -20",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:47:52.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7546",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "find /workspaces/ruvector -name \"package.json\" -o -name \"*.d.ts\" | head -20",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:47:48.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7547",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "ls -la /workspaces/ruvector/crates/",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:47:48.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7548",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "find /workspaces/ruvector -name \"package.json\" -type f | head -20",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:47:47.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7549",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "ls -la /workspaces/ruvector/crates/",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:47:47.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7550",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "find /workspaces/ruvector -name \"*.node\" -o -name \"index.js\" | grep ruvector-node",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:47:39.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7551",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "ls -la /workspaces/ruvector/",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:47:38.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7552",
-    "state": "cargo_in_general",
-    "action": "command-succeeded",
-    "outcome": "cargo search router-core --limit 5 2>&1",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:46:26.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7553",
-    "state": "other_in_wasm",
-    "action": "command-succeeded",
-    "outcome": "chmod +x /workspaces/ruvector/scripts/check-and-publish-router-wasm.sh && echo \"✓ Quick publish scri",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:45:44.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7554",
-    "state": "other_in_wasm",
-    "action": "command-succeeded",
-    "outcome": "echo \"=== PUBLICATION STATUS REPORT ===\" && echo \"\" && echo \"1. router-core on crates.io:\" && cargo ",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:45:21.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7555",
-    "state": "other_in_wasm",
-    "action": "command-succeeded",
-    "outcome": "chmod +x /workspaces/ruvector/scripts/publish-router-wasm.sh",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:39:57.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7556",
-    "state": "git_in_general",
-    "action": "command-succeeded",
-    "outcome": "git remote -v",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:39:36.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7557",
-    "state": "other_in_wasm",
-    "action": "command-succeeded",
-    "outcome": "cd /workspaces/ruvector/crates/router-wasm && echo \"=== ROUTER-WASM PUBLICATION READINESS CHECK ===\"",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:39:30.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7558",
-    "state": "git_in_general",
-    "action": "command-succeeded",
-    "outcome": "git log --all --oneline -- crates/router-core/Cargo.toml | head -10",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:39:28.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7559",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "curl -s https://crates.io/api/v1/crates/router-core 2>&1 | head -50",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:39:18.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7560",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "echo \"Monitoring router-core publication status...\" && for i in {1..12}; do echo \"--- Check $i ($(da",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:39:14.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7561",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "curl -s https://crates.io/api/v1/crates/router-core | jq '.versions[] | {num: .num, yanked: .yanked}",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:39:10.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7562",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "export CARGO_REGISTRY_TOKEN=\"[REDACTED]\" && cargo info router-core 2>&1",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:38:59.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7563",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "export CARGO_REGISTRY_TOKEN=\"[REDACTED]\" && cargo search --limit 1 router-c",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:38:48.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7564",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "for i in {1..6}; do echo \"=== Check $i/6 ===\"; cargo search router-core | head -1; sleep 15; done",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:38:48.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7565",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "cd /workspaces/ruvector/crates/router-core && export CARGO_REGISTRY_TOKEN=\"[REDACTED]",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:38:35.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7566",
-    "state": "cargo_in_general",
-    "action": "command-succeeded",
-    "outcome": "cargo search ruvector-cli --limit 1",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:38:34.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7567",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "cd /workspaces/ruvector/crates/ruvector-cli && cargo publish --allow-dirty",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:38:17.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7568",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "sleep 10 && cargo search router-core",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:38:12.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7569",
-    "state": "cargo_in_wasm",
-    "action": "command-succeeded",
-    "outcome": "cargo search ruvector-wasm --limit 1",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:37:26.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7570",
-    "state": "other_in_wasm",
-    "action": "command-succeeded",
-    "outcome": "cd /workspaces/ruvector/crates/router-wasm && cargo tree | grep router-core",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:37:12.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7571",
-    "state": "build_in_general",
-    "action": "command-succeeded",
-    "outcome": "cd /workspaces/ruvector/crates/router-core && cargo build 2>&1",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:37:04.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7572",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "source .env && cargo login \"$CRATES_API_KEY\"",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:37:02.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7573",
-    "state": "other_in_wasm",
-    "action": "command-succeeded",
-    "outcome": "cd /workspaces/ruvector/crates/ruvector-wasm && cargo login \"[REDACTED]\"",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:36:59.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7574",
-    "state": "cargo_in_general",
-    "action": "command-succeeded",
-    "outcome": "cargo search router-core",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:36:56.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7575",
-    "state": "cargo_in_general",
-    "action": "command-succeeded",
-    "outcome": "cargo search router-core",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:36:55.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7576",
-    "state": "cargo_in_general",
-    "action": "command-succeeded",
-    "outcome": "cargo search router-core",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:36:54.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7577",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "export PATH=\"$HOME/.cargo/bin:$PATH\" && cargo search ruvector --limit 10 2>&1",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:36:35.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7578",
-    "state": "other_in_wasm",
-    "action": "command-succeeded",
-    "outcome": "curl -s https://crates.io/api/v1/crates/ruvector-wasm | grep -o '\"version\":\"[^\"]*\"' | head -1",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:30:18.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7579",
-    "state": "other_in_wasm",
-    "action": "command-succeeded",
-    "outcome": "source ~/.cargo/env && cd /workspaces/ruvector/crates/ruvector-wasm && cargo publish --allow-dirty -",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:29:23.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7580",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "        result = subprocess.run(",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:28:38.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7581",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "    try:",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:28:31.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7582",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "for i in range(30):",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:28:26.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7583",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "# Wait up to 5 minutes checking every 10 seconds",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:28:19.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7584",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "export_cmd = 'export PATH=\"/home/codespace/.cargo/bin:$PATH\"'",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:28:07.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7585",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "import sys",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:27:58.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7586",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "import subprocess",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:27:49.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7587",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "import time",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:27:44.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7588",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "python3 << 'EOF'",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:27:37.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7589",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "source ~/.cargo/env && cd /workspaces/ruvector && cargo tree --depth 1 2>&1 | grep -A 2 \"getrandom\" ",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:27:37.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7590",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "source ~/.cargo/env && cd /workspaces/ruvector && grep -B 5 \"version = \\\"0.3.4\\\"\" Cargo.lock | grep ",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:24:29.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7591",
-    "state": "build_in_general",
-    "action": "command-succeeded",
-    "outcome": "cd /workspaces/ruvector/crates/ruvector-cli && ~/.cargo/bin/cargo build --release --bin ruvector 2>&",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:24:27.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7592",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "source ~/.cargo/env && cd /workspaces/ruvector && grep -A 2 \"name = \\\"getrandom\\\"\" Cargo.lock | head",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:22:27.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7593",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "export PATH=\"/home/codespace/.cargo/bin:$PATH\" && for i in {1..6}; do echo \"Check $i - $(date)\" && c",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:20:24.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7594",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "export PATH=\"/home/codespace/.cargo/bin:$PATH\" && echo \"Waiting for router-core v0.1.1 to be availab",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:18:17.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7595",
-    "state": "build_in_general",
-    "action": "command-succeeded",
-    "outcome": "cd /workspaces/ruvector && ~/.cargo/bin/cargo build --package ruvector-cli 2>&1",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:16:21.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7596",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "find /opt /home /root -name cargo -type f 2>/dev/null | head -5 || echo \"Searching in common locatio",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:14:18.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7597",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "which cargo || echo \"Cargo not in PATH\" && rustc --version 2>&1 || echo \"Rust not installed\" && ls -",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:13:12.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7598",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "ls -la /usr/local/cargo/bin/ 2>/dev/null || ls -la ~/.cargo/bin/ 2>/dev/null || echo \"Cargo director",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:12:55.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7599",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "which cargo || echo \"Cargo not found, checking for rustup...\"",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:12:54.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7600",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "sleep 60 && echo \"Initial wait complete - checking router-core availability on crates.io\"",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:12:28.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7601",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "ls -la ~/.cargo/bin/ 2>/dev/null || echo \"Rust not installed in home directory\"",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:12:11.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7602",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "which cargo || find /usr -name cargo -type f 2>/dev/null | head -5",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:12:00.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7603",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "ls -la ~/.cargo/bin/ 2>&1 | head -20",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:11:51.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7604",
-    "state": "build_in_general",
-    "action": "command-succeeded",
-    "outcome": "cd /workspaces/ruvector && cargo build --package ruvector-cli 2>&1 | head -100",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:11:31.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7605",
-    "state": "other_in_wasm",
-    "action": "command-succeeded",
-    "outcome": "cd /workspaces/ruvector/crates/ruvector-wasm && pwd",
-    "reward": 1,
-    "timestamp": "2025-11-20T22:11:24.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7606",
-    "state": "other_in_wasm",
-    "action": "command-succeeded",
-    "outcome": "export PATH=\"$HOME/.cargo/bin:$PATH\" && rustup target add wasm32-unknown-unknown 2>&1",
-    "reward": 1,
-    "timestamp": "2025-11-20T21:26:58.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7607",
-    "state": "other_in_ruvector-core",
-    "action": "command-succeeded",
-    "outcome": "export PATH=\"$HOME/.cargo/bin:$PATH\" && cd /workspaces/ruvector/crates/ruvector-core && cargo publis",
-    "reward": 1,
-    "timestamp": "2025-11-20T21:24:35.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7608",
-    "state": "build_in_general",
-    "action": "command-succeeded",
-    "outcome": "export PATH=\"$HOME/.cargo/bin:$PATH\" && cd /workspaces/ruvector && cargo build --package ruvector-no",
-    "reward": 1,
-    "timestamp": "2025-11-20T21:23:40.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7609",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "export PATH=\"$HOME/.cargo/bin:$PATH\" && cargo search ruvector --limit 10 && cargo search router-core",
-    "reward": 1,
-    "timestamp": "2025-11-20T21:11:35.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7610",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "sleep 240",
-    "reward": 1,
-    "timestamp": "2025-11-20T21:11:28.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7611",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "sleep 60",
-    "reward": 1,
-    "timestamp": "2025-11-20T21:09:10.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7612",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "sleep 200",
-    "reward": 1,
-    "timestamp": "2025-11-20T21:07:58.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7613",
-    "state": "other_in_wasm",
-    "action": "command-succeeded",
-    "outcome": "export PATH=\"$HOME/.cargo/bin:$PATH\" && cd /workspaces/ruvector && sleep 180 && bash -c 'for crate i",
-    "reward": 1,
-    "timestamp": "2025-11-20T21:05:26.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7614",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "export PATH=\"$HOME/.cargo/bin:$PATH\" && cd /workspaces/ruvector/crates/ruvector-node && cargo check",
-    "reward": 1,
-    "timestamp": "2025-11-20T21:05:13.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7615",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "sleep 60",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:51:20.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7616",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "sleep 70",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:50:00.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7617",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "export PATH=\"$HOME/.cargo/bin:$PATH\" && sleep 120 && cd /workspaces/ruvector/crates/ruvector-cli && ",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:48:19.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7618",
-    "state": "other_in_wasm",
-    "action": "command-succeeded",
-    "outcome": "export PATH=\"$HOME/.cargo/bin:$PATH\" && sleep 60 && cd /workspaces/ruvector/crates/ruvector-wasm && ",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:48:06.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7619",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "export PATH=\"$HOME/.cargo/bin:$PATH\" && cd /workspaces/ruvector/crates/ruvector-node && cargo publis",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:47:54.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7620",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "sleep 45",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:47:32.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7621",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "export PATH=\"$HOME/.cargo/bin:$PATH\" && cd /workspaces/ruvector && bash scripts/publish-crates.sh",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:46:31.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7622",
-    "state": "other_in_wasm",
-    "action": "command-succeeded",
-    "outcome": "cd /workspaces/ruvector/crates && for dir in ruvector-cli ruvector-bench router-cli router-ffi route",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:42:56.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7623",
-    "state": "other_in_ruvector-core",
-    "action": "command-succeeded",
-    "outcome": "grep -r \"ruvector-core = { path\" crates/*/Cargo.toml && grep -r \"router-core = { path\" crates/*/Carg",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:42:51.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7624",
-    "state": "other_in_ruvector-core",
-    "action": "command-succeeded",
-    "outcome": "export PATH=\"$HOME/.cargo/bin:$PATH\" && cargo search ruvector-core --limit 1 && cargo search router-",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:42:12.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7625",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "sleep 35 && echo \"Indexing wait complete, continuing with router-core...\"",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:41:37.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7626",
-    "state": "other_in_ruvector-core",
-    "action": "command-succeeded",
-    "outcome": "source \"$HOME/.cargo/env\" && cargo search ruvector-core --limit 1",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:40:58.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7627",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "source \"$HOME/.cargo/env\" && cargo --version && rustc --version",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:37:38.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7628",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:37:21.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7629",
-    "state": "git_in_general",
-    "action": "command-succeeded",
-    "outcome": "git status --short | grep -E \"(scripts/|docs/development/|\\.env|\\.gitignore)\" | head -20",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:34:41.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7630",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "chmod +x /workspaces/ruvector/scripts/publish-crates.sh && ls -lah /workspaces/ruvector/scripts/",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:34:37.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7631",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "cat /workspaces/ruvector/.gitignore | head -20",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:33:14.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7632",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "grep -n \"^\\.env$\" /workspaces/ruvector/.gitignore || echo \".env not found in .gitignore\"",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:33:05.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7633",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "chmod +x /tmp/check_crate_metadata.sh && /tmp/check_crate_metadata.sh",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:29:25.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7634",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "SCRIPT",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:29:24.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7635",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "done",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:29:22.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7636",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "    echo \"\"",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:29:21.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7637",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "    ",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:29:20.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7638",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "    fi",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:29:19.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7639",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "        echo \"  ✗ Missing README.md\"",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:29:18.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7640",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "    else",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:29:17.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7641",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "        echo \"  ✓ Has README.md\"",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:29:15.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7642",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "    if [ -f \"$crate_dir/README.md\" ]; then",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:29:14.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7643",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "    # Check for README",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:29:12.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7644",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "    ",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:29:11.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7645",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "    fi",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:29:09.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7646",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "        echo \"  ✗ Missing repository\"",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:29:08.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7647",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "    else",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:29:07.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7648",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "        echo \"  ✓ Has repository\"",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:29:05.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7649",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "    if grep -q \"^repository\" \"$crate\"; then",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:29:03.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7650",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "    # Check for repository",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:29:02.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7651",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "    ",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:29:00.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7652",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "    fi",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:28:59.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7653",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "        echo \"  ✗ Missing license\"",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:28:57.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7654",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "    else",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:28:56.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7655",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "        echo \"  ✓ Has license\"",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:28:54.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7656",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "    if grep -q \"^license\" \"$crate\"; then",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:28:53.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7657",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "    # Check for license",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:28:51.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7658",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "    ",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:28:50.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7659",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "    fi",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:28:48.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7660",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "        echo \"  ✗ Missing description\"",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:28:47.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7661",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "    else",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:28:45.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7662",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "        echo \"  ✓ Has description\"",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:28:44.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7663",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "    if grep -q \"^description\" \"$crate\"; then",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:28:42.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7664",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "    # Check for description",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:28:41.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7665",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "    ",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:28:39.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7666",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "    echo \"Checking $crate_name...\"",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:28:37.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7667",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "    ",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:28:36.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7668",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "    crate_name=$(basename \"$crate_dir\")",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:28:34.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7669",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "    crate_dir=$(dirname \"$crate\")",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:28:33.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7670",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "for crate in crates/*/Cargo.toml; do",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:28:31.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7671",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "echo \"\"",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:28:28.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7672",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "echo \"=== Checking Crate Metadata for Publishing ===\"",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:28:27.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7673",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "# Check if all crates have proper metadata for publishing",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:28:24.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7674",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "#!/bin/bash",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:28:22.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7675",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "cat > /tmp/check_crate_metadata.sh << 'SCRIPT'",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:28:21.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7676",
-    "state": "git_in_general",
-    "action": "command-succeeded",
-    "outcome": "git status --short | grep -E \"crates/.*/README\\.md\" | head -20",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:24:16.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7677",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "for readme in crates/*/README.md; do echo \"=== $readme ===\" && wc -l \"$readme\"; done",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:23:58.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7678",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "find crates -name \"README.md\" -type f | sort",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:23:50.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7679",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "ls -la /workspaces/ruvector/crates/ruvector-bench/README.md 2>/dev/null || echo \"File does not exist",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:20:49.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7680",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "ls -la /workspaces/ruvector/crates/ruvector-node/",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:20:36.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7681",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "find /workspaces/ruvector/crates -name \"README.md\" -type f",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:19:07.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7682",
-    "state": "other_in_wasm",
-    "action": "command-succeeded",
-    "outcome": "ls -la /workspaces/ruvector/crates/ruvector-wasm/",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:19:01.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7683",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "find /workspaces/ruvector/crates/ruvector-cli/src -type f -name \"*.rs\" 2>/dev/null | head -20",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:18:54.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7684",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "find /workspaces/ruvector/crates/router-ffi -type f -name \"*.rs\" | head -20",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:18:54.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7685",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "ls -la /workspaces/ruvector/crates/router-ffi/",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:18:53.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7686",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "find /workspaces/ruvector/crates/ruvector-bench -name \"*.rs\" -type f 2>/dev/null | head -20",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:18:51.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7687",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "ls -la /workspaces/ruvector/crates/ruvector-bench/src/bin/ 2>/dev/null",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:18:50.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7688",
-    "state": "other_in_wasm",
-    "action": "command-succeeded",
-    "outcome": "find /workspaces/ruvector/crates/ruvector-wasm -type f -name \"*.rs\" 2>/dev/null | head -20",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:18:45.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7689",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "find /workspaces/ruvector/crates/router-core -name \"*.rs\" -type f",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:18:44.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7690",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "find crates -name \"Cargo.toml\" -type f -exec dirname {} \\;",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:16:10.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7691",
-    "state": "git_in_general",
-    "action": "command-succeeded",
-    "outcome": "git diff README.md | head -100",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:13:35.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7692",
-    "state": "git_in_general",
-    "action": "command-succeeded",
-    "outcome": "git status",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:13:35.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7693",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "ls -la crates/*/package.json 2>/dev/null || echo \"No package.json found in crates\"",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:11:20.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7694",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "find . -name \"Cargo.toml\" -type f | head -10",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:11:20.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7695",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "which node && which npm && node --version && npm --version",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:11:13.000Z"
-  },
-  {
-    "id": "pretrain-cmd-7696",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "echo $HOME",
-    "reward": 1,
-    "timestamp": "2025-11-20T20:03:21.000Z"
-  },
-  {
-    "id": "pretrain-agent-0",
-    "state": "edit_json_in_project",
-    "action": "config-specialist",
-    "outcome": "recommended for feedback.json",
-    "reward": 1,
-    "timestamp": "2025-12-25T21:06:11.000Z"
-  },
-  {
-    "id": "pretrain-agent-1",
-    "state": "edit_js_in_project",
-    "action": "javascript-developer",
-    "outcome": "recommended for pretrain-v2.js",
-    "reward": 1,
-    "timestamp": "2025-12-25T21:03:53.000Z"
-  },
-  {
-    "id": "pretrain-agent-2",
-    "state": "edit_js_in_project",
-    "action": "javascript-developer",
-    "outcome": "recommended for v2-features.js",
-    "reward": 1,
-    "timestamp": "2025-12-25T20:58:45.000Z"
-  },
-  {
-    "id": "pretrain-agent-3",
-    "state": "edit_js_in_project",
-    "action": "javascript-developer",
-    "outcome": "recommended for prove-it-works.js",
-    "reward": 1,
-    "timestamp": "2025-12-25T20:46:57.000Z"
-  },
-  {
-    "id": "pretrain-agent-4",
-    "state": "edit_js_in_project",
-    "action": "javascript-developer",
-    "outcome": "recommended for metrics.js",
-    "reward": 1,
-    "timestamp": "2025-12-25T20:45:26.000Z"
-  },
-  {
-    "id": "pretrain-agent-5",
-    "state": "edit_js_in_project",
-    "action": "javascript-developer",
-    "outcome": "recommended for validate.js",
-    "reward": 1,
-    "timestamp": "2025-12-25T20:40:30.000Z"
-  },
-  {
-    "id": "pretrain-agent-6",
-    "state": "edit_js_in_project",
-    "action": "javascript-developer",
-    "outcome": "recommended for pretrain.js",
-    "reward": 1,
-    "timestamp": "2025-12-25T20:36:00.000Z"
-  },
-  {
-    "id": "pretrain-agent-7",
-    "state": "edit_js_in_project",
-    "action": "javascript-developer",
-    "outcome": "recommended for swarm.js",
-    "reward": 1,
-    "timestamp": "2025-12-25T20:29:22.000Z"
-  },
-  {
-    "id": "pretrain-agent-8",
-    "state": "edit_js_in_project",
-    "action": "javascript-developer",
-    "outcome": "recommended for cli.js",
-    "reward": 1,
-    "timestamp": "2025-12-25T20:24:36.000Z"
-  },
-  {
-    "id": "pretrain-agent-9",
-    "state": "edit_js_in_project",
-    "action": "javascript-developer",
-    "outcome": "recommended for index.js",
-    "reward": 1,
-    "timestamp": "2025-12-25T20:24:33.000Z"
-  },
-  {
-    "id": "pretrain-agent-10",
-    "state": "edit_json_in_project",
-    "action": "config-specialist",
-    "outcome": "recommended for package.json",
-    "reward": 1,
-    "timestamp": "2025-12-25T20:24:30.000Z"
-  },
-  {
-    "id": "pretrain-agent-11",
-    "state": "edit_md_in_project",
-    "action": "technical-writer",
-    "outcome": "recommended for 10-consistency-replication.md",
-    "reward": 1,
-    "timestamp": "2025-12-25T20:20:35.000Z"
-  },
-  {
-    "id": "pretrain-agent-12",
-    "state": "edit_json_in_project",
-    "action": "config-specialist",
-    "outcome": "recommended for settings.json",
-    "reward": 1,
-    "timestamp": "2025-12-25T20:18:35.000Z"
-  },
-  {
-    "id": "pretrain-agent-13",
-    "state": "edit_sh_in_project",
-    "action": "system-admin",
-    "outcome": "recommended for crate-context.sh",
-    "reward": 1,
-    "timestamp": "2025-12-25T20:17:08.000Z"
-  },
-  {
-    "id": "pretrain-agent-14",
-    "state": "edit_sh_in_project",
-    "action": "system-admin",
-    "outcome": "recommended for wasm-size-check.sh",
-    "reward": 1,
-    "timestamp": "2025-12-25T20:17:05.000Z"
-  },
-  {
-    "id": "pretrain-agent-15",
-    "state": "edit_md_in_project",
-    "action": "technical-writer",
-    "outcome": "recommended for 09-migration-guide.md",
-    "reward": 1,
-    "timestamp": "2025-12-25T20:16:32.000Z"
-  },
-  {
-    "id": "pretrain-agent-16",
-    "state": "edit_md_in_project",
-    "action": "technical-writer",
-    "outcome": "recommended for 08-phase4-integrity-control.md",
-    "reward": 1,
-    "timestamp": "2025-12-25T20:16:29.000Z"
-  },
-  {
-    "id": "pretrain-agent-17",
-    "state": "edit_sh_in_project",
-    "action": "system-admin",
-    "outcome": "recommended for bench-runner.sh",
-    "reward": 1,
-    "timestamp": "2025-12-25T20:16:05.000Z"
-  },
-  {
-    "id": "pretrain-agent-18",
-    "state": "edit_sh_in_project",
-    "action": "system-admin",
-    "outcome": "recommended for post-rust-edit.sh",
-    "reward": 1,
-    "timestamp": "2025-12-25T20:16:02.000Z"
-  },
-  {
-    "id": "pretrain-agent-19",
-    "state": "edit_sh_in_project",
-    "action": "system-admin",
-    "outcome": "recommended for rust-check.sh",
-    "reward": 1,
-    "timestamp": "2025-12-25T20:15:59.000Z"
-  },
-  {
-    "id": "pretrain-agent-20",
-    "state": "edit_json_in_project",
-    "action": "config-specialist",
-    "outcome": "recommended for settings.optimized.json",
-    "reward": 1,
-    "timestamp": "2025-12-25T20:14:47.000Z"
-  },
-  {
-    "id": "pretrain-agent-21",
-    "state": "edit_md_in_project",
-    "action": "technical-writer",
-    "outcome": "recommended for 07-phase3-graph-cypher.md",
-    "reward": 1,
-    "timestamp": "2025-12-25T20:11:52.000Z"
-  },
-  {
-    "id": "pretrain-agent-22",
-    "state": "edit_md_in_project",
-    "action": "technical-writer",
-    "outcome": "recommended for 06-phase2-tiered-storage.md",
-    "reward": 1,
-    "timestamp": "2025-12-25T20:11:48.000Z"
-  },
-  {
-    "id": "pretrain-agent-23",
-    "state": "edit_md_in_project",
-    "action": "technical-writer",
-    "outcome": "recommended for 05-phase1-pgvector-compat.md",
-    "reward": 1,
-    "timestamp": "2025-12-25T20:03:56.000Z"
-  },
-  {
-    "id": "pretrain-agent-24",
-    "state": "edit_md_in_project",
-    "action": "technical-writer",
-    "outcome": "recommended for 04-integrity-events.md",
-    "reward": 1,
-    "timestamp": "2025-12-25T20:03:52.000Z"
-  },
-  {
-    "id": "pretrain-agent-25",
-    "state": "edit_md_in_project",
-    "action": "technical-writer",
-    "outcome": "recommended for 03-index-access-methods.md",
-    "reward": 1,
-    "timestamp": "2025-12-25T20:03:49.000Z"
-  },
-  {
-    "id": "pretrain-agent-26",
-    "state": "edit_md_in_project",
-    "action": "technical-writer",
-    "outcome": "recommended for 02-background-workers.md",
-    "reward": 1,
-    "timestamp": "2025-12-25T19:55:46.000Z"
-  },
-  {
-    "id": "pretrain-agent-27",
-    "state": "edit_md_in_project",
-    "action": "technical-writer",
-    "outcome": "recommended for 01-sql-schema.md",
-    "reward": 1,
-    "timestamp": "2025-12-25T19:55:43.000Z"
-  },
-  {
-    "id": "pretrain-agent-28",
-    "state": "edit_md_in_project",
-    "action": "technical-writer",
-    "outcome": "recommended for 00-overview.md",
-    "reward": 1,
-    "timestamp": "2025-12-25T19:55:39.000Z"
-  },
-  {
-    "id": "pretrain-agent-29",
-    "state": "edit_md_in_project",
-    "action": "technical-writer",
-    "outcome": "recommended for INDEX.md",
-    "reward": 1,
-    "timestamp": "2025-12-25T19:35:37.000Z"
-  },
-  {
-    "id": "pretrain-agent-30",
-    "state": "edit_toml_in_project",
-    "action": "general-developer",
-    "outcome": "recommended for Cargo.toml",
-    "reward": 1,
-    "timestamp": "2025-12-25T19:11:38.000Z"
-  },
-  {
-    "id": "pretrain-agent-31",
-    "state": "edit_rs_in_project",
-    "action": "rust-developer",
-    "outcome": "recommended for main.rs",
-    "reward": 1,
-    "timestamp": "2025-12-25T19:11:12.000Z"
-  },
-  {
-    "id": "pretrain-agent-32",
-    "state": "edit_rs_in_project",
-    "action": "rust-developer",
-    "outcome": "recommended for main.rs",
-    "reward": 1,
-    "timestamp": "2025-12-25T19:06:42.000Z"
-  },
-  {
-    "id": "pretrain-agent-33",
-    "state": "edit_md_in_ruvector-mincut",
-    "action": "technical-writer",
-    "outcome": "recommended for NETWORKS_THAT_THINK.md",
-    "reward": 1,
-    "timestamp": "2025-12-25T18:37:37.000Z"
-  },
-  {
-    "id": "pretrain-agent-34",
-    "state": "edit_rs_in_ruvector-mincut",
-    "action": "rust-developer",
-    "outcome": "recommended for subpoly_bench.rs",
-    "reward": 1,
-    "timestamp": "2025-12-25T18:11:03.000Z"
-  },
-  {
-    "id": "pretrain-agent-35",
-    "state": "edit_rs_in_ruvector-mincut",
-    "action": "rust-developer",
-    "outcome": "recommended for lib.rs",
-    "reward": 1,
-    "timestamp": "2025-12-25T17:48:52.000Z"
-  },
-  {
-    "id": "pretrain-agent-36",
-    "state": "edit_rs_in_ruvector-mincut",
-    "action": "rust-developer",
-    "outcome": "recommended for mod.rs",
-    "reward": 1,
-    "timestamp": "2025-12-25T17:48:36.000Z"
-  },
-  {
-    "id": "pretrain-agent-37",
-    "state": "edit_toml_in_ruvector-mincut",
-    "action": "general-developer",
-    "outcome": "recommended for Cargo.toml",
-    "reward": 1,
-    "timestamp": "2025-12-25T17:00:49.000Z"
-  },
-  {
-    "id": "pretrain-agent-38",
-    "state": "edit_md_in_project",
-    "action": "technical-writer",
-    "outcome": "recommended for README.md",
-    "reward": 1,
-    "timestamp": "2025-12-25T16:50:06.000Z"
-  },
-  {
-    "id": "pretrain-agent-39",
-    "state": "edit_md_in_ruvector-mincut",
-    "action": "technical-writer",
-    "outcome": "recommended for README.md",
-    "reward": 1,
-    "timestamp": "2025-12-25T16:35:23.000Z"
-  },
-  {
-    "id": "pretrain-agent-40",
-    "state": "edit_tsx_in_rvlite",
-    "action": "general-developer",
-    "outcome": "recommended for AnimatedStats.tsx",
-    "reward": 1,
-    "timestamp": "2025-12-16T20:49:46.000Z"
-  },
-  {
-    "id": "pretrain-agent-41",
-    "state": "edit_ts_in_rvlite",
-    "action": "typescript-developer",
-    "outcome": "recommended for OnnxEmbeddings.ts",
-    "reward": 1,
-    "timestamp": "2025-12-16T18:54:06.000Z"
-  },
-  {
-    "id": "pretrain-agent-42",
-    "state": "edit_md_in_rvlite",
-    "action": "technical-writer",
-    "outcome": "recommended for TRM_INTEGRATION_SUMMARY.md",
-    "reward": 1,
-    "timestamp": "2025-12-16T18:24:44.000Z"
-  },
-  {
-    "id": "pretrain-agent-43",
-    "state": "edit_ts_in_rvlite",
-    "action": "typescript-developer",
-    "outcome": "recommended for wasm.d.ts",
-    "reward": 1,
-    "timestamp": "2025-12-16T17:42:22.000Z"
-  },
-  {
-    "id": "pretrain-agent-44",
-    "state": "edit_tsx_in_rvlite",
-    "action": "general-developer",
-    "outcome": "recommended for Settings.tsx",
-    "reward": 1,
-    "timestamp": "2025-12-16T17:38:54.000Z"
-  },
-  {
-    "id": "pretrain-agent-45",
-    "state": "edit_tsx_in_rvlite",
-    "action": "general-developer",
-    "outcome": "recommended for TrmReasoning.tsx",
-    "reward": 1,
-    "timestamp": "2025-12-16T17:38:51.000Z"
-  },
-  {
-    "id": "pretrain-agent-46",
-    "state": "edit_rs_in_rvlite",
-    "action": "rust-developer",
-    "outcome": "recommended for utils.rs",
-    "reward": 1,
-    "timestamp": "2025-12-16T17:37:15.000Z"
-  },
-  {
-    "id": "pretrain-agent-47",
-    "state": "edit_rs_in_rvlite",
-    "action": "rust-developer",
-    "outcome": "recommended for lora.rs",
-    "reward": 1,
-    "timestamp": "2025-12-16T17:37:11.000Z"
-  },
-  {
-    "id": "pretrain-agent-48",
-    "state": "edit_rs_in_rvlite",
-    "action": "rust-developer",
-    "outcome": "recommended for engine.rs",
-    "reward": 1,
-    "timestamp": "2025-12-16T17:37:08.000Z"
-  },
-  {
-    "id": "pretrain-agent-49",
-    "state": "edit_rs_in_rvlite",
-    "action": "rust-developer",
-    "outcome": "recommended for simd.rs",
-    "reward": 1,
-    "timestamp": "2025-12-16T17:35:32.000Z"
-  },
-  {
-    "id": "pretrain-agent-50",
-    "state": "edit_rs_in_rvlite",
-    "action": "rust-developer",
-    "outcome": "recommended for config.rs",
-    "reward": 1,
-    "timestamp": "2025-12-16T17:35:28.000Z"
-  },
-  {
-    "id": "pretrain-agent-51",
-    "state": "edit_rs_in_rvlite",
-    "action": "rust-developer",
-    "outcome": "recommended for mod.rs",
-    "reward": 1,
-    "timestamp": "2025-12-16T17:34:30.000Z"
-  },
-  {
-    "id": "pretrain-agent-52",
-    "state": "edit_rs_in_ruvector-core",
-    "action": "rust-developer",
-    "outcome": "recommended for hnsw.rs",
-    "reward": 1,
-    "timestamp": "2025-12-16T17:26:07.000Z"
-  },
-  {
-    "id": "pretrain-agent-53",
-    "state": "edit_unknown_in_project",
-    "action": "general-developer",
-    "outcome": "recommended for .dockerignore",
-    "reward": 1,
-    "timestamp": "2025-12-16T17:00:29.000Z"
-  },
-  {
     "id": "pretrain-agent-54",
     "state": "edit_unknown_in_rvlite",
     "action": "general-developer",
@@ -8085,5 +5645,2750 @@
     "reward": -0.5,
     "timestamp": "2025-12-29T18:25:18.301Z",
     "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783451997081",
+    "state": "edit_toml_in_project",
+    "action": "successful-edit",
+    "outcome": "completed",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:19:57.081Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783451997292",
+    "state": "cargo_in_general",
+    "action": "command-succeeded",
+    "outcome": "cargo check -p envctl",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:19:57.292Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452013936",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl-agentdb-wire2 && git add home/.claude/hooks/ruvector-intel-brid",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:20:13.936Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452024446",
+    "state": "git_in_general",
+    "action": "command-succeeded",
+    "outcome": "git -C /home/flexnetos/lifeos/src/envctl log --oneline -3; git -C /home/flexnetos/lifeos/src/envctl ",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:20:24.446Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452044708",
+    "state": "cargo_in_general",
+    "action": "command-succeeded",
+    "outcome": "cargo test -p rusty-idd",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:20:44.708Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452045013",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'echo \"=== 1. live bridge route (foreign repo)\"; cd /home/flexnetos/lifeos/src/rusty-idd 2>",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:20:45.013Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452046800",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'echo \"=== 3. AgentDB via env (as future sessions see it)\"; cd /home/flexnetos/lifeos/src/e",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:20:46.800Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452108643",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "echo \"=== loop process ===\"; ps -o pid,etimes,cmd -p 1591031 2>/dev/null || echo \"PID 1591031 not ru",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:21:48.643Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452121109",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl-grit-wire 2>/dev/null || cd /home/flexnetos/lifeos/src/envctl\ne",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:22:01.109Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452148486",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "A=/home/flexnetos/lifeos/src/envctl/home/.claude\necho \"=== is settings.json drift committed or worki",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:22:28.486Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452185157",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "L=/tmp/claude-1001/-home-flexnetos/e6465ed1-7a7b-4cfd-be4d-64ac3937ac27/scratchpad/gap-analysis/gaps",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:23:05.157Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452240450",
+    "state": "git_in_general",
+    "action": "command-succeeded",
+    "outcome": "git -C /home/flexnetos/lifeos/src/envctl worktree add /home/flexnetos/lifeos/src/envctl-toolchain-ru",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:24:00.450Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452248196",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl\necho \"=== fetch + branch state ===\"; git fetch origin --quiet 2",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:24:08.196Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452254699",
+    "state": "edit_md_in_project",
+    "action": "successful-edit",
+    "outcome": "completed",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:24:14.699Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452274120",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl\nWT=/home/flexnetos/lifeos/src/envctl-harness-conform\ngit worktr",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:24:34.120Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452274746",
+    "state": "edit_md_in_project",
+    "action": "successful-edit",
+    "outcome": "completed",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:24:34.746Z",
+    "abGroup": "control"
+  },
+  {
+    "id": "traj-1783452278216",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "WT=/home/flexnetos/lifeos/src/envctl-harness-conform\necho \"########## GAP-0011: icm command refs ###",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:24:38.216Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452284877",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "WT=/home/flexnetos/lifeos/src/envctl-harness-conform\necho \"########## GAP-0013: FlexNetOS path drift",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:24:44.877Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452292622",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'TS=$(date -u +%Y%m%dT%H%M%SZ) && mkdir -p ~/.claude/archive/$TS/envctl-home-claude && cp -",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:24:52.622Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452304156",
+    "state": "git_in_general",
+    "action": "command-succeeded",
+    "outcome": "git -C /home/flexnetos/FlexNetOS/src/envctl-harness-wt merge --ff-only harness/toolchain-rule 2>&1 |",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:25:04.156Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452304205",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "echo \"=== is ~/FlexNetOS a symlink? ===\"; ls -ld /home/flexnetos/FlexNetOS 2>/dev/null; readlink -f ",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:25:04.205Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452338173",
+    "state": "git_in_general",
+    "action": "command-succeeded",
+    "outcome": "git -C /home/flexnetos/lifeos/src/envctl push origin develop 2>&1 | tail -2; git -C /home/flexnetos/",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:25:38.173Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452353551",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "echo \"=== PATH dirs writable for a symlink ===\"; echo \"$PATH\" | tr ':' '\\n' | grep -E \"$HOME\" \necho;",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:25:53.551Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452401173",
+    "state": "edit_md_in_project",
+    "action": "successful-edit",
+    "outcome": "completed",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:26:41.173Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452411700",
+    "state": "edit_md_in_project",
+    "action": "successful-edit",
+    "outcome": "completed",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:26:51.700Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452413328",
+    "state": "git_in_general",
+    "action": "command-succeeded",
+    "outcome": "git show 937746f4 --stat",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:26:53.328Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452413958",
+    "state": "git_in_general",
+    "action": "command-succeeded",
+    "outcome": "git show 937746f4",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:26:53.958Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452417889",
+    "state": "git_in_general",
+    "action": "command-succeeded",
+    "outcome": "git -C /home/flexnetos/lifeos/src/meta-ruvector branch fix/intelligence-hook-plumbing 937746f4 && gi",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:26:57.889Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452422670",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl && git fetch --all --prune 2>&1; echo \"---\"; git branch -a -vv;",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:27:02.670Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452424076",
+    "state": "edit_md_in_project",
+    "action": "successful-edit",
+    "outcome": "completed",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:27:04.076Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452429470",
+    "state": "edit_md_in_project",
+    "action": "successful-edit",
+    "outcome": "completed",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:27:09.470Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452430428",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "grep -n \"PENDING_PATH\\|function ensureDataDir\\|function sessionGet\\|function recordEdit\\|function re",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:27:10.428Z",
+    "abGroup": "control"
+  },
+  {
+    "id": "traj-1783452438955",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl && echo \"=== Q1: ff-ancestry origin/master -> develop ===\"; git",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:27:18.955Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452440575",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl && echo \"=== Q2: deletions master...develop ===\"; git diff orig",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:27:20.575Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452441318",
+    "state": "edit_json_in_project",
+    "action": "successful-edit",
+    "outcome": "completed",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:27:21.318Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452447219",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "gh pr create --base main --head fix/intelligence-hook-plumbing --title \"fix(intelligence): repair ho",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:27:27.219Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452449291",
+    "state": "edit_tmpl_in_project",
+    "action": "successful-edit",
+    "outcome": "completed",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:27:29.291Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452449386",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'echo \"=== envctl open PRs\"; gh pr list -R FlexNetOS/envctl --state open 2>&1 | head -10; e",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:27:29.386Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452451496",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl && echo \"=== Q3: develop ancestor of codex branch? ===\"; git me",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:27:31.496Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452453060",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl && echo \"=== Q4: merge-tree origin/develop x codex ===\"; git me",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:27:33.060Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452459969",
+    "state": "edit_sh_in_project",
+    "action": "successful-edit",
+    "outcome": "completed",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:27:39.969Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452471655",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl && echo \"=== Q4 follow-up: tree comparison develop vs codex ===",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:27:51.655Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452472894",
+    "state": "edit_md_in_project",
+    "action": "successful-edit",
+    "outcome": "completed",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:27:52.894Z",
+    "abGroup": "control"
+  },
+  {
+    "id": "traj-1783452476209",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl && echo \"=== Q6: local branches merged into origin/develop ===\"",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:27:56.209Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452488418",
+    "state": "git_in_general",
+    "action": "command-succeeded",
+    "outcome": "git -C /home/flexnetos/lifeos/src/meta-ruvector remote -v | head -4; gh pr create -R FlexNetOS/meta-",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:28:08.418Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452490309",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "WT=/home/flexnetos/lifeos/src/envctl-harness-conform\necho \"=== settings.json + .tmpl valid JSON? ===",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:28:10.309Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452493832",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'for n in 90 92 93 94 95; do gh pr view $n -R FlexNetOS/meta-ruvector --json number,title,b",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:28:13.832Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452496872",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl && echo \"=== grit-wire tree vs develop tree ===\"; git diff --st",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:28:16.872Z",
+    "abGroup": "control"
+  },
+  {
+    "id": "traj-1783452500205",
+    "state": "edit_md_in_project",
+    "action": "successful-edit",
+    "outcome": "completed",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:28:20.205Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452500210",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/meta-ruvector/.claude\necho \"=== does intelligence.cjs require @ruvecto",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:28:20.210Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452508620",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /tmp\nbun run - <<'EOF'\n// Reproduce success-derivation edge cases\nfunction derive(resp) {\n  resp ",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:28:28.620Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452514490",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "WT=/home/flexnetos/lifeos/src/envctl-harness-conform\necho \"=== any remaining BARE harness-halt.sh an",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:28:34.490Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452523580",
+    "state": "edit_sh_in_project",
+    "action": "successful-edit",
+    "outcome": "completed",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:28:43.580Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452524080",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'gh pr view 96 -R FlexNetOS/meta-ruvector --json mergeable,mergeStateStatus -q \"{mergeable:",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:28:44.080Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452528728",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/meta-ruvector/.claude/intelligence\nsed -n '28,55p' index.js\necho \"=== ",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:28:48.728Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452533476",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "WT=/home/flexnetos/lifeos/src/envctl-harness-conform\necho \"=== bash -n on edited shell hooks ===\"\nba",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:28:53.476Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452543633",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'gh run view --job 85709858723 -R FlexNetOS/meta-ruvector --log 2>&1 | tail -25'",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:29:03.633Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452551970",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl-harness-conform\ngit config user.name  >/dev/null 2>&1 || git co",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:29:11.970Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452563118",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'gh run view --job 85709858723 -R FlexNetOS/meta-ruvector --log 2>&1 | grep -B4 \"unexpected",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:29:23.118Z",
+    "abGroup": "control"
+  },
+  {
+    "id": "traj-1783452565453",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'gh run view --job 85709858874 -R FlexNetOS/meta-ruvector --log 2>&1 | grep -iB2 -iA8 \"erro",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:29:25.453Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452582655",
+    "state": "git_in_general",
+    "action": "command-succeeded",
+    "outcome": "git -C /home/flexnetos/lifeos/src/meta-ruvector ls-files external/ | head -5; ls /home/flexnetos/lif",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:29:42.655Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452585842",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'gh run view --job 85709858874 -R FlexNetOS/meta-ruvector --log 2>&1 | tail -30'",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:29:45.842Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452607219",
+    "state": "git_in_general",
+    "action": "command-succeeded",
+    "outcome": "git -C /home/flexnetos/lifeos/src/meta-ruvector submodule status | head -5; ls /home/flexnetos/lifeo",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:30:07.219Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452612019",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'gh run view --job 85609913450 -R FlexNetOS/meta-ruvector --log 2>&1 | grep -v \"^Security a",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:30:12.019Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452629204",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'gh run view --job 85609913450 -R FlexNetOS/meta-ruvector --log 2>&1 | grep -iE \"RUSTSEC|ca",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:30:29.204Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452632498",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'timeout 60 cargo metadata --no-deps --format-version 1 >/dev/null 2>/tmp/claude-1001/-home",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:30:32.498Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452659961",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'gh run view --job 85609913450 -R FlexNetOS/meta-ruvector --log 2>&1 | grep -A16 \"RUSTSEC-2",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:30:59.961Z",
+    "abGroup": "control"
+  },
+  {
+    "id": "traj-1783452670785",
+    "state": "git_in_general",
+    "action": "command-succeeded",
+    "outcome": "git -C /home/flexnetos/lifeos/src/meta-ruvector submodule update --init external/ruqu external/rvdna",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:31:10.785Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452686135",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'gh run view --job 85609913450 -R FlexNetOS/meta-ruvector --log 2>&1 | grep -B8 \"RUSTSEC-20",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:31:26.135Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452688059",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'timeout 120 cargo metadata --no-deps --format-version 1 >/dev/null 2>&1; echo \"metadata ex",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:31:28.059Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452774866",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'timeout 120 cargo tree -i quick-xml@0.26.0 2>&1 | head -15'",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:32:54.866Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452776814",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd .github/workflows && grep -ln \"Rustfmt\\|fmt\" clippy-fmt.yml ci.yml 2>/dev/null; grep -r",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:32:56.814Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452790501",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'timeout 300 cargo tree -i quick-xml@0.26.0 2>&1 | tail -12'",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:33:10.501Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452801978",
+    "state": "git_in_general",
+    "action": "command-succeeded",
+    "outcome": "git -C /home/flexnetos/lifeos/src/meta-ruvector status --short | head -5; bash -lc 'grep -A2 \"name =",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:33:21.978Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452829604",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'timeout 300 cargo tree -i quick-xml@0.26.0 --target all 2>&1 | grep -v Downloaded | head -",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:33:49.604Z",
+    "abGroup": "control"
+  },
+  {
+    "id": "traj-1783452838402",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'python3 - <<'\"'\"'EOF'\"'\"'\nimport re\nlock = open(\"Cargo.lock\").read()\npkgs = lock.split(\"[[",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:33:58.402Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452855963",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'python3 - <<'\"'\"'EOF'\"'\"'\nimport re\nlock = open(\"Cargo.lock\").read()\npkgs = lock.split(\"[[",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:34:15.963Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452868999",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'grep -rn \"pprof\" --include=Cargo.toml . 2>/dev/null | grep -v target | head; curl -sL http",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:34:28.999Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452882389",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'curl -s -A \"meta-ruvector-ci-fix\" \"https://crates.io/api/v1/crates/pprof\" | jq -r \".crate.",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:34:42.389Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452893219",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'curl -s -A \"meta-ruvector-ci-fix\" \"https://crates.io/api/v1/crates/inferno/0.12.7/dependen",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:34:53.219Z",
+    "abGroup": "control"
+  },
+  {
+    "id": "traj-1783452921212",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'gh run view --job 85609913450 -R FlexNetOS/meta-ruvector --log 2>&1 | grep -E \"ID:\" | head",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:35:21.212Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452957030",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd .github/workflows && grep -ln \"Security audit\" *.yml; grep -ln \"graph-condense-percepti",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:35:57.030Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452990716",
+    "state": "git_in_general",
+    "action": "command-succeeded",
+    "outcome": "git -C /home/flexnetos/lifeos/src/meta-ruvector worktree add /home/flexnetos/lifeos/src/mrv-ci-fix -",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:36:30.716Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453132933",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix/.github/workflows && python3 - <<'\"'\"'EOF'\"'\"'\nim",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:38:52.933Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453159353",
+    "state": "edit_py_in_project",
+    "action": "successful-edit",
+    "outcome": "completed",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:39:19.353Z",
+    "abGroup": "control"
+  },
+  {
+    "id": "traj-1783453167485",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && git status --short | head -3; cd .github/workf",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:39:27.485Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453179577",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix/.github/workflows && python3 -c \"\nimport glob, ya",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:39:39.577Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453182400",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl-harness-conform\ngit push -u origin harness/conform-gaps 2>&1 | ",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:39:42.400Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453196572",
+    "state": "edit_py_in_project",
+    "action": "successful-edit",
+    "outcome": "completed",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:39:56.572Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453197761",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl-harness-conform\ngh pr create --base develop --head harness/conf",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:39:57.761Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453201051",
+    "state": "edit_py_in_project",
+    "action": "successful-edit",
+    "outcome": "completed",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:40:01.051Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453204469",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl-harness-conform\ngh pr merge 448 --auto --squash 2>&1 | tail -4\n",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:40:04.469Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453217793",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl-harness-conform\ngit fetch origin --quiet\necho \"=== develop HEAD",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:40:17.793Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453225472",
+    "state": "edit_py_in_project",
+    "action": "successful-edit",
+    "outcome": "completed",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:40:25.472Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453239400",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && git checkout -- .github/workflows/ && cd .gith",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:40:39.400Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453249270",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl-harness-conform\ngit merge --no-commit --no-ff origin/develop 2>",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:40:49.270Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453251700",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && git diff .github/workflows/validate-lockfile.y",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:40:51.700Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453272079",
+    "state": "edit_json_in_project",
+    "action": "successful-edit",
+    "outcome": "completed",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:41:12.079Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453278798",
+    "state": "edit_toml_in_project",
+    "action": "successful-edit",
+    "outcome": "completed",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:41:18.798Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453282253",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && timeout 300 cargo update -p crossbeam-epoch 2>",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:41:22.253Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453293156",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && timeout 300 cargo fmt --all --check 2>&1 | tai",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:41:33.156Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453302828",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'which rustfmt cargo-fmt 2>&1; rustup component list 2>/dev/null | grep -i fmt | head -2; l",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:41:42.828Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453308048",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl-harness-conform\necho \"=== confirm no conflict markers remain an",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:41:48.048Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453320456",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && find external/ruqu external/rvdna -name \"*.rs\"",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:42:00.456Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453322335",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl-harness-conform\necho \"=== every hook referenced in settings.jso",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:42:02.335Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453335940",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl-harness-conform\ngit add home/.claude/settings.json home/.claude",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:42:15.940Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453339895",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/mrv-ci-fix && git add .github/workflows .cargo/audit.toml Cargo.lock &",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:42:19.895Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453357315",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "gh pr create -R FlexNetOS/meta-ruvector --base main --head ci/fix-workspace-checks --title \"ci: chec",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:42:37.315Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453376963",
+    "state": "git_in_general",
+    "action": "command-succeeded",
+    "outcome": "git -C /home/flexnetos/lifeos/src/meta-ruvector fetch origin develop 2>&1 | tail -1; git -C /home/fl",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:42:56.963Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453406680",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-audit-dev/.github/workflows && python3 /tmp/claude-1001/",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:43:26.680Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453413470",
+    "state": "edit_py_in_project",
+    "action": "successful-edit",
+    "outcome": "completed",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:43:33.470Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453420148",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-audit-dev/.github/workflows && python3 /tmp/claude-1001/",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:43:40.148Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453438182",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl-harness-conform\ngit push 2>&1 | tail -3\necho; echo \"=== #448 st",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:43:58.182Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453450083",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl-harness-conform\ngit fetch origin --quiet\necho \"=== develop HEAD",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:44:10.083Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453451630",
+    "state": "edit_toml_in_project",
+    "action": "successful-edit",
+    "outcome": "completed",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:44:11.630Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453463425",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl-harness-conform\n# nudge GitHub to recompute by re-reading; poll",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:44:23.425Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453474316",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/mrv-audit-dev && git add -A && git commit -m \"ci(develop): clear secur",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:44:34.316Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453491071",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "L=/tmp/claude-1001/-home-flexnetos/e6465ed1-7a7b-4cfd-be4d-64ac3937ac27/scratchpad/gap-analysis/gaps",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:44:51.071Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453491156",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'gh pr view 95 -R FlexNetOS/meta-ruvector --json additions,deletions,changedFiles,commits -",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:44:51.156Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453524952",
+    "state": "git_in_general",
+    "action": "command-succeeded",
+    "outcome": "git --version && git remote -v && git rev-parse --abbrev-ref HEAD",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:45:24.952Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453532973",
+    "state": "git_in_general",
+    "action": "command-succeeded",
+    "outcome": "git fetch upstream main 2>&1 | tail -5; echo \"---MERGE-BASE---\"; git merge-base origin/main upstream",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:45:32.973Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453533246",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "echo \"===DIFFSTAT ORIGIN...UPSTREAM===\"; git diff origin/main...upstream/main --stat | tail -1; echo",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:45:33.246Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453542582",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "echo \"===FILES DELETED ON UPSTREAM SIDE (present in base+origin, gone in upstream)===\"; git diff ori",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:45:42.582Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453545166",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "echo \"===TOP 15 BY DELETIONS (base..upstream)===\"; git diff $(git merge-base origin/main upstream/ma",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:45:45.166Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453560537",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "echo \"===FILES WITH ACTUAL LINE DELETIONS (base..upstream), top 15===\"; git diff $(git merge-base or",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:46:00.537Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453562860",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "echo \"===MERGE-TREE (write-tree, newer git)===\"; git merge-tree --write-tree origin/main upstream/ma",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:46:02.860Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453569278",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "echo \"===FULL CONFLICT SECTION===\"; grep \"^CONFLICT\" /tmp/mt.out; echo; echo \"===CONFLICTED FILE PAT",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:46:09.278Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453586729",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "BASE=$(git merge-base origin/main upstream/main); echo \"===DOES UPSTREAM TOUCH .claude/ ?===\"; git d",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:46:26.729Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453589576",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "BASE=$(git merge-base origin/main upstream/main); echo \"===NEW TOP-LEVEL CRATES ADDED BY UPSTREAM (d",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:46:29.576Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453603985",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "BASE=$(git merge-base origin/main upstream/main); echo \"===UPSTREAM's change to .claude/settings.jso",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:46:43.985Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453607049",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "echo \"===Cargo.toml CONFLICT HUNKS (merge-tree materialized)===\"; git merge-tree --write-tree origin",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:46:47.049Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453625519",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'sleep 90; gh pr checks 97 -R FlexNetOS/meta-ruvector 2>&1 | awk \"{print \\$1, \\$2}\" | sort ",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:47:05.519Z",
+    "abGroup": "control"
+  },
+  {
+    "id": "traj-1783453630661",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "BASE=$(git merge-base origin/main upstream/main); echo \"===Does OUR fork modify ci.yml since base? (",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:47:10.661Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453636391",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "echo \"===CONFLICT CATEGORY COUNTS===\"; C=$(grep \"^CONFLICT\" /tmp/mt.out); echo \"Binary .node artifac",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:47:16.391Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453640559",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'JOB=$(gh pr checks 97 -R FlexNetOS/meta-ruvector 2>&1 | grep \"^Rustfmt\" | head -1 | grep -",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:47:20.559Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453648925",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'gh pr checks 97 -R FlexNetOS/meta-ruvector 2>&1 | grep -i \"rustfmt\\|fail\" | head -6'",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:47:28.925Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453679199",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'gh api repos/FlexNetOS/meta-ruvector/branches/main/protection/required_status_checks 2>&1 ",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:47:59.199Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453703319",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'for name in \"Rustfmt\" \"Cargo check\" \"Security audit\"; do JOB=$(gh pr checks 97 -R FlexNetO",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:48:23.319Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453712143",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'gh run view --job 85712805750 -R FlexNetOS/meta-ruvector --log 2>&1 | tail -20'",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:48:32.143Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453724336",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'for j in 85712805750 85712805629 85712805698; do echo \"=== job $j\"; gh api repos/FlexNetOS",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:48:44.336Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453747055",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && grep -n -A6 \"Rustfmt\\|Cargo check\\|name: Secur",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:49:07.055Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453758954",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && sed -n 15,34p .github/workflows/ci.yml && sed ",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:49:18.954Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453774137",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && cargo check --workspace --exclude ruvector-pos",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:49:34.137Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453778824",
+    "state": "edit_py_in_project",
+    "action": "successful-edit",
+    "outcome": "completed",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:49:38.824Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453802893",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && python3 /tmp/claude-1001/-home-flexnetos-lifeo",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:50:02.893Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453841275",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && python3 - <<PYEOF\nimport json, subprocess\nmeta",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:50:41.275Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453857330",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'tail -3 /tmp/claude-1001/-home-flexnetos-lifeos-src-meta-ruvector/551be785-a12f-4b6a-b8a2-",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:50:57.330Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453861872",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/mrv-ci-fix && git add -A && git commit -m \"style: cargo fmt --all over",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:51:01.872Z",
+    "abGroup": "control"
+  },
+  {
+    "id": "traj-1783454008207",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl\necho \"=== confirm grit-wire changes are on develop (squash-merg",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:53:28.207Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783454028148",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "echo \"=== loop process ===\"; ps -o pid,etimes,cmd -p 1591031 2>/dev/null | tail -1 || echo \"not runn",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:53:48.148Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783454125053",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'sleep 240; echo \"=== PR 97 required checks:\"; gh pr checks 97 -R FlexNetOS/meta-ruvector 2",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:55:25.053Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783454136794",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'gh run view --job 85714526648 -R FlexNetOS/meta-ruvector --log 2>&1 | grep -E \"^Security a",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:55:36.794Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783454141135",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl\necho \"=== conform worktree clean? (merged via #448) ===\"\nCLEAN=",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:55:41.135Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783454146661",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'gh run view --job 85714526648 -R FlexNetOS/meta-ruvector --log 2>&1 | grep -aE \"Crate:|ID:",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:55:46.661Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783454156170",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'gh run view --job 85714526648 -R FlexNetOS/meta-ruvector --log 2>&1 | tail -40 | sed \"s/\\x",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:55:56.170Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783454200066",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'which cargo-audit; nix run nixpkgs#cargo-audit -- audit --version 2>&1 | tail -1'",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:56:40.066Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783454211246",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && nix run nixpkgs#cargo-audit -- audit 2>&1 | se",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:56:51.246Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783454361016",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && nix run nixpkgs#cargo-audit -- audit 2>&1 | se",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:59:21.016Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783454395656",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'grep -n \"reqwest\" /home/flexnetos/lifeos/src/mrv-ci-fix/crates/ruvector-core/Cargo.toml; g",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:59:55.656Z",
+    "abGroup": "control"
+  },
+  {
+    "id": "traj-1783454411394",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'grep -n \"patch.crates-io\" /home/flexnetos/lifeos/src/mrv-ci-fix/Cargo.toml; grep -n \"^vers",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:00:11.394Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783454422367",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'grep -n \"^version\" /home/flexnetos/lifeos/src/mrv-ci-fix/Cargo.toml | head -2; grep -rn \"w",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:00:22.367Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783454440625",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'curl -s -A \"meta-ruvector-ci-fix\" \"https://crates.io/api/v1/crates/ruvector-core\" | jq -r ",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:00:40.625Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783454453765",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'grep -rn \"ruvector-core = \\\"0.1\\\"\\|ruvector-core = { version = \\\"0.1\" /home/flexnetos/life",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:00:53.765Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783454466875",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'grep -n \"^simd\\|^uuid-support\" /home/flexnetos/lifeos/src/mrv-ci-fix/crates/ruvector-core/",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:01:06.875Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783454608848",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && sed -i \"s#ruvector-core = { version = \\\"0.1\\\",",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:03:28.848Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783454623952",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && timeout 300 cargo update -p exo-core -p exo-ba",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:03:43.952Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783454637780",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && timeout 300 cargo metadata --format-version 1 ",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:03:57.780Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783454652221",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'grep -rn \"exo-.* = \\\"0.1\\\"\\|exo-.* = { version\" /home/flexnetos/lifeos/src/mrv-ci-fix/exam",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:04:12.221Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783454661014",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix/examples/exo-ai-2025/crates && for f in */Cargo.t",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:04:21.014Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783454670306",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && timeout 300 cargo metadata --format-version 1 ",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:04:30.306Z",
+    "abGroup": "control"
+  },
+  {
+    "id": "traj-1783454697617",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && timeout 590 cargo check -p exo-core -p exo-bac",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:04:57.617Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783454708906",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && nix run nixpkgs#cargo-audit -- audit 2>&1 | se",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:05:08.906Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783454727906",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/mrv-ci-fix && git add -A && git commit -m \"fix(deps): kill rustls-webp",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:05:27.906Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783454750834",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && ls external/ruqu/crates/*/build.rs external/rv",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:05:50.834Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783455193544",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'sleep 420; echo \"=== PR 97 required:\"; gh pr checks 97 -R FlexNetOS/meta-ruvector 2>&1 | g",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:13:13.544Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783455207223",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'gh api repos/FlexNetOS/meta-ruvector/check-runs/85717456875/annotations 2>/dev/null | jq -",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:13:27.223Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783455220179",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'sed -n 56,80p /home/flexnetos/lifeos/src/mrv-ci-fix/.github/workflows/ci.yml; which cargo-",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:13:40.179Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783455235812",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'grep -n -B2 -A8 \"deny warnings\" /home/flexnetos/lifeos/src/mrv-ci-fix/.github/workflows/cl",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:13:55.812Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783455246370",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && CLIPPY_DRIVER=$(which clippy-driver) && RUSTC_",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:14:06.370Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783455576951",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'sleep 300; echo \"=== 97:\"; gh pr checks 97 -R FlexNetOS/meta-ruvector 2>&1 | grep -E \"^(Ru",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:19:36.951Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783455594222",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cat /tmp/claude-1001/-home-flexnetos-lifeos-src-meta-ruvector/551be785-a12f-4b6a-b8a2-3e97",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:19:54.222Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783455597979",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'gh api repos/FlexNetOS/meta-ruvector/actions/jobs/85717457357/logs 2>&1 | sed \"s/\\x1b\\[[0-",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:19:57.979Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783455719298",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'gh run view --job 85717457357 -R FlexNetOS/meta-ruvector --log 2>&1 | sed \"s/\\x1b\\[[0-9;]*",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:21:59.298Z",
+    "abGroup": "control"
+  },
+  {
+    "id": "traj-1783455729195",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'gh run view --job 85717457357 -R FlexNetOS/meta-ruvector --log 2>&1 | sed \"s/\\x1b\\[[0-9;]*",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:22:09.195Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783455752116",
+    "state": "edit_sh_in_project",
+    "action": "successful-edit",
+    "outcome": "completed",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:22:32.116Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783455770873",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash /tmp/claude-1001/-home-flexnetos-lifeos-src-meta-ruvector/551be785-a12f-4b6a-b8a2-3e97939f32db/",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:22:50.873Z",
+    "abGroup": "control"
+  },
+  {
+    "id": "traj-1783455782278",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'grep -an \"error\" /tmp/claude-1001/-home-flexnetos-lifeos-src-meta-ruvector/551be785-a12f-4",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:23:02.278Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783455794657",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'grep -an \"Cargo check (workspace)\\|Process completed\\|Checking\\|Compiling\" /tmp/claude-100",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:23:14.657Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783455811785",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && timeout 120 cargo tree -i glib-sys 2>&1 | grep",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:23:31.785Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783455827353",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'grep -rn \"apt-get install\" /home/flexnetos/lifeos/src/mrv-ci-fix/.github/workflows/ci.yml ",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:23:47.353Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783455839545",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && sed -i \"s#sudo apt-get update \\&\\& sudo apt-ge",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:23:59.545Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783455874105",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && CLIPPY_DRIVER=$(which clippy-driver) && RUSTC_",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:24:34.105Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783455908766",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'grep -rn \"clippy::pedantic\\|deny(\\|warn(\" /home/flexnetos/lifeos/src/mrv-ci-fix/crates/ruv",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:25:08.766Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783455944238",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && PKGS=$(cargo metadata --no-deps --format-versi",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:25:44.238Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783455973360",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && RUSTC_WORKSPACE_WRAPPER=$(which clippy-driver)",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:26:13.360Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783455990150",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && RUSTC_WORKSPACE_WRAPPER=$(which clippy-driver)",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:26:30.150Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456018692",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && RUSTC_WORKSPACE_WRAPPER=$(which clippy-driver)",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:26:58.692Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456054307",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && RUSTC_WORKSPACE_WRAPPER=$(which clippy-driver)",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:27:34.307Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456100789",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && RUSTC_WORKSPACE_WRAPPER=$(which clippy-driver)",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:28:20.789Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456116968",
+    "state": "edit_py_in_project",
+    "action": "successful-edit",
+    "outcome": "completed",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:28:36.968Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456130204",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && python3 /tmp/claude-1001/-home-flexnetos-lifeo",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:28:50.204Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456139833",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'grep -n -A8 \"\\[lints\" /home/flexnetos/lifeos/src/mrv-ci-fix/crates/codex-env/Cargo.toml /h",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:28:59.833Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456163132",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && python3 - <<PYEOF\nfor f, extra in [\n    (\"crat",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:29:23.132Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456175510",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && RUSTC_WORKSPACE_WRAPPER=$(which clippy-driver)",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:29:35.510Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456199883",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'tail -12 /home/flexnetos/lifeos/src/mrv-ci-fix/crates/ruvix/crates/proof/Cargo.toml; grep ",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:29:59.883Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456230453",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && RUSTC_WORKSPACE_WRAPPER=$(which clippy-driver)",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:30:30.453Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456263981",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && RUSTC_WORKSPACE_WRAPPER=$(which clippy-driver)",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:31:03.981Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456270181",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl\ngit fetch origin --quiet\necho \"=== CLAIM: #448 MERGED to develo",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:31:10.181Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456290055",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && touch crates/ruvix/crates/proof/src/lib.rs && ",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:31:30.055Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456291030",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl\necho \"=== what did the 3 post-#448 commits touch? (counter-exam",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:31:31.030Z",
+    "abGroup": "control"
+  },
+  {
+    "id": "traj-1783456301552",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && RUSTC_WORKSPACE_WRAPPER=$(which clippy-driver)",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:31:41.552Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456313259",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl\nD=origin/develop\necho \"=== CLAIM GAP-0011: recall/remember guar",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:31:53.259Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456331329",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && touch crates/ruvector-graph-transformer-wasm/s",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:32:11.329Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456334430",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl\nD=origin/develop\necho \"=== CLAIM GAP-0012: full-path kill switc",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:32:14.430Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456360235",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && python3 - <<PYEOF\nf = \"crates/ruvix/crates/bcm",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:32:40.235Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456363923",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl\nD=origin/develop\necho \"=== CLAIM: no dangling hook refs on deve",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:32:43.923Z",
+    "abGroup": "control"
+  },
+  {
+    "id": "traj-1783456374659",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && RUSTC_WORKSPACE_WRAPPER=$(which clippy-driver)",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:32:54.659Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456397997",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/mrv-ci-fix && git add -A && git status --short | wc -l && git commit -",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:33:17.997Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456414401",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'sed -n 525,600p /home/flexnetos/lifeos/src/meta-ruvector/.claude/helpers/intelligence.cjs'",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:33:34.401Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456417985",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "A=/home/flexnetos/lifeos/src/envctl/home/.claude\necho \"=== run the loop's EXACT probes against the n",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:33:37.985Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456432835",
+    "state": "git_in_general",
+    "action": "command-succeeded",
+    "outcome": "git -C /home/flexnetos/lifeos/src/meta-ruvector worktree add /home/flexnetos/lifeos/src/mrv-96-fixes",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:33:52.835Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456442472",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "A=/home/flexnetos/lifeos/src/envctl/home/.claude\necho \"=== the 2 residual runtime-path-drift files (",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:34:02.472Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456453389",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "ls -la /home/flexnetos/lifeos/src/meta-ruvector/.claude/ && echo '---' && ls /home/flexnetos/lifeos/",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:34:13.389Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456453506",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "grep -rn \"agent-env\" /home/flexnetos/lifeos/src/envctl --include=\"*.md\" --include=\"*.rs\" --include=\"",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:34:13.506Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456454497",
+    "state": "edit_cjs_in_project",
+    "action": "successful-edit",
+    "outcome": "completed",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:34:14.497Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456459717",
+    "state": "edit_cjs_in_project",
+    "action": "successful-edit",
+    "outcome": "completed",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:34:19.717Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456466943",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "ls -R /home/flexnetos/lifeos/src/envctl/docs/runbook/ | head -60; echo '==='; wc -l /home/flexnetos/",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:34:26.943Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456474403",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-96-fixes && python3 - <<PYEOF\nimport json\np = \".claude/i",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:34:34.403Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456491363",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "L=/tmp/claude-1001/-home-flexnetos/e6465ed1-7a7b-4cfd-be4d-64ac3937ac27/scratchpad/gap-analysis/gaps",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:34:51.363Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456493659",
+    "state": "edit_cjs_in_project",
+    "action": "successful-edit",
+    "outcome": "completed",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:34:53.659Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456522139",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "ls /home/flexnetos/lifeos/src/meta-ruvector/.claude/skills/ && echo '=== agents ===' && ls /home/fle",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:35:22.140Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456523357",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc \"grep -n -A14 \\\"'session-end':\\\" /home/flexnetos/lifeos/src/mrv-96-fixes/.claude/helpers/ho",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:35:23.357Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456530971",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "ls /home/flexnetos/lifeos/src/meta-ruvector/.claude/skills/ruvector/; echo '==='; head -20 /home/fle",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:35:30.971Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456532163",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "ls -la /home/flexnetos/lifeos/src/envctl/docs/runbook/agent-env/ 2>&1; echo \"---README/STORIES---\"; ",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:35:32.163Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456533694",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl && git branch -a --list 2>/dev/null | head && git status --shor",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:35:33.694Z",
+    "abGroup": "control"
+  },
+  {
+    "id": "traj-1783456544213",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl && git log --oneline develop..HEAD | head -10; echo '==='; git ",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:35:44.213Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456544707",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-96-fixes && echo \"[]\" > .claude-flow/data/auto-memory-st",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:35:44.707Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456555149",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'which envctl && envctl agent --help 2>&1 | head -40'",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:35:55.149Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456563689",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/mrv-96-fixes && git status --short && git add .claude/helpers/intellig",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:36:03.689Z",
+    "abGroup": "control"
+  },
+  {
+    "id": "traj-1783456571287",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'envctl agent doctor --color never 2>&1 | head -30; echo \"=== init help ===\"; envctl agent ",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:36:11.287Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456576976",
+    "state": "git_in_general",
+    "action": "command-succeeded",
+    "outcome": "git -C /home/flexnetos/lifeos/src/meta-ruvector worktree remove /home/flexnetos/lifeos/src/mrv-96-fi",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:36:16.976Z",
+    "abGroup": "control"
+  },
+  {
+    "id": "traj-1783456586904",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'envctl agent list --color never 2>&1 | head -15; echo \"=== lock check ===\"; envctl agent l",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:36:26.904Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456590470",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl/crates/agent-env/src\necho \"=== mcp.rs: local binary / yazelix /",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:36:30.470Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456603368",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl/crates/agent-env/src\necho \"=== fsops.rs: scope_root + resolve_d",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:36:43.368Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456607352",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/envctl && envctl agent sync --help 2>&1 | grep -A3 -- \"--con",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:36:47.352Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456617915",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "ls /home/flexnetos/lifeos/src/envctl/agent-skills/agent-env-config/",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:36:57.915Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456618787",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl/crates/agent-env/src\necho \"=== driver.rs 60-135 context build =",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:36:58.787Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456705780",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/meta-ruvector/.claude/skills && for d in */; do f=\"$d/SKILL.md\"; if [ ",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:38:25.780Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456784187",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/meta-ruvector && git branch -a | head -10 && git worktree list && git ",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:39:44.187Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456823812",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl\ngit fetch origin --quiet\necho \"=== develop HEAD ===\"; git log o",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:40:23.812Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456868735",
+    "state": "edit_md_in_project",
+    "action": "successful-edit",
+    "outcome": "completed",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:41:08.735Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456889620",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "WT=/home/flexnetos/lifeos/src/envctl-pathfix\necho \"=== residual FlexNetOS/{var,src} runtime-path ref",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:41:29.620Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456898997",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "mkdir -p agent-skills && cp -a .claude/skills/. agent-skills/ && ls agent-skills | wc -l && diff -rq",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:41:38.997Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456913443",
+    "state": "edit_yaml_in_project",
+    "action": "successful-edit",
+    "outcome": "completed",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:41:53.443Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456922323",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/envctl && envctl agent lock --config /home/flexnetos/lifeos/",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:42:02.323Z",
+    "abGroup": "control"
+  },
+  {
+    "id": "traj-1783456927195",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'sleep 330; for n in 96 97 98; do echo \"=== $n:\"; gh pr checks $n -R FlexNetOS/meta-ruvecto",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:42:07.195Z",
+    "abGroup": "control"
+  },
+  {
+    "id": "traj-1783456929200",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "ls -la /home/flexnetos/lifeos/src/meta-ruvector/agent-env.lock && head -30 /home/flexnetos/lifeos/sr",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:42:09.200Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456939199",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/envctl && envctl agent sync --config /home/flexnetos/lifeos/",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:42:19.199Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456957114",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "TS=$(date -u +%Y%m%dT%H%M%SZ) && mkdir -p ~/.claude/archive/$TS/meta-ruvector/.claude && cp -a /home",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:42:37.114Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456961171",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && python3 /tmp/claude-1001/-home-flexnetos-lifeo",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:42:41.171Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456970021",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'JOB=$(gh pr checks 97 -R FlexNetOS/meta-ruvector 2>&1 | awk -F\"\\t\" \"\\$1==\\\"Cargo check\\\" &",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:42:50.021Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457006934",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/envctl && envctl agent lock --config /home/flexnetos/lifeos/",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:43:26.934Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457046018",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'JOB=$(gh pr checks 97 -R FlexNetOS/meta-ruvector 2>&1 | awk -F\"\\t\" \"\\$1==\\\"Cargo check\\\" &",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:44:06.018Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457062662",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'grep -oE \"name = \\\"[a-z0-9-]+-sys\\\"\" /home/flexnetos/lifeos/src/mrv-ci-fix/Cargo.lock | so",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:44:22.663Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457071868",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/meta-ruvector\necho \"===== 1. agent-env.yaml exists + content =====\"\nca",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:44:31.868Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457088332",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/meta-ruvector\necho \"===== dir WITHOUT SKILL.md (silently skipped by di",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:44:48.332Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457109639",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/meta-ruvector\necho \"=== all agent-skills subdirs incl. hidden ===\"; fi",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:45:09.639Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457117175",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && sed -i \"s#libfontconfig1-dev libglib2.0-dev li",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:45:17.175Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457142312",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && RUSTC_WORKSPACE_WRAPPER=$(which clippy-driver)",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:45:42.312Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457159205",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && timeout 300 cargo check -p ruvix-dtb 2>&1 | gr",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:45:59.205Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457166136",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "ls -la /home/flexnetos/lifeos/src/meta-ruvector/agent-skills/.claude-flow/ 2>&1 | head; echo '==='; ",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:46:06.136Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457172589",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && timeout 300 cargo check -p ruvix-dtb --all-tar",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:46:12.589Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457179752",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "/home/flexnetos/.claude/hooks/harness-archive.sh /home/flexnetos/lifeos/src/meta-ruvector/agent-skil",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:46:19.752Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457187019",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/envctl && envctl agent lock --config /home/flexnetos/lifeos/",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:46:27.019Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457187194",
+    "state": "git_in_general",
+    "action": "command-succeeded",
+    "outcome": "git status --short | grep -vE '\\.claude/intelligence' | head; echo '=== untracked agent-env ==='; gi",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:46:27.195Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457210316",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && timeout 590 cargo check --workspace --exclude ",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:46:50.316Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457213969",
+    "state": "git_in_general",
+    "action": "command-succeeded",
+    "outcome": "git ls-files .claude/skills | head -3; echo \"tracked .claude/skills files: $(git ls-files .claude/sk",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:46:53.969Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457230494",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/envctl && git fetch origin master develop 2>&1 | tail -1; ec",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:47:10.494Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457247577",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/envctl && git log -1 --oneline origin/master develop codex-h",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:47:27.577Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457378187",
+    "state": "git_in_general",
+    "action": "command-succeeded",
+    "outcome": "git fetch origin --quiet 2>&1 | tail -2; echo \"=== does develop exist? ===\"; git branch -r | grep -E",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:49:38.187Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457378312",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "grep -rniE 'meta-ruvector|per-repo|another repo|multiple repo|monorepo|downstream|consumer repo' /ho",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:49:38.312Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457416956",
+    "state": "git_in_general",
+    "action": "command-succeeded",
+    "outcome": "git log --oneline origin/develop -1; git log --oneline main -1; echo \"=== main vs develop divergence",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:50:16.956Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457451166",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "echo \"=== do the dirty intelligence json differ between develop and main? ===\"; git diff --stat orig",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:50:51.166Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457460394",
+    "state": "git_in_general",
+    "action": "command-succeeded",
+    "outcome": "git checkout -b feat/agent-env-adopt-meta-ruvector origin/develop 2>&1 | tail -3; echo \"=== on branc",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:51:00.394Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457470036",
+    "state": "git_in_general",
+    "action": "command-succeeded",
+    "outcome": "git add agent-env.yaml agent-env.lock agent-skills/ && echo \"=== staged (count) ===\" && git diff --c",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:51:10.036Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457481836",
+    "state": "git_in_general",
+    "action": "command-succeeded",
+    "outcome": "git commit -q -F - <<'EOF'\nfeat(agent-env): adopt meta-ruvector/.claude skills under envctl agent-en",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:51:21.836Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457531748",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl-pathfix\ngit push -u origin harness/pathfix-residual 2>&1 | tail",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:52:11.748Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457543192",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl-pathfix\ngh pr merge 449 --auto --squash 2>&1 | tail -3\nfor i in",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:52:23.193Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457557009",
+    "state": "git_in_general",
+    "action": "command-succeeded",
+    "outcome": "git push -u origin feat/agent-env-adopt-meta-ruvector 2>&1 | tail -5",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:52:37.009Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457564568",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl-pathfix\ngit fetch origin --quiet\ngit merge --ff-only origin/dev",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:52:44.568Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457570974",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "gh pr create --base develop --head feat/agent-env-adopt-meta-ruvector --title \"feat(agent-env): adop",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:52:50.974Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457581151",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl-pathfix\necho \"=== develop now vs my branch base ===\"; git log o",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:53:01.151Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457583138",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "echo \"=== remotes ===\"; git remote -v | grep -E 'origin|upstream'; echo \"=== gh default repo ===\"; g",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:53:03.138Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457599119",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl-pathfix\necho \"=== my fix still present after merge? ===\"\ngrep -",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:53:19.119Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457622032",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "gh pr create --repo FlexNetOS/meta-ruvector --base develop --head feat/agent-env-adopt-meta-ruvector",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:53:42.032Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457629525",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "gh pr merge 99 --repo FlexNetOS/meta-ruvector --auto --squash 2>&1 | tail -8",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:53:49.525Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457638692",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "gh pr view 99 --repo FlexNetOS/meta-ruvector --json number,state,autoMergeRequest,mergeStateStatus,b",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:53:58.692Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457673874",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl && echo \"=== envctl remote ===\"; git remote -v | grep origin | ",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:54:33.874Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457699402",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'grep -n -B4 -A24 \"core-and-rest\" /home/flexnetos/lifeos/src/mrv-ci-fix/.github/workflows/c",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:54:59.402Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457709433",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'sed -n 172,240p /home/flexnetos/lifeos/src/mrv-ci-fix/.github/workflows/ci.yml'",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:55:09.433Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457715595",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "echo \"=== is FlexNetOS/envctl public? ===\"; gh repo view FlexNetOS/envctl --json visibility,name 2>&",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:55:15.595Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457719188",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'sed -n 240,300p /home/flexnetos/lifeos/src/mrv-ci-fix/.github/workflows/ci.yml | grep -n \"",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:55:19.188Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457729183",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'sed -n 270,330p /home/flexnetos/lifeos/src/mrv-ci-fix/.github/workflows/ci.yml | grep -B2 ",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:55:29.183Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457733447",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl && git ls-files manifest/ | head -3 && echo \"manifest tracked: ",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:55:33.447Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457751244",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && python3 - <<PYEOF > /tmp/claude-1001/-home-fle",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:55:51.244Z",
+    "abGroup": "control"
   }
 ]
