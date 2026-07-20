@@ -1,4 +1,6 @@
 //! Cognitum Gate Kernel
+#![allow(dead_code, unused_imports, unused_variables)]
+#![allow(static_mut_refs, mutable_transmutes)] // FFI single-threaded WASM pattern
 //!
 //! A no_std WASM kernel for worker tiles in a 256-tile coherence gate fabric.
 //! Each tile maintains a local graph shard, accumulates evidence for sequential
@@ -538,16 +540,13 @@ pub unsafe extern "C" fn init_tile(tile_id: u8) {
 #[must_use]
 pub unsafe extern "C" fn ingest_delta(ptr: *const u8, len: usize) -> i32 {
     unsafe {
-        match TILE_STATE.as_mut() {
-            Some(tile) => {
-                if tile.ingest_delta_raw(ptr, len) {
-                    1
-                } else {
-                    0
-                }
+        TILE_STATE.as_mut().map_or(0, |tile| {
+            if tile.ingest_delta_raw(ptr, len) {
+                1
+            } else {
+                0
             }
-            None => 0,
-        }
+        })
     }
 }
 
@@ -584,17 +583,13 @@ pub unsafe extern "C" fn ingest_delta_unchecked(ptr: *const u8) -> i32 {
 #[no_mangle]
 pub unsafe extern "C" fn tick(tick_number: u32, report_ptr: *mut u8) -> i32 {
     unsafe {
-        match TILE_STATE.as_mut() {
-            Some(tile) => {
-                let report = tile.tick(tick_number);
-                // Copy report to output buffer
-                let report_bytes =
-                    core::slice::from_raw_parts(&report as *const TileReport as *const u8, 64);
-                core::ptr::copy_nonoverlapping(report_bytes.as_ptr(), report_ptr, 64);
-                1
-            }
-            None => 0,
-        }
+        TILE_STATE.as_mut().map_or(0, |tile| {
+            let report = tile.tick(tick_number);
+            let report_bytes =
+                core::slice::from_raw_parts(&report as *const TileReport as *const u8, 64);
+            core::ptr::copy_nonoverlapping(report_bytes.as_ptr(), report_ptr, 64);
+            1
+        })
     }
 }
 
@@ -609,18 +604,13 @@ pub unsafe extern "C" fn tick(tick_number: u32, report_ptr: *mut u8) -> i32 {
 #[no_mangle]
 pub unsafe extern "C" fn get_witness_fragment(fragment_ptr: *mut u8) -> i32 {
     unsafe {
-        match TILE_STATE.as_ref() {
-            Some(tile) => {
-                let fragment = tile.get_witness_fragment();
-                let fragment_bytes = core::slice::from_raw_parts(
-                    &fragment as *const WitnessFragment as *const u8,
-                    16,
-                );
-                core::ptr::copy_nonoverlapping(fragment_bytes.as_ptr(), fragment_ptr, 16);
-                1
-            }
-            None => 0,
-        }
+        TILE_STATE.as_ref().map_or(0, |tile| {
+            let fragment = tile.get_witness_fragment();
+            let fragment_bytes =
+                core::slice::from_raw_parts(&fragment as *const WitnessFragment as *const u8, 16);
+            core::ptr::copy_nonoverlapping(fragment_bytes.as_ptr(), fragment_ptr, 16);
+            1
+        })
     }
 }
 
@@ -633,12 +623,7 @@ pub unsafe extern "C" fn get_witness_fragment(fragment_ptr: *mut u8) -> i32 {
 /// Returns status byte, or 0xFF if not initialized.
 #[no_mangle]
 pub unsafe extern "C" fn get_status() -> u8 {
-    unsafe {
-        match TILE_STATE.as_ref() {
-            Some(tile) => tile.status,
-            None => 0xFF,
-        }
-    }
+    unsafe { TILE_STATE.as_ref().map_or(0xFF, |tile| tile.status) }
 }
 
 /// Reset the tile state
@@ -708,9 +693,9 @@ mod tests {
         let mut tile = TileState::new(0);
 
         // Add some edges
-        tile.ingest_delta(&Delta::edge_add(0, 1, 100));
-        tile.ingest_delta(&Delta::edge_add(1, 2, 100));
-        tile.ingest_delta(&Delta::edge_add(2, 0, 100));
+        let _ = tile.ingest_delta(&Delta::edge_add(0, 1, 100));
+        let _ = tile.ingest_delta(&Delta::edge_add(1, 2, 100));
+        let _ = tile.ingest_delta(&Delta::edge_add(2, 0, 100));
 
         // Process tick
         let report = tile.tick(1);
@@ -729,8 +714,8 @@ mod tests {
         let mut tile = TileState::new(0);
 
         // Create a connected graph
-        tile.ingest_delta(&Delta::edge_add(0, 1, 100));
-        tile.ingest_delta(&Delta::edge_add(1, 2, 100));
+        let _ = tile.ingest_delta(&Delta::edge_add(0, 1, 100));
+        let _ = tile.ingest_delta(&Delta::edge_add(1, 2, 100));
 
         let report = tile.tick(1);
         assert!(report.is_connected());
@@ -742,8 +727,8 @@ mod tests {
         let mut tile = TileState::new(0);
 
         // Create two disconnected components
-        tile.ingest_delta(&Delta::edge_add(0, 1, 100));
-        tile.ingest_delta(&Delta::edge_add(2, 3, 100));
+        let _ = tile.ingest_delta(&Delta::edge_add(0, 1, 100));
+        let _ = tile.ingest_delta(&Delta::edge_add(2, 3, 100));
 
         let report = tile.tick(1);
         assert!(!report.is_connected());
@@ -760,7 +745,7 @@ mod tests {
         // Process observations
         for i in 0..5 {
             let obs = Observation::connectivity(5, true);
-            tile.ingest_delta(&Delta::observation(obs));
+            let _ = tile.ingest_delta(&Delta::observation(obs));
             tile.tick(i);
         }
 
@@ -771,9 +756,9 @@ mod tests {
     fn test_witness_fragment() {
         let mut tile = TileState::new(0);
 
-        tile.ingest_delta(&Delta::edge_add(0, 1, 100));
-        tile.ingest_delta(&Delta::edge_add(1, 2, 100));
-        tile.ingest_delta(&Delta::edge_add(2, 0, 100));
+        let _ = tile.ingest_delta(&Delta::edge_add(0, 1, 100));
+        let _ = tile.ingest_delta(&Delta::edge_add(1, 2, 100));
+        let _ = tile.ingest_delta(&Delta::edge_add(2, 0, 100));
 
         tile.tick(1);
         let witness = tile.get_witness_fragment();
@@ -787,7 +772,7 @@ mod tests {
     fn test_reset() {
         let mut tile = TileState::new(0);
 
-        tile.ingest_delta(&Delta::edge_add(0, 1, 100));
+        let _ = tile.ingest_delta(&Delta::edge_add(0, 1, 100));
         tile.tick(1);
 
         assert_eq!(tile.graph.num_edges, 1);
@@ -810,13 +795,13 @@ mod tests {
     fn test_edge_removal() {
         let mut tile = TileState::new(0);
 
-        tile.ingest_delta(&Delta::edge_add(0, 1, 100));
-        tile.ingest_delta(&Delta::edge_add(1, 2, 100));
+        let _ = tile.ingest_delta(&Delta::edge_add(0, 1, 100));
+        let _ = tile.ingest_delta(&Delta::edge_add(1, 2, 100));
         tile.tick(1);
 
         assert_eq!(tile.graph.num_edges, 2);
 
-        tile.ingest_delta(&Delta::edge_remove(0, 1));
+        let _ = tile.ingest_delta(&Delta::edge_remove(0, 1));
         tile.tick(2);
 
         assert_eq!(tile.graph.num_edges, 1);
@@ -826,12 +811,12 @@ mod tests {
     fn test_weight_update() {
         let mut tile = TileState::new(0);
 
-        tile.ingest_delta(&Delta::edge_add(0, 1, 100));
+        let _ = tile.ingest_delta(&Delta::edge_add(0, 1, 100));
         tile.tick(1);
 
         assert_eq!(tile.graph.edge_weight(0, 1), Some(100));
 
-        tile.ingest_delta(&Delta::weight_update(0, 1, 200));
+        let _ = tile.ingest_delta(&Delta::weight_update(0, 1, 200));
         tile.tick(2);
 
         assert_eq!(tile.graph.edge_weight(0, 1), Some(200));

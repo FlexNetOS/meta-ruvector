@@ -331,7 +331,7 @@ fn bench_multi_task_patterns(c: &mut Criterion) {
 
                 // Consumer: receive all
                 for _ in 0..50 {
-                    black_box(queue.recv(&mut recv_buf));
+                    let _ = black_box(queue.recv(&mut recv_buf));
                 }
             },
         );
@@ -350,8 +350,8 @@ fn bench_multi_task_patterns(c: &mut Criterion) {
                     let _ = queue.send(black_box(&msg), MsgPriority::Normal);
                 }
                 // Receive 2
-                black_box(queue.recv(&mut recv_buf));
-                black_box(queue.recv(&mut recv_buf));
+                let _ = black_box(queue.recv(&mut recv_buf));
+                let _ = black_box(queue.recv(&mut recv_buf));
             }
 
             // Drain remaining
@@ -470,7 +470,7 @@ fn bench_throughput(c: &mut Criterion) {
 
                 // Process queue
                 for _ in 0..1000 {
-                    black_box(queue.recv(&mut recv_buf));
+                    let _ = black_box(queue.recv(&mut recv_buf));
                 }
             },
         );

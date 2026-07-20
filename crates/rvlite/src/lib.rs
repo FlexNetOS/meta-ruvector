@@ -168,10 +168,43 @@ impl RvLiteConfig {
         DbOptions {
             dimensions: self.dimensions,
             distance_metric: metric,
-            storage_path: "memory://".to_string(),
+            storage_path: transient_storage_path("rvlite"),
             hnsw_config: None,
             quantization: None,
         }
+    }
+}
+
+pub(crate) fn transient_storage_path(label: &str) -> String {
+    #[cfg(target_arch = "wasm32")]
+    {
+        let _ = label;
+        "memory://".to_string()
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        let safe_label: String = label
+            .chars()
+            .map(|ch| {
+                if ch.is_ascii_alphanumeric() || ch == '-' || ch == '_' {
+                    ch
+                } else {
+                    '-'
+                }
+            })
+            .collect();
+        let nanos = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|duration| duration.as_nanos())
+            .unwrap_or_default();
+        std::env::temp_dir()
+            .join(format!(
+                "rvlite-{safe_label}-{}-{nanos}.redb",
+                std::process::id()
+            ))
+            .to_string_lossy()
+            .into_owned()
     }
 }
 
@@ -183,6 +216,7 @@ pub struct RvLite {
     cypher_engine: cypher::CypherEngine,
     sql_engine: sql::SqlEngine,
     triple_store: sparql::TripleStore,
+    #[allow(dead_code)]
     storage: Option<storage::IndexedDBStorage>,
 }
 
@@ -191,7 +225,7 @@ impl RvLite {
     /// Create a new RvLite database
     #[wasm_bindgen(constructor)]
     pub fn new(config: RvLiteConfig) -> Result<RvLite, JsValue> {
-        let db = VectorDB::new(config.to_db_options()).map_err(|e| RvLiteError::from(e))?;
+        let db = VectorDB::new(config.to_db_options()).map_err(RvLiteError::from)?;
 
         Ok(RvLite {
             db,
@@ -204,6 +238,7 @@ impl RvLite {
     }
 
     /// Create with default configuration (384 dimensions, cosine similarity)
+    #[allow(clippy::should_implement_trait)]
     pub fn default() -> Result<RvLite, JsValue> {
         Self::new(RvLiteConfig::new(384))
     }
@@ -371,7 +406,7 @@ impl RvLite {
             metadata: metadata_map,
         };
 
-        self.db.insert(entry).map_err(|e| RvLiteError::from(e))?;
+        self.db.insert(entry).map_err(RvLiteError::from)?;
 
         Ok(())
     }
@@ -385,7 +420,7 @@ impl RvLite {
             ef_search: None,
         };
 
-        let results = self.db.search(query).map_err(|e| RvLiteError::from(e))?;
+        let results = self.db.search(query).map_err(RvLiteError::from)?;
 
         serde_wasm_bindgen::to_value(&results).map_err(|e| {
             RvLiteError {
@@ -418,7 +453,7 @@ impl RvLite {
             ef_search: None,
         };
 
-        let results = self.db.search(query).map_err(|e| RvLiteError::from(e))?;
+        let results = self.db.search(query).map_err(RvLiteError::from)?;
 
         serde_wasm_bindgen::to_value(&results).map_err(|e| {
             RvLiteError {
@@ -431,7 +466,7 @@ impl RvLite {
 
     /// Get a vector by ID
     pub fn get(&self, id: String) -> Result<JsValue, JsValue> {
-        let entry = self.db.get(&id).map_err(|e| RvLiteError::from(e))?;
+        let entry = self.db.get(&id).map_err(RvLiteError::from)?;
 
         serde_wasm_bindgen::to_value(&entry).map_err(|e| {
             RvLiteError {
@@ -551,8 +586,8 @@ impl RvLite {
             kind: ErrorKind::SparqlError,
         })?;
 
-        let result = sparql::execute_sparql(&self.triple_store, &parsed)
-            .map_err(|e| RvLiteError::from(e))?;
+        let result =
+            sparql::execute_sparql(&self.triple_store, &parsed).map_err(RvLiteError::from)?;
 
         // Convert result to serializable format
         let serializable = convert_sparql_result(&result);
@@ -662,9 +697,7 @@ impl RvLite {
                 vector: entry.vector.clone(),
                 metadata: entry.metadata.clone(),
             };
-            self.db
-                .insert(vector_entry)
-                .map_err(|e| RvLiteError::from(e))?;
+            self.db.insert(vector_entry).map_err(RvLiteError::from)?;
         }
 
         // Import graph
@@ -824,8 +857,8 @@ fn parse_rdf_term(s: &str) -> Result<sparql::RdfTerm, JsValue> {
     let s = s.trim();
     if s.starts_with('<') && s.ends_with('>') {
         Ok(sparql::RdfTerm::iri(&s[1..s.len() - 1]))
-    } else if s.starts_with("_:") {
-        Ok(sparql::RdfTerm::blank(&s[2..]))
+    } else if let Some(stripped) = s.strip_prefix("_:") {
+        Ok(sparql::RdfTerm::blank(stripped))
     } else if s.starts_with('"') {
         let end = s.rfind('"').unwrap_or(s.len() - 1);
         let value = &s[1..end];

@@ -15,8 +15,7 @@ impl LatencyTracker {
     /// Create a new latency tracker
     pub fn new(name: impl Into<String>) -> Self {
         // 3 significant digits, max value 1 hour in microseconds
-        let histogram = Histogram::<u64>::new(3)
-            .expect("Failed to create histogram");
+        let histogram = Histogram::<u64>::new(3).expect("Failed to create histogram");
 
         Self {
             histogram: Arc::new(Mutex::new(histogram)),

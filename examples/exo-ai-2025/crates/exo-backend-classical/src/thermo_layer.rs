@@ -110,8 +110,8 @@ impl ThermoLayer {
         let n = self.state.len().min(activations.len());
 
         // Clamp inputs to ±1 and load as spin state.
-        for i in 0..n {
-            self.state.x[i] = activations[i].clamp(-1.0, 1.0).signum();
+        for (slot, &activation) in self.state.x[..n].iter_mut().zip(&activations[..n]) {
+            *slot = activation.clamp(-1.0, 1.0).signum();
         }
 
         let e_before = self.model.energy(&self.state);
@@ -130,9 +130,7 @@ impl ThermoLayer {
         };
 
         // Write relaxed spins back to the caller's buffer.
-        for i in 0..n {
-            activations[i] = self.state.x[i];
-        }
+        activations[..n].copy_from_slice(&self.state.x[..n]);
 
         ThermoSignal {
             lambda,

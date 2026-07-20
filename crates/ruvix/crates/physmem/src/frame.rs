@@ -130,7 +130,7 @@ impl PageOrder {
     /// use ruvix_physmem::PageOrder;
     ///
     /// let order = PageOrder::new(2).unwrap();
-    /// assert_eq!(order.next().map(|o| o.as_usize()), Some(3));
+    /// assert_eq!(order.next().map(PageOrder::as_usize), Some(3));
     ///
     /// let max = PageOrder::MAX;
     /// assert!(max.next().is_none());
@@ -153,7 +153,7 @@ impl PageOrder {
     /// use ruvix_physmem::PageOrder;
     ///
     /// let order = PageOrder::new(2).unwrap();
-    /// assert_eq!(order.prev().map(|o| o.as_usize()), Some(1));
+    /// assert_eq!(order.prev().map(PageOrder::as_usize), Some(1));
     ///
     /// let min = PageOrder::MIN;
     /// assert!(min.prev().is_none());
@@ -181,11 +181,11 @@ impl PageOrder {
     /// ```rust
     /// use ruvix_physmem::PageOrder;
     ///
-    /// assert_eq!(PageOrder::from_pages(1).map(|o| o.as_usize()), Some(0));
-    /// assert_eq!(PageOrder::from_pages(2).map(|o| o.as_usize()), Some(1));
-    /// assert_eq!(PageOrder::from_pages(3).map(|o| o.as_usize()), Some(2)); // rounds up
-    /// assert_eq!(PageOrder::from_pages(4).map(|o| o.as_usize()), Some(2));
-    /// assert_eq!(PageOrder::from_pages(512).map(|o| o.as_usize()), Some(9));
+    /// assert_eq!(PageOrder::from_pages(1).map(PageOrder::as_usize), Some(0));
+    /// assert_eq!(PageOrder::from_pages(2).map(PageOrder::as_usize), Some(1));
+    /// assert_eq!(PageOrder::from_pages(3).map(PageOrder::as_usize), Some(2)); // rounds up
+    /// assert_eq!(PageOrder::from_pages(4).map(PageOrder::as_usize), Some(2));
+    /// assert_eq!(PageOrder::from_pages(512).map(PageOrder::as_usize), Some(9));
     /// assert!(PageOrder::from_pages(513).is_none()); // Too large
     /// ```
     #[inline]
@@ -212,10 +212,10 @@ impl PageOrder {
     /// ```rust
     /// use ruvix_physmem::PageOrder;
     ///
-    /// assert_eq!(PageOrder::from_bytes(1).map(|o| o.as_usize()), Some(0));
-    /// assert_eq!(PageOrder::from_bytes(4096).map(|o| o.as_usize()), Some(0));
-    /// assert_eq!(PageOrder::from_bytes(4097).map(|o| o.as_usize()), Some(1));
-    /// assert_eq!(PageOrder::from_bytes(8192).map(|o| o.as_usize()), Some(1));
+    /// assert_eq!(PageOrder::from_bytes(1).map(PageOrder::as_usize), Some(0));
+    /// assert_eq!(PageOrder::from_bytes(4096).map(PageOrder::as_usize), Some(0));
+    /// assert_eq!(PageOrder::from_bytes(4097).map(PageOrder::as_usize), Some(1));
+    /// assert_eq!(PageOrder::from_bytes(8192).map(PageOrder::as_usize), Some(1));
     /// ```
     #[inline]
     #[must_use]
@@ -224,7 +224,7 @@ impl PageOrder {
             return None;
         }
 
-        let pages = (bytes + PAGE_SIZE - 1) / PAGE_SIZE;
+        let pages = bytes.div_ceil(PAGE_SIZE);
         Self::from_pages(pages)
     }
 }
@@ -237,7 +237,13 @@ impl fmt::Debug for PageOrder {
 
 impl fmt::Display for PageOrder {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "order {} ({} pages, {} bytes)", self.0, self.pages(), self.bytes())
+        write!(
+            f,
+            "order {} ({} pages, {} bytes)",
+            self.0,
+            self.pages(),
+            self.bytes()
+        )
     }
 }
 
@@ -546,8 +552,8 @@ impl fmt::Display for PageFrame {
 #[cfg(test)]
 mod tests {
     extern crate alloc;
-    use alloc::format;
     use super::*;
+    use alloc::format;
 
     #[test]
     fn test_page_order_new() {
@@ -575,8 +581,8 @@ mod tests {
     #[test]
     fn test_page_order_next_prev() {
         let order = PageOrder::new(5).unwrap();
-        assert_eq!(order.next().map(|o| o.as_usize()), Some(6));
-        assert_eq!(order.prev().map(|o| o.as_usize()), Some(4));
+        assert_eq!(order.next().map(PageOrder::as_usize), Some(6));
+        assert_eq!(order.prev().map(PageOrder::as_usize), Some(4));
 
         assert!(PageOrder::MIN.prev().is_none());
         assert!(PageOrder::MAX.next().is_none());
@@ -585,29 +591,35 @@ mod tests {
     #[test]
     fn test_page_order_from_pages() {
         assert_eq!(PageOrder::from_pages(0), None);
-        assert_eq!(PageOrder::from_pages(1).map(|o| o.as_usize()), Some(0));
-        assert_eq!(PageOrder::from_pages(2).map(|o| o.as_usize()), Some(1));
-        assert_eq!(PageOrder::from_pages(3).map(|o| o.as_usize()), Some(2));
-        assert_eq!(PageOrder::from_pages(4).map(|o| o.as_usize()), Some(2));
-        assert_eq!(PageOrder::from_pages(512).map(|o| o.as_usize()), Some(9));
+        assert_eq!(PageOrder::from_pages(1).map(PageOrder::as_usize), Some(0));
+        assert_eq!(PageOrder::from_pages(2).map(PageOrder::as_usize), Some(1));
+        assert_eq!(PageOrder::from_pages(3).map(PageOrder::as_usize), Some(2));
+        assert_eq!(PageOrder::from_pages(4).map(PageOrder::as_usize), Some(2));
+        assert_eq!(PageOrder::from_pages(512).map(PageOrder::as_usize), Some(9));
         assert!(PageOrder::from_pages(513).is_none());
     }
 
     #[test]
     fn test_page_order_from_bytes() {
         assert_eq!(PageOrder::from_bytes(0), None);
-        assert_eq!(PageOrder::from_bytes(1).map(|o| o.as_usize()), Some(0));
-        assert_eq!(PageOrder::from_bytes(4096).map(|o| o.as_usize()), Some(0));
-        assert_eq!(PageOrder::from_bytes(4097).map(|o| o.as_usize()), Some(1));
-        assert_eq!(PageOrder::from_bytes(8192).map(|o| o.as_usize()), Some(1));
+        assert_eq!(PageOrder::from_bytes(1).map(PageOrder::as_usize), Some(0));
+        assert_eq!(
+            PageOrder::from_bytes(4096).map(PageOrder::as_usize),
+            Some(0)
+        );
+        assert_eq!(
+            PageOrder::from_bytes(4097).map(PageOrder::as_usize),
+            Some(1)
+        );
+        assert_eq!(
+            PageOrder::from_bytes(8192).map(PageOrder::as_usize),
+            Some(1)
+        );
     }
 
     #[test]
     fn test_page_frame_new() {
-        let frame = PageFrame::new(
-            PhysAddr::new(0x1000_0000),
-            PageOrder::new(3).unwrap(),
-        );
+        let frame = PageFrame::new(PhysAddr::new(0x1000_0000), PageOrder::new(3).unwrap());
         assert_eq!(frame.addr().as_u64(), 0x1000_0000);
         assert_eq!(frame.order().as_usize(), 3);
         assert_eq!(frame.pages(), 8);
@@ -623,19 +635,13 @@ mod tests {
 
     #[test]
     fn test_page_frame_end_addr() {
-        let frame = PageFrame::new(
-            PhysAddr::new(0x1000),
-            PageOrder::new(2).unwrap(),
-        );
+        let frame = PageFrame::new(PhysAddr::new(0x1000), PageOrder::new(2).unwrap());
         assert_eq!(frame.end_addr().as_u64(), 0x5000);
     }
 
     #[test]
     fn test_page_frame_contains() {
-        let frame = PageFrame::new(
-            PhysAddr::new(0x1000),
-            PageOrder::new(2).unwrap(),
-        );
+        let frame = PageFrame::new(PhysAddr::new(0x1000), PageOrder::new(2).unwrap());
 
         assert!(frame.contains(PhysAddr::new(0x1000)));
         assert!(frame.contains(PhysAddr::new(0x2000)));
@@ -646,10 +652,7 @@ mod tests {
 
     #[test]
     fn test_page_frame_split() {
-        let frame = PageFrame::new(
-            PhysAddr::new(0x4000),
-            PageOrder::new(2).unwrap(),
-        );
+        let frame = PageFrame::new(PhysAddr::new(0x4000), PageOrder::new(2).unwrap());
 
         let (left, right) = frame.split().unwrap();
         assert_eq!(left.order().as_usize(), 1);
@@ -667,26 +670,17 @@ mod tests {
     #[test]
     fn test_page_frame_buddy_addr() {
         // Order 1 block at 0x2000 (2 pages = 0x2000 bytes)
-        let frame = PageFrame::new(
-            PhysAddr::new(0x2000),
-            PageOrder::new(1).unwrap(),
-        );
+        let frame = PageFrame::new(PhysAddr::new(0x2000), PageOrder::new(1).unwrap());
         // XOR with 0x2000 gives 0x0
         assert_eq!(frame.buddy_addr().as_u64(), 0x0);
 
         // Order 1 block at 0x0
-        let frame = PageFrame::new(
-            PhysAddr::new(0x0),
-            PageOrder::new(1).unwrap(),
-        );
+        let frame = PageFrame::new(PhysAddr::new(0x0), PageOrder::new(1).unwrap());
         // XOR with 0x2000 gives 0x2000
         assert_eq!(frame.buddy_addr().as_u64(), 0x2000);
 
         // Order 2 block at 0x4000 (4 pages = 0x4000 bytes)
-        let frame = PageFrame::new(
-            PhysAddr::new(0x4000),
-            PageOrder::new(2).unwrap(),
-        );
+        let frame = PageFrame::new(PhysAddr::new(0x4000), PageOrder::new(2).unwrap());
         // XOR with 0x4000 gives 0x0
         assert_eq!(frame.buddy_addr().as_u64(), 0x0);
     }
@@ -716,10 +710,7 @@ mod tests {
 
     #[test]
     fn test_page_frame_display() {
-        let frame = PageFrame::new(
-            PhysAddr::new(0x1000),
-            PageOrder::new(2).unwrap(),
-        );
+        let frame = PageFrame::new(PhysAddr::new(0x1000), PageOrder::new(2).unwrap());
         let s = format!("{frame}");
         assert!(s.contains("0x1000"));
         assert!(s.contains("0x5000"));

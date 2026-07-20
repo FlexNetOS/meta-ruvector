@@ -84,6 +84,12 @@ pub struct WasmConsciousness {
     max_partitions: u64,
 }
 
+impl Default for WasmConsciousness {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[wasm_bindgen]
 impl WasmConsciousness {
     /// Create a new engine with default settings.

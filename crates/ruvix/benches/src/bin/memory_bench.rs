@@ -112,7 +112,7 @@ fn main() {
             ruvix: format_bytes(comp.ruvix_bytes),
             linux: format_bytes(comp.linux_bytes),
             reduction: format!("{:.0}%", comp.reduction * 100.0),
-            advantage: advantage,
+            advantage,
         });
     }
 

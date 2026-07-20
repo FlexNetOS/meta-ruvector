@@ -19,6 +19,34 @@ ignore = [
     # Re-evaluate when the `rsa` crate ships a constant-time implementation.
     "RUSTSEC-2023-0071",
 
+    # lz4_flex 0.10.0 — decompressing invalid data can leak uninitialized
+    # memory. Pulled ONLY transitively: zenoh-transport 1.9.0 pins
+    # `lz4_flex = "^0.10.0"` (cannot resolve to the patched 0.11.6+), and
+    # zenoh 1.9.0 is the latest published release, so there is no upstream
+    # upgrade path. Our own direct lz4_flex deps are already on 0.11.6
+    # (patched). lz4_flex here is used solely by zenoh's transport-layer
+    # compression of our own pub/sub traffic between agentic-robotics nodes,
+    # not to decompress attacker-controlled input across a trust boundary.
+    # Re-evaluate when zenoh ships a release that bumps lz4_flex to >=0.11.6.
+    "RUSTSEC-2026-0041",
+
+    # rustls-webpki 0.101.7 — name-constraint acceptance (0098/0099) and a
+    # reachable panic in CRL parsing (0104). Pulled ONLY transitively, and
+    # only at the old 0.101.7 line: the EXO-AI example crates depend on the
+    # published `ruvector-core 0.1.31` (crates.io), whose `reqwest 0.11 →
+    # rustls 0.21 → rustls-webpki 0.101.7` chain has no upstream fix (the
+    # patch lives at >= 0.103.12, a different major; 0.101.x is EOL and the
+    # local workspace ruvector-core is 2.x, so the `^0.1` requirement cannot
+    # be [patch]ed to it). The vulnerable code paths are not exercised: these
+    # examples use ruvector-core's VectorDB/types, not TLS cert/CRL
+    # validation, and 0104 explicitly notes apps that do not use CRLs are
+    # unaffected. Our production TLS runs on the current rustls-webpki 0.103.13
+    # (already patched). Re-evaluate when published ruvector-core 0.1.x bumps
+    # reqwest, or the EXO examples migrate to the 2.x workspace crates.
+    "RUSTSEC-2026-0098",
+    "RUSTSEC-2026-0099",
+    "RUSTSEC-2026-0104",
+
     # ------------------------------------------------------------------
     # "Unmaintained" warnings (informational, not vulnerabilities)
     # ------------------------------------------------------------------
@@ -40,6 +68,33 @@ ignore = [
     "RUSTSEC-2025-0134",  # rustls-pemfile — transitive; rustls itself is current
     "RUSTSEC-2025-0141",  # bincode — unmaintained notice; we pin a known-good version
     "RUSTSEC-2026-0105",  # core2 — transitive, no_std fallback for std::io types
+    "RUSTSEC-2020-0016",  # net2 — deprecated transitive; parent migration to socket2 pending
+    "RUSTSEC-2026-0162",  # pqcrypto-traits — unmaintained; parent PQ migration pending
+    "RUSTSEC-2026-0163",  # pqcrypto-internals — unmaintained; parent PQ migration pending
+    "RUSTSEC-2026-0173",  # proc-macro-error2 — transitive proc-macro, build-time only
+    "RUSTSEC-2026-0192",  # ttf-parser — unmaintained; transitive font/rendering paths only
+    "RUSTSEC-2024-0411",  # gtk-rs GTK3 gdkwayland-sys unmaintained; transitive desktop/UI path, not hailo runtime
+    "RUSTSEC-2024-0412",  # gtk-rs GTK3 gdk unmaintained; transitive desktop/UI path, not hailo runtime
+    "RUSTSEC-2024-0413",  # gtk-rs GTK3 atk unmaintained; transitive desktop/UI path, not hailo runtime
+    "RUSTSEC-2024-0414",  # gtk-rs GTK3 gdkx11-sys unmaintained; transitive desktop/UI path, not hailo runtime
+    "RUSTSEC-2024-0415",  # gtk-rs GTK3 gtk unmaintained; transitive desktop/UI path, not hailo runtime
+    "RUSTSEC-2024-0416",  # gtk-rs GTK3 atk-sys unmaintained; transitive desktop/UI path, not hailo runtime
+    "RUSTSEC-2024-0417",  # gtk-rs GTK3 gdkx11 unmaintained; transitive desktop/UI path, not hailo runtime
+    "RUSTSEC-2024-0418",  # gtk-rs GTK3 gdk-sys unmaintained; transitive desktop/UI path, not hailo runtime
+    "RUSTSEC-2024-0419",  # gtk-rs GTK3 gtk3-macros unmaintained; transitive desktop/UI path, not hailo runtime
+    "RUSTSEC-2024-0420",  # gtk-rs GTK3 gtk-sys unmaintained; transitive desktop/UI path, not hailo runtime
+    "RUSTSEC-2024-0429",  # glib iterator unsoundness; transitive desktop/UI path, not hailo runtime
+    "RUSTSEC-2025-0057",  # fxhash unmaintained; transitive desktop/UI path, not hailo runtime
+
+    # quick-xml 0.26 — quadratic duplicate-attribute check (2026-0194) and
+    # NsReader namespace-allocation DoS (2026-0195). Reachable ONLY via
+    # pprof -> inferno 0.11 behind ruvector-bench's optional `profiling`
+    # feature; the XML parsed is locally generated flamegraph SVG, never
+    # attacker-controlled input. Upstream-blocked: fix needs quick-xml
+    # >=0.41 (inferno 0.12.7), but even pprof 0.15.0 still pins inferno
+    # ^0.11. Re-evaluate when pprof releases with inferno >=0.12.
+    "RUSTSEC-2026-0194",
+    "RUSTSEC-2026-0195",
 
     # ------------------------------------------------------------------
     # Soundness/unsoundness notices in deps we do not directly control
@@ -65,4 +120,11 @@ ignore = [
     "RUSTSEC-2026-0115",
     "RUSTSEC-2026-0116",
     "RUSTSEC-2026-0117",
+
+    # glib — Iterator/DoubleEndedIterator unsoundness. Transitive via the
+    # examples/rvf-desktop GTK3 stack; we do not use the affected iterators.
+    "RUSTSEC-2024-0429",
+    # memmap2 — unchecked pointer offset. Transitive via candle-core mmap
+    # model loading; offsets are computed from trusted local model files.
+    "RUSTSEC-2026-0186",
 ]

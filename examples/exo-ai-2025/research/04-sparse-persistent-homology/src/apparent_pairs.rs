@@ -251,9 +251,13 @@ pub fn identify_apparent_pairs_fast(filtration: &Filtration) -> Vec<(usize, usiz
 /// Statistics about apparent pairs
 #[derive(Debug, Clone)]
 pub struct ApparentPairsStats {
+    /// Total number of simplices in the filtration.
     pub total_simplices: usize,
+    /// Number of apparent persistence pairs identified.
     pub apparent_pairs_count: usize,
+    /// Fraction of simplices eliminated by apparent pair detection.
     pub reduction_ratio: f64,
+    /// Count of apparent pairs grouped by simplex dimension.
     pub by_dimension: HashMap<usize, usize>,
 }
 
@@ -384,6 +388,6 @@ mod tests {
         println!("Fast: {} pairs", apparent_fast.len());
 
         // Fast version should be at least as good
-        assert!(apparent_fast.len() > 0);
+        assert!(!apparent_fast.is_empty());
     }
 }

@@ -3,7 +3,9 @@
 //! High-performance benchmarks for vector operations on Cloud Run with GPU support.
 //! Includes self-learning models for various industries using RuVector's GNN, Attention, and Graph crates.
 
-use anyhow::{Context, Result};
+#![allow(dead_code, unused_imports, unused_variables)]
+
+use anyhow::Result;
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 

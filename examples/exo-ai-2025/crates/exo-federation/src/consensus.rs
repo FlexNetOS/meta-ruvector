@@ -62,7 +62,7 @@ pub enum CommitResult {
 /// For n = 3f + 1 nodes, we can tolerate f Byzantine faults.
 /// Consensus requires 2f + 1 = (2n + 2) / 3 agreements.
 fn byzantine_threshold(n: usize) -> usize {
-    (2 * n + 2) / 3
+    (2 * n).div_ceil(3)
 }
 
 /// Execute Byzantine fault-tolerant consensus on a state update
@@ -182,7 +182,7 @@ fn compute_digest(update: &StateUpdate) -> Vec<u8> {
     let mut hasher = Sha256::new();
     hasher.update(&update.update_id);
     hasher.update(&update.data);
-    hasher.update(&update.timestamp.to_le_bytes());
+    hasher.update(update.timestamp.to_le_bytes());
     hasher.finalize().to_vec()
 }
 

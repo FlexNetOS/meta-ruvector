@@ -3,11 +3,10 @@
 //! Comprehensive benchmarks for quantifying the Conscious Language Interface
 //! including: intelligence metrics, learning rate, memory retention, and performance.
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId};
 use conscious_language_interface::{
-    ConsciousLanguageInterface, CLIConfig, BridgeConfig,
-    SpikeEmbeddingBridge, PolychronousGroup,
+    BridgeConfig, CLIConfig, ConsciousLanguageInterface, PolychronousGroup, SpikeEmbeddingBridge,
 };
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 
 /// Benchmark spike embedding encoding
 fn bench_encode(c: &mut Criterion) {
@@ -22,9 +21,7 @@ fn bench_encode(c: &mut Criterion) {
     let embedding: Vec<f32> = (0..256).map(|i| (i as f32) / 256.0).collect();
 
     c.bench_function("spike_encode_256d", |b| {
-        b.iter(|| {
-            bridge.encode(black_box(&embedding))
-        })
+        b.iter(|| bridge.encode(black_box(&embedding)))
     });
 }
 
@@ -60,9 +57,7 @@ fn bench_decode(c: &mut Criterion) {
     ];
 
     c.bench_function("qualia_decode_3groups", |b| {
-        b.iter(|| {
-            bridge.decode(black_box(&qualia))
-        })
+        b.iter(|| bridge.decode(black_box(&qualia)))
     });
 }
 
@@ -113,7 +108,11 @@ fn bench_learning(c: &mut Criterion) {
 
     c.bench_function("feedback_learning", |b| {
         b.iter(|| {
-            cli.feedback(black_box(exp_id), black_box(0.9), black_box(Some("Good response")))
+            cli.feedback(
+                black_box(exp_id),
+                black_box(0.9),
+                black_box(Some("Good response")),
+            )
         })
     });
 }
@@ -126,11 +125,7 @@ fn bench_introspection(c: &mut Criterion) {
     // Initialize with some processing
     cli.process("Initialize conscious state");
 
-    c.bench_function("introspection", |b| {
-        b.iter(|| {
-            cli.introspect()
-        })
-    });
+    c.bench_function("introspection", |b| b.iter(|| cli.introspect()));
 }
 
 /// Benchmark scaling with embedding dimensions

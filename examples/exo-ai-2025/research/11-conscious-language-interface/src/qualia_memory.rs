@@ -112,7 +112,8 @@ impl ValenceMemory {
     /// Get average valence over recent history
     pub fn average_valence(&self, window: Duration) -> f32 {
         let cutoff = Instant::now() - window;
-        let recent: Vec<_> = self.valence_history
+        let recent: Vec<_> = self
+            .valence_history
             .iter()
             .filter(|(t, _)| *t > cutoff)
             .map(|(_, v)| *v)
@@ -175,12 +176,17 @@ impl PhiHistory {
     }
 
     pub fn min(&self) -> f64 {
-        if self.min == f64::MAX { 0.0 } else { self.min }
+        if self.min == f64::MAX {
+            0.0
+        } else {
+            self.min
+        }
     }
 
     pub fn recent_average(&self, window: Duration) -> f64 {
         let cutoff = Instant::now() - window;
-        let recent: Vec<_> = self.history
+        let recent: Vec<_> = self
+            .history
             .iter()
             .filter(|(t, _)| *t > cutoff)
             .map(|(_, p)| *p)
@@ -236,7 +242,8 @@ impl QualiaReasoningBank {
         // Check if similar pattern exists - collect IDs to avoid borrow issues
         let existing_id = {
             let similar = self.find_similar(&qualia.embedding, 1);
-            similar.first()
+            similar
+                .first()
                 .filter(|p| p.similarity_to_embedding(&qualia.embedding) > self.merge_threshold)
                 .map(|p| p.id)
         };
@@ -266,7 +273,8 @@ impl QualiaReasoningBank {
 
     /// Find similar qualia patterns
     pub fn find_similar(&self, embedding: &[f32], k: usize) -> Vec<&QualiaPattern> {
-        let mut scored: Vec<_> = self.patterns
+        let mut scored: Vec<_> = self
+            .patterns
             .values()
             .map(|p| (p, p.similarity_to_embedding(embedding)))
             .collect();
@@ -287,7 +295,8 @@ impl QualiaReasoningBank {
 
     /// Get patterns by valence
     pub fn get_positive_patterns(&self, k: usize) -> Vec<&QualiaPattern> {
-        self.valence_memory.positive
+        self.valence_memory
+            .positive
             .iter()
             .filter_map(|id| self.patterns.get(id))
             .take(k)
@@ -295,7 +304,8 @@ impl QualiaReasoningBank {
     }
 
     pub fn get_negative_patterns(&self, k: usize) -> Vec<&QualiaPattern> {
-        self.valence_memory.negative
+        self.valence_memory
+            .negative
             .iter()
             .filter_map(|id| self.patterns.get(id))
             .take(k)
@@ -304,7 +314,8 @@ impl QualiaReasoningBank {
 
     /// Prune low-quality or old patterns
     pub fn prune(&mut self, min_quality: f32, min_occurrences: u32, max_age_secs: u64) {
-        let to_remove: Vec<u64> = self.patterns
+        let to_remove: Vec<u64> = self
+            .patterns
             .iter()
             .filter(|(_, p)| {
                 p.quality < min_quality
@@ -322,12 +333,13 @@ impl QualiaReasoningBank {
     /// Prune oldest patterns to make room
     fn prune_oldest(&mut self) {
         // Find oldest 10%
-        let mut by_age: Vec<_> = self.patterns
+        let mut by_age: Vec<_> = self
+            .patterns
             .iter()
             .map(|(id, p)| (*id, p.last_accessed))
             .collect();
 
-        by_age.sort_by(|a, b| a.1.cmp(&b.1));
+        by_age.sort_by_key(|x| x.1);
 
         let to_remove = by_age.len() / 10;
         for (id, _) in by_age.into_iter().take(to_remove) {
@@ -397,7 +409,9 @@ impl QualiaReasoningBank {
             pattern_count: self.patterns.len(),
             avg_phi: self.phi_history.average(),
             max_phi: self.phi_history.max(),
-            avg_valence: self.valence_memory.average_valence(Duration::from_secs(3600)),
+            avg_valence: self
+                .valence_memory
+                .average_valence(Duration::from_secs(3600)),
             positive_count: self.valence_memory.positive.len(),
             negative_count: self.valence_memory.negative.len(),
             neutral_count: self.valence_memory.neutral.len(),
@@ -480,9 +494,9 @@ mod tests {
     fn test_valence_memory() {
         let mut valence = ValenceMemory::new();
 
-        valence.add(1, 0.8);  // Positive
+        valence.add(1, 0.8); // Positive
         valence.add(2, -0.6); // Negative
-        valence.add(3, 0.1);  // Neutral
+        valence.add(3, 0.1); // Neutral
 
         assert_eq!(valence.positive.len(), 1);
         assert_eq!(valence.negative.len(), 1);

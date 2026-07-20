@@ -7,16 +7,14 @@
 use std::process::Command;
 
 mod common;
-use common::{free_port, spawn_fakeworker};
-
-const STATS: &str = env!("CARGO_BIN_EXE_ruvector-hailo-stats");
+use common::{cargo_bin, free_port, spawn_fakeworker};
 
 #[test]
 fn stats_cli_list_workers_does_not_require_live_workers() {
     // --list-workers short-circuits before any RPC, so it works against
     // arbitrary addresses with no actual server. Verifies the discovery
     // → print path doesn't accidentally regress to needing live workers.
-    let out = Command::new(STATS)
+    let out = Command::new(cargo_bin("ruvector-hailo-stats"))
         .args([
             "--workers",
             "10.255.255.1:50051,10.255.255.2:50051",
@@ -43,7 +41,7 @@ fn stats_cli_default_tsv_against_live_worker() {
     let port = free_port();
     let mut worker = spawn_fakeworker(port, 384, "fp:test");
 
-    let out = Command::new(STATS)
+    let out = Command::new(cargo_bin("ruvector-hailo-stats"))
         .args(["--workers", &format!("127.0.0.1:{}", port)])
         .output()
         .expect("run stats");
@@ -78,7 +76,7 @@ fn stats_cli_json_output_includes_fingerprint_field() {
     let port = free_port();
     let mut worker = spawn_fakeworker(port, 384, "fp:json-test");
 
-    let out = Command::new(STATS)
+    let out = Command::new(cargo_bin("ruvector-hailo-stats"))
         .args(["--workers", &format!("127.0.0.1:{}", port), "--json"])
         .output()
         .expect("run stats");
@@ -105,7 +103,7 @@ fn stats_cli_tsv_includes_rate_limit_columns() {
     let port = free_port();
     let mut worker = spawn_fakeworker(port, 4, "fp:rl");
 
-    let out = Command::new(STATS)
+    let out = Command::new(cargo_bin("ruvector-hailo-stats"))
         .args(["--workers", &format!("127.0.0.1:{}", port)])
         .output()
         .expect("run stats");
@@ -156,7 +154,7 @@ fn stats_cli_prom_output_includes_rate_limit_metrics() {
     let port = free_port();
     let mut worker = spawn_fakeworker(port, 4, "fp:rl-prom");
 
-    let out = Command::new(STATS)
+    let out = Command::new(cargo_bin("ruvector-hailo-stats"))
         .args(["--workers", &format!("127.0.0.1:{}", port), "--prom"])
         .output()
         .expect("run stats");
@@ -194,7 +192,7 @@ fn stats_cli_strict_homogeneous_with_drift_exits_three() {
     let mut wa = spawn_fakeworker(port_a, 384, "fp:current");
     let mut wb = spawn_fakeworker(port_b, 384, "fp:stale");
 
-    let out = Command::new(STATS)
+    let out = Command::new(cargo_bin("ruvector-hailo-stats"))
         .args([
             "--workers",
             &format!("127.0.0.1:{},127.0.0.1:{}", port_a, port_b),
@@ -225,7 +223,10 @@ fn stats_cli_strict_homogeneous_with_drift_exits_three() {
 #[test]
 fn stats_cli_version_flag_prints_pkg_name_and_version() {
     for arg in &["--version", "-V"] {
-        let out = Command::new(STATS).arg(arg).output().expect("run stats");
+        let out = Command::new(cargo_bin("ruvector-hailo-stats"))
+            .arg(arg)
+            .output()
+            .expect("run stats");
         assert!(out.status.success());
         let line = String::from_utf8_lossy(&out.stdout).trim().to_string();
         assert!(line.starts_with("ruvector-hailo-cluster"), "got: {}", line);
@@ -241,7 +242,7 @@ fn stats_cli_strict_homogeneous_with_no_drift_exits_zero() {
     let mut wa = spawn_fakeworker(port_a, 384, "fp:same");
     let mut wb = spawn_fakeworker(port_b, 384, "fp:same");
 
-    let out = Command::new(STATS)
+    let out = Command::new(cargo_bin("ruvector-hailo-stats"))
         .args([
             "--workers",
             &format!("127.0.0.1:{},127.0.0.1:{}", port_a, port_b),
@@ -332,7 +333,7 @@ fn stats_cli_signed_workers_file_succeeds_with_matching_sig() {
     let sig = dir.join("workers.sig");
     let pk = dir.join("pubkey.hex");
 
-    let out = Command::new(STATS)
+    let out = Command::new(cargo_bin("ruvector-hailo-stats"))
         .args([
             "--workers-file",
             manifest.to_str().unwrap(),
@@ -378,7 +379,7 @@ fn stats_cli_tampered_workers_file_fails_signature_check() {
     let sig = dir.join("workers.sig");
     let pk = dir.join("pubkey.hex");
 
-    let out = Command::new(STATS)
+    let out = Command::new(cargo_bin("ruvector-hailo-stats"))
         .args([
             "--workers-file",
             manifest.to_str().unwrap(),
@@ -413,7 +414,7 @@ fn stats_cli_partial_signature_config_is_refused() {
     let manifest = dir.join("workers.txt");
     let sig = dir.join("workers.sig");
 
-    let out = Command::new(STATS)
+    let out = Command::new(cargo_bin("ruvector-hailo-stats"))
         .args([
             "--workers-file",
             manifest.to_str().unwrap(),

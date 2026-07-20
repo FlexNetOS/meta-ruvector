@@ -52,7 +52,6 @@ impl GradientDescentRetriever {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::simd_ops::{cosine_similarity_simd, euclidean_distance_simd};
 
     #[test]

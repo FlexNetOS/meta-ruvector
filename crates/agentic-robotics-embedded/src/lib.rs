@@ -7,7 +7,6 @@
 //! relevant dependencies are commented out in `Cargo.toml` and the `embassy`
 //! / `rtic` Cargo features are present but empty (they enable nothing today).
 
-
 /// Embedded task priority
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum EmbeddedPriority {

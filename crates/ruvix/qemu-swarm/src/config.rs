@@ -274,7 +274,10 @@ pub enum ScenarioStep {
 
     /// Deploy an RVF package.
     #[serde(rename = "deploy")]
-    Deploy { rvf_path: PathBuf, nodes: Option<Vec<usize>> },
+    Deploy {
+        rvf_path: PathBuf,
+        nodes: Option<Vec<usize>>,
+    },
 
     /// Inject a fault.
     #[serde(rename = "fault")]
