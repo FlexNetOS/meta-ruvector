@@ -89,6 +89,10 @@ impl MacAddress {
     }
 
     /// Parses a MAC address from a byte slice.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`NetError::PacketTooShort`] if `bytes` is shorter than 6 bytes.
     #[inline]
     pub fn parse(bytes: &[u8]) -> NetResult<Self> {
         if bytes.len() < 6 {
@@ -303,6 +307,11 @@ impl EthernetFrameBuilder {
     /// Serializes the frame header into a buffer (without payload).
     ///
     /// Returns the number of bytes written (always 14 on success).
+    ///
+    /// # Errors
+    ///
+    /// Returns [`NetError::BufferTooSmall`] if `buf` is smaller than the
+    /// Ethernet header size.
     #[inline]
     pub fn serialize_header(&self, buf: &mut [u8]) -> NetResult<usize> {
         if buf.len() < ETHERNET_HEADER_SIZE {

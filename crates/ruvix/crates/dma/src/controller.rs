@@ -237,7 +237,7 @@ pub trait DmaControllerExt: DmaController {
                     self.release_channel(&channel)?;
                     return Err(crate::DmaError::config_error());
                 }
-                _ => continue,
+                _ => {}
             }
         }
 
@@ -275,7 +275,7 @@ pub trait DmaControllerExt: DmaController {
                     self.release_channel(&channel)?;
                     return Err(crate::DmaError::config_error());
                 }
-                _ => continue,
+                _ => {}
             }
         }
 
@@ -312,7 +312,7 @@ pub trait DmaControllerExt: DmaController {
                     self.release_channel(&channel)?;
                     return Err(crate::DmaError::config_error());
                 }
-                _ => continue,
+                _ => {}
             }
         }
 

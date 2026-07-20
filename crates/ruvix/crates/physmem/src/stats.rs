@@ -107,10 +107,9 @@ impl AllocatorStats {
     #[inline]
     #[must_use]
     pub const fn utilization_percent(&self) -> u8 {
-        if self.total_pages == 0 {
-            0
-        } else {
-            ((self.used_pages() * 100) / self.total_pages) as u8
+        match (self.used_pages() * 100).checked_div(self.total_pages) {
+            Some(percent) => percent as u8,
+            None => 0,
         }
     }
 
@@ -227,10 +226,9 @@ impl AllocatorStats {
     #[inline]
     #[must_use]
     pub const fn success_rate_percent(&self) -> u8 {
-        if self.allocations == 0 {
-            100
-        } else {
-            ((self.successful_allocations * 100) / self.allocations) as u8
+        match (self.successful_allocations * 100).checked_div(self.allocations) {
+            Some(rate) => rate as u8,
+            None => 100,
         }
     }
 
@@ -269,6 +267,7 @@ impl fmt::Debug for AllocatorStats {
             .field("frees", &self.frees)
             .field("splits", &self.splits)
             .field("coalesces", &self.coalesces)
+            .field("peak_used_pages", &self.peak_used_pages)
             .finish()
     }
 }
@@ -468,7 +467,7 @@ mod tests {
         let s = format!("{stats}");
         assert!(s.contains("512/1024"));
         assert!(s.contains("50%"));
-        assert!(s.contains("8"));
+        assert!(s.contains('8'));
         assert!(s.contains("2 failed"));
     }
 

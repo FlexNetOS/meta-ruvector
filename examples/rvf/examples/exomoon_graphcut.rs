@@ -218,6 +218,7 @@ struct LightCurve {
     survey: Survey,
     observations: Vec<Observation>,
     /// PSPL parameters (ground truth for synthetic)
+    #[allow(dead_code)] // ground-truth field retained for the example data model
     true_t0: f64,
     true_u0: f64,
     true_t_e: f64,
@@ -447,6 +448,7 @@ struct Window {
     /// Normalized time center: tau = (t_center - t0) / tE
     tau_center: f64,
     /// Observation indices in this window
+    #[allow(dead_code)] // retained for potential future inspection of window contents
     obs_indices: Vec<usize>,
     /// Local log-likelihood ratio: l(moon) - l(null)
     ll_ratio: f64,
@@ -911,9 +913,9 @@ fn solve_mincut(windows: &[Window], edges: &[Edge], gamma: f64) -> Vec<bool> {
         };
 
     // Source and sink edges
-    for i in 0..m {
-        let phi_0 = windows[i].lambda.max(0.0); // cost of null when lambda > 0
-        let phi_1 = (-windows[i].lambda).max(0.0); // cost of moon when lambda < 0
+    for (i, win) in windows.iter().enumerate() {
+        let phi_0 = win.lambda.max(0.0); // cost of null when lambda > 0
+        let phi_1 = (-win.lambda).max(0.0); // cost of moon when lambda < 0
 
         if phi_0 > 1e-12 {
             add_edge(&mut adj, &mut caps, s, i, phi_0);
@@ -1000,11 +1002,13 @@ struct DetectionResult {
     event_id: u64,
     survey: Survey,
     has_moon_truth: bool,
+    #[allow(dead_code)] // retained for pipeline inspection
     support_set: Vec<usize>,
     support_fraction: f64,
     delta_chi2: f64,
     delta_bic: f64,
     fragility: f64,
+    #[allow(dead_code)] // retained for pipeline inspection
     lambda_sum: f64,
     j_score: f64,
     detected: bool,

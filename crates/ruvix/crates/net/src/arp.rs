@@ -361,6 +361,10 @@ impl ArpCache {
     }
 
     /// Marks an entry as pending (waiting for ARP reply).
+    ///
+    /// # Errors
+    ///
+    /// Returns [`NetError::ArpCacheFull`] if no slot is available for a new entry.
     pub fn mark_pending(&mut self, ip: Ipv4Addr, current_time: u64) -> NetResult<()> {
         // Check if entry already exists
         for entry in self.entries.iter_mut().flatten() {
@@ -401,6 +405,11 @@ impl ArpCache {
     }
 
     /// Processes an ARP reply and updates the cache.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`NetError::ArpCacheFull`] if the cache is full and the sender
+    /// entry cannot be inserted.
     pub fn process_reply(&mut self, packet: &ArpPacket, current_time: u64) -> NetResult<()> {
         if !packet.is_reply() {
             return Ok(());
@@ -716,7 +725,7 @@ mod tests {
         for i in 0..ARP_CACHE_MAX_ENTRIES {
             cache
                 .insert(
-                    Ipv4Addr::from_u32(i as u32),
+                    Ipv4Addr::from_u32(u32::try_from(i).unwrap()),
                     MacAddress::new([0, 0, 0, 0, (i >> 8) as u8, i as u8]),
                     i as u64,
                 )

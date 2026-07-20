@@ -61,6 +61,16 @@
 #![deny(clippy::all)]
 #![allow(clippy::pedantic)] // lint debt: CI denies warnings; re-enable after grooming
 #![allow(clippy::module_name_repetitions)]
+// Bare-metal physical-memory math: physical addresses are u64 and the target is
+// 64-bit (aarch64), so page-count/address casts to usize are lossless on this
+// platform; the truncation warning only applies to hypothetical 32-bit targets.
+#![allow(clippy::cast_possible_truncation)]
+// Statistics math uses f64 for ratio/average display; page and operation counters
+// are small enough to be represented exactly, so the precision-loss warning is moot.
+#![allow(clippy::cast_precision_loss)]
+// No-std, no-alloc allocator: free lists are fixed-size inline arrays (no heap),
+// so the allocator is intentionally a large stack value, not an oversight.
+#![allow(clippy::large_stack_arrays)]
 
 #[cfg(feature = "alloc")]
 extern crate alloc;

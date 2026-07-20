@@ -76,7 +76,7 @@ mod controller;
 mod descriptor;
 mod error;
 
-pub use buffer::{DmaBuffer, DmaBufferFlags};
+pub use buffer::{DmaBuffer, DmaBufferChunks, DmaBufferFlags};
 pub use channel::{DmaChannel, DmaChannelId};
 pub use config::{DmaBurstSize, DmaConfig, DmaTransferWidth};
 pub use controller::DmaController;

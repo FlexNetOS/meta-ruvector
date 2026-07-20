@@ -27,6 +27,7 @@ pub use topology::{ConnectionPattern, LocalConnectivity, TopologyConfig};
 use crate::encoding::{SparseSpikes, SpikeEvent};
 use crate::error::{Result, SpikingError};
 use crate::neuron::{LIFNeuron, SpikingNeuron};
+use indexmap::IndexMap;
 use parking_lot::RwLock;
 use priority_queue::PriorityQueue;
 use rayon::prelude::*;
@@ -90,7 +91,7 @@ impl NetworkStats {
 
         self.total_spikes = self.spikes_per_step.iter().sum();
 
-        let num_neurons = if !self.active_neurons_per_step.is_empty() {
+        let _num_neurons = if !self.active_neurons_per_step.is_empty() {
             self.active_neurons_per_step
                 .iter()
                 .max()
@@ -101,9 +102,9 @@ impl NetworkStats {
         };
 
         // Calculate average firing rate
-        if self.simulation_time > 0.0 && num_neurons > 0 {
+        if self.simulation_time > 0.0 && _num_neurons > 0 {
             self.avg_firing_rate =
-                (self.total_spikes as f32) / (num_neurons as f32) / self.simulation_time * 1000.0;
+                (self.total_spikes as f32) / (_num_neurons as f32) / self.simulation_time * 1000.0;
         }
 
         // Calculate sparsity
@@ -214,6 +215,7 @@ impl SpikingNetwork {
     /// Build network topology from configuration.
     pub fn build_topology(&mut self) -> Result<()> {
         let pattern = self.config.topology.pattern.clone();
+        let _num_neurons = self.config.num_neurons;
 
         match pattern {
             ConnectionPattern::AllToAll { probability } => {
@@ -405,21 +407,13 @@ impl SpikingNetwork {
                 outputs.push(SpikeEvent::new(src as u32, self.current_time));
             }
 
-            // Schedule postsynaptic events. Collect first so we don't hold an
-            // immutable borrow of `self.connections` while `schedule_event`
-            // borrows `self` mutably.
-            let current_time = self.current_time;
-            let postsynaptic: SmallVec<[(usize, f32, f32); 16]> = self.connections[src]
+            // Schedule postsynaptic events
+            let targets: Vec<_> = self.connections[src]
                 .iter()
-                .map(|&(target, synapse)| {
-                    (
-                        target,
-                        current_time + synapse.delay,
-                        synapse.weight * synapse.sign(),
-                    )
-                })
+                .map(|&(t, ref s)| (t, s.delay, s.weight * s.sign()))
                 .collect();
-            for (target, arrival_time, current) in postsynaptic {
+            for (target, delay, current) in targets {
+                let arrival_time = self.current_time + delay;
                 self.schedule_event(target, arrival_time, current);
             }
         }

@@ -16,7 +16,7 @@ impl DmaChannelId {
     /// Panics if `id` is greater than or equal to `MAX_DMA_CHANNELS`.
     #[must_use]
     pub const fn new(id: u8) -> Self {
-        assert!(id < crate::MAX_DMA_CHANNELS as u8);
+        assert!((id as usize) < crate::MAX_DMA_CHANNELS);
         Self(id)
     }
 
@@ -71,7 +71,6 @@ enum ChannelState {
 impl ChannelState {
     const fn from_u8(value: u8) -> Self {
         match value {
-            0 => Self::Free,
             1 => Self::Allocated,
             2 => Self::Configured,
             3 => Self::Running,
@@ -150,8 +149,9 @@ impl DmaChannel {
     pub fn status(&self) -> DmaStatus {
         let state = ChannelState::from_u8(self.state.load(Ordering::Acquire));
         match state {
-            ChannelState::Free | ChannelState::Allocated => DmaStatus::Idle,
-            ChannelState::Configured => DmaStatus::Idle,
+            ChannelState::Free | ChannelState::Allocated | ChannelState::Configured => {
+                DmaStatus::Idle
+            }
             ChannelState::Running => DmaStatus::Running,
             ChannelState::Paused => DmaStatus::Paused,
             ChannelState::Complete => DmaStatus::Complete,
@@ -239,7 +239,16 @@ impl DmaChannel {
     pub fn set_priority(&mut self, priority: u8) {
         self.priority = priority.min(7);
     }
+}
 
+/// Internal channel state-machine transitions and transfer bookkeeping.
+///
+/// These mirror the [`ChannelState`] lifecycle and are driven by the DMA
+/// controller backend (`mark_*`, `release`, transfer accounting). They are kept
+/// to provide the complete channel-management API ahead of a concrete backend
+/// being wired up, so the state machine stays authoritative.
+#[allow(dead_code)]
+impl DmaChannel {
     /// Mark the channel as allocated.
     pub(crate) fn mark_allocated(&self) {
         self.state

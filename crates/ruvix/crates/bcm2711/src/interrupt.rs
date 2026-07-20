@@ -533,16 +533,16 @@ mod tests {
 
     #[test]
     fn test_irq_banks() {
-        // IRQ 0-31 in bank 1
-        assert!(IRQ_TIMER1 < IRQS_PER_BANK);
-        assert!(IRQ_AUX < IRQS_PER_BANK);
+        // IRQ 0-31 in bank 1 (checked at compile time — all operands are constants)
+        const _: () = assert!(IRQ_TIMER1 < IRQS_PER_BANK);
+        const _: () = assert!(IRQ_AUX < IRQS_PER_BANK);
 
         // IRQ 32-63 in bank 2
-        assert!(IRQ_GPIO0 >= IRQS_PER_BANK && IRQ_GPIO0 < BASIC_IRQ_START);
-        assert!(IRQ_UART >= IRQS_PER_BANK && IRQ_UART < BASIC_IRQ_START);
+        const _: () = assert!(IRQ_GPIO0 >= IRQS_PER_BANK && IRQ_GPIO0 < BASIC_IRQ_START);
+        const _: () = assert!(IRQ_UART >= IRQS_PER_BANK && IRQ_UART < BASIC_IRQ_START);
 
         // IRQ 64+ are basic ARM IRQs
-        assert!(IRQ_ARM_TIMER >= BASIC_IRQ_START);
+        const _: () = assert!(IRQ_ARM_TIMER >= BASIC_IRQ_START);
     }
 
     #[test]

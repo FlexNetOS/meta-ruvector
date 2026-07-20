@@ -17,6 +17,7 @@ pub struct TableSchema {
 
 impl TableSchema {
     /// Find the vector column in the schema
+    #[allow(dead_code)]
     fn find_vector_column(&self) -> Option<(String, usize)> {
         for col in &self.columns {
             if let DataType::Vector(dims) = col.data_type {

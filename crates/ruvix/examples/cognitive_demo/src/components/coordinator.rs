@@ -38,7 +38,8 @@ pub struct Coordinator {
     name: &'static str,
 
     /// Timer capability.
-    timer_cap: CapHandle,
+    #[allow(dead_code)]
+    pub(super) timer_cap: CapHandle,
 
     /// Spawned task handles.
     tasks: Vec<TaskHandle>,

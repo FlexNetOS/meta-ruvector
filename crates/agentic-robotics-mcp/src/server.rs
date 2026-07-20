@@ -38,9 +38,7 @@ where
 /// Helper to create a text response
 pub fn text_response(text: impl Into<String>) -> ToolResult {
     ToolResult {
-        content: vec![ContentItem::Text {
-            text: text.into(),
-        }],
+        content: vec![ContentItem::Text { text: text.into() }],
         is_error: None,
     }
 }
@@ -48,9 +46,7 @@ pub fn text_response(text: impl Into<String>) -> ToolResult {
 /// Helper to create an error response
 pub fn error_response(error: impl Into<String>) -> ToolResult {
     ToolResult {
-        content: vec![ContentItem::Text {
-            text: error.into(),
-        }],
+        content: vec![ContentItem::Text { text: error.into() }],
         is_error: Some(true),
     }
 }

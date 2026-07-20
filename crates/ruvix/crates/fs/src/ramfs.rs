@@ -42,7 +42,6 @@ impl From<RamInodeType> for FileType {
 impl From<FileType> for RamInodeType {
     fn from(t: FileType) -> Self {
         match t {
-            FileType::Regular => RamInodeType::File,
             FileType::Directory => RamInodeType::Directory,
             FileType::Symlink => RamInodeType::Symlink,
             _ => RamInodeType::File,
@@ -177,6 +176,10 @@ impl RamInode {
     }
 
     /// Read data from the inode.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`FsError::IsADirectory`] if this inode is a directory.
     pub fn read(&self, offset: u64, buf: &mut [u8]) -> FsResult<usize> {
         if self.inode_type == RamInodeType::Directory {
             return Err(FsError::IsADirectory);
@@ -195,6 +198,11 @@ impl RamInode {
     }
 
     /// Write data to the inode.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`FsError::IsADirectory`] if this inode is a directory.
+    /// Returns [`FsError::FileTooLarge`] if the write would exceed the maximum file size.
     pub fn write(&mut self, offset: u64, buf: &[u8]) -> FsResult<usize> {
         if self.inode_type == RamInodeType::Directory {
             return Err(FsError::IsADirectory);
@@ -217,6 +225,11 @@ impl RamInode {
     }
 
     /// Truncate the file to the specified size.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`FsError::IsADirectory`] if this inode is a directory.
+    /// Returns [`FsError::FileTooLarge`] if `size` exceeds the maximum file size.
     pub fn truncate(&mut self, size: u64) -> FsResult<()> {
         if self.inode_type == RamInodeType::Directory {
             return Err(FsError::IsADirectory);
@@ -896,7 +909,7 @@ mod tests {
         // Should have . and .. plus our 3 entries
         assert!(entries.len() >= 5);
 
-        let names: Vec<_> = entries.iter().map(|e| e.name()).collect();
+        let names: Vec<_> = entries.iter().map(DirEntry::name).collect();
         assert!(names.contains(&"a.txt"));
         assert!(names.contains(&"b.txt"));
         assert!(names.contains(&"c_dir"));

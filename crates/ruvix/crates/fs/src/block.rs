@@ -59,6 +59,10 @@ pub trait BlockDevice {
     /// Sync any cached writes to the device.
     ///
     /// This should be called periodically to ensure data durability.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`FsError::IoError`] if flushing cached writes to the underlying device fails.
     fn sync(&self) -> FsResult<()> {
         Ok(())
     }
@@ -72,6 +76,11 @@ pub trait BlockDevice {
     /// * `count` - Number of blocks to read
     ///
     /// Default implementation reads blocks one at a time.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`FsError::InvalidArgument`] if the buffer length does not equal `count * block_size()`.
+    /// Returns [`FsError::BlockDeviceError`] if reading any block fails.
     fn read_blocks(&self, start_lba: u64, buf: &mut [u8], count: usize) -> FsResult<()> {
         let block_size = self.block_size();
         if buf.len() != count * block_size {
@@ -94,6 +103,12 @@ pub trait BlockDevice {
     /// * `count` - Number of blocks to write
     ///
     /// Default implementation writes blocks one at a time.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`FsError::InvalidArgument`] if the buffer length does not equal `count * block_size()`.
+    /// Returns [`FsError::ReadOnly`] if the device does not support writes.
+    /// Returns [`FsError::BlockDeviceError`] if writing any block fails.
     fn write_blocks(&self, start_lba: u64, buf: &[u8], count: usize) -> FsResult<()> {
         let block_size = self.block_size();
         if buf.len() != count * block_size {
@@ -248,6 +263,10 @@ impl MemoryBlockDevice {
     }
 
     /// Create a read-only memory block device from existing data.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `data.len()` is not a multiple of `block_size`.
     #[must_use]
     pub fn from_data_read_only(data: alloc::vec::Vec<u8>, block_size: usize) -> Self {
         assert!(
@@ -340,6 +359,10 @@ impl MemoryBlockDeviceMut {
     }
 
     /// Create from existing data.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `data.len()` is not a multiple of `block_size`.
     #[must_use]
     pub fn from_data(data: alloc::vec::Vec<u8>, block_size: usize) -> Self {
         assert!(

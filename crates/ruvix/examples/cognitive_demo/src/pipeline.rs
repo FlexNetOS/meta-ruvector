@@ -249,7 +249,6 @@ impl CognitivePipeline {
         }
 
         let batch_size = self.config.batch_size;
-        let mut processed = 0;
 
         // 1. Generate sensor events
         let sensor_processed = self
@@ -305,7 +304,7 @@ impl CognitivePipeline {
             self.coordinator.wait_timer(&mut self.kernel)?;
         }
 
-        processed = sensor_processed
+        let processed = sensor_processed
             .max(extractor_processed)
             .max(engine_processed);
         self.events_processed += processed as u64;

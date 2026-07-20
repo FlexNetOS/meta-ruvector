@@ -124,7 +124,7 @@ fn bench_vector_throughput(c: &mut Criterion) {
 
                 kernel.dispatch(black_box(Syscall::VectorPutProved {
                     store,
-                    key: VectorKey::new((nonce % 10000) as u64),
+                    key: VectorKey::new(nonce % 10000),
                     data: data.clone(),
                     proof,
                 }))
@@ -241,7 +241,7 @@ fn bench_perception_pipeline(c: &mut Criterion) {
             kernel
                 .dispatch(black_box(Syscall::VectorPutProved {
                     store: vector_store,
-                    key: VectorKey::new((nonce % 10000) as u64),
+                    key: VectorKey::new(nonce % 10000),
                     data: vec![1.0, 2.0, 3.0, 4.0],
                     proof,
                 }))
@@ -288,7 +288,7 @@ fn bench_sustained_throughput(c: &mut Criterion) {
 
                 let _ = kernel.dispatch(black_box(Syscall::VectorPutProved {
                     store,
-                    key: VectorKey::new((nonce % 100000) as u64),
+                    key: VectorKey::new(nonce % 100000),
                     data: vec![1.0, 2.0, 3.0, 4.0],
                     proof,
                 }));
@@ -336,7 +336,7 @@ fn bench_linux_pipeline_simulation(c: &mut Criterion) {
                 kernel
                     .dispatch(black_box(Syscall::VectorPutProved {
                         store: vector_store,
-                        key: VectorKey::new((nonce % 10000) as u64),
+                        key: VectorKey::new(nonce % 10000),
                         data: vec![1.0, 2.0, 3.0, 4.0],
                         proof,
                     }))

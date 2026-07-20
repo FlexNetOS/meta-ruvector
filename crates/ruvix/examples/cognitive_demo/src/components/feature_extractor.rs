@@ -182,8 +182,8 @@ impl FeatureExtractor {
             source_sequence: embedding.source_sequence,
             coherence: embedding.coherence,
         };
-        let bytes = msg.to_bytes();
-        kernel.queue_send(self.output_queue, &bytes, MsgPriority::Normal)?;
+        let _bytes = msg.to_bytes();
+        kernel.queue_send(self.output_queue, &_bytes, MsgPriority::Normal)?;
 
         self.events_processed += 1;
 

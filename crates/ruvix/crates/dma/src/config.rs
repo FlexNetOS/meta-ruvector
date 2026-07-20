@@ -115,6 +115,10 @@ impl DmaBurstSize {
 }
 
 /// Configuration for a DMA transfer.
+///
+/// The boolean fields each toggle an independent hardware transfer attribute, so
+/// a struct of booleans is the natural representation (not bitflags or an enum).
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct DmaConfig {
     /// Transfer direction.

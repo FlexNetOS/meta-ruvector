@@ -3,7 +3,7 @@
 use anyhow::{Context, Result};
 use clap::Args;
 use colored::Colorize;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 /// Arguments for the flash command
 #[derive(Args, Debug)]
@@ -213,7 +213,7 @@ fn check_device(device: &PathBuf) -> Result<()> {
     Ok(())
 }
 
-fn confirm_flash(device: &PathBuf) -> Result<bool> {
+fn confirm_flash(device: &Path) -> Result<bool> {
     println!(
         "\n  {} All data on {} will be ERASED!",
         "WARNING".red().bold(),

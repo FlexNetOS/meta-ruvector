@@ -233,9 +233,9 @@ mod tests {
 
     #[test]
     fn test_error_creation() {
-        let err = DtbError::invalid_magic(0x12345678);
+        let err = DtbError::invalid_magic(0x1234_5678);
         if let DtbError::InvalidMagic { found } = err {
-            assert_eq!(found, 0x12345678);
+            assert_eq!(found, 0x1234_5678);
         } else {
             panic!("Wrong error type");
         }
@@ -265,8 +265,8 @@ mod tests {
     #[test]
     fn test_error_display() {
         extern crate std;
-        let err = DtbError::invalid_magic(0xDEADBEEF);
-        let msg = std::format!("{}", err);
+        let err = DtbError::invalid_magic(0xDEAD_BEEF);
+        let msg = std::format!("{err}");
         assert!(msg.contains("deadbeef"));
     }
 }

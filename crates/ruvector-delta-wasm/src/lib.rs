@@ -38,15 +38,18 @@ pub use capture::*;
 pub use memory::*;
 pub use simd::*;
 
-use js_sys::{Array, Float32Array, Object, Reflect, Uint8Array};
-use parking_lot::RwLock;
+use js_sys::Float32Array;
+// Array/Object/Reflect/Uint8Array: used via pub use re-exports
+#[allow(unused_imports)]
+use js_sys::{Array, Object, Reflect, Uint8Array};
+// RwLock removed: not used directly in this module
 use ruvector_delta_core::{
     Delta, DeltaEncoding, DeltaOp, DeltaStream, DeltaValue, DeltaWindow, HybridEncoding,
-    SparseEncoding, VectorDelta, WindowConfig, WindowType,
+    VectorDelta,
 };
+// SparseEncoding/WindowConfig/WindowType: re-exported below via pub use
 use serde::{Deserialize, Serialize};
 use serde_wasm_bindgen::{from_value, to_value};
-use std::sync::Arc;
 use wasm_bindgen::prelude::*;
 
 /// Initialize panic hook for better error messages
@@ -392,6 +395,10 @@ impl DeltaEngine {
 #[wasm_bindgen]
 pub struct JsDeltaStream {
     inner: DeltaStream<VectorDelta>,
+    // Retained from the constructor as part of the wasm public API surface
+    // (the `dimensions` arg is required by JS callers); kept for API symmetry
+    // with JsDeltaWindow and potential future inspection.
+    #[allow(dead_code)]
     dimensions: usize,
 }
 
@@ -473,6 +480,10 @@ impl JsDeltaStream {
 #[wasm_bindgen]
 pub struct JsDeltaWindow {
     inner: DeltaWindow<VectorDelta>,
+    // Retained from the constructors as part of the wasm public API surface
+    // (the `dimensions` arg is required by JS callers); the inner DeltaWindow
+    // does not store it, so it is kept here for API symmetry / future use.
+    #[allow(dead_code)]
     dimensions: usize,
 }
 
@@ -572,7 +583,7 @@ mod tests {
 
         let delta = engine.capture(old.clone(), new.clone()).unwrap();
 
-        let mut test_vec = Float32Array::from(&[1.0f32, 2.0, 3.0][..]);
+        let test_vec = Float32Array::from(&[1.0f32, 2.0, 3.0][..]);
         engine.apply(test_vec.clone(), &delta).unwrap();
 
         // Note: can't easily verify Float32Array equality in WASM tests

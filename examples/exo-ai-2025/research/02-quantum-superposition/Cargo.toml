@@ -1,6 +1,6 @@
-[workspace]
-# This allows the crate to be compiled standalone
-
+# Standalone crate: declare its own (empty) workspace so cargo does not
+# attempt to attach it to the parent `exo-ai-2025` workspace it physically
+# lives inside but is not a member of.
 [package]
 name = "quantum-cognitive-superposition"
 version = "0.1.0"

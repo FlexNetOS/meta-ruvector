@@ -102,19 +102,12 @@ impl PathBuilder {
         Self { path, len: 1 }
     }
 
-    /// Create a path builder from a path string.
-    pub fn from_str(s: &str) -> DtbResult<Self> {
-        if s.len() >= MAX_PATH_LEN {
-            return Err(DtbError::PathTooLong { length: s.len() });
-        }
-
-        let mut builder = Self::new();
-        builder.len = s.len();
-        builder.path[..s.len()].copy_from_slice(s.as_bytes());
-        Ok(builder)
-    }
-
     /// Append a path component.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`DtbError::PathTooLong`] if appending the component would exceed
+    /// [`MAX_PATH_LEN`].
     pub fn push(&mut self, component: &str) -> DtbResult<()> {
         // Calculate new length (add 1 for separator if not at root)
         let sep_len = usize::from(self.len != 1);
@@ -172,6 +165,26 @@ impl PathBuilder {
 impl Default for PathBuilder {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+impl core::str::FromStr for PathBuilder {
+    type Err = DtbError;
+
+    /// Create a path builder from a path string.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`DtbError::PathTooLong`] if `s` is at least [`MAX_PATH_LEN`] bytes long.
+    fn from_str(s: &str) -> DtbResult<Self> {
+        if s.len() >= MAX_PATH_LEN {
+            return Err(DtbError::PathTooLong { length: s.len() });
+        }
+
+        let mut builder = Self::new();
+        builder.len = s.len();
+        builder.path[..s.len()].copy_from_slice(s.as_bytes());
+        Ok(builder)
     }
 }
 
@@ -289,6 +302,15 @@ impl<'a> ParsedReg<'a> {
     }
 }
 
+impl<'a> IntoIterator for &ParsedReg<'a> {
+    type Item = RegEntry;
+    type IntoIter = RegIter<'a>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     extern crate std;
@@ -354,7 +376,7 @@ mod tests {
 
     #[test]
     fn test_path_builder_from_str() {
-        let pb = PathBuilder::from_str("/soc/uart@10000").unwrap();
+        let pb: PathBuilder = "/soc/uart@10000".parse().unwrap();
         assert_eq!(pb.as_str(), "/soc/uart@10000");
     }
 

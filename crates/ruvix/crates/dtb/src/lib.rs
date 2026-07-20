@@ -67,7 +67,7 @@ mod property;
 
 pub use error::{DtbError, DtbResult};
 pub use header::FdtHeader;
-pub use node::{Node, NodeIter, ParsedReg};
+pub use node::{Node, NodeIter, ParsedReg, PathBuilder};
 pub use parser::DeviceTree;
 pub use property::{Property, PropertyValue, RegEntry, RegIter};
 

@@ -80,9 +80,12 @@ impl PhysMemError {
     pub const fn to_kernel_error(self) -> KernelError {
         match self {
             Self::OutOfMemory | Self::AllocationTooLarge => KernelError::OutOfMemory,
-            Self::ZeroAllocation | Self::InvalidOrder => KernelError::InvalidArgument,
-            Self::UnalignedAddress | Self::AddressOutOfRange => KernelError::InvalidArgument,
-            Self::NotAllocated | Self::SizeMismatch => KernelError::InvalidArgument,
+            Self::ZeroAllocation
+            | Self::InvalidOrder
+            | Self::UnalignedAddress
+            | Self::AddressOutOfRange
+            | Self::NotAllocated
+            | Self::SizeMismatch => KernelError::InvalidArgument,
             Self::NotInitialized => KernelError::NotPermitted,
             Self::InternalCorruption => KernelError::InternalError,
         }

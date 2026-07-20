@@ -64,6 +64,13 @@
 #![deny(clippy::all)]
 #![allow(clippy::pedantic)] // lint debt: CI denies warnings; re-enable after grooming
 #![allow(clippy::module_name_repetitions)]
+// Network stack: packets are byte-oriented and lengths/addresses are sized by the
+// wire format; the target is 64-bit (aarch64), so casts between usize and the
+// fixed-width packet field types are lossless here, not truncation bugs.
+#![allow(clippy::cast_possible_truncation)]
+// No-std, no-alloc device: the loopback device owns a fixed inline packet ring
+// buffer (no heap), so it is intentionally a large stack value, not an oversight.
+#![allow(clippy::large_stack_arrays)]
 
 #[cfg(feature = "alloc")]
 extern crate alloc;

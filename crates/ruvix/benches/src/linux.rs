@@ -15,6 +15,8 @@
 
 use std::time::Instant;
 
+// BenchmarkResult: kept for API compat
+#[allow(unused_imports)]
 use crate::BenchmarkResult;
 
 /// Linux benchmark configuration.

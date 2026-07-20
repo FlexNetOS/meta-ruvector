@@ -3,7 +3,7 @@
 use anyhow::Result;
 use clap::Subcommand;
 use colored::Colorize;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 /// Security actions
 #[derive(Subcommand, Debug)]
@@ -539,13 +539,13 @@ fn execute_scan(
         };
 
         // Filter by minimum severity
-        let show = match (min_severity, *severity) {
-            (Severity::Low, _) => true,
-            (Severity::Medium, "Critical" | "High" | "Medium") => true,
-            (Severity::High, "Critical" | "High") => true,
-            (Severity::Critical, "Critical") => true,
-            _ => false,
-        };
+        let show = matches!(
+            (min_severity, *severity),
+            (Severity::Low, _)
+                | (Severity::Medium, "Critical" | "High" | "Medium")
+                | (Severity::High, "Critical" | "High")
+                | (Severity::Critical, "Critical")
+        );
 
         if show {
             println!();
@@ -751,7 +751,7 @@ fn execute_memory_check(
 }
 
 fn execute_verify(
-    image: &PathBuf,
+    image: &Path,
     hash: HashAlgorithm,
     expected: Option<&str>,
     manifest: Option<&PathBuf>,

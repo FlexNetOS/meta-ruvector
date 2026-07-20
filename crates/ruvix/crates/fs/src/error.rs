@@ -118,6 +118,8 @@ impl FsError {
     /// Convert error to a POSIX-like error number.
     #[must_use]
     pub const fn to_errno(self) -> i32 {
+        // Arms are grouped by errno value (POSIX names in comments); several filesystem
+        // error variants intentionally map to the same errno.
         match self {
             Self::NotFound => 2,              // ENOENT
             Self::PermissionDenied => 13,     // EACCES

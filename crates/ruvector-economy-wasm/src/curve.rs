@@ -239,7 +239,7 @@ mod tests {
         assert!((contribution_multiplier(0.0) - 10.0).abs() < 0.01);
         assert_eq!(calculate_reward(100, 0.0), 1000);
         assert_eq!(get_tier_name(0.0), "Genesis");
-        assert!(get_tiers_json().contains("Genesis") == false); // JSON format
+        assert!(!get_tiers_json().contains("Genesis")); // JSON format
         assert!(get_tiers_json().starts_with("["));
     }
 }

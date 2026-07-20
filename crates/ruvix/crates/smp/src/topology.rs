@@ -100,8 +100,13 @@ impl CpuTopology {
     /// ```
     #[inline]
     pub const fn new() -> Self {
-        // Workaround for const array initialization
+        // Workaround for const array initialization: a `const` of an atomic is the
+        // standard idiom for `[Atomic; N]` repeat-initialization. Each array slot
+        // gets its own fresh atomic, so the interior-mutability lint is a false
+        // positive here.
+        #[allow(clippy::declare_interior_mutable_const)]
         const OFFLINE: AtomicU8 = AtomicU8::new(CpuState::Offline as u8);
+        #[allow(clippy::declare_interior_mutable_const)]
         const ZERO: AtomicU8 = AtomicU8::new(0);
 
         Self {
@@ -396,11 +401,11 @@ impl CpuTopology {
     #[inline]
     const fn raw_to_state(raw: u8) -> CpuState {
         match raw {
-            0 => CpuState::Offline,
             1 => CpuState::Booting,
             2 => CpuState::Online,
             3 => CpuState::Halted,
-            _ => CpuState::Offline, // Invalid -> treat as offline
+            // 0 and any invalid value are treated as offline.
+            _ => CpuState::Offline,
         }
     }
 }

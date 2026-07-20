@@ -154,7 +154,7 @@ impl fmt::Display for CpuIdError {
 ///                    |            |
 ///                    +<-----------+ (can resume)
 /// ```
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[repr(u8)]
 #[derive(Default)]
 pub enum CpuState {
@@ -278,10 +278,10 @@ pub fn current_cpu() -> CpuId {
 /// }
 /// ```
 #[inline]
-pub fn cpu_online(_id: CpuId) -> bool {
+pub fn cpu_online(id: CpuId) -> bool {
     // In a real implementation, this would check the topology
     // For now, only CPU 0 is considered online
-    _id.is_boot_cpu()
+    id.is_boot_cpu()
 }
 
 /// Get the total number of CPUs in the system

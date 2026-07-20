@@ -1,0 +1,71 @@
+{
+  "name": "@ruvector/ruqu",
+  "version": "0.2.0",
+  "description": "Quantum circuit simulator in WebAssembly + agent harness CLI — run state-vector simulation, Grover search, and QAOA MaxCut from your terminal. npx @ruvector/ruqu",
+  "type": "module",
+  "bin": {
+    "ruqu": "bin/cli.js"
+  },
+  "files": [
+    "bin/**",
+    "src/**",
+    "tsconfig.json",
+    ".claude/**",
+    "CLAUDE.md",
+    "README.md",
+    "LICENSE",
+    "wasm/**"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "init": "node ./bin/cli.js init",
+    "doctor": "node ./bin/cli.js doctor"
+  },
+  "dependencies": {
+    "@metaharness/kernel": "^0.1.0",
+    "@metaharness/host-claude-code": "^0.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.4.0",
+    "vitest": "^3.0.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "license": "MIT",
+  "author": "Ruvector Team <info@ruv.io> (https://ruv.io)",
+  "homepage": "https://github.com/ruvnet/ruqu#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ruvnet/ruqu.git",
+    "directory": "cli"
+  },
+  "bugs": {
+    "url": "https://github.com/ruvnet/ruqu/issues"
+  },
+  "keywords": [
+    "ruqu",
+    "cli",
+    "agent",
+    "agent-harness",
+    "metaharness",
+    "ai-agent",
+    "claude-code",
+    "quantum",
+    "harness",
+    "npx",
+    "quantum-computing",
+    "quantum-simulator",
+    "webassembly",
+    "wasm",
+    "qaoa",
+    "grover",
+    "state-vector",
+    "quantum-circuit"
+  ]
+}

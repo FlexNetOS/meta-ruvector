@@ -427,7 +427,7 @@ mod tests {
 
         // Queue vectors
         for i in 0..10 {
-            engine.queue_vector(VectorKey::new(i), i as u64, 0.8);
+            engine.queue_vector(VectorKey::new(i), i, 0.8);
         }
 
         // Process batch

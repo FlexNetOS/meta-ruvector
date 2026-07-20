@@ -194,9 +194,7 @@ impl<'a> DeviceTree<'a> {
                 Some(FdtToken::EndNode | FdtToken::End) => {
                     break;
                 }
-                Some(FdtToken::Nop) => {
-                    continue;
-                }
+                Some(FdtToken::Nop) => {}
                 None => {
                     return Err(DtbError::InvalidToken { value: token_val });
                 }
@@ -207,11 +205,19 @@ impl<'a> DeviceTree<'a> {
     }
 
     /// Get a u32 property value.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`DtbError`] if the property is missing or is not a 4-byte value.
     pub fn get_u32(&self, node: &Node<'a>, name: &str) -> DtbResult<u32> {
         self.get_property(node, name)?.as_u32()
     }
 
     /// Get a u64 property value.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`DtbError`] if the property is missing or is not an 8-byte value.
     pub fn get_u64(&self, node: &Node<'a>, name: &str) -> DtbResult<u64> {
         self.get_property(node, name)?.as_u64()
     }
@@ -219,11 +225,20 @@ impl<'a> DeviceTree<'a> {
     /// Get a string property value.
     ///
     /// Note: The returned string has the same lifetime as the DTB blob.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`DtbError`] if the property is missing or is not a valid
+    /// null-terminated UTF-8 string.
     pub fn get_string(&self, node: &Node<'a>, name: &str) -> DtbResult<&'a str> {
         self.get_property(node, name)?.as_str()
     }
 
     /// Get the reg property parsed with proper cell sizes.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`DtbError`] if the `reg` property is missing or malformed.
     pub fn get_reg(&self, node: &Node<'a>) -> DtbResult<ParsedReg<'a>> {
         // Get #address-cells and #size-cells from parent
         // Default values per spec: #address-cells = 2, #size-cells = 1
@@ -378,9 +393,7 @@ impl<'a> DeviceTree<'a> {
                         .ok_or(DtbError::IntegerOverflow)?;
                     offset = align4(value_end);
                 }
-                Some(FdtToken::Nop) => {
-                    continue;
-                }
+                Some(FdtToken::Nop) => {}
                 Some(FdtToken::End) => {
                     break;
                 }

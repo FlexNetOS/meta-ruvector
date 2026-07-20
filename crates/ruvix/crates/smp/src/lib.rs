@@ -82,6 +82,10 @@
 #![allow(clippy::pedantic)] // lint debt: CI denies warnings; re-enable after grooming
 #![allow(clippy::must_use_candidate)]
 #![allow(clippy::module_name_repetitions)]
+// CPU topology: CPU IDs are u8 by design (MAX_CPUS = 256, so IDs are 0..=255).
+// Casts of in-range CPU indices to u8 are lossless; the cast in the out-of-range
+// error path only records a diagnostic value. Casts are intentional, not bugs.
+#![allow(clippy::cast_possible_truncation)]
 
 #[cfg(feature = "alloc")]
 extern crate alloc;
@@ -96,9 +100,9 @@ mod percpu;
 mod spinlock;
 mod topology;
 
-pub use cpu::{cpu_count, cpu_online, current_cpu, CpuId, CpuState, MAX_CPUS};
-pub use ipi::{send_ipi, IpiMessage, IpiTarget};
-pub use percpu::PerCpu;
+pub use cpu::{cpu_count, cpu_online, current_cpu, set_cpu_count, CpuId, CpuState, MAX_CPUS};
+pub use ipi::{send_ipi, IpiHandler, IpiMessage, IpiStats, IpiTarget};
+pub use percpu::{CacheAligned, PerCpu};
 pub use spinlock::{SpinLock, SpinLockGuard};
 pub use topology::CpuTopology;
 

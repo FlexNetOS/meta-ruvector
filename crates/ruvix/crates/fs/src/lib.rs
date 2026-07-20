@@ -43,6 +43,17 @@
 #![deny(clippy::all)]
 #![allow(clippy::pedantic)] // lint debt: CI denies warnings; re-enable after grooming
 #![allow(clippy::module_name_repetitions)]
+// Bare-metal kernel filesystem: FAT32 on-disk structures, block/sector addressing, and
+// file-offset arithmetic use spec-fixed integer widths. The width/sign casts below are
+// intentional and bounded by the on-disk format and device geometry (e.g. u64 sector index
+// -> usize, u32 cluster -> u64 LBA, sign-guarded i64 file offsets -> u64). They are not lossy
+// bugs, so the pedantic cast lints are allowed crate-wide rather than peppering call sites.
+#![allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    clippy::cast_possible_wrap,
+    clippy::cast_lossless
+)]
 
 #[cfg(feature = "alloc")]
 extern crate alloc;

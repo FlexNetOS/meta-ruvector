@@ -3,7 +3,7 @@
 use anyhow::Result;
 use clap::Args;
 use colored::Colorize;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 /// Arguments for the build command
 #[derive(Args, Debug)]

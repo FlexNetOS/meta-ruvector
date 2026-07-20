@@ -45,7 +45,7 @@ use core::ops::{Index, IndexMut};
 /// # Type Parameters
 ///
 /// * `T` - The type of data to store per-CPU. Must be `Send` to allow
-///         initialization from any CPU.
+///   initialization from any CPU.
 ///
 /// # Example
 ///
