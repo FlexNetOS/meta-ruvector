@@ -971,14 +971,7 @@ pub fn create_backend() -> Box<dyn LlmBackend> {
     {
         #[cfg(feature = "candle")]
         {
-            Box::new(CandleBackend::new().unwrap_or_else(|e| {
-                // Don't swallow the init error silently — surface WHY we fell back.
-                // `default()` resolves the same device as `new()` (incl. the
-                // `RUVLLM_DEVICE`/CUDA preference), so this is no longer a silent
-                // downgrade to CPU, but the operator still needs to see the cause.
-                tracing::error!(error = %e, "CandleBackend::new() failed; falling back to default backend");
-                CandleBackend::default()
-            }))
+            Box::new(CandleBackend::new().unwrap_or_else(|_| CandleBackend::default()))
         }
 
         #[cfg(not(feature = "candle"))]

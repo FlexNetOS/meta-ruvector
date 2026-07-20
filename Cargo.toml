@@ -1,8 +1,8 @@
 [workspace]
-exclude = ["crates/micro-hnsw-wasm", "crates/ruvector-hyperbolic-hnsw", "crates/ruvector-hyperbolic-hnsw-wasm", "examples/ruvLLM/esp32", "examples/ruvLLM/esp32-flash", "examples/edge-net", "examples/data", "examples/ruvLLM", "examples/delta-behavior", "crates/rvf", "crates/rvf/*", "crates/rvf/*/*",
-    # emergent-time-wasm: standalone cdylib with own opt-level=z, panic=abort (upstream)
+exclude = ["external/ruqu", "external/rvdna", "examples/OSpipe", "examples/rvf", "crates/micro-hnsw-wasm", "crates/ruvector-hyperbolic-hnsw", "crates/ruvector-hyperbolic-hnsw-wasm", "examples/ruvLLM/esp32", "examples/ruvLLM/esp32-flash", "examples/edge-net", "examples/data", "examples/ruvLLM", "examples/delta-behavior", "crates/rvf", "crates/rvf/*", "crates/rvf/*/*", "examples/rvf-desktop", "crates/mcp-brain-server",
+    # emergent-time-wasm: standalone cdylib with own opt-level=z, panic=abort
     "crates/emergent-time-wasm",
-    # sonic-ct crates: self-contained detached workspaces (upstream)
+    # sonic-ct crates: self-contained detached workspaces
     "crates/sonic-ct", "crates/sonic-ct-wasm",
     # ruvector-postgres is a pgrx-based PostgreSQL extension. Its build script
     # requires `$PGRX_HOME` set up via `cargo install cargo-pgrx --version 0.12.9`
@@ -392,18 +392,22 @@ members = [
     "crates/photonlayer-ruvector",
     "crates/photonlayer-cli",
     "crates/photonlayer-wasm",
-    # Recovered orphans — compile AND pass the clippy gate.
-    "crates/ruvector-temporal-tensor-wasm",
-    "crates/ruvector-bet4-ivf-bench",
-    # spiking-network: event-driven SNN for ASIC neuromorphic computing
-    "examples/spiking-network",
-    # agentic-robotics-*: DDS/ROS2 robotics middleware cluster (ruvnet/vibecast) — requires zenoh/rustdds/cdr workspace deps
-    "crates/agentic-robotics-core",
-    "crates/agentic-robotics-rt",
-    "crates/agentic-robotics-node",
-    "crates/agentic-robotics-mcp",
-    "crates/agentic-robotics-embedded",
-    "crates/agentic-robotics-benchmarks",
+    # Matryoshka coarse-to-fine ANN search: three-variant funnel with recall/latency tradeoffs (ADR-264)
+    "crates/ruvector-matryoshka",
+    # PQ-ADC: Product Quantization with Asymmetric Distance Computation (64× compression)
+    "crates/ruvector-pq-search",
+    # SOTA benchmark suite (ADR-265)
+    "crates/ruvector-sota-bench",
+    # Capability-gated ANN: per-vector read access control with bitset tokens (ADR-268)
+    "crates/ruvector-capgated",
+    # SPANN partition spilling for boundary-safe ANN (ADR-268)
+    "crates/ruvector-spann",
+    # ColBERT-style multi-vector MaxSim late-interaction search
+    "crates/ruvector-maxsim",
+    # TimesFM 1.0 200M decoder-only patched time-series Transformer (candle, ADR-189/191)
+    "crates/timesfm",
+    # RuVector integration for TimesFM: Forecaster + anomaly bands + sweep early-stopping
+    "crates/ruvector-timesfm",
 ]
 resolver = "2"
 
@@ -411,7 +415,7 @@ resolver = "2"
 unused_unit = "allow"
 
 [workspace.package]
-version = "2.2.3"
+version = "2.3.0"
 edition = "2021"
 rust-version = "1.77"
 license = "MIT"

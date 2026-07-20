@@ -13,6 +13,9 @@ import {
   CohereEmbeddings,
   AnthropicEmbeddings,
   HuggingFaceEmbeddings,
+  LatticeWasmEmbeddings,
+  applyLatticeWasmQueryPrefix,
+  normalizeLatticeWasmModel,
   type BatchEmbeddingResult,
   type EmbeddingError,
 } from '../src/embeddings.js';
@@ -221,6 +224,153 @@ describe('HuggingFaceEmbeddings', () => {
     const hf = new HuggingFaceEmbeddings();
     // Should not throw on construction
     assert.ok(hf);
+  });
+});
+
+// ============================================================================
+// Tests for Lattice WASM Provider
+// ============================================================================
+
+describe('LatticeWasmEmbeddings', () => {
+  it('should throw for an unknown model', () => {
+    assert.throws(
+      () => {
+        new LatticeWasmEmbeddings({ model: 'not-a-real-model' });
+      },
+      /Unknown lattice-embed-wasm model/
+    );
+  });
+
+  it('should create with default config', () => {
+    const lattice = new LatticeWasmEmbeddings();
+    assert.strictEqual(lattice.getDimension(), 384);
+    assert.strictEqual(lattice.getMaxBatchSize(), 1);
+  });
+
+  it('should create with bge-small config', () => {
+    const lattice = new LatticeWasmEmbeddings({ model: 'bge-small' });
+    assert.strictEqual(lattice.getDimension(), 384);
+  });
+
+  it('should not throw on construction (no eager load)', () => {
+    const lattice = new LatticeWasmEmbeddings();
+    assert.ok(lattice);
+  });
+
+  it('should produce a 384-dim, L2-normalized embedding when the wasm package and its model weights are available', async (t) => {
+    let lattice: any;
+    try {
+      // Read from a variable (not a literal) so TypeScript does not attempt
+      // to statically resolve module types for an optional peer that may
+      // not be installed -- same rationale as in LatticeWasmEmbeddings itself.
+      const specifier = '@khive-ai/lattice-embed-wasm';
+      lattice = await import(specifier);
+    } catch {
+      t.skip('@khive-ai/lattice-embed-wasm is not installed (optional peer dependency)');
+      return;
+    }
+    void lattice;
+
+    const provider = new LatticeWasmEmbeddings();
+    let result: BatchEmbeddingResult;
+    try {
+      result = await provider.embedTexts(['Hello, world!']);
+    } catch (error: any) {
+      // Model weights are resolved from a local cache or a pinned release
+      // asset; neither is guaranteed to be present in every environment
+      // (e.g. a fresh CI checkout with no local model cache). This is an
+      // environment-availability gate, not a code-correctness failure.
+      t.skip(`lattice-embed-wasm model weights unavailable: ${error.message}`);
+      return;
+    }
+
+    assert.strictEqual(result.embeddings.length, 1);
+    const embedding = result.embeddings[0].embedding;
+    // Mutation-sensitive: an exact dimension check, not just "is an array".
+    assert.strictEqual(embedding.length, 384);
+
+    let sumSquares = 0;
+    for (const value of embedding) sumSquares += value * value;
+    const norm = Math.sqrt(sumSquares);
+    assert.ok(Math.abs(norm - 1.0) < 1e-3, `expected L2 norm near 1.0, got ${norm}`);
+  });
+});
+
+// ============================================================================
+// LatticeWasmEmbeddings: query/passage asymmetry + model alias reconciliation
+//
+// Regression coverage for #662 (symmetric-vs-asymmetric bge-small mismatch
+// between this provider and ruvector-core's LatticeEmbedding). Exercises the
+// pure helper functions directly rather than the wasm layer itself, so these
+// tests run without the optional @khive-ai/lattice-embed-wasm peer package.
+// ============================================================================
+
+describe('LatticeWasmEmbeddings query/passage prefix asymmetry (#662)', () => {
+  it('prefixes bge-small queries with the BGE-v1.5 retrieval instruction', () => {
+    const text = 'Where is the Eiffel Tower?';
+    assert.strictEqual(
+      applyLatticeWasmQueryPrefix('bge-small', text),
+      `Represent this sentence for searching relevant passages: ${text}`
+    );
+  });
+
+  it('leaves minilm queries unprefixed (genuinely symmetric model)', () => {
+    const text = 'Where is the Eiffel Tower?';
+    assert.strictEqual(applyLatticeWasmQueryPrefix('minilm', text), text);
+  });
+
+  it('bge-small query text differs from passage text; minilm query and passage text are identical', () => {
+    const text = 'Where is the Eiffel Tower?';
+    // Passage side: LatticeWasmEmbeddings.embedText/embedTexts never prefix,
+    // so plain `text` is what reaches the wasm embed() call for documents.
+    assert.notStrictEqual(applyLatticeWasmQueryPrefix('bge-small', text), text);
+    assert.strictEqual(applyLatticeWasmQueryPrefix('minilm', text), text);
+  });
+
+  it('LatticeWasmEmbeddings.embedQuery resolves the model before prefixing, so aliases behave like the canonical name', () => {
+    const viaAlias = new LatticeWasmEmbeddings({ model: 'bge-small-en-v1.5' });
+    const viaCanonical = new LatticeWasmEmbeddings({ model: 'bge-small' });
+    assert.strictEqual(viaAlias.getModel(), viaCanonical.getModel());
+  });
+});
+
+describe('LatticeWasmEmbeddings model alias parsing (#662)', () => {
+  it('accepts the same bge-small alias surface as lattice-embed\'s EmbeddingModel::from_str', () => {
+    for (const alias of [
+      'bge-small',
+      'bge-small-en',
+      'bge-small-en-v1.5',
+      'small',
+      'BAAI/bge-small-en-v1.5',
+      'BGE_SMALL_EN_V1.5',
+    ]) {
+      const provider = new LatticeWasmEmbeddings({ model: alias });
+      assert.strictEqual(provider.getModel(), 'bge-small', `alias "${alias}"`);
+      assert.strictEqual(provider.getDimension(), 384, `alias "${alias}"`);
+    }
+  });
+
+  it('accepts the minilm alias surface', () => {
+    for (const alias of [
+      'minilm',
+      'all-minilm',
+      'all-minilm-l6-v2',
+      'sentence-transformers/all-MiniLM-L6-v2',
+    ]) {
+      const provider = new LatticeWasmEmbeddings({ model: alias });
+      assert.strictEqual(provider.getModel(), 'minilm', `alias "${alias}"`);
+    }
+  });
+
+  it('normalizeLatticeWasmModel returns undefined for unrecognized ids', () => {
+    assert.strictEqual(normalizeLatticeWasmModel('not-a-real-model'), undefined);
+  });
+
+  it('still rejects unknown models at construction', () => {
+    assert.throws(
+      () => new LatticeWasmEmbeddings({ model: 'not-a-real-model' }),
+      /Unknown lattice-embed-wasm model/
+    );
   });
 });
 

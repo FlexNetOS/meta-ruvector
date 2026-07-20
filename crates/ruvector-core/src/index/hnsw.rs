@@ -24,14 +24,22 @@ impl DistanceFn {
 impl Distance<f32> for DistanceFn {
     #[inline(always)]
     fn eval(&self, a: &[f32], b: &[f32]) -> f32 {
-        let d = distance(a, b, self.metric).unwrap_or(f32::MAX);
-        // hnsw_rs asserts `dist_to_ref >= 0` for non-negative metrics.
-        // Clamp tiny FP-rounding negatives for Euclidean/Cosine/Manhattan,
-        // but NOT DotProduct which intentionally returns negative values.
-        if self.metric == DistanceMetric::DotProduct {
-            d
-        } else {
-            d.max(0.0)
+        // Bypass the simsimd/Result-overhead path and call our hand-written
+        // SIMD kernels directly.  hnsw_rs asserts dist >= 0 in its search
+        // loop, so clamp any floating-point rounding below zero.
+        use crate::simd_intrinsics;
+        match self.metric {
+            DistanceMetric::Euclidean => simd_intrinsics::euclidean_distance_simd(a, b),
+            DistanceMetric::Cosine => {
+                // cosine_similarity_simd returns dot/(|a||b|); HNSW needs
+                // cosine DISTANCE = 1 - sim, clamped to 0.
+                (1.0_f32 - simd_intrinsics::cosine_similarity_simd(a, b)).max(0.0)
+            }
+            DistanceMetric::DotProduct => {
+                // Negate for minimization; clamp per hnsw_rs assertion.
+                (-simd_intrinsics::dot_product_simd(a, b)).max(0.0)
+            }
+            DistanceMetric::Manhattan => simd_intrinsics::manhattan_distance_simd(a, b),
         }
     }
 }
