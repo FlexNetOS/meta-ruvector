@@ -4200,7 +4200,10 @@ fn write_file(file: &PlannedFile) -> Result<()> {
 fn is_ignored_path(path: &Path) -> bool {
     path.components().any(|component| {
         let value = component.as_os_str().to_string_lossy();
-        matches!(value.as_ref(), "node_modules" | ".git" | "target")
+        matches!(
+            value.as_ref(),
+            "node_modules" | ".git" | "target" | ".claude-flow"
+        )
     })
 }
 

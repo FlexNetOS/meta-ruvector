@@ -1847,6 +1847,47 @@ fn mirror_skips_ignored_untracked_claude_local_files() {
 }
 
 #[test]
+fn mirror_skips_ignored_claude_flow_runtime_data() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path();
+    Command::new("git")
+        .arg("init")
+        .current_dir(root)
+        .status()
+        .unwrap();
+    fs::write(root.join(".gitignore"), ".claude-flow/\n").unwrap();
+    fs::create_dir_all(root.join(".claude/skills/.claude-flow/data")).unwrap();
+    fs::create_dir_all(root.join(".claude/skills/demo")).unwrap();
+    fs::write(root.join(".claude/settings.json"), r#"{"env":{}}"#).unwrap();
+    fs::write(
+        root.join(".claude/skills/.claude-flow/data/pending-insights.jsonl"),
+        "{\"runtime\":true}\n",
+    )
+    .unwrap();
+    fs::write(root.join(".claude/skills/demo/SKILL.md"), "# Demo\n").unwrap();
+
+    mirror_codex_surface(MirrorOptions {
+        repo_root: root.to_path_buf(),
+        lua_policy: None,
+        check: false,
+    })
+    .unwrap();
+
+    assert!(root.join(".agents/skills/demo/SKILL.md").exists());
+    assert!(!root
+        .join(".agents/skills/.claude-flow/data/pending-insights.jsonl")
+        .exists());
+    let manifest = fs::read_to_string(root.join(".codex/mirror-manifest.json")).unwrap();
+    assert!(!manifest.contains("pending-insights.jsonl"));
+    mirror_codex_surface(MirrorOptions {
+        repo_root: root.to_path_buf(),
+        lua_policy: None,
+        check: true,
+    })
+    .unwrap();
+}
+
+#[test]
 fn mirror_skips_large_ignored_claude_surface() {
     let temp = tempfile::tempdir().unwrap();
     let root = temp.path();
