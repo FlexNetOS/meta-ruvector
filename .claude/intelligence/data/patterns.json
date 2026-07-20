@@ -375,11 +375,11 @@
   },
   "edit_js_in_project": {
     "_meta": {
-      "lastUpdate": "2025-12-25T21:41:44.338Z",
-      "updateCount": 97
+      "lastUpdate": "2026-07-09T11:47:18.297Z",
+      "updateCount": 100
     },
     "javascript-developer": 0.75,
-    "successful-edit": 0.0601478273971287
+    "successful-edit": 0.029848407680038443
   },
   "edit_md_in_project": {
     "_meta": {
@@ -407,11 +407,11 @@
   },
   "edit_rs_in_project": {
     "_meta": {
-      "lastUpdate": "2025-11-22T22:37:26.000Z",
-      "updateCount": 21,
-      "firstSeen": "2025-12-25T19:11:12.000Z"
+      "lastUpdate": "2026-07-09T12:06:18.697Z",
+      "updateCount": 65
     },
-    "rust-developer": 0.75
+    "rust-developer": 0.75,
+    "successful-edit": 0.45701354846044967
   },
   "edit_md_in_ruvector-mincut": {
     "_meta": {
@@ -551,11 +551,11 @@
   },
   "edit_txt_in_project": {
     "_meta": {
-      "lastUpdate": "2025-11-22T22:40:34.000Z",
-      "updateCount": 2,
-      "firstSeen": "2025-12-13T19:09:42.000Z"
+      "lastUpdate": "2026-07-08T12:41:39.656Z",
+      "updateCount": 13
     },
-    "general-developer": 0.3131370849898476
+    "general-developer": 0.3131370849898476,
+    "successful-edit": 0.34496276970446255
   },
   "edit_html_in_rvlite": {
     "_meta": {
@@ -727,19 +727,19 @@
   },
   "edit_mjs_in_project": {
     "_meta": {
-      "lastUpdate": "2025-11-21T03:09:21.000Z",
-      "updateCount": 15,
-      "firstSeen": "2025-11-23T00:06:52.000Z"
+      "lastUpdate": "2026-07-09T12:34:49.018Z",
+      "updateCount": 17
     },
-    "general-developer": 0.7421836978719482
+    "general-developer": 0.7421836978719482,
+    "successful-edit": 0.04864620261232441
   },
   "edit_yml_in_project": {
     "_meta": {
-      "lastUpdate": "2025-11-21T13:15:05.000Z",
-      "updateCount": 9,
-      "firstSeen": "2025-11-22T20:53:41.000Z"
+      "lastUpdate": "2026-07-09T11:39:50.278Z",
+      "updateCount": 33
     },
-    "devops-engineer": 0.6334005739406754
+    "devops-engineer": 0.6334005739406754,
+    "successful-edit": 0.40816675096835364
   },
   "edit_toml_in_ruvector-tiny-dancer-wasm": {
     "_meta": {

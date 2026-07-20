@@ -438,7 +438,7 @@ impl Mailbox {
         self.send(CHANNEL_PROPERTY, bus_addr)?;
 
         // Wait for response
-        let response = self.receive(CHANNEL_PROPERTY)?;
+        let _response = self.receive(CHANNEL_PROPERTY)?;
 
         // Check response code in buffer
         dsb();

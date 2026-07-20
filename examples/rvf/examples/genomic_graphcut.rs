@@ -365,9 +365,9 @@ fn solve_mincut(lambdas: &[f64], edges: &[Edge], gamma: f64) -> Vec<bool> {
             adj[u].push((v, idx));
             adj[v].push((u, idx + 1));
         };
-    for i in 0..m {
-        let p0 = lambdas[i].max(0.0);
-        let p1 = (-lambdas[i]).max(0.0);
+    for (i, &lam) in lambdas.iter().enumerate() {
+        let p0 = lam.max(0.0);
+        let p1 = (-lam).max(0.0);
         if p0 > 1e-12 {
             ae(&mut adj, &mut caps, s, i, p0);
         }

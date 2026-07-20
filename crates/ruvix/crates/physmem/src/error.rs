@@ -80,9 +80,12 @@ impl PhysMemError {
     pub const fn to_kernel_error(self) -> KernelError {
         match self {
             Self::OutOfMemory | Self::AllocationTooLarge => KernelError::OutOfMemory,
-            Self::ZeroAllocation | Self::InvalidOrder => KernelError::InvalidArgument,
-            Self::UnalignedAddress | Self::AddressOutOfRange => KernelError::InvalidArgument,
-            Self::NotAllocated | Self::SizeMismatch => KernelError::InvalidArgument,
+            Self::ZeroAllocation
+            | Self::InvalidOrder
+            | Self::UnalignedAddress
+            | Self::AddressOutOfRange
+            | Self::NotAllocated
+            | Self::SizeMismatch => KernelError::InvalidArgument,
             Self::NotInitialized => KernelError::NotPermitted,
             Self::InternalCorruption => KernelError::InternalError,
         }
@@ -108,8 +111,8 @@ impl std::error::Error for PhysMemError {}
 #[cfg(test)]
 mod tests {
     extern crate alloc;
-    use alloc::format;
     use super::*;
+    use alloc::format;
 
     #[test]
     fn test_error_as_str() {
@@ -156,7 +159,10 @@ mod tests {
 
     #[test]
     fn test_display() {
-        assert_eq!(format!("{}", PhysMemError::OutOfMemory), "Out of physical memory");
+        assert_eq!(
+            format!("{}", PhysMemError::OutOfMemory),
+            "Out of physical memory"
+        );
     }
 
     #[test]

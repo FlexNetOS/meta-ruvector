@@ -21,9 +21,6 @@ use std::time::Instant;
 #[allow(unused_imports)]
 use crate::BenchmarkResult;
 
-#[cfg(unix)]
-use std::os::unix::io::RawFd;
-
 /// Linux benchmark configuration.
 #[derive(Debug, Clone)]
 pub struct LinuxBenchConfig {
@@ -121,9 +118,6 @@ pub fn bench_linux_setuid_simulation(config: &LinuxBenchConfig) -> BenchmarkResu
 /// Benchmarks Linux pipe write (IPC send equivalent).
 #[cfg(unix)]
 pub fn bench_linux_pipe_write(config: &LinuxBenchConfig) -> BenchmarkResult {
-    use std::io::Write;
-    use std::os::unix::io::FromRawFd;
-
     // Create a pipe
     let mut fds: [libc::c_int; 2] = [0; 2];
     unsafe {

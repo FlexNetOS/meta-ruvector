@@ -141,11 +141,10 @@
 - 5 native platform builds run in parallel
 - Total time: ~60% faster than sequential
 
-### 💾 Smart Caching
-- Rust dependencies cached via `Swatinem/rust-cache`
-- npm dependencies cached via `actions/setup-node`
-- wasm-pack binary cached
-- Cache hit rate: 70-95%
+### Build reuse policy
+- Kache is the only permitted persistent build-reuse layer.
+- Remote workflow caches and package-manager caches are prohibited.
+- Release automation remains disabled until every command is native Nushell and Kache-backed.
 
 ### 🔒 Security
 - Secrets never exposed in logs

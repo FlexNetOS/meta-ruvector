@@ -22,7 +22,6 @@ const GRID: usize = 64;
 const DIM: usize = 32;
 const FIELD_MODALITY: u16 = 0;
 const FIELD_LESION_COUNT: u16 = 1;
-const FIELD_GRID_SIZE: u16 = 2;
 
 fn lcg_next(s: &mut u64) -> u64 {
     *s = s
@@ -244,7 +243,7 @@ fn estimate_healthy(img: &TissueImage) -> HealthyModel {
     let vals: Vec<f64> = (0..GRID * GRID)
         .filter(|&i| {
             let (x, y) = (i % GRID, i / GRID);
-            x < 8 || x >= GRID - 8 || y < 8 || y >= GRID - 8
+            !(8..GRID - 8).contains(&x) || !(8..GRID - 8).contains(&y)
         })
         .map(|i| img.intensity[i])
         .collect();
@@ -273,8 +272,8 @@ fn solve_graphcut(lambda: &[f64], intensity: &[f64], gamma: f64) -> Vec<bool> {
             adj[v].push((u, i + 1));
         };
 
-    for i in 0..m {
-        let (p0, p1) = (lambda[i].max(0.0), (-lambda[i]).max(0.0));
+    for (i, &lam_i) in lambda.iter().enumerate().take(m) {
+        let (p0, p1) = (lam_i.max(0.0), (-lam_i).max(0.0));
         if p0 > 1e-12 {
             add_edge(&mut adj, &mut caps, s, i, p0);
         }

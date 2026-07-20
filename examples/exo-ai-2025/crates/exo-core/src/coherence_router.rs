@@ -126,7 +126,7 @@ impl SheafLaplacianBackend {
             * (if ctx.affects_shared_state { 1.5 } else { 1.0 });
         // π-scaled threshold prevents binary resonance at 3/5/7-bit boundaries
         let base_gap = (1.0 - risk.min(1.0)) * self.pi_scale;
-        base_gap.max(0.0).min(1.0)
+        base_gap.clamp(0.0, 1.0)
     }
 }
 
@@ -245,12 +245,13 @@ impl CoherenceRouter {
                     return primary;
                 }
                 // Check each optional backend — any DENY propagates
-                for opt in [&self.quantum, &self.distributed, &self.circadian] {
-                    if let Some(b) = opt {
-                        let d = b.gate(ctx);
-                        if d.decision == WitnessDecision::Deny {
-                            return d;
-                        }
+                for b in [&self.quantum, &self.distributed, &self.circadian]
+                    .into_iter()
+                    .flatten()
+                {
+                    let d = b.gate(ctx);
+                    if d.decision == WitnessDecision::Deny {
+                        return d;
                     }
                 }
                 primary

@@ -23,6 +23,8 @@
  * ```
  */
 
+import { writeFileSync, readFileSync, mkdirSync } from 'fs';
+import { dirname } from 'path';
 import { Embedding, TrainingConfig, TrainingResult } from './types';
 import { LoraAdapter } from './lora';
 import { EwcManager } from './sona';
@@ -42,6 +44,7 @@ const DEFAULT_TRAINING_CONFIG: Required<TrainingConfig> = {
   checkpointInterval: 1,
   ewcLambda: 2000,
   validationSplit: 0.1,
+  keepBestCheckpoint: '',
 };
 
 /**
@@ -93,6 +96,35 @@ export interface Checkpoint {
   /** Timestamp */
   timestamp: number;
 }
+
+/**
+ * Result of a saveCheckpoint() call.
+ */
+export interface CheckpointSaveResult {
+  /** Index of the checkpoint in the in-memory checkpoint list */
+  index: number;
+  /** Epoch the checkpoint captured */
+  epoch: number;
+  /** Step the checkpoint captured */
+  step: number;
+  /** Training loss at checkpoint time */
+  loss: number;
+  /** Absolute or as-given file path, when persisted to disk */
+  path?: string;
+  /** Serialized size in bytes, when persisted to disk */
+  bytes?: number;
+}
+
+/**
+ * On-disk checkpoint envelope version.
+ *
+ * v1 — {format, version:1, epoch, step, loss, weights, timestamp}. No adapter
+ *      geometry, so loadCheckpoint() could not detect a shape mismatch.
+ * v2 — adds {config:{inputDim, outputDim, rank}, pipelineConfig:{learningRate,
+ *      batchSize}} so loadCheckpoint() can reject weights that don't fit the
+ *      current adapter. v1 files still load (back-compat) with no shape check.
+ */
+const CHECKPOINT_FORMAT_VERSION = 2;
 
 /**
  * Learning Rate Scheduler
@@ -280,6 +312,8 @@ export class TrainingPipeline {
   private currentStep: number = 0;
   private bestValLoss: number = Infinity;
   private patienceCounter: number = 0;
+  /** Set by resumeFrom(); makes the next train() continue instead of restart. */
+  private resumePending: boolean = false;
 
   constructor(config?: TrainingConfig, adapter?: LoraAdapter) {
     this.config = { ...DEFAULT_TRAINING_CONFIG, ...config };
@@ -311,17 +345,36 @@ export class TrainingPipeline {
   }
 
   /**
-   * Run training
+   * Run training.
+   *
+   * When {@link resumeFrom} primed the pipeline, this continues from the
+   * restored epoch (running the remaining epochs of `config.epochs`) and
+   * advances the LR scheduler to the restored step so the schedule is
+   * unbroken; metrics history is preserved. Without a resume the run is
+   * unchanged from a fresh start — same reset, same scheduler, same result
+   * shape as before this method learned to resume.
    */
   train(): TrainingResult {
+    const resuming = this.resumePending;
+    this.resumePending = false;
+    // currentEpoch is the last COMPLETED epoch index, so resume the next one.
+    const startEpoch = resuming ? this.currentEpoch + 1 : 0;
+
     const totalSteps = this.batches.length * this.config.epochs;
     this.scheduler = new LRScheduler(this.config, totalSteps);
-    this.metrics.reset();
+    if (resuming) {
+      // Fast-forward the fresh scheduler to the restored step.
+      for (let s = 0; s < this.currentStep && s < totalSteps; s++) {
+        this.scheduler.step();
+      }
+    } else {
+      this.metrics.reset();
+    }
     this.adapter.startTraining(this.config.learningRate);
 
     let earlyStopped = false;
 
-    for (let epoch = 0; epoch < this.config.epochs; epoch++) {
+    for (let epoch = startEpoch; epoch < this.config.epochs; epoch++) {
       this.currentEpoch = epoch;
 
       // Shuffle batches
@@ -351,6 +404,10 @@ export class TrainingPipeline {
         if (valLoss < this.bestValLoss) {
           this.bestValLoss = valLoss;
           this.patienceCounter = 0;
+          // Retain the best-validation model to a stable path when configured.
+          if (this.config.keepBestCheckpoint) {
+            this.saveCheckpoint(this.config.keepBestCheckpoint);
+          }
         } else {
           this.patienceCounter++;
           if (this.patienceCounter >= this.config.earlyStoppingPatience) {
@@ -448,28 +505,123 @@ export class TrainingPipeline {
   }
 
   /**
-   * Save checkpoint
+   * Save a checkpoint.
+   *
+   * Always records the checkpoint in the in-memory list (the behavior the
+   * training loop relies on). When `path` is given, additionally persists
+   * the checkpoint to disk as versioned JSON — before v2.5.7 this method
+   * was private, ignored any argument, and never wrote a file, so callers
+   * passing a path got `undefined` back and zero bytes on disk.
+   *
+   * @param path Optional file path; parent directories are created.
+   * @returns Where the checkpoint went — in-memory index, and file
+   *          path + byte size when persisted.
    */
-  private saveCheckpoint(): void {
-    this.checkpoints.push({
+  saveCheckpoint(path?: string): CheckpointSaveResult {
+    const checkpoint: Checkpoint = {
       epoch: this.currentEpoch,
       step: this.currentStep,
       loss: this.metrics.avgLoss(100),
       weights: this.adapter.toJSON(),
       timestamp: Date.now(),
-    });
+    };
+    this.checkpoints.push(checkpoint);
+
+    const result: CheckpointSaveResult = {
+      index: this.checkpoints.length - 1,
+      epoch: checkpoint.epoch,
+      step: checkpoint.step,
+      loss: checkpoint.loss,
+    };
+
+    if (path) {
+      const envelope = {
+        format: 'ruvllm-checkpoint',
+        version: CHECKPOINT_FORMAT_VERSION,
+        // Adapter geometry + pipeline hyperparams — lets loadCheckpoint()
+        // reject weights that don't fit the current adapter (v2, see below).
+        config: {
+          inputDim: this.adapter.getInputDim(),
+          outputDim: this.adapter.getOutputDim(),
+          rank: this.adapter.getConfig().rank,
+        },
+        pipelineConfig: {
+          learningRate: this.config.learningRate,
+          batchSize: this.config.batchSize,
+        },
+        ...checkpoint,
+      };
+      const serialized = JSON.stringify(envelope);
+      mkdirSync(dirname(path), { recursive: true });
+      writeFileSync(path, serialized, 'utf-8');
+      result.path = path;
+      result.bytes = Buffer.byteLength(serialized, 'utf-8');
+    }
+
+    return result;
   }
 
   /**
-   * Load checkpoint
+   * Load a checkpoint — by in-memory index, or from a file previously
+   * written by `saveCheckpoint(path)`.
+   *
+   * For v2 files, the envelope's adapter geometry is checked against the
+   * current adapter first; a mismatch (different inputDim/outputDim/rank)
+   * returns false and leaves the adapter untouched, so mis-shaped weights
+   * are never silently restored. v1 files carry no geometry and load as
+   * before (back-compat).
    */
-  loadCheckpoint(index: number): boolean {
-    const checkpoint = this.checkpoints[index];
+  loadCheckpoint(indexOrPath: number | string): boolean {
+    let checkpoint: Checkpoint | undefined;
+
+    if (typeof indexOrPath === 'number') {
+      checkpoint = this.checkpoints[indexOrPath];
+    } else {
+      try {
+        const parsed = JSON.parse(readFileSync(indexOrPath, 'utf-8'));
+        if (parsed?.format !== 'ruvllm-checkpoint' || typeof parsed.weights !== 'string') {
+          return false;
+        }
+        if (typeof parsed.version === 'number' && parsed.version >= 2 && parsed.config) {
+          const c = parsed.config;
+          if (
+            c.inputDim !== this.adapter.getInputDim() ||
+            c.outputDim !== this.adapter.getOutputDim() ||
+            c.rank !== this.adapter.getConfig().rank
+          ) {
+            return false;
+          }
+        }
+        checkpoint = parsed as Checkpoint;
+      } catch {
+        return false;
+      }
+    }
     if (!checkpoint) return false;
 
     this.adapter = LoraAdapter.fromJSON(checkpoint.weights);
     this.currentEpoch = checkpoint.epoch;
     this.currentStep = checkpoint.step;
+    return true;
+  }
+
+  /**
+   * Resume training from a checkpoint file.
+   *
+   * Loads the checkpoint (with the same v2 shape validation as
+   * {@link loadCheckpoint}) AND primes the pipeline so the next {@link train}
+   * call continues from the restored epoch/step rather than restarting. This
+   * is the explicit, least-invasive resume path: a plain `loadCheckpoint()`
+   * still restores weights only (train() from scratch), while `resumeFrom()`
+   * additionally makes the subsequent train() pick up where the run stopped.
+   *
+   * @returns true when the checkpoint loaded and resume was primed; false if
+   *          the file was missing, foreign, or shape-mismatched (in which case
+   *          no resume is armed).
+   */
+  resumeFrom(path: string): boolean {
+    if (!this.loadCheckpoint(path)) return false;
+    this.resumePending = true;
     return true;
   }
 
@@ -522,6 +674,7 @@ export class TrainingPipeline {
     this.currentStep = 0;
     this.bestValLoss = Infinity;
     this.patienceCounter = 0;
+    this.resumePending = false;
     this.metrics.reset();
     this.adapter.reset();
   }

@@ -20,7 +20,7 @@ impl Partition {
     /// Creates sequential k-way partition
     /// Groups: [0..k), [k..2k), [2k..3k), ...
     pub fn sequential(n: usize, k: usize) -> Self {
-        let num_groups = (n + k - 1) / k; // Ceiling division
+        let num_groups = n.div_ceil(k); // Ceiling division
         let mut groups = Vec::with_capacity(num_groups);
 
         for i in 0..num_groups {
@@ -278,7 +278,7 @@ fn kmeans_cluster(data: &[Vec<f32>], k: usize) -> Vec<usize> {
         }
 
         // Update centroids
-        for c in 0..k {
+        for (c, centroid) in centroids.iter_mut().enumerate().take(k) {
             let cluster_points: Vec<_> = data
                 .iter()
                 .zip(&labels)
@@ -287,7 +287,7 @@ fn kmeans_cluster(data: &[Vec<f32>], k: usize) -> Vec<usize> {
                 .collect();
 
             if !cluster_points.is_empty() {
-                centroids[c] = compute_centroid(&cluster_points, dim);
+                *centroid = compute_centroid(&cluster_points, dim);
             }
         }
 
@@ -336,12 +336,12 @@ mod tests {
 
     #[test]
     fn test_coarse_grain_deterministic() {
-        // 4-state cycle: 0→1→2→3→0
+        // 4-state cycle: 0→1→2→3→0 (row-major 4×4, index = state * 4 + next)
         let mut micro = vec![0.0; 16];
-        micro[0 * 4 + 1] = 1.0;
-        micro[1 * 4 + 2] = 1.0;
-        micro[2 * 4 + 3] = 1.0;
-        micro[3 * 4 + 0] = 1.0;
+        micro[1] = 1.0; // 0 → 1
+        micro[6] = 1.0; // 1 → 2
+        micro[11] = 1.0; // 2 → 3
+        micro[12] = 1.0; // 3 → 0
 
         // Partition into 2 groups: [0,1] and [2,3]
         let partition = Partition {
@@ -354,7 +354,8 @@ mod tests {
         assert_eq!(macro_matrix.len(), 4);
 
         // Group 0 transitions to group 1 with prob 0.5 (state 0→1 or 1→2)
-        assert!((macro_matrix[0 * 2 + 1] - 0.5).abs() < 0.01);
+        // macro is row-major 2×2, index = group * 2 + next_group; here group 0 → group 1
+        assert!((macro_matrix[1] - 0.5).abs() < 0.01);
     }
 
     #[test]

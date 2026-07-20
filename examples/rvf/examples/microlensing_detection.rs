@@ -94,10 +94,12 @@ struct MicrolensingEvent {
     /// Einstein crossing time in days
     t_e: f64,
     /// Time of closest approach (days from start)
+    #[allow(dead_code)] // illustrative field retained for the example data model
     t_0: f64,
     /// Minimum impact parameter (in Einstein radii)
     u_0: f64,
     /// Baseline magnitude
+    #[allow(dead_code)] // illustrative field retained for the example data model
     baseline_mag: f64,
     /// Injected anomaly type
     anomaly_type: AnomalyType,
@@ -588,7 +590,7 @@ fn main() {
     // ====================================================================
     println!("\n--- M1. Single-Lens Detection (PSPL Fitting) ---");
 
-    let fits: Vec<PSPLFit> = events.iter().map(|e| fit_pspl(e)).collect();
+    let fits: Vec<PSPLFit> = events.iter().map(fit_pspl).collect();
 
     println!("  PSPL fits computed: {}", fits.len());
     println!(

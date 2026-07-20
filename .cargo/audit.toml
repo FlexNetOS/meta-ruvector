@@ -51,6 +51,33 @@ ignore = [
     "RUSTSEC-2025-0134",  # rustls-pemfile — transitive; rustls itself is current
     "RUSTSEC-2025-0141",  # bincode — unmaintained notice; we pin a known-good version
     "RUSTSEC-2026-0105",  # core2 — transitive, no_std fallback for std::io types
+    "RUSTSEC-2020-0016",  # net2 — deprecated transitive; parent migration to socket2 pending
+    "RUSTSEC-2026-0162",  # pqcrypto-traits — unmaintained; parent PQ migration pending
+    "RUSTSEC-2026-0163",  # pqcrypto-internals — unmaintained; parent PQ migration pending
+    "RUSTSEC-2026-0173",  # proc-macro-error2 — transitive proc-macro, build-time only
+    "RUSTSEC-2026-0192",  # ttf-parser — unmaintained; transitive font/rendering paths only
+    "RUSTSEC-2024-0411",  # gtk-rs GTK3 gdkwayland-sys unmaintained; transitive desktop/UI path, not hailo runtime
+    "RUSTSEC-2024-0412",  # gtk-rs GTK3 gdk unmaintained; transitive desktop/UI path, not hailo runtime
+    "RUSTSEC-2024-0413",  # gtk-rs GTK3 atk unmaintained; transitive desktop/UI path, not hailo runtime
+    "RUSTSEC-2024-0414",  # gtk-rs GTK3 gdkx11-sys unmaintained; transitive desktop/UI path, not hailo runtime
+    "RUSTSEC-2024-0415",  # gtk-rs GTK3 gtk unmaintained; transitive desktop/UI path, not hailo runtime
+    "RUSTSEC-2024-0416",  # gtk-rs GTK3 atk-sys unmaintained; transitive desktop/UI path, not hailo runtime
+    "RUSTSEC-2024-0417",  # gtk-rs GTK3 gdkx11 unmaintained; transitive desktop/UI path, not hailo runtime
+    "RUSTSEC-2024-0418",  # gtk-rs GTK3 gdk-sys unmaintained; transitive desktop/UI path, not hailo runtime
+    "RUSTSEC-2024-0419",  # gtk-rs GTK3 gtk3-macros unmaintained; transitive desktop/UI path, not hailo runtime
+    "RUSTSEC-2024-0420",  # gtk-rs GTK3 gtk-sys unmaintained; transitive desktop/UI path, not hailo runtime
+    "RUSTSEC-2024-0429",  # glib iterator unsoundness; transitive desktop/UI path, not hailo runtime
+    "RUSTSEC-2025-0057",  # fxhash unmaintained; transitive desktop/UI path, not hailo runtime
+
+    # quick-xml 0.26 — quadratic duplicate-attribute check (2026-0194) and
+    # NsReader namespace-allocation DoS (2026-0195). Reachable ONLY via
+    # pprof -> inferno 0.11 behind ruvector-bench's optional `profiling`
+    # feature; the XML parsed is locally generated flamegraph SVG, never
+    # attacker-controlled input. Upstream-blocked: fix needs quick-xml
+    # >=0.41 (inferno 0.12.7), but even pprof 0.15.0 still pins inferno
+    # ^0.11. Re-evaluate when pprof releases with inferno >=0.12.
+    "RUSTSEC-2026-0194",
+    "RUSTSEC-2026-0195",
 
     # ------------------------------------------------------------------
     # Soundness/unsoundness notices in deps we do not directly control
@@ -76,4 +103,20 @@ ignore = [
     "RUSTSEC-2026-0115",
     "RUSTSEC-2026-0116",
     "RUSTSEC-2026-0117",
+
+    # quick-xml 0.26.0 — two DoS advisories: unbounded namespace-declaration
+    # allocation (RUSTSEC-2026-0195) and quadratic run time on duplicate
+    # attribute-name checks (RUSTSEC-2026-0194). Both require quick-xml >=0.41,
+    # but quick-xml is pinned transitively through the benchmark-only profiling
+    # chain: ruvector-bench --(profiling feature)--> pprof 0.13 --> inferno
+    # 0.11.21 --> quick-xml ^0.26. pprof 0.13 has no in-major release that moves
+    # off inferno 0.11, so there is no compatible upgrade path without a pprof
+    # major bump (breaking ruvector-bench). quick-xml here parses only our own
+    # locally-generated flamegraph SVG during `cargo bench` profiling — it never
+    # touches attacker-controlled XML and is never compiled into a production
+    # binary (same benchmark-only basis as the pprof RUSTSEC-2026-0002 ignore).
+    # Re-evaluate when pprof ships a release that pulls inferno with quick-xml
+    # >=0.41.
+    "RUSTSEC-2026-0194",
+    "RUSTSEC-2026-0195",
 ]

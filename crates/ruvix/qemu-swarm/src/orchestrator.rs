@@ -421,10 +421,7 @@ impl SwarmOrchestrator {
 
     /// Broadcast a message to all nodes.
     pub async fn broadcast_message(&self, message: &[u8]) -> SwarmResult<()> {
-        info!(
-            size = message.len(),
-            "Broadcasting message to all nodes"
-        );
+        info!(size = message.len(), "Broadcasting message to all nodes");
 
         // In a real implementation, this would send the message via the multicast
         // network to all nodes
@@ -438,11 +435,7 @@ impl SwarmOrchestrator {
             return Err(SwarmError::NodeNotFound(format!("Node {}", node)));
         }
 
-        debug!(
-            node = node,
-            size = message.len(),
-            "Sending message to node"
-        );
+        debug!(node = node, size = message.len(), "Sending message to node");
 
         Ok(())
     }
@@ -519,10 +512,7 @@ impl SwarmOrchestrator {
     }
 
     /// Run a chaos test scenario.
-    pub async fn run_chaos_scenario(
-        &self,
-        scenario: ChaosScenario,
-    ) -> SwarmResult<ChaosResult> {
+    pub async fn run_chaos_scenario(&self, scenario: ChaosScenario) -> SwarmResult<ChaosResult> {
         info!(
             name = %scenario.name,
             faults = scenario.faults.len(),
@@ -687,7 +677,12 @@ pub mod scenarios {
     pub fn byzantine(node: usize) -> ChaosScenario {
         ChaosScenario::new("byzantine")
             .with_description("Simulate byzantine node behavior")
-            .with_fault(node, FaultType::DataCorruption { probability_pct: 10 })
+            .with_fault(
+                node,
+                FaultType::DataCorruption {
+                    probability_pct: 10,
+                },
+            )
             .with_duration(Duration::from_secs(60))
     }
 }
