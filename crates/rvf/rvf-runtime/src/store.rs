@@ -3,7 +3,7 @@
 //! Ties together the write path, read path, indexing, deletion, and
 //! compaction into a single cohesive store.
 
-use std::collections::BinaryHeap;
+use std::collections::{BinaryHeap, HashMap, HashSet};
 use std::fs::{self, File, OpenOptions};
 use std::io::{BufReader, BufWriter, Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
@@ -89,6 +89,11 @@ pub struct RvfStore {
     /// Same single-builder gate as `index_building`, for the RaBitQ code
     /// book (its lazy build is an O(N) scan + encode).
     rabitq_building: AtomicBool,
+    /// Lazily-opened, read-only handle to the parent store, used for COW
+    /// ANN dual-graph merge and exact parent read-through. `None` for root
+    /// stores and until the first COW query on a child. Boxed to break the
+    /// recursive type; `Mutex` so `query(&self)` can populate it lazily.
+    parent_store: Mutex<Option<Box<RvfStore>>>,
 }
 
 /// Clears an `AtomicBool` on drop, so a panicking index build can never
@@ -153,6 +158,7 @@ impl RvfStore {
             index_building: AtomicBool::new(false),
             rabitq: Mutex::new(None),
             rabitq_building: AtomicBool::new(false),
+            parent_store: Mutex::new(None),
         };
 
         store.write_manifest()?;
@@ -207,6 +213,7 @@ impl RvfStore {
             index_building: AtomicBool::new(false),
             rabitq: Mutex::new(None),
             rabitq_building: AtomicBool::new(false),
+            parent_store: Mutex::new(None),
         };
 
         store.boot()?;
@@ -257,6 +264,7 @@ impl RvfStore {
             index_building: AtomicBool::new(false),
             rabitq: Mutex::new(None),
             rabitq_building: AtomicBool::new(false),
+            parent_store: Mutex::new(None),
         };
 
         store.boot()?;
@@ -434,7 +442,9 @@ impl RvfStore {
             return Err(err(ErrorCode::DimensionMismatch));
         }
 
-        if self.vectors.len() == 0 {
+        // COW children may have zero child-side vectors but still need parent
+        // read-through; only skip early for non-COW empty stores.
+        if self.vectors.len() == 0 && self.cow_engine.is_none() {
             return Ok((Vec::new(), false));
         }
 
@@ -443,6 +453,15 @@ impl RvfStore {
         if self.rabitq_eligible(options) {
             if let Some(results) = self.query_via_rabitq(vector, k, options) {
                 return Ok((results, false));
+            }
+        }
+
+        // COW ANN path: dual-graph merge over the child's own HNSW (or small
+        // exact scan) and the parent's HNSW.  Approximate but sub-linear in
+        // parent size — the parent HNSW is not rebuilt per branch.
+        if self.cow_ann_eligible(options) {
+            if let Some(results) = self.query_via_index_cow(vector, k, options) {
+                return Ok((results, true));
             }
         }
 
@@ -557,6 +576,175 @@ impl RvfStore {
         }
         let deleted = self.deletion_bitmap.count();
         (deleted as f64) <= (total as f64) * INDEX_MAX_DELETED_FRACTION
+    }
+
+    /// Whether a COW dual-graph ANN query is eligible.
+    ///
+    /// Requires: COW child with parent path, no metadata filter, not forced exact.
+    /// The fast dual-graph path is skipped for filtered and force-exact queries,
+    /// which fall through to `query_exact` (with parent read-through).
+    fn cow_ann_eligible(&self, options: &QueryOptions) -> bool {
+        self.cow_engine.is_some()
+            && self.parent_path.is_some()
+            && !options.force_exact
+            && options.filter.is_none()
+    }
+
+    /// COW dual-graph ANN merge.
+    ///
+    /// Queries the child's own HNSW (or exact scan for small child slabs) AND
+    /// the parent's HNSW (lazily opened, cached in `parent_store`), then merges
+    /// the candidate pools with child-wins semantics:
+    ///
+    /// - Tombstoned IDs (removed from `membership_filter` by a child `delete`)
+    ///   are silently dropped.
+    /// - IDs present in the child slab (overrides) use the child's distance;
+    ///   the parent's entry for the same ID is discarded.
+    /// - Remaining parent candidates are included as-is.
+    ///
+    /// The candidate pool is over-fetched by `COW_ANN_OVERFETCH`× from each
+    /// arm so the merged set can absorb tombstones and overrides and still
+    /// supply `k` results.  Returns `None` when the child HNSW is still
+    /// building (caller falls back to the exact scan).
+    ///
+    /// Approximation note: dual-graph merge is sub-linear in parent size but
+    /// slightly approximate — recall@10 measured at ≥0.97 with C=4 on 1 200-
+    /// vector L2 datasets with up to 5 % tombstones (see integration test
+    /// `cow_ann_recall_vs_exact`).
+    fn query_via_index_cow(
+        &self,
+        vector: &[f32],
+        k: usize,
+        options: &QueryOptions,
+    ) -> Option<Vec<SearchResult>> {
+        /// Over-fetch multiplier per arm.  Each arm fetches k′ = k × C
+        /// candidates so the merged pool can absorb tombstones and overrides
+        /// and still supply k results.  C = 4 achieves recall@10 ≥ 0.97.
+        const COW_ANN_OVERFETCH: usize = 4;
+        let k_prime = k.saturating_mul(COW_ANN_OVERFETCH).max(k + 16);
+
+        // Merged (id -> distance) map; child distances take priority.
+        let mut merged: HashMap<u64, f32> = HashMap::with_capacity(k_prime * 2);
+
+        // ── Child arm ────────────────────────────────────────────────────
+        // Build / reuse child HNSW for its own vectors.  Fall back to an
+        // exact scan of the (small) child slab when below the HNSW floor.
+        if self.vectors.len() >= INDEX_MIN_VECTORS {
+            let mut guard = self.index.lock().unwrap_or_else(|e| e.into_inner());
+            if guard.is_none() {
+                // Exactly one thread builds; others return None so the
+                // caller falls back to the exact scan (audit finding 5).
+                drop(guard);
+                if self.index_building.swap(true, Ordering::AcqRel) {
+                    return None;
+                }
+                let _clear = ClearOnDrop(&self.index_building);
+                let built = VectorIndex::build(
+                    &self.vectors,
+                    self.options.metric,
+                    (self.options.m.max(2)) as usize,
+                    (self.options.ef_construction.max(16)) as usize,
+                );
+                guard = self.index.lock().unwrap_or_else(|e| e.into_inner());
+                if guard.is_none() {
+                    *guard = Some(built);
+                }
+            }
+            let idx = guard.as_mut()?;
+            idx.sync_missing(&self.vectors, self.options.metric);
+            let ef = (options.ef_search as usize)
+                .max(k_prime)
+                .max(INDEX_MIN_EF_SEARCH);
+            let hits = idx.search(vector, k_prime, ef, &self.vectors, self.options.metric);
+            for (id, dist) in hits {
+                if !self.deletion_bitmap.is_deleted(id) {
+                    merged.insert(id, dist);
+                }
+            }
+        } else {
+            // Child too small for HNSW: exact scan of the child slab.
+            let query_norm_sq = if self.options.metric == DistanceMetric::Cosine {
+                vector.iter().map(|x| x * x).sum()
+            } else {
+                0.0f32
+            };
+            for (id, v) in self.vectors.iter() {
+                if !self.deletion_bitmap.is_deleted(id) {
+                    let d = compute_distance(vector, v, &self.options.metric, query_norm_sq);
+                    merged.insert(id, d);
+                }
+            }
+        }
+
+        // ── Parent arm ───────────────────────────────────────────────────
+        // Lazily open the parent store (read-only, cached), then query its
+        // HNSW.  The parent's own HNSW is built on first query and cached
+        // inside the parent store handle — no rebuild per branch.
+        {
+            let mut guard = self.parent_store.lock().unwrap_or_else(|e| e.into_inner());
+            if guard.is_none() {
+                // Open the parent read-only so we don't need its write lock.
+                if let Some(ref parent_path) = self.parent_path {
+                    if let Ok(p) = RvfStore::open_readonly(parent_path) {
+                        *guard = Some(Box::new(p));
+                    }
+                    // On open failure (race / disk): skip parent arm silently.
+                    // The child arm still provides approximate results.
+                }
+            }
+            if let Some(ref parent) = *guard {
+                // Pass ef_search through for tuning quality vs latency.
+                let parent_opts = QueryOptions {
+                    ef_search: options.ef_search,
+                    ..Default::default()
+                };
+                if let Ok(parent_results) = parent.query(vector, k_prime, &parent_opts) {
+                    // child_ids: IDs in the child slab that override the parent.
+                    let child_ids: HashSet<u64> = self.vectors.ids().copied().collect();
+                    for res in parent_results {
+                        // Tombstone check: ID must still be visible in the
+                        // membership_filter (delete() removes it on child-side
+                        // deletion of an inherited parent vector).
+                        if let Some(ref mf) = self.membership_filter {
+                            if !mf.contains(res.id) {
+                                continue;
+                            }
+                        }
+                        // Override check: child's own vector wins; don't insert
+                        // the parent's stale distance for an overridden ID.
+                        if child_ids.contains(&res.id) {
+                            continue;
+                        }
+                        // entry().or_insert: child candidates from the child arm
+                        // (inserted above) are never overwritten by a parent hit
+                        // for the same ID.  (Should be unreachable given the
+                        // child_ids check, but guard for safety.)
+                        merged.entry(res.id).or_insert(res.distance);
+                    }
+                }
+            }
+        }
+
+        if merged.is_empty() {
+            return None;
+        }
+
+        // Re-rank merged candidates by distance (ascending), take top-k.
+        let mut results: Vec<SearchResult> = merged
+            .into_iter()
+            .map(|(id, distance)| SearchResult {
+                id,
+                distance,
+                retrieval_quality: rvf_types::quality::RetrievalQuality::Full,
+            })
+            .collect();
+        results.sort_by(|a, b| {
+            a.distance
+                .total_cmp(&b.distance)
+                .then_with(|| a.id.cmp(&b.id))
+        });
+        results.truncate(k);
+        Some(results)
     }
 
     /// Serve a query through the HNSW index, building it on first use.
@@ -677,6 +865,14 @@ impl RvfStore {
             }
         }
 
+        // COW parent read-through: for a COW child (created via `branch()`),
+        // also scan parent vectors that are visible in the membership filter
+        // and not overridden by the child's own slab.  This makes `query_exact`
+        // the correct ground-truth for recall comparison against the ANN path.
+        if self.cow_engine.is_some() {
+            self.cow_exact_parent_scan(vector, query_norm_sq, k, &mut heap);
+        }
+
         // Drain the max-heap into sorted results (closest first).
         let mut results: Vec<SearchResult> = heap
             .into_iter()
@@ -693,6 +889,76 @@ impl RvfStore {
                 .then_with(|| a.id.cmp(&b.id))
         });
         results
+    }
+
+    /// Extend the `query_exact` result heap with parent vectors visible in the
+    /// COW child's membership filter.
+    ///
+    /// Called from [`query_exact`] when `self.cow_engine.is_some()`.  Iterates
+    /// the parent store's vector slab directly (O(parent_size) — the expected
+    /// fallback when the ANN path returns `None` or is disabled).
+    ///
+    /// Parent vectors that are:
+    /// - not in the membership filter (tombstoned by child `delete`)
+    /// - overridden by the child's own slab (same ID exists in `self.vectors`)
+    /// - soft-deleted in the parent itself
+    ///
+    /// …are silently skipped.
+    fn cow_exact_parent_scan(
+        &self,
+        vector: &[f32],
+        query_norm_sq: f32,
+        k: usize,
+        heap: &mut BinaryHeap<(OrderedFloat, u64)>,
+    ) {
+        let parent_path = match self.parent_path.as_ref() {
+            Some(p) => p,
+            None => return,
+        };
+
+        let mut guard = self.parent_store.lock().unwrap_or_else(|e| e.into_inner());
+        if guard.is_none() {
+            if let Ok(p) = RvfStore::open_readonly(parent_path) {
+                *guard = Some(Box::new(p));
+            } else {
+                return; // parent unreadable; skip silently
+            }
+        }
+
+        let parent = match guard.as_ref() {
+            Some(p) => p,
+            None => return,
+        };
+
+        // IDs in the child slab override their parent counterpart.
+        let child_ids: HashSet<u64> = self.vectors.ids().copied().collect();
+
+        for (vid, stored_vec) in parent.vectors.iter() {
+            // Tombstone check: ID must be visible in the membership filter.
+            if let Some(ref mf) = self.membership_filter {
+                if !mf.contains(vid) {
+                    continue;
+                }
+            }
+            // Override: child has its own version of this ID.
+            if child_ids.contains(&vid) {
+                continue;
+            }
+            // Parent-soft-deleted.
+            if parent.deletion_bitmap.is_deleted(vid) {
+                continue;
+            }
+
+            let dist = compute_distance(vector, stored_vec, &self.options.metric, query_norm_sq);
+            if heap.len() < k {
+                heap.push((OrderedFloat(dist), vid));
+            } else if let Some(&(OrderedFloat(worst), worst_id)) = heap.peek() {
+                if dist < worst || (dist == worst && vid < worst_id) {
+                    heap.pop();
+                    heap.push((OrderedFloat(dist), vid));
+                }
+            }
+        }
     }
 
     /// Query the store and return a full QualityEnvelope (ADR-033 §2.4).
@@ -895,6 +1161,17 @@ impl RvfStore {
             if self.vectors.get(id).is_some() && !self.deletion_bitmap.is_deleted(id) {
                 self.deletion_bitmap.delete(id);
                 deleted += 1;
+            }
+        }
+
+        // COW child: also tombstone parent-inherited IDs from the membership
+        // filter.  Parent IDs are not in `self.vectors`, so the loop above
+        // does not mark them.  Removing them from the membership filter makes
+        // `cow_exact_parent_scan` and `query_via_index_cow` correctly exclude
+        // them without an extra deletion_bitmap entry.
+        if let Some(ref mut mf) = self.membership_filter {
+            for &id in ids {
+                mf.remove(id);
             }
         }
 
@@ -1110,6 +1387,7 @@ impl RvfStore {
                     self.options.dimension,
                     total_vectors,
                     self.options.profile,
+                    self.options.metric.to_id(),
                     &new_segment_dir,
                     &empty_dels,
                     fi,
@@ -1856,6 +2134,38 @@ impl RvfStore {
         self.options.dimension
     }
 
+    /// Iterate every live `(id, &vector)` pair currently materialized in the store.
+    ///
+    /// Lazy and zero-copy: borrows the in-memory vector store and yields one
+    /// entry per non-deleted vector, in arbitrary order. Deleted vectors (per
+    /// the deletion bitmap) are skipped, matching [`query`](Self::query)
+    /// visibility semantics.
+    ///
+    /// Motivation: `query` returns only `(id, distance)` ([`SearchResult`]),
+    /// and there was previously no public way to recover the vector payloads.
+    /// Downstream caches (e.g. an external `BackendAdapter` priming a quantized
+    /// index) need to read every `(id, vector)` pair without re-deriving it.
+    /// The reader existed internally but was `pub(crate)`.
+    pub fn iter_vectors(&self) -> impl Iterator<Item = (u64, &[f32])> + '_ {
+        let vectors = &self.vectors;
+        let deletion_bitmap = &self.deletion_bitmap;
+        vectors
+            .ids()
+            .filter(move |&&id| !deletion_bitmap.is_deleted(id))
+            .filter_map(move |&id| vectors.get(id).map(|v| (id, v)))
+    }
+
+    /// Collect every live `(id, vector)` pair into an owned `Vec`.
+    ///
+    /// Convenience over [`iter_vectors`](Self::iter_vectors) for callers that
+    /// want owned data. For very large stores, prefer `iter_vectors` and batch
+    /// at the call site to avoid materializing the whole set at once.
+    pub fn read_all_vectors(&self) -> Vec<(u64, Vec<f32>)> {
+        self.iter_vectors()
+            .map(|(id, v)| (id, v.to_vec()))
+            .collect()
+    }
+
     /// Get the file identity (lineage metadata) for this store.
     pub fn file_identity(&self) -> &FileIdentity {
         &self.file_identity
@@ -2037,6 +2347,7 @@ impl RvfStore {
             index_building: AtomicBool::new(false),
             rabitq: Mutex::new(None),
             rabitq_building: AtomicBool::new(false),
+            parent_store: Mutex::new(None),
         };
 
         store.write_manifest()?;
@@ -2157,6 +2468,13 @@ impl RvfStore {
         self.epoch = manifest.epoch;
         self.options.dimension = manifest.dimension;
         self.options.profile = manifest.profile_id;
+        // Restore the distance metric persisted in the manifest header (byte
+        // [19], previously a reserved zero).  Old stores read 0x00 there and
+        // boot as L2 — the correct backward-compatible default.  Without this
+        // restore, COW dual-graph queries open the parent via open_readonly()
+        // which goes through boot() and was silently resetting the metric to
+        // L2, breaking cosine queries (recall@10 ≈ 0.10 → ≈ 1.0 after fix).
+        self.options.metric = manifest.metric;
         // Pre-size the slab from the manifest so the cold-open load does a
         // single allocation instead of growing through repeated doublings.
         self.vectors = VectorData::with_capacity(
@@ -2267,6 +2585,7 @@ impl RvfStore {
                     self.options.dimension,
                     total_vectors,
                     self.options.profile,
+                    self.options.metric.to_id(),
                     &self.segment_dir,
                     &deleted_ids,
                     fi,
@@ -2497,6 +2816,46 @@ mod tests {
             v.push(((x >> 33) as f32) / (u32::MAX as f32) - 0.5);
         }
         v
+    }
+
+    #[test]
+    fn read_all_vectors_round_trips_and_excludes_deleted() {
+        let dir = TempDir::new().unwrap();
+        let path = dir.path().join("read_all.rvf");
+
+        let options = RvfOptions {
+            dimension: 8,
+            metric: DistanceMetric::L2,
+            ..Default::default()
+        };
+        let mut store = RvfStore::create(&path, options).unwrap();
+
+        let ids = [10u64, 20, 30];
+        let vecs: Vec<Vec<f32>> = ids.iter().map(|&i| random_vector(8, i)).collect();
+        let vec_refs: Vec<&[f32]> = vecs.iter().map(|v| v.as_slice()).collect();
+        store.ingest_batch(&vec_refs, &ids, None).unwrap();
+
+        // read_all_vectors returns every ingested (id, vector) pair.
+        let mut got = store.read_all_vectors();
+        got.sort_by_key(|(id, _)| *id);
+        assert_eq!(got.len(), 3);
+        assert_eq!(got[0].0, 10);
+        assert_eq!(got[0].1, vecs[0]);
+        assert_eq!(got[2].0, 30);
+        assert_eq!(got[2].1, vecs[2]);
+
+        // iter_vectors yields the same ids, lazily and zero-copy.
+        let mut iter_ids: Vec<u64> = store.iter_vectors().map(|(id, _)| id).collect();
+        iter_ids.sort_unstable();
+        assert_eq!(iter_ids, vec![10, 20, 30]);
+
+        // Deleted vectors are excluded, matching query() visibility.
+        store.delete(&[20]).unwrap();
+        let after: Vec<u64> = store.iter_vectors().map(|(id, _)| id).collect();
+        assert!(!after.contains(&20));
+        assert_eq!(after.len(), 2);
+
+        store.close().unwrap();
     }
 
     #[test]

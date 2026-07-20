@@ -449,7 +449,11 @@ impl DeltaHnsw {
 
                     // Prune if over limit
                     if neighbor.neighbors[l].len() > max_conn {
-                        let node_vec = self.nodes[neighbor_idx as usize].read().vector.clone();
+                        // Keep pruning under the existing write lock. Taking a
+                        // second read lock on the same node deadlocks with
+                        // parking_lot::RwLock once the reverse edge list
+                        // exceeds max_conn during insertion.
+                        let node_vec = neighbor.vector.clone();
                         self.prune_neighbors(&mut neighbor.neighbors[l], &node_vec, max_conn);
                     }
                 }

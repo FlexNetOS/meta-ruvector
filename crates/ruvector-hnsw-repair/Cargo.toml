@@ -21,5 +21,7 @@ unused_imports = "allow"
 
 [lints.clippy]
 pedantic = { level = "allow", priority = -2 }
+too_many_arguments = "allow"  # lint debt: CI denies warnings
+ptr_arg = "allow"  # lint debt: CI denies warnings
 correctness = { level = "deny", priority = -1 }
 suspicious = { level = "deny", priority = -1 }

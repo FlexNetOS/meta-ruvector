@@ -16,16 +16,14 @@ use std::io::{Read as _, Write as _};
 use std::process::{Command, Stdio};
 
 mod common;
-use common::{free_port, spawn_fakeworker};
-
-const EMBED: &str = env!("CARGO_BIN_EXE_ruvector-hailo-embed");
+use common::{cargo_bin, free_port, spawn_fakeworker};
 
 #[test]
 fn embed_cli_text_flag_emits_json_line() {
     let port = free_port();
     let mut worker = spawn_fakeworker(port, 4, "");
 
-    let out = Command::new(EMBED)
+    let out = Command::new(cargo_bin("ruvector-hailo-embed"))
         .args([
             "--workers",
             &format!("127.0.0.1:{}", port),
@@ -73,7 +71,7 @@ fn embed_cli_output_full_emits_full_vector() {
     let port = free_port();
     let mut worker = spawn_fakeworker(port, 8, "");
 
-    let out = Command::new(EMBED)
+    let out = Command::new(cargo_bin("ruvector-hailo-embed"))
         .args([
             "--workers",
             &format!("127.0.0.1:{}", port),
@@ -116,7 +114,7 @@ fn embed_cli_repeated_text_flags_embed_in_order() {
     let port = free_port();
     let mut worker = spawn_fakeworker(port, 4, "");
 
-    let out = Command::new(EMBED)
+    let out = Command::new(cargo_bin("ruvector-hailo-embed"))
         .args([
             "--workers",
             &format!("127.0.0.1:{}", port),
@@ -150,7 +148,7 @@ fn embed_cli_stdin_pipe_works_when_no_text_flag() {
     let port = free_port();
     let mut worker = spawn_fakeworker(port, 4, "");
 
-    let mut child = Command::new(EMBED)
+    let mut child = Command::new(cargo_bin("ruvector-hailo-embed"))
         .args([
             "--workers",
             &format!("127.0.0.1:{}", port),
@@ -196,7 +194,10 @@ fn embed_cli_version_flag_prints_pkg_name_and_version() {
     // Output format `<pkg-name> <semver>` so shell scripts can parse with
     // `awk '{print $2}'`.
     for arg in &["--version", "-V"] {
-        let out = Command::new(EMBED).arg(arg).output().expect("run embed");
+        let out = Command::new(cargo_bin("ruvector-hailo-embed"))
+            .arg(arg)
+            .output()
+            .expect("run embed");
         assert!(
             out.status.success(),
             "embed {} exited {:?}",
@@ -235,7 +236,7 @@ fn embed_cli_cache_with_empty_fingerprint_refuses_without_opt_in() {
     let port = free_port();
     let mut worker = spawn_fakeworker(port, 4, "");
 
-    let out = Command::new(EMBED)
+    let out = Command::new(cargo_bin("ruvector-hailo-embed"))
         .args([
             "--workers",
             &format!("127.0.0.1:{}", port),
@@ -276,7 +277,7 @@ fn embed_cli_cache_with_explicit_opt_in_runs() {
     let port = free_port();
     let mut worker = spawn_fakeworker(port, 4, "");
 
-    let out = Command::new(EMBED)
+    let out = Command::new(cargo_bin("ruvector-hailo-embed"))
         .args([
             "--workers",
             &format!("127.0.0.1:{}", port),
@@ -315,7 +316,7 @@ fn embed_cli_cache_with_fingerprint_passes_gate() {
     let port = free_port();
     let mut worker = spawn_fakeworker(port, 4, "fp:test");
 
-    let out = Command::new(EMBED)
+    let out = Command::new(cargo_bin("ruvector-hailo-embed"))
         .args([
             "--workers",
             &format!("127.0.0.1:{}", port),
@@ -348,7 +349,7 @@ fn embed_cli_validate_fleet_with_wrong_fingerprint_exits_nonzero() {
     let port = free_port();
     let mut worker = spawn_fakeworker(port, 4, "");
 
-    let out = Command::new(EMBED)
+    let out = Command::new(cargo_bin("ruvector-hailo-embed"))
         .args([
             "--workers",
             &format!("127.0.0.1:{}", port),

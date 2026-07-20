@@ -124,16 +124,12 @@ fn main() {
 
         let phase = if iter < 3 {
             "warmup"
-        } else if residual > convergence_tol as f64 {
+        } else if residual > convergence_tol {
             "converging"
         } else {
             "converged"
         };
-        let converged: u64 = if residual <= convergence_tol as f64 {
-            1
-        } else {
-            0
-        };
+        let converged: u64 = if residual <= convergence_tol { 1 } else { 0 };
 
         // Store residual as fixed-point u64 (multiply by 1e9)
         let residual_fixed = (residual * 1e9) as u64;
@@ -213,7 +209,7 @@ fn main() {
 
             let wtype = if i == 0 {
                 0x01 // PROVENANCE: initial state
-            } else if residuals[i] <= convergence_tol as f64 {
+            } else if residuals[i] <= convergence_tol {
                 0x03 // custom: CONVERGENCE witness
             } else {
                 0x02 // COMPUTATION: intermediate iteration
@@ -398,10 +394,7 @@ fn main() {
     println!("  Deterministic replay:    VERIFIED");
     println!("  Tamper detection:        WORKING");
 
-    let converged_count = residuals
-        .iter()
-        .filter(|&&r| r <= convergence_tol as f64)
-        .count();
+    let converged_count = residuals.iter().filter(|&&r| r <= convergence_tol).count();
     println!(
         "  Converged iterations:    {} / {}",
         converged_count, num_iterations

@@ -123,11 +123,11 @@
     }
   },
   "cargo_in_general": {
-    "command-succeeded": 0.03282057241011145,
+    "command-succeeded": 0.02079871434024056,
     "command-failed": -0.005270462766947299,
     "_meta": {
-      "lastUpdate": "2025-12-29T18:16:12.025Z",
-      "updateCount": 90
+      "lastUpdate": "2026-07-07T19:20:44.708Z",
+      "updateCount": 92
     }
   },
   "build_in_mincut": {
@@ -550,11 +550,11 @@
   },
   "edit_txt_in_project": {
     "_meta": {
-      "lastUpdate": "2025-11-22T22:40:34.000Z",
-      "updateCount": 2,
-      "firstSeen": "2025-12-13T19:09:42.000Z"
+      "lastUpdate": "2026-07-08T12:41:39.656Z",
+      "updateCount": 13
     },
-    "general-developer": 0.3131370849898476
+    "general-developer": 0.3131370849898476,
+    "successful-edit": 0.34496276970446255
   },
   "edit_html_in_rvlite": {
     "_meta": {
@@ -766,11 +766,11 @@
   },
   "edit_cjs_in_project": {
     "_meta": {
-      "lastUpdate": "2025-11-21T15:23:46.000Z",
-      "updateCount": 1,
-      "firstSeen": "2025-11-21T15:23:46.000Z"
+      "lastUpdate": "2026-07-07T20:34:53.659Z",
+      "updateCount": 4
     },
-    "general-developer": 0.2
+    "general-developer": 0.2,
+    "successful-edit": 0.1681400865984622
   },
   "edit_rs_in_ruvector-router-wasm": {
     "_meta": {

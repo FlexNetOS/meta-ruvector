@@ -7,8 +7,6 @@ description = "Nobel-level breakthrough: O(N³) integrated information for ergod
 license = "MIT"
 
 # Allow standalone compilation
-[workspace]
-
 [dependencies]
 rayon = "1.8"
 

@@ -1,9 +1,9 @@
 //! Security command - audit and scan kernel security
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use clap::Subcommand;
 use colored::Colorize;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 /// Security actions
 #[derive(Subcommand, Debug)]
@@ -246,24 +246,63 @@ pub enum HashAlgorithm {
 /// Execute the security command
 pub fn execute(action: SecurityAction, verbose: bool) -> Result<()> {
     match action {
-        SecurityAction::Audit { depth, focus, format, output, strict } => {
-            execute_audit(depth, focus, format, output.as_ref(), strict, verbose)
-        }
-        SecurityAction::Scan { image, config, cve_db, deps, min_severity } => {
-            execute_scan(image.as_ref(), config.as_ref(), cve_db.as_ref(), deps, min_severity, verbose)
-        }
-        SecurityAction::Report { format, output, recommendations, summary, title } => {
-            execute_report(format, output.as_ref(), recommendations, summary, &title, verbose)
-        }
-        SecurityAction::CheckBoot { image, key, hardware } => {
-            execute_check_boot(image.as_ref(), key.as_ref(), hardware, verbose)
-        }
-        SecurityAction::MemoryCheck { deep, region, capabilities } => {
-            execute_memory_check(deep, &region, capabilities, verbose)
-        }
-        SecurityAction::Verify { image, hash, expected, manifest } => {
-            execute_verify(&image, hash, expected.as_deref(), manifest.as_ref(), verbose)
-        }
+        SecurityAction::Audit {
+            depth,
+            focus,
+            format,
+            output,
+            strict,
+        } => execute_audit(depth, focus, format, output.as_ref(), strict, verbose),
+        SecurityAction::Scan {
+            image,
+            config,
+            cve_db,
+            deps,
+            min_severity,
+        } => execute_scan(
+            image.as_ref(),
+            config.as_ref(),
+            cve_db.as_ref(),
+            deps,
+            min_severity,
+            verbose,
+        ),
+        SecurityAction::Report {
+            format,
+            output,
+            recommendations,
+            summary,
+            title,
+        } => execute_report(
+            format,
+            output.as_ref(),
+            recommendations,
+            summary,
+            &title,
+            verbose,
+        ),
+        SecurityAction::CheckBoot {
+            image,
+            key,
+            hardware,
+        } => execute_check_boot(image.as_ref(), key.as_ref(), hardware, verbose),
+        SecurityAction::MemoryCheck {
+            deep,
+            region,
+            capabilities,
+        } => execute_memory_check(deep, &region, capabilities, verbose),
+        SecurityAction::Verify {
+            image,
+            hash,
+            expected,
+            manifest,
+        } => execute_verify(
+            &image,
+            hash,
+            expected.as_deref(),
+            manifest.as_ref(),
+            verbose,
+        ),
     }
 }
 
@@ -342,10 +381,7 @@ fn execute_audit(
             }
             "Side-channel analysis" => {
                 println!("  {} Constant-time comparisons", "PASS".green());
-                println!(
-                    "  {} Potential timing leak in scheduler",
-                    "WARN".yellow()
-                );
+                println!("  {} Potential timing leak in scheduler", "WARN".yellow());
                 findings.push(("WARN", "Potential timing side-channel in scheduler"));
             }
             _ => {
@@ -409,7 +445,7 @@ fn execute_audit(
         );
     }
 
-    let result = if critical > 0 || high > 0 || (strict && medium > 0) {
+    if critical > 0 || high > 0 || (strict && medium > 0) {
         println!();
         println!("{} Security issues found", "FAIL".red().bold());
         if strict {
@@ -452,7 +488,10 @@ fn execute_scan(
     if let Some(img) = image {
         println!("{} Scanning kernel image...", "[1/3]".cyan());
         println!("  {} Would analyze: {}", "[stub]".yellow(), img.display());
-        println!("  {} Checking for known vulnerable patterns", "[stub]".yellow());
+        println!(
+            "  {} Checking for known vulnerable patterns",
+            "[stub]".yellow()
+        );
     }
 
     if let Some(cfg) = config {
@@ -463,13 +502,26 @@ fn execute_scan(
 
     if deps {
         println!("{} Scanning dependencies...", "[3/3]".cyan());
-        println!("  {} Would scan Cargo.lock for vulnerable crates", "[stub]".yellow());
+        println!(
+            "  {} Would scan Cargo.lock for vulnerable crates",
+            "[stub]".yellow()
+        );
     }
 
     // Sample vulnerability findings
     let vulns = [
-        ("CVE-2024-0001", "Medium", "Potential integer overflow in scheduler", "Update to v0.1.1"),
-        ("CVE-2024-0002", "Low", "Information disclosure in debug output", "Disable debug in release"),
+        (
+            "CVE-2024-0001",
+            "Medium",
+            "Potential integer overflow in scheduler",
+            "Update to v0.1.1",
+        ),
+        (
+            "CVE-2024-0002",
+            "Low",
+            "Information disclosure in debug output",
+            "Disable debug in release",
+        ),
     ];
 
     println!();
@@ -487,13 +539,13 @@ fn execute_scan(
         };
 
         // Filter by minimum severity
-        let show = match (min_severity, *severity) {
-            (Severity::Low, _) => true,
-            (Severity::Medium, "Critical" | "High" | "Medium") => true,
-            (Severity::High, "Critical" | "High") => true,
-            (Severity::Critical, "Critical") => true,
-            _ => false,
-        };
+        let show = matches!(
+            (min_severity, *severity),
+            (Severity::Low, _)
+                | (Severity::Medium, "Critical" | "High" | "Medium")
+                | (Severity::High, "Critical" | "High")
+                | (Severity::Critical, "Critical")
+        );
 
         if show {
             println!();
@@ -507,7 +559,11 @@ fn execute_scan(
     println!();
     println!(
         "{} Found {} vulnerabilities",
-        if found > 0 { "WARN".yellow() } else { "OK".green() },
+        if found > 0 {
+            "WARN".yellow()
+        } else {
+            "OK".green()
+        },
         found
     );
 
@@ -535,9 +591,7 @@ fn execute_report(
     if summary {
         println!("{}", "Executive Summary".cyan().bold());
         println!("{}", "-".repeat(40));
-        println!(
-            "The RuVix kernel has been analyzed for security vulnerabilities."
-        );
+        println!("The RuVix kernel has been analyzed for security vulnerabilities.");
         println!("Overall security posture: {}", "GOOD".green().bold());
         println!();
     }
@@ -583,14 +637,17 @@ fn execute_check_boot(
     image: Option<&PathBuf>,
     key: Option<&PathBuf>,
     hardware: bool,
-    verbose: bool,
+    _verbose: bool,
 ) -> Result<()> {
     println!("{}", "Secure Boot Check".cyan().bold());
     println!();
 
     if hardware {
         println!("{} Checking hardware secure boot status...", "[1/3]".cyan());
-        println!("  {} Would query UEFI/firmware secure boot state", "[stub]".yellow());
+        println!(
+            "  {} Would query UEFI/firmware secure boot state",
+            "[stub]".yellow()
+        );
         println!("  Secure Boot: {} (stub)", "ENABLED".green());
     }
 
@@ -621,7 +678,7 @@ fn execute_memory_check(
     deep: bool,
     regions: &[String],
     capabilities: bool,
-    verbose: bool,
+    _verbose: bool,
 ) -> Result<()> {
     println!("{}", "Memory Safety Analysis".cyan().bold());
     println!();
@@ -671,7 +728,10 @@ fn execute_memory_check(
     if deep {
         println!();
         println!("{} Running deep analysis...", "[deep]".cyan());
-        println!("  {} Checking for use-after-free patterns", "[stub]".yellow());
+        println!(
+            "  {} Checking for use-after-free patterns",
+            "[stub]".yellow()
+        );
         println!("  {} Analyzing pointer arithmetic", "[stub]".yellow());
         println!("  {} Verifying bounds checks", "[stub]".yellow());
     }
@@ -691,7 +751,7 @@ fn execute_memory_check(
 }
 
 fn execute_verify(
-    image: &PathBuf,
+    image: &Path,
     hash: HashAlgorithm,
     expected: Option<&str>,
     manifest: Option<&PathBuf>,
@@ -704,7 +764,12 @@ fn execute_verify(
         println!();
     }
 
-    println!("{} Computing {:?} hash of {}...", "[verify]".cyan(), hash, image.display());
+    println!(
+        "{} Computing {:?} hash of {}...",
+        "[verify]".cyan(),
+        hash,
+        image.display()
+    );
 
     // Stub hash value
     let computed_hash = "a3f2b8c9d4e5f6071829304a5b6c7d8e9f0a1b2c3d4e5f60718293a4b5c6d7e8";
@@ -730,7 +795,10 @@ fn execute_verify(
         println!("{} Verified against manifest", "PASS".green().bold());
     } else {
         println!();
-        println!("{} Hash computed (no expected value provided)", "OK".green());
+        println!(
+            "{} Hash computed (no expected value provided)",
+            "OK".green()
+        );
     }
 
     Ok(())

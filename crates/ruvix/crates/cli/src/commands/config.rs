@@ -1,11 +1,11 @@
 //! Config command - manage RuVix kernel configuration
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use clap::Subcommand;
 use colored::Colorize;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 /// Configuration actions
 #[derive(Subcommand, Debug)]
@@ -161,7 +161,11 @@ pub enum ListFormat {
     Toml,
 }
 
-/// Sample configuration structure
+/// Sample configuration structure.
+///
+/// This documents the on-disk RuVix configuration schema and is (de)serialized
+/// once config load/save is wired up. Retained to keep the schema authoritative.
+#[allow(dead_code)]
 #[derive(Debug, Serialize, Deserialize)]
 struct RuvixConfig {
     kernel: KernelConfig,
@@ -170,6 +174,7 @@ struct RuvixConfig {
     boot: BootConfig,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Serialize, Deserialize)]
 struct KernelConfig {
     memory_size: String,
@@ -178,6 +183,7 @@ struct KernelConfig {
     heap_size: String,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Serialize, Deserialize)]
 struct FeatureConfig {
     smp: bool,
@@ -186,6 +192,7 @@ struct FeatureConfig {
     secure_boot: bool,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Serialize, Deserialize)]
 struct MemoryConfig {
     kernel_base: String,
@@ -193,6 +200,7 @@ struct MemoryConfig {
     stack_top: String,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Serialize, Deserialize)]
 struct BootConfig {
     uart_baud: u32,
@@ -203,25 +211,35 @@ struct BootConfig {
 /// Execute the config command
 pub fn execute(action: ConfigAction, verbose: bool) -> Result<()> {
     match action {
-        ConfigAction::Get { key, default, config } => {
-            execute_get(&key, default.as_deref(), &config, verbose)
-        }
-        ConfigAction::Set { key, value, r#type, config, create } => {
-            execute_set(&key, &value, r#type, &config, create, verbose)
-        }
-        ConfigAction::List { config, section, format, show_defaults } => {
-            execute_list(&config, section.as_deref(), format, show_defaults, verbose)
-        }
-        ConfigAction::Init { config, target, interactive, force } => {
-            execute_init(&config, &target, interactive, force, verbose)
-        }
-        ConfigAction::Validate { config, strict } => {
-            execute_validate(&config, strict, verbose)
-        }
+        ConfigAction::Get {
+            key,
+            default,
+            config,
+        } => execute_get(&key, default.as_deref(), &config, verbose),
+        ConfigAction::Set {
+            key,
+            value,
+            r#type,
+            config,
+            create,
+        } => execute_set(&key, &value, r#type, &config, create, verbose),
+        ConfigAction::List {
+            config,
+            section,
+            format,
+            show_defaults,
+        } => execute_list(&config, section.as_deref(), format, show_defaults, verbose),
+        ConfigAction::Init {
+            config,
+            target,
+            interactive,
+            force,
+        } => execute_init(&config, &target, interactive, force, verbose),
+        ConfigAction::Validate { config, strict } => execute_validate(&config, strict, verbose),
     }
 }
 
-fn execute_get(key: &str, default: Option<&str>, config: &PathBuf, verbose: bool) -> Result<()> {
+fn execute_get(key: &str, default: Option<&str>, config: &Path, verbose: bool) -> Result<()> {
     if verbose {
         println!(
             "{} Reading key '{}' from {}",
@@ -249,7 +267,7 @@ fn execute_set(
     key: &str,
     value: &str,
     value_type: ValueType,
-    config: &PathBuf,
+    config: &Path,
     create: bool,
     verbose: bool,
 ) -> Result<()> {
@@ -273,7 +291,10 @@ fn execute_set(
     );
 
     if create {
-        println!("  {} Would create config file if missing", "[stub]".yellow());
+        println!(
+            "  {} Would create config file if missing",
+            "[stub]".yellow()
+        );
     }
 
     println!("{} Configuration updated", "OK".green());
@@ -282,7 +303,7 @@ fn execute_set(
 }
 
 fn execute_list(
-    config: &PathBuf,
+    config: &Path,
     section: Option<&str>,
     format: ListFormat,
     show_defaults: bool,
@@ -328,11 +349,7 @@ fn execute_list(
             }
         }
         ListFormat::Table => {
-            println!(
-                "\n  {:<30} {}",
-                "KEY".bold(),
-                "VALUE".bold()
-            );
+            println!("\n  {:<30} {}", "KEY".bold(), "VALUE".bold());
             println!("  {}", "-".repeat(50));
             for (key, value) in &filtered {
                 println!("  {:<30} {}", key, value.green());
@@ -341,14 +358,17 @@ fn execute_list(
     }
 
     if show_defaults {
-        println!("\n  {} Showing default values is not yet implemented", "[stub]".yellow());
+        println!(
+            "\n  {} Showing default values is not yet implemented",
+            "[stub]".yellow()
+        );
     }
 
     Ok(())
 }
 
 fn execute_init(
-    config: &PathBuf,
+    config: &Path,
     target: &str,
     interactive: bool,
     force: bool,
@@ -364,11 +384,16 @@ fn execute_init(
     }
 
     if !force {
-        println!("  {} Would check if {} exists", "[stub]".yellow(), config.display());
+        println!(
+            "  {} Would check if {} exists",
+            "[stub]".yellow(),
+            config.display()
+        );
     }
 
     let template = match target {
-        "rpi4" => r#"# RuVix Configuration for Raspberry Pi 4
+        "rpi4" => {
+            r#"# RuVix Configuration for Raspberry Pi 4
 [kernel]
 memory_size = "4GB"
 cpu_count = 4
@@ -390,8 +415,10 @@ stack_top = "0x80000"
 uart_baud = 115200
 boot_delay_ms = 0
 verbose = false
-"#,
-        "qemu" => r#"# RuVix Configuration for QEMU
+"#
+        }
+        "qemu" => {
+            r#"# RuVix Configuration for QEMU
 [kernel]
 memory_size = "1GB"
 cpu_count = 4
@@ -413,8 +440,10 @@ stack_top = "0x40080000"
 uart_baud = 115200
 boot_delay_ms = 100
 verbose = true
-"#,
-        _ => r#"# RuVix Configuration (Generic)
+"#
+        }
+        _ => {
+            r#"# RuVix Configuration (Generic)
 [kernel]
 memory_size = "512MB"
 cpu_count = 1
@@ -436,11 +465,15 @@ stack_top = "0x80000"
 uart_baud = 115200
 boot_delay_ms = 0
 verbose = false
-"#,
+"#
+        }
     };
 
     if interactive {
-        println!("  {} Interactive mode not yet implemented", "[stub]".yellow());
+        println!(
+            "  {} Interactive mode not yet implemented",
+            "[stub]".yellow()
+        );
     }
 
     println!(
@@ -463,7 +496,7 @@ verbose = false
     Ok(())
 }
 
-fn execute_validate(config: &PathBuf, strict: bool, verbose: bool) -> Result<()> {
+fn execute_validate(config: &Path, strict: bool, verbose: bool) -> Result<()> {
     if verbose {
         println!(
             "{} Validating configuration at {}",
@@ -479,16 +512,16 @@ fn execute_validate(config: &PathBuf, strict: bool, verbose: bool) -> Result<()>
     println!("  {} Checking for conflicts...", "[stub]".yellow());
 
     if strict {
-        println!("  {} Running strict validation checks...", "[stub]".yellow());
+        println!(
+            "  {} Running strict validation checks...",
+            "[stub]".yellow()
+        );
         println!("  {} Checking deprecated options...", "[stub]".yellow());
         println!("  {} Verifying memory alignment...", "[stub]".yellow());
     }
 
     println!();
-    println!(
-        "{} Configuration is valid",
-        "OK".green()
-    );
+    println!("{} Configuration is valid", "OK".green());
 
     Ok(())
 }
@@ -499,7 +532,12 @@ mod tests {
 
     #[test]
     fn test_get_config() {
-        let result = execute_get("kernel.memory_size", None, &PathBuf::from("test.toml"), false);
+        let result = execute_get(
+            "kernel.memory_size",
+            None,
+            &PathBuf::from("test.toml"),
+            false,
+        );
         assert!(result.is_ok());
     }
 }

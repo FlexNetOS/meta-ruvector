@@ -2,7 +2,6 @@
 
 #[cfg(test)]
 mod manifold_retrieval_tests {
-    use super::*;
     // use exo_manifold::*;
     // use burn::backend::NdArray;
 
@@ -51,8 +50,6 @@ mod manifold_retrieval_tests {
 
 #[cfg(test)]
 mod manifold_deformation_tests {
-    use super::*;
-
     #[test]
     fn test_manifold_deform_basic() {
         // Test basic deformation operation
@@ -100,8 +97,6 @@ mod manifold_deformation_tests {
 
 #[cfg(test)]
 mod strategic_forgetting_tests {
-    use super::*;
-
     #[test]
     fn test_forget_low_salience_regions() {
         // Test forgetting mechanism
@@ -141,8 +136,6 @@ mod strategic_forgetting_tests {
 
 #[cfg(test)]
 mod siren_network_tests {
-    use super::*;
-
     #[test]
     fn test_siren_forward_pass() {
         // Test SIREN network forward propagation
@@ -166,8 +159,6 @@ mod siren_network_tests {
 
 #[cfg(test)]
 mod fourier_features_tests {
-    use super::*;
-
     #[test]
     fn test_fourier_encoding() {
         // Test Fourier feature transformation
@@ -187,10 +178,7 @@ mod fourier_features_tests {
 
 #[cfg(test)]
 mod tensor_train_tests {
-    use super::*;
-
     #[test]
-    #[cfg(feature = "tensor-train")]
     fn test_tensor_train_decomposition() {
         // Test Tensor Train compression
         // let engine = setup_engine_with_tt();
@@ -203,7 +191,6 @@ mod tensor_train_tests {
     }
 
     #[test]
-    #[cfg(feature = "tensor-train")]
     fn test_tensor_train_accuracy() {
         // Test that TT preserves accuracy
     }
@@ -211,8 +198,6 @@ mod tensor_train_tests {
 
 #[cfg(test)]
 mod edge_cases_tests {
-    use super::*;
-
     #[test]
     fn test_nan_handling() {
         // Test handling of NaN values in embeddings

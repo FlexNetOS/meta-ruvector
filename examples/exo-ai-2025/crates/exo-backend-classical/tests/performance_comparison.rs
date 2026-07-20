@@ -11,7 +11,6 @@ use exo_temporal::{ConsolidationConfig, Query, TemporalConfig, TemporalMemory};
 
 const VECTOR_DIM: usize = 384;
 const NUM_VECTORS: usize = 1_000;
-const K_NEAREST: usize = 10;
 
 fn generate_random_vector(dim: usize, seed: u64) -> Vec<f32> {
     let mut vec = Vec::with_capacity(dim);

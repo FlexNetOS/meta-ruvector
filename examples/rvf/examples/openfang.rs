@@ -1277,10 +1277,7 @@ fn main() {
                 "COW_BRANCH",
                 "AGI_CONTAINER",
             ];
-            println!(
-                "    {:>2}  {:>4}  {:>22}  {}",
-                "#", "Kind", "Timestamp", "Action"
-            );
+            println!("    {:>2}  {:>4}  {:>22}  Action", "#", "Kind", "Timestamp");
             println!("    {:->2}  {:->4}  {:->22}  {:->20}", "", "", "", "");
             for (i, e) in verified.iter().enumerate() {
                 let t = if e.witness_type == 0x01 {
