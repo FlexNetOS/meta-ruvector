@@ -1,18 +1,3289 @@
 [
   {
-    "id": "traj-1783597098701",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "find . -maxdepth 3 -type d -not -path '*/node_modules*' -not -path '*/.git*' | sort",
+    "id": "pretrain-agent-54",
+    "state": "edit_unknown_in_rvlite",
+    "action": "general-developer",
+    "outcome": "recommended for .dockerignore",
     "reward": 1,
-    "timestamp": "2026-07-09T11:38:18.701Z",
-    "abGroup": "treatment"
+    "timestamp": "2025-12-16T17:00:08.000Z"
   },
   {
-    "id": "traj-1783597101881",
-    "state": "other_in_general",
-    "action": "command-succeeded",
-    "outcome": "echo \"=== top level ===\" && ls -la . && echo \"=== patches ===\" && ls -la patches 2>/dev/null && echo",
+    "id": "pretrain-agent-55",
+    "state": "edit_ts_in_rvlite",
+    "action": "typescript-developer",
+    "outcome": "recommended for rvlite.spec.ts",
+    "reward": 1,
+    "timestamp": "2025-12-16T04:53:47.000Z"
+  },
+  {
+    "id": "pretrain-agent-56",
+    "state": "edit_css_in_rvlite",
+    "action": "frontend-developer",
+    "outcome": "recommended for App.css",
+    "reward": 1,
+    "timestamp": "2025-12-16T04:44:34.000Z"
+  },
+  {
+    "id": "pretrain-agent-57",
+    "state": "edit_rs_in_rvlite",
+    "action": "rust-developer",
+    "outcome": "recommended for embeddings.rs",
+    "reward": 1,
+    "timestamp": "2025-12-16T04:41:10.000Z"
+  },
+  {
+    "id": "pretrain-agent-58",
+    "state": "edit_tsx_in_rvlite",
+    "action": "general-developer",
+    "outcome": "recommended for IntegratedDemo.tsx",
+    "reward": 1,
+    "timestamp": "2025-12-16T04:00:12.000Z"
+  },
+  {
+    "id": "pretrain-agent-59",
+    "state": "edit_ts_in_rvlite",
+    "action": "typescript-developer",
+    "outcome": "recommended for useIntegratedEngine.ts",
+    "reward": 1,
+    "timestamp": "2025-12-16T03:58:49.000Z"
+  },
+  {
+    "id": "pretrain-agent-60",
+    "state": "edit_ts_in_rvlite",
+    "action": "typescript-developer",
+    "outcome": "recommended for IntegratedEngine.ts",
+    "reward": 1,
+    "timestamp": "2025-12-16T03:57:53.000Z"
+  },
+  {
+    "id": "pretrain-agent-61",
+    "state": "edit_ts_in_rvlite",
+    "action": "typescript-developer",
+    "outcome": "recommended for RealSemanticEngine.ts",
+    "reward": 1,
+    "timestamp": "2025-12-16T03:52:01.000Z"
+  },
+  {
+    "id": "pretrain-agent-62",
+    "state": "edit_ts_in_rvlite",
+    "action": "typescript-developer",
+    "outcome": "recommended for semantic-engine.test.ts",
+    "reward": 1,
+    "timestamp": "2025-12-16T03:48:38.000Z"
+  },
+  {
+    "id": "pretrain-agent-63",
+    "state": "edit_ts_in_rvlite",
+    "action": "typescript-developer",
+    "outcome": "recommended for SemanticEngine.ts",
+    "reward": 1,
+    "timestamp": "2025-12-16T03:44:22.000Z"
+  },
+  {
+    "id": "pretrain-agent-64",
+    "state": "edit_ts_in_rvlite",
+    "action": "typescript-developer",
+    "outcome": "recommended for quantizedModelLoader.ts",
+    "reward": 1,
+    "timestamp": "2025-12-16T03:34:24.000Z"
+  },
+  {
+    "id": "pretrain-agent-65",
+    "state": "edit_tsx_in_rvlite",
+    "action": "general-developer",
+    "outcome": "recommended for RuvLLMAgent.tsx",
+    "reward": 1,
+    "timestamp": "2025-12-16T03:26:57.000Z"
+  },
+  {
+    "id": "pretrain-agent-66",
+    "state": "edit_ts_in_rvlite",
+    "action": "typescript-developer",
+    "outcome": "recommended for performanceMonitor.ts",
+    "reward": 1,
+    "timestamp": "2025-12-16T03:23:41.000Z"
+  },
+  {
+    "id": "pretrain-agent-67",
+    "state": "edit_ts_in_rvlite",
+    "action": "typescript-developer",
+    "outcome": "recommended for MixtureOfExperts.ts",
+    "reward": 1,
+    "timestamp": "2025-12-16T03:00:40.000Z"
+  },
+  {
+    "id": "pretrain-agent-68",
+    "state": "edit_ts_in_rvlite",
+    "action": "typescript-developer",
+    "outcome": "recommended for useNeuroCognitive.ts",
+    "reward": 1,
+    "timestamp": "2025-12-16T02:59:00.000Z"
+  },
+  {
+    "id": "pretrain-agent-69",
+    "state": "edit_ts_in_rvlite",
+    "action": "typescript-developer",
+    "outcome": "recommended for NeuroCognitiveEngine.ts",
+    "reward": 1,
+    "timestamp": "2025-12-16T02:58:26.000Z"
+  },
+  {
+    "id": "pretrain-agent-70",
+    "state": "edit_ts_in_rvlite",
+    "action": "typescript-developer",
+    "outcome": "recommended for useSpikingNeural.ts",
+    "reward": 1,
+    "timestamp": "2025-12-16T02:56:34.000Z"
+  },
+  {
+    "id": "pretrain-agent-71",
+    "state": "edit_ts_in_rvlite",
+    "action": "typescript-developer",
+    "outcome": "recommended for SpikingNeuralSystem.ts",
+    "reward": 1,
+    "timestamp": "2025-12-16T02:55:45.000Z"
+  },
+  {
+    "id": "pretrain-agent-72",
+    "state": "edit_md_in_rvlite",
+    "action": "technical-writer",
+    "outcome": "recommended for OPTIMIZATION_PLAN.md",
+    "reward": 1,
+    "timestamp": "2025-12-16T02:47:54.000Z"
+  },
+  {
+    "id": "pretrain-agent-73",
+    "state": "edit_ts_in_rvlite",
+    "action": "typescript-developer",
+    "outcome": "recommended for useNeuralWorker.ts",
+    "reward": 1,
+    "timestamp": "2025-12-16T02:42:47.000Z"
+  },
+  {
+    "id": "pretrain-agent-74",
+    "state": "edit_ts_in_rvlite",
+    "action": "typescript-developer",
+    "outcome": "recommended for neural.worker.ts",
+    "reward": 1,
+    "timestamp": "2025-12-16T02:42:10.000Z"
+  },
+  {
+    "id": "pretrain-agent-75",
+    "state": "edit_ts_in_rvlite",
+    "action": "typescript-developer",
+    "outcome": "recommended for useNeuromorphic.ts",
+    "reward": 1,
+    "timestamp": "2025-12-16T02:39:47.000Z"
+  },
+  {
+    "id": "pretrain-agent-76",
+    "state": "edit_ts_in_rvlite",
+    "action": "typescript-developer",
+    "outcome": "recommended for wasmLoader.ts",
+    "reward": 1,
+    "timestamp": "2025-12-16T02:38:50.000Z"
+  },
+  {
+    "id": "pretrain-agent-77",
+    "state": "edit_ts_in_rvlite",
+    "action": "typescript-developer",
+    "outcome": "recommended for useRuvLLMWorker.ts",
+    "reward": 1,
+    "timestamp": "2025-12-16T02:38:16.000Z"
+  },
+  {
+    "id": "pretrain-agent-78",
+    "state": "edit_ts_in_rvlite",
+    "action": "typescript-developer",
+    "outcome": "recommended for ruvllm.worker.ts",
+    "reward": 1,
+    "timestamp": "2025-12-16T02:37:47.000Z"
+  },
+  {
+    "id": "pretrain-agent-79",
+    "state": "edit_sh_in_ruvllm-wasm",
+    "action": "system-admin",
+    "outcome": "recommended for optimize-wasm.sh",
+    "reward": 1,
+    "timestamp": "2025-12-16T02:37:23.000Z"
+  },
+  {
+    "id": "pretrain-agent-80",
+    "state": "edit_conf_in_rvlite",
+    "action": "general-developer",
+    "outcome": "recommended for nginx.conf",
+    "reward": 1,
+    "timestamp": "2025-12-15T23:35:06.000Z"
+  },
+  {
+    "id": "pretrain-agent-81",
+    "state": "edit_yml_in_rvlite",
+    "action": "devops-engineer",
+    "outcome": "recommended for docker-compose.yml",
+    "reward": 1,
+    "timestamp": "2025-12-15T23:35:01.000Z"
+  },
+  {
+    "id": "pretrain-agent-82",
+    "state": "edit_unknown_in_rvlite",
+    "action": "general-developer",
+    "outcome": "recommended for Dockerfile",
+    "reward": 1,
+    "timestamp": "2025-12-15T23:34:56.000Z"
+  },
+  {
+    "id": "pretrain-agent-83",
+    "state": "edit_ts_in_rvlite",
+    "action": "typescript-developer",
+    "outcome": "recommended for playwright.config.ts",
+    "reward": 1,
+    "timestamp": "2025-12-15T23:34:52.000Z"
+  },
+  {
+    "id": "pretrain-agent-84",
+    "state": "edit_ts_in_rvlite",
+    "action": "typescript-developer",
+    "outcome": "recommended for ruvllm.spec.ts",
+    "reward": 1,
+    "timestamp": "2025-12-15T23:34:49.000Z"
+  },
+  {
+    "id": "pretrain-agent-85",
+    "state": "edit_js_in_ruvllm-wasm",
+    "action": "javascript-developer",
+    "outcome": "recommended for benchmark-runner.js",
+    "reward": 1,
+    "timestamp": "2025-12-15T23:17:21.000Z"
+  },
+  {
+    "id": "pretrain-agent-86",
+    "state": "edit_rs_in_ruvllm-wasm",
+    "action": "rust-developer",
+    "outcome": "recommended for bench.rs",
+    "reward": 1,
+    "timestamp": "2025-12-15T23:15:00.000Z"
+  },
+  {
+    "id": "pretrain-agent-87",
+    "state": "edit_rs_in_ruvllm-wasm",
+    "action": "rust-developer",
+    "outcome": "recommended for simd.rs",
+    "reward": 1,
+    "timestamp": "2025-12-15T23:11:28.000Z"
+  },
+  {
+    "id": "pretrain-agent-88",
+    "state": "edit_ts_in_rvlite",
+    "action": "typescript-developer",
+    "outcome": "recommended for useRuvLLM.ts",
+    "reward": 1,
+    "timestamp": "2025-12-15T23:03:23.000Z"
+  },
+  {
+    "id": "pretrain-agent-89",
+    "state": "edit_rs_in_ruvllm-wasm",
+    "action": "rust-developer",
+    "outcome": "recommended for web.rs",
+    "reward": 1,
+    "timestamp": "2025-12-15T23:02:16.000Z"
+  },
+  {
+    "id": "pretrain-agent-90",
+    "state": "edit_rs_in_ruvllm-wasm",
+    "action": "rust-developer",
+    "outcome": "recommended for utils.rs",
+    "reward": 1,
+    "timestamp": "2025-12-15T23:01:21.000Z"
+  },
+  {
+    "id": "pretrain-agent-91",
+    "state": "edit_rs_in_ruvllm-wasm",
+    "action": "rust-developer",
+    "outcome": "recommended for lora.rs",
+    "reward": 1,
+    "timestamp": "2025-12-15T23:00:28.000Z"
+  },
+  {
+    "id": "pretrain-agent-92",
+    "state": "edit_rs_in_ruvllm-wasm",
+    "action": "rust-developer",
+    "outcome": "recommended for trm.rs",
+    "reward": 1,
+    "timestamp": "2025-12-15T22:59:13.000Z"
+  },
+  {
+    "id": "pretrain-agent-93",
+    "state": "edit_rs_in_ruvllm-wasm",
+    "action": "rust-developer",
+    "outcome": "recommended for config.rs",
+    "reward": 1,
+    "timestamp": "2025-12-15T22:58:07.000Z"
+  },
+  {
+    "id": "pretrain-agent-94",
+    "state": "edit_rs_in_ruvllm-wasm",
+    "action": "rust-developer",
+    "outcome": "recommended for lib.rs",
+    "reward": 1,
+    "timestamp": "2025-12-15T22:57:28.000Z"
+  },
+  {
+    "id": "pretrain-agent-95",
+    "state": "edit_toml_in_ruvllm-wasm",
+    "action": "general-developer",
+    "outcome": "recommended for Cargo.toml",
+    "reward": 1,
+    "timestamp": "2025-12-15T22:56:58.000Z"
+  },
+  {
+    "id": "pretrain-agent-96",
+    "state": "edit_unknown_in_project",
+    "action": "general-developer",
+    "outcome": "recommended for .gitignore",
+    "reward": 1,
+    "timestamp": "2025-12-15T18:37:46.000Z"
+  },
+  {
+    "id": "pretrain-agent-97",
+    "state": "edit_js_in_project",
+    "action": "javascript-developer",
+    "outcome": "recommended for sona-benchmark.js",
+    "reward": 1,
+    "timestamp": "2025-12-14T06:58:54.000Z"
+  },
+  {
+    "id": "pretrain-agent-98",
+    "state": "edit_js_in_project",
+    "action": "javascript-developer",
+    "outcome": "recommended for deep-sona-training.js",
+    "reward": 1,
+    "timestamp": "2025-12-14T06:50:05.000Z"
+  },
+  {
+    "id": "pretrain-agent-99",
+    "state": "edit_js_in_project",
+    "action": "javascript-developer",
+    "outcome": "recommended for ai-defense.js",
+    "reward": 1,
+    "timestamp": "2025-12-14T06:35:58.000Z"
+  },
+  {
+    "id": "pretrain-agent-100",
+    "state": "edit_js_in_project",
+    "action": "javascript-developer",
+    "outcome": "recommended for model-router.js",
+    "reward": 1,
+    "timestamp": "2025-12-14T06:23:42.000Z"
+  },
+  {
+    "id": "pretrain-agent-101",
+    "state": "edit_json_in_project",
+    "action": "config-specialist",
+    "outcome": "recommended for 000000002.json",
+    "reward": 1,
+    "timestamp": "2025-12-14T06:17:39.000Z"
+  },
+  {
+    "id": "pretrain-agent-102",
+    "state": "edit_js_in_project",
+    "action": "javascript-developer",
+    "outcome": "recommended for presets.js",
+    "reward": 1,
+    "timestamp": "2025-12-14T06:15:24.000Z"
+  },
+  {
+    "id": "pretrain-agent-103",
+    "state": "edit_js_in_project",
+    "action": "javascript-developer",
+    "outcome": "recommended for benchmark-all-generators.js",
+    "reward": 1,
+    "timestamp": "2025-12-14T06:14:12.000Z"
+  },
+  {
+    "id": "pretrain-agent-104",
+    "state": "edit_json_in_project",
+    "action": "config-specialist",
+    "outcome": "recommended for pay_per_event.json",
+    "reward": 1,
+    "timestamp": "2025-12-14T06:02:47.000Z"
+  },
+  {
+    "id": "pretrain-agent-105",
+    "state": "edit_json_in_project",
+    "action": "config-specialist",
+    "outcome": "recommended for 000000001.json",
+    "reward": 1,
+    "timestamp": "2025-12-14T06:02:43.000Z"
+  },
+  {
+    "id": "pretrain-agent-106",
+    "state": "edit_json_in_project",
+    "action": "config-specialist",
+    "outcome": "recommended for INPUT.json",
+    "reward": 1,
+    "timestamp": "2025-12-14T06:02:39.000Z"
+  },
+  {
+    "id": "pretrain-agent-107",
+    "state": "edit_md_in_project",
+    "action": "technical-writer",
+    "outcome": "recommended for README.md",
+    "reward": 1,
+    "timestamp": "2025-12-14T06:02:13.000Z"
+  },
+  {
+    "id": "pretrain-agent-108",
+    "state": "edit_js_in_project",
+    "action": "javascript-developer",
+    "outcome": "recommended for main.js",
+    "reward": 1,
+    "timestamp": "2025-12-14T05:58:28.000Z"
+  },
+  {
+    "id": "pretrain-agent-109",
+    "state": "edit_unknown_in_project",
+    "action": "general-developer",
+    "outcome": "recommended for Dockerfile",
+    "reward": 1,
+    "timestamp": "2025-12-14T05:54:36.000Z"
+  },
+  {
+    "id": "pretrain-agent-110",
+    "state": "edit_json_in_project",
+    "action": "config-specialist",
+    "outcome": "recommended for input_schema.json",
+    "reward": 1,
+    "timestamp": "2025-12-14T05:54:32.000Z"
+  },
+  {
+    "id": "pretrain-agent-111",
+    "state": "edit_json_in_project",
+    "action": "config-specialist",
+    "outcome": "recommended for actor.json",
+    "reward": 1,
+    "timestamp": "2025-12-14T05:54:28.000Z"
+  },
+  {
+    "id": "pretrain-agent-112",
+    "state": "edit_json_in_project",
+    "action": "config-specialist",
+    "outcome": "recommended for package.json",
+    "reward": 1,
+    "timestamp": "2025-12-14T05:54:24.000Z"
+  },
+  {
+    "id": "pretrain-agent-113",
+    "state": "edit_js_in_project",
+    "action": "javascript-developer",
+    "outcome": "recommended for priority2_generators.js",
+    "reward": 1,
+    "timestamp": "2025-12-14T05:51:37.000Z"
+  },
+  {
+    "id": "pretrain-agent-114",
+    "state": "edit_js_in_project",
+    "action": "javascript-developer",
+    "outcome": "recommended for exotic_generators.js",
+    "reward": 1,
+    "timestamp": "2025-12-14T05:51:14.000Z"
+  },
+  {
+    "id": "pretrain-agent-115",
+    "state": "edit_js_in_project",
+    "action": "javascript-developer",
+    "outcome": "recommended for test-memory-session.js",
+    "reward": 1,
+    "timestamp": "2025-12-14T05:31:23.000Z"
+  },
+  {
+    "id": "pretrain-agent-116",
+    "state": "edit_js_in_project",
+    "action": "javascript-developer",
+    "outcome": "recommended for memory-persistence.js",
+    "reward": 1,
+    "timestamp": "2025-12-14T05:29:02.000Z"
+  },
+  {
+    "id": "pretrain-agent-117",
+    "state": "edit_js_in_project",
+    "action": "javascript-developer",
+    "outcome": "recommended for test-crunchbase.js",
+    "reward": 1,
+    "timestamp": "2025-12-14T05:24:41.000Z"
+  },
+  {
+    "id": "pretrain-agent-118",
+    "state": "edit_js_in_project",
+    "action": "javascript-developer",
+    "outcome": "recommended for persistence-benchmark.js",
+    "reward": 1,
+    "timestamp": "2025-12-14T05:14:38.000Z"
+  },
+  {
+    "id": "pretrain-agent-119",
+    "state": "edit_json_in_project",
+    "action": "config-specialist",
+    "outcome": "recommended for pay_per_event.json",
+    "reward": 1,
+    "timestamp": "2025-12-13T20:00:12.000Z"
+  },
+  {
+    "id": "pretrain-agent-120",
+    "state": "edit_js_in_project",
+    "action": "javascript-developer",
+    "outcome": "recommended for test-all-models.js",
+    "reward": 1,
+    "timestamp": "2025-12-13T19:50:00.000Z"
+  },
+  {
+    "id": "pretrain-agent-121",
+    "state": "edit_js_in_project",
+    "action": "javascript-developer",
+    "outcome": "recommended for test-generation.js",
+    "reward": 1,
+    "timestamp": "2025-12-13T19:49:36.000Z"
+  },
+  {
+    "id": "pretrain-agent-122",
+    "state": "edit_js_in_project",
+    "action": "javascript-developer",
+    "outcome": "recommended for test-actor.js",
+    "reward": 1,
+    "timestamp": "2025-12-13T19:47:03.000Z"
+  },
+  {
+    "id": "pretrain-agent-123",
+    "state": "edit_js_in_project",
+    "action": "javascript-developer",
+    "outcome": "recommended for test-v25.js",
+    "reward": 1,
+    "timestamp": "2025-12-13T19:46:11.000Z"
+  },
+  {
+    "id": "pretrain-agent-124",
+    "state": "edit_txt_in_project",
+    "action": "general-developer",
+    "outcome": "recommended for test-existence.txt",
+    "reward": 1,
+    "timestamp": "2025-12-13T19:09:42.000Z"
+  },
+  {
+    "id": "pretrain-agent-125",
+    "state": "edit_json_in_project",
+    "action": "config-specialist",
+    "outcome": "recommended for test-analyze.json",
+    "reward": 1,
+    "timestamp": "2025-12-13T19:07:38.000Z"
+  },
+  {
+    "id": "pretrain-agent-126",
+    "state": "edit_json_in_project",
+    "action": "config-specialist",
+    "outcome": "recommended for test-backtest.json",
+    "reward": 1,
+    "timestamp": "2025-12-13T19:07:34.000Z"
+  },
+  {
+    "id": "pretrain-agent-127",
+    "state": "edit_js_in_project",
+    "action": "javascript-developer",
+    "outcome": "recommended for embeddings.js",
+    "reward": 1,
+    "timestamp": "2025-12-13T18:52:33.000Z"
+  },
+  {
+    "id": "pretrain-agent-128",
+    "state": "edit_md_in_project",
+    "action": "technical-writer",
+    "outcome": "recommended for QUICKSTART.md",
+    "reward": 1,
+    "timestamp": "2025-12-13T16:42:56.000Z"
+  },
+  {
+    "id": "pretrain-agent-129",
+    "state": "edit_unknown_in_project",
+    "action": "general-developer",
+    "outcome": "recommended for .gitignore",
+    "reward": 1,
+    "timestamp": "2025-12-13T16:42:08.000Z"
+  },
+  {
+    "id": "pretrain-agent-130",
+    "state": "edit_js_in_project",
+    "action": "javascript-developer",
+    "outcome": "recommended for test-configs.js",
+    "reward": 1,
+    "timestamp": "2025-12-13T16:41:52.000Z"
+  },
+  {
+    "id": "pretrain-agent-131",
+    "state": "edit_md_in_project",
+    "action": "technical-writer",
+    "outcome": "recommended for QUICKSTART.md",
+    "reward": 1,
+    "timestamp": "2025-12-13T16:41:48.000Z"
+  },
+  {
+    "id": "pretrain-agent-132",
+    "state": "edit_js_in_project",
+    "action": "javascript-developer",
+    "outcome": "recommended for standalone-test.js",
+    "reward": 1,
+    "timestamp": "2025-12-13T16:40:53.000Z"
+  },
+  {
+    "id": "pretrain-agent-133",
+    "state": "edit_md_in_project",
+    "action": "technical-writer",
+    "outcome": "recommended for README.md",
+    "reward": 1,
+    "timestamp": "2025-12-13T16:40:49.000Z"
+  },
+  {
+    "id": "pretrain-agent-134",
+    "state": "edit_js_in_project",
+    "action": "javascript-developer",
+    "outcome": "recommended for main.js",
+    "reward": 1,
+    "timestamp": "2025-12-13T16:40:46.000Z"
+  },
+  {
+    "id": "pretrain-agent-135",
+    "state": "edit_unknown_in_project",
+    "action": "general-developer",
+    "outcome": "recommended for Dockerfile",
+    "reward": 1,
+    "timestamp": "2025-12-13T16:40:42.000Z"
+  },
+  {
+    "id": "pretrain-agent-136",
+    "state": "edit_json_in_project",
+    "action": "config-specialist",
+    "outcome": "recommended for input_schema.json",
+    "reward": 1,
+    "timestamp": "2025-12-13T16:40:39.000Z"
+  },
+  {
+    "id": "pretrain-agent-137",
+    "state": "edit_json_in_project",
+    "action": "config-specialist",
+    "outcome": "recommended for actor.json",
+    "reward": 1,
+    "timestamp": "2025-12-13T16:40:35.000Z"
+  },
+  {
+    "id": "pretrain-agent-138",
+    "state": "edit_json_in_project",
+    "action": "config-specialist",
+    "outcome": "recommended for package.json",
+    "reward": 1,
+    "timestamp": "2025-12-13T16:40:32.000Z"
+  },
+  {
+    "id": "pretrain-agent-139",
+    "state": "edit_js_in_project",
+    "action": "javascript-developer",
+    "outcome": "recommended for test.js",
+    "reward": 1,
+    "timestamp": "2025-12-13T16:39:04.000Z"
+  },
+  {
+    "id": "pretrain-agent-140",
+    "state": "edit_md_in_project",
+    "action": "technical-writer",
+    "outcome": "recommended for DEPLOYMENT.md",
+    "reward": 1,
+    "timestamp": "2025-12-13T16:38:30.000Z"
+  },
+  {
+    "id": "pretrain-agent-141",
+    "state": "edit_js_in_project",
+    "action": "javascript-developer",
+    "outcome": "recommended for run-examples.js",
+    "reward": 1,
+    "timestamp": "2025-12-13T16:37:29.000Z"
+  },
+  {
+    "id": "pretrain-agent-142",
+    "state": "edit_json_in_project",
+    "action": "config-specialist",
+    "outcome": "recommended for INPUT.json",
+    "reward": 1,
+    "timestamp": "2025-12-13T16:37:26.000Z"
+  },
+  {
+    "id": "pretrain-agent-143",
+    "state": "edit_unknown_in_project",
+    "action": "general-developer",
+    "outcome": "recommended for .gitignore",
+    "reward": 1,
+    "timestamp": "2025-12-13T16:37:22.000Z"
+  },
+  {
+    "id": "pretrain-agent-144",
+    "state": "edit_md_in_project",
+    "action": "technical-writer",
+    "outcome": "recommended for README.md",
+    "reward": 1,
+    "timestamp": "2025-12-13T16:36:47.000Z"
+  },
+  {
+    "id": "pretrain-agent-145",
+    "state": "edit_js_in_project",
+    "action": "javascript-developer",
+    "outcome": "recommended for embeddings.js",
+    "reward": 1,
+    "timestamp": "2025-12-13T16:35:19.000Z"
+  },
+  {
+    "id": "pretrain-agent-146",
+    "state": "edit_js_in_project",
+    "action": "javascript-developer",
+    "outcome": "recommended for formatters.js",
+    "reward": 1,
+    "timestamp": "2025-12-13T16:35:15.000Z"
+  },
+  {
+    "id": "pretrain-agent-147",
+    "state": "edit_js_in_project",
+    "action": "javascript-developer",
+    "outcome": "recommended for grounding.js",
+    "reward": 1,
+    "timestamp": "2025-12-13T16:35:12.000Z"
+  },
+  {
+    "id": "pretrain-agent-148",
+    "state": "edit_js_in_project",
+    "action": "javascript-developer",
+    "outcome": "recommended for embeddings.js",
+    "reward": 1,
+    "timestamp": "2025-12-13T16:35:08.000Z"
+  },
+  {
+    "id": "pretrain-agent-149",
+    "state": "edit_js_in_project",
+    "action": "javascript-developer",
+    "outcome": "recommended for memory_patterns.js",
+    "reward": 1,
+    "timestamp": "2025-12-13T16:35:04.000Z"
+  },
+  {
+    "id": "pretrain-agent-150",
+    "state": "edit_md_in_project",
+    "action": "technical-writer",
+    "outcome": "recommended for README.md",
+    "reward": 1,
+    "timestamp": "2025-12-13T16:34:58.000Z"
+  },
+  {
+    "id": "pretrain-agent-151",
+    "state": "edit_js_in_project",
+    "action": "javascript-developer",
+    "outcome": "recommended for main.js",
+    "reward": 1,
+    "timestamp": "2025-12-13T16:34:55.000Z"
+  },
+  {
+    "id": "pretrain-agent-152",
+    "state": "edit_unknown_in_project",
+    "action": "general-developer",
+    "outcome": "recommended for Dockerfile",
+    "reward": 1,
+    "timestamp": "2025-12-13T16:34:51.000Z"
+  },
+  {
+    "id": "pretrain-agent-153",
+    "state": "edit_json_in_project",
+    "action": "config-specialist",
+    "outcome": "recommended for input_schema.json",
+    "reward": 1,
+    "timestamp": "2025-12-13T16:34:47.000Z"
+  },
+  {
+    "id": "pretrain-agent-154",
+    "state": "edit_json_in_project",
+    "action": "config-specialist",
+    "outcome": "recommended for actor.json",
+    "reward": 1,
+    "timestamp": "2025-12-13T16:34:43.000Z"
+  },
+  {
+    "id": "pretrain-agent-155",
+    "state": "edit_json_in_project",
+    "action": "config-specialist",
+    "outcome": "recommended for package.json",
+    "reward": 1,
+    "timestamp": "2025-12-13T16:34:40.000Z"
+  },
+  {
+    "id": "pretrain-agent-156",
+    "state": "edit_md_in_project",
+    "action": "technical-writer",
+    "outcome": "recommended for README.md",
+    "reward": 1,
+    "timestamp": "2025-12-13T16:33:39.000Z"
+  },
+  {
+    "id": "pretrain-agent-157",
+    "state": "edit_md_in_project",
+    "action": "technical-writer",
+    "outcome": "recommended for README.md",
+    "reward": 1,
+    "timestamp": "2025-12-13T16:33:38.000Z"
+  },
+  {
+    "id": "pretrain-agent-158",
+    "state": "edit_js_in_project",
+    "action": "javascript-developer",
+    "outcome": "recommended for main.js",
+    "reward": 1,
+    "timestamp": "2025-12-13T16:33:35.000Z"
+  },
+  {
+    "id": "pretrain-agent-159",
+    "state": "edit_js_in_project",
+    "action": "javascript-developer",
+    "outcome": "recommended for main.js",
+    "reward": 1,
+    "timestamp": "2025-12-13T16:33:34.000Z"
+  },
+  {
+    "id": "pretrain-agent-160",
+    "state": "edit_unknown_in_project",
+    "action": "general-developer",
+    "outcome": "recommended for Dockerfile",
+    "reward": 1,
+    "timestamp": "2025-12-13T16:33:31.000Z"
+  },
+  {
+    "id": "pretrain-agent-161",
+    "state": "edit_unknown_in_project",
+    "action": "general-developer",
+    "outcome": "recommended for Dockerfile",
+    "reward": 1,
+    "timestamp": "2025-12-13T16:33:30.000Z"
+  },
+  {
+    "id": "pretrain-agent-162",
+    "state": "edit_js_in_project",
+    "action": "javascript-developer",
+    "outcome": "recommended for reasoning_chains.js",
+    "reward": 1,
+    "timestamp": "2025-12-13T16:33:29.000Z"
+  },
+  {
+    "id": "pretrain-agent-163",
+    "state": "edit_md_in_project",
+    "action": "technical-writer",
+    "outcome": "recommended for README.md",
+    "reward": 1,
+    "timestamp": "2025-12-13T16:33:28.000Z"
+  },
+  {
+    "id": "pretrain-agent-164",
+    "state": "edit_json_in_project",
+    "action": "config-specialist",
+    "outcome": "recommended for input_schema.json",
+    "reward": 1,
+    "timestamp": "2025-12-13T16:33:27.000Z"
+  },
+  {
+    "id": "pretrain-agent-165",
+    "state": "edit_json_in_project",
+    "action": "config-specialist",
+    "outcome": "recommended for input_schema.json",
+    "reward": 1,
+    "timestamp": "2025-12-13T16:33:26.000Z"
+  },
+  {
+    "id": "pretrain-agent-166",
+    "state": "edit_js_in_project",
+    "action": "javascript-developer",
+    "outcome": "recommended for tool_calls.js",
+    "reward": 1,
+    "timestamp": "2025-12-13T16:33:25.000Z"
+  },
+  {
+    "id": "pretrain-agent-167",
+    "state": "edit_json_in_project",
+    "action": "config-specialist",
+    "outcome": "recommended for actor.json",
+    "reward": 1,
+    "timestamp": "2025-12-13T16:33:23.000Z"
+  },
+  {
+    "id": "pretrain-agent-168",
+    "state": "edit_js_in_project",
+    "action": "javascript-developer",
+    "outcome": "recommended for main.js",
+    "reward": 1,
+    "timestamp": "2025-12-13T16:33:23.000Z"
+  },
+  {
+    "id": "pretrain-agent-169",
+    "state": "edit_json_in_project",
+    "action": "config-specialist",
+    "outcome": "recommended for actor.json",
+    "reward": 1,
+    "timestamp": "2025-12-13T16:33:22.000Z"
+  },
+  {
+    "id": "pretrain-agent-170",
+    "state": "edit_js_in_project",
+    "action": "javascript-developer",
+    "outcome": "recommended for qa_pairs.js",
+    "reward": 1,
+    "timestamp": "2025-12-13T16:33:21.000Z"
+  },
+  {
+    "id": "pretrain-agent-171",
+    "state": "edit_json_in_project",
+    "action": "config-specialist",
+    "outcome": "recommended for package.json",
+    "reward": 1,
+    "timestamp": "2025-12-13T16:33:19.000Z"
+  },
+  {
+    "id": "pretrain-agent-172",
+    "state": "edit_unknown_in_project",
+    "action": "general-developer",
+    "outcome": "recommended for Dockerfile",
+    "reward": 1,
+    "timestamp": "2025-12-13T16:33:19.000Z"
+  },
+  {
+    "id": "pretrain-agent-173",
+    "state": "edit_json_in_project",
+    "action": "config-specialist",
+    "outcome": "recommended for package.json",
+    "reward": 1,
+    "timestamp": "2025-12-13T16:33:18.000Z"
+  },
+  {
+    "id": "pretrain-agent-174",
+    "state": "edit_js_in_project",
+    "action": "javascript-developer",
+    "outcome": "recommended for conversations.js",
+    "reward": 1,
+    "timestamp": "2025-12-13T16:33:17.000Z"
+  },
+  {
+    "id": "pretrain-agent-175",
+    "state": "edit_json_in_project",
+    "action": "config-specialist",
+    "outcome": "recommended for input_schema.json",
+    "reward": 1,
+    "timestamp": "2025-12-13T16:33:15.000Z"
+  },
+  {
+    "id": "pretrain-agent-176",
+    "state": "edit_js_in_project",
+    "action": "javascript-developer",
+    "outcome": "recommended for main.js",
+    "reward": 1,
+    "timestamp": "2025-12-13T16:33:12.000Z"
+  },
+  {
+    "id": "pretrain-agent-177",
+    "state": "edit_json_in_project",
+    "action": "config-specialist",
+    "outcome": "recommended for actor.json",
+    "reward": 1,
+    "timestamp": "2025-12-13T16:33:11.000Z"
+  },
+  {
+    "id": "pretrain-agent-178",
+    "state": "edit_json_in_project",
+    "action": "config-specialist",
+    "outcome": "recommended for package.json",
+    "reward": 1,
+    "timestamp": "2025-12-13T16:33:08.000Z"
+  },
+  {
+    "id": "pretrain-agent-179",
+    "state": "edit_unknown_in_project",
+    "action": "general-developer",
+    "outcome": "recommended for Dockerfile",
+    "reward": 1,
+    "timestamp": "2025-12-13T16:31:04.000Z"
+  },
+  {
+    "id": "pretrain-agent-180",
+    "state": "edit_json_in_project",
+    "action": "config-specialist",
+    "outcome": "recommended for input_schema.json",
+    "reward": 1,
+    "timestamp": "2025-12-13T16:31:01.000Z"
+  },
+  {
+    "id": "pretrain-agent-181",
+    "state": "edit_json_in_project",
+    "action": "config-specialist",
+    "outcome": "recommended for actor.json",
+    "reward": 1,
+    "timestamp": "2025-12-13T16:30:57.000Z"
+  },
+  {
+    "id": "pretrain-agent-182",
+    "state": "edit_json_in_project",
+    "action": "config-specialist",
+    "outcome": "recommended for package.json",
+    "reward": 1,
+    "timestamp": "2025-12-13T16:30:54.000Z"
+  },
+  {
+    "id": "pretrain-agent-183",
+    "state": "edit_unknown_in_project",
+    "action": "general-developer",
+    "outcome": "recommended for Dockerfile",
+    "reward": 1,
+    "timestamp": "2025-12-13T16:23:19.000Z"
+  },
+  {
+    "id": "pretrain-agent-184",
+    "state": "edit_json_in_project",
+    "action": "config-specialist",
+    "outcome": "recommended for input_schema.json",
+    "reward": 1,
+    "timestamp": "2025-12-13T16:23:18.000Z"
+  },
+  {
+    "id": "pretrain-agent-185",
+    "state": "edit_json_in_project",
+    "action": "config-specialist",
+    "outcome": "recommended for actor.json",
+    "reward": 1,
+    "timestamp": "2025-12-13T16:23:16.000Z"
+  },
+  {
+    "id": "pretrain-agent-186",
+    "state": "edit_json_in_project",
+    "action": "config-specialist",
+    "outcome": "recommended for actor.json",
+    "reward": 1,
+    "timestamp": "2025-12-13T16:12:11.000Z"
+  },
+  {
+    "id": "pretrain-agent-187",
+    "state": "edit_js_in_project",
+    "action": "javascript-developer",
+    "outcome": "recommended for cli.js",
+    "reward": 1,
+    "timestamp": "2025-12-13T16:01:06.000Z"
+  },
+  {
+    "id": "pretrain-agent-188",
+    "state": "edit_js_in_project",
+    "action": "javascript-developer",
+    "outcome": "recommended for integrations.js",
+    "reward": 1,
+    "timestamp": "2025-12-13T15:59:24.000Z"
+  },
+  {
+    "id": "pretrain-agent-189",
+    "state": "edit_js_in_project",
+    "action": "javascript-developer",
+    "outcome": "recommended for generators.js",
+    "reward": 1,
+    "timestamp": "2025-12-13T15:57:58.000Z"
+  },
+  {
+    "id": "pretrain-agent-190",
+    "state": "edit_js_in_project",
+    "action": "javascript-developer",
+    "outcome": "recommended for mcp-server.js",
+    "reward": 1,
+    "timestamp": "2025-12-13T15:54:22.000Z"
+  },
+  {
+    "id": "pretrain-agent-191",
+    "state": "edit_json_in_project",
+    "action": "config-specialist",
+    "outcome": "recommended for input_schema.json",
+    "reward": 1,
+    "timestamp": "2025-12-13T15:38:06.000Z"
+  },
+  {
+    "id": "pretrain-agent-192",
+    "state": "edit_js_in_project",
+    "action": "javascript-developer",
+    "outcome": "recommended for main.js",
+    "reward": 1,
+    "timestamp": "2025-12-13T15:30:20.000Z"
+  },
+  {
+    "id": "pretrain-agent-193",
+    "state": "edit_md_in_project",
+    "action": "technical-writer",
+    "outcome": "recommended for README.md",
+    "reward": 1,
+    "timestamp": "2025-12-13T15:26:33.000Z"
+  },
+  {
+    "id": "pretrain-agent-194",
+    "state": "edit_md_in_project",
+    "action": "technical-writer",
+    "outcome": "recommended for README.md",
+    "reward": 1,
+    "timestamp": "2025-12-13T14:08:37.000Z"
+  },
+  {
+    "id": "pretrain-agent-195",
+    "state": "edit_js_in_project",
+    "action": "javascript-developer",
+    "outcome": "recommended for main.js",
+    "reward": 1,
+    "timestamp": "2025-12-13T14:07:19.000Z"
+  },
+  {
+    "id": "pretrain-agent-196",
+    "state": "edit_json_in_project",
+    "action": "config-specialist",
+    "outcome": "recommended for input_schema.json",
+    "reward": 1,
+    "timestamp": "2025-12-13T14:05:00.000Z"
+  },
+  {
+    "id": "pretrain-agent-197",
+    "state": "edit_unknown_in_project",
+    "action": "general-developer",
+    "outcome": "recommended for Dockerfile",
+    "reward": 1,
+    "timestamp": "2025-12-13T14:04:20.000Z"
+  },
+  {
+    "id": "pretrain-agent-198",
+    "state": "edit_json_in_project",
+    "action": "config-specialist",
+    "outcome": "recommended for actor.json",
+    "reward": 1,
+    "timestamp": "2025-12-13T14:04:17.000Z"
+  },
+  {
+    "id": "pretrain-agent-199",
+    "state": "edit_json_in_project",
+    "action": "config-specialist",
+    "outcome": "recommended for package.json",
+    "reward": 1,
+    "timestamp": "2025-12-13T14:04:14.000Z"
+  },
+  {
+    "id": "pretrain-agent-200",
+    "state": "edit_md_in_project",
+    "action": "technical-writer",
+    "outcome": "recommended for README.md",
+    "reward": 1,
+    "timestamp": "2025-12-13T13:08:53.000Z"
+  },
+  {
+    "id": "pretrain-agent-201",
+    "state": "edit_js_in_project",
+    "action": "javascript-developer",
+    "outcome": "recommended for main.js",
+    "reward": 1,
+    "timestamp": "2025-12-13T13:07:53.000Z"
+  },
+  {
+    "id": "pretrain-agent-202",
+    "state": "edit_json_in_project",
+    "action": "config-specialist",
+    "outcome": "recommended for package.json",
+    "reward": 1,
+    "timestamp": "2025-12-13T13:06:48.000Z"
+  },
+  {
+    "id": "pretrain-agent-203",
+    "state": "edit_unknown_in_project",
+    "action": "general-developer",
+    "outcome": "recommended for Dockerfile",
+    "reward": 1,
+    "timestamp": "2025-12-13T13:06:38.000Z"
+  },
+  {
+    "id": "pretrain-agent-204",
+    "state": "edit_json_in_project",
+    "action": "config-specialist",
+    "outcome": "recommended for input_schema.json",
+    "reward": 1,
+    "timestamp": "2025-12-13T13:06:28.000Z"
+  },
+  {
+    "id": "pretrain-agent-205",
+    "state": "edit_json_in_project",
+    "action": "config-specialist",
+    "outcome": "recommended for actor.json",
+    "reward": 1,
+    "timestamp": "2025-12-13T13:05:57.000Z"
+  },
+  {
+    "id": "pretrain-agent-206",
+    "state": "edit_ts_in_rvlite",
+    "action": "typescript-developer",
+    "outcome": "recommended for rvlite.d.ts",
+    "reward": 1,
+    "timestamp": "2025-12-12T22:41:40.000Z"
+  },
+  {
+    "id": "pretrain-agent-207",
+    "state": "edit_ts_in_rvlite",
+    "action": "typescript-developer",
+    "outcome": "recommended for vite-env.d.ts",
+    "reward": 1,
+    "timestamp": "2025-12-12T22:40:25.000Z"
+  },
+  {
+    "id": "pretrain-agent-208",
+    "state": "edit_tsx_in_rvlite",
+    "action": "general-developer",
+    "outcome": "recommended for RuvLLM.tsx",
+    "reward": 1,
+    "timestamp": "2025-12-12T22:39:51.000Z"
+  },
+  {
+    "id": "pretrain-agent-209",
+    "state": "edit_ts_in_rvlite",
+    "action": "typescript-developer",
+    "outcome": "recommended for index.ts",
+    "reward": 1,
+    "timestamp": "2025-12-12T22:29:09.000Z"
+  },
+  {
+    "id": "pretrain-agent-210",
+    "state": "edit_tsx_in_rvlite",
+    "action": "general-developer",
+    "outcome": "recommended for Playground.tsx",
+    "reward": 1,
+    "timestamp": "2025-12-12T22:28:56.000Z"
+  },
+  {
+    "id": "pretrain-agent-211",
+    "state": "edit_tsx_in_rvlite",
+    "action": "general-developer",
+    "outcome": "recommended for Learning.tsx",
+    "reward": 1,
+    "timestamp": "2025-12-12T22:28:52.000Z"
+  },
+  {
+    "id": "pretrain-agent-212",
+    "state": "edit_tsx_in_rvlite",
+    "action": "general-developer",
+    "outcome": "recommended for RuvLLMSettings.tsx",
+    "reward": 1,
+    "timestamp": "2025-12-12T22:28:48.000Z"
+  },
+  {
+    "id": "pretrain-agent-213",
+    "state": "edit_tsx_in_rvlite",
+    "action": "general-developer",
+    "outcome": "recommended for Vectors.tsx",
+    "reward": 1,
+    "timestamp": "2025-12-12T22:24:16.000Z"
+  },
+  {
+    "id": "pretrain-agent-214",
+    "state": "edit_tsx_in_rvlite",
+    "action": "general-developer",
+    "outcome": "recommended for Overview.tsx",
+    "reward": 1,
+    "timestamp": "2025-12-12T22:24:12.000Z"
+  },
+  {
+    "id": "pretrain-agent-215",
+    "state": "edit_tsx_in_rvlite",
+    "action": "general-developer",
+    "outcome": "recommended for Sidebar.tsx",
+    "reward": 1,
+    "timestamp": "2025-12-12T22:24:08.000Z"
+  },
+  {
+    "id": "pretrain-agent-216",
+    "state": "edit_ts_in_rvlite",
+    "action": "typescript-developer",
+    "outcome": "recommended for ruvllm.ts",
+    "reward": 1,
+    "timestamp": "2025-12-12T22:22:49.000Z"
+  },
+  {
+    "id": "pretrain-agent-217",
+    "state": "edit_ts_in_rvlite",
+    "action": "typescript-developer",
+    "outcome": "recommended for rvlite.ts",
+    "reward": 1,
+    "timestamp": "2025-12-12T22:22:46.000Z"
+  },
+  {
+    "id": "pretrain-agent-218",
+    "state": "edit_ts_in_rvlite",
+    "action": "typescript-developer",
+    "outcome": "recommended for appStore.ts",
+    "reward": 1,
+    "timestamp": "2025-12-12T22:21:24.000Z"
+  },
+  {
+    "id": "pretrain-agent-219",
+    "state": "edit_ts_in_rvlite",
+    "action": "typescript-developer",
+    "outcome": "recommended for index.ts",
+    "reward": 1,
+    "timestamp": "2025-12-12T22:21:20.000Z"
+  },
+  {
+    "id": "pretrain-agent-220",
+    "state": "edit_html_in_rvlite",
+    "action": "frontend-developer",
+    "outcome": "recommended for index.html",
+    "reward": 1,
+    "timestamp": "2025-12-12T22:21:09.000Z"
+  },
+  {
+    "id": "pretrain-agent-221",
+    "state": "edit_json_in_rvlite",
+    "action": "config-specialist",
+    "outcome": "recommended for tsconfig.node.json",
+    "reward": 1,
+    "timestamp": "2025-12-12T22:20:16.000Z"
+  },
+  {
+    "id": "pretrain-agent-222",
+    "state": "edit_json_in_rvlite",
+    "action": "config-specialist",
+    "outcome": "recommended for tsconfig.json",
+    "reward": 1,
+    "timestamp": "2025-12-12T22:20:12.000Z"
+  },
+  {
+    "id": "pretrain-agent-223",
+    "state": "edit_sh_in_project",
+    "action": "system-admin",
+    "outcome": "recommended for start-with-postgres.sh",
+    "reward": 1,
+    "timestamp": "2025-12-12T22:06:42.000Z"
+  },
+  {
+    "id": "pretrain-agent-224",
+    "state": "edit_example_in_project",
+    "action": "general-developer",
+    "outcome": "recommended for .env.example",
+    "reward": 1,
+    "timestamp": "2025-12-12T21:55:35.000Z"
+  },
+  {
+    "id": "pretrain-agent-225",
+    "state": "edit_sh_in_project",
+    "action": "system-admin",
+    "outcome": "recommended for deploy.sh",
+    "reward": 1,
+    "timestamp": "2025-12-12T21:55:32.000Z"
+  },
+  {
+    "id": "pretrain-agent-226",
+    "state": "edit_md_in_project",
+    "action": "technical-writer",
+    "outcome": "recommended for README.md",
+    "reward": 1,
+    "timestamp": "2025-12-12T21:54:47.000Z"
+  },
+  {
+    "id": "pretrain-agent-227",
+    "state": "edit_js_in_project",
+    "action": "javascript-developer",
+    "outcome": "recommended for test.js",
+    "reward": 1,
+    "timestamp": "2025-12-12T21:54:44.000Z"
+  },
+  {
+    "id": "pretrain-agent-228",
+    "state": "edit_js_in_project",
+    "action": "javascript-developer",
+    "outcome": "recommended for main.js",
+    "reward": 1,
+    "timestamp": "2025-12-12T21:54:40.000Z"
+  },
+  {
+    "id": "pretrain-agent-229",
+    "state": "edit_json_in_project",
+    "action": "config-specialist",
+    "outcome": "recommended for input_schema.json",
+    "reward": 1,
+    "timestamp": "2025-12-12T21:54:37.000Z"
+  },
+  {
+    "id": "pretrain-agent-230",
+    "state": "edit_unknown_in_project",
+    "action": "general-developer",
+    "outcome": "recommended for Dockerfile",
+    "reward": 1,
+    "timestamp": "2025-12-12T21:54:33.000Z"
+  },
+  {
+    "id": "pretrain-agent-231",
+    "state": "edit_json_in_project",
+    "action": "config-specialist",
+    "outcome": "recommended for actor.json",
+    "reward": 1,
+    "timestamp": "2025-12-12T21:54:30.000Z"
+  },
+  {
+    "id": "pretrain-agent-232",
+    "state": "edit_json_in_project",
+    "action": "config-specialist",
+    "outcome": "recommended for package.json",
+    "reward": 1,
+    "timestamp": "2025-12-12T21:54:27.000Z"
+  },
+  {
+    "id": "pretrain-agent-233",
+    "state": "edit_json_in_project",
+    "action": "config-specialist",
+    "outcome": "recommended for package.json",
+    "reward": 1,
+    "timestamp": "2025-12-12T18:55:54.000Z"
+  },
+  {
+    "id": "pretrain-agent-234",
+    "state": "edit_json_in_project",
+    "action": "config-specialist",
+    "outcome": "recommended for package.json",
+    "reward": 1,
+    "timestamp": "2025-12-12T18:53:27.000Z"
+  },
+  {
+    "id": "pretrain-agent-235",
+    "state": "edit_md_in_project",
+    "action": "technical-writer",
+    "outcome": "recommended for README.md",
+    "reward": 1,
+    "timestamp": "2025-12-12T18:51:31.000Z"
+  },
+  {
+    "id": "pretrain-agent-236",
+    "state": "edit_md_in_project",
+    "action": "technical-writer",
+    "outcome": "recommended for README.md",
+    "reward": 1,
+    "timestamp": "2025-12-12T17:07:22.000Z"
+  },
+  {
+    "id": "pretrain-agent-237",
+    "state": "edit_json_in_project",
+    "action": "config-specialist",
+    "outcome": "recommended for package.json",
+    "reward": 1,
+    "timestamp": "2025-12-12T17:06:57.000Z"
+  },
+  {
+    "id": "pretrain-agent-238",
+    "state": "edit_js_in_project",
+    "action": "javascript-developer",
+    "outcome": "recommended for rvlite.js",
+    "reward": 1,
+    "timestamp": "2025-12-12T17:06:40.000Z"
+  },
+  {
+    "id": "pretrain-agent-239",
+    "state": "edit_unknown_in_rvlite",
+    "action": "general-developer",
+    "outcome": "recommended for .gitignore",
+    "reward": 1,
+    "timestamp": "2025-12-12T16:49:19.000Z"
+  },
+  {
+    "id": "pretrain-agent-240",
+    "state": "edit_toml_in_project",
+    "action": "general-developer",
+    "outcome": "recommended for Cargo.toml",
+    "reward": 1,
+    "timestamp": "2025-12-11T19:05:14.000Z"
+  },
+  {
+    "id": "pretrain-agent-241",
+    "state": "edit_rs_in_project",
+    "action": "rust-developer",
+    "outcome": "recommended for trm_bench.rs",
+    "reward": 1,
+    "timestamp": "2025-12-11T19:05:01.000Z"
+  },
+  {
+    "id": "pretrain-agent-242",
+    "state": "edit_rs_in_project",
+    "action": "rust-developer",
+    "outcome": "recommended for trm_integration_test.rs",
+    "reward": 1,
+    "timestamp": "2025-12-11T19:04:01.000Z"
+  },
+  {
+    "id": "pretrain-agent-243",
+    "state": "edit_rs_in_project",
+    "action": "rust-developer",
+    "outcome": "recommended for lib.rs",
+    "reward": 1,
+    "timestamp": "2025-12-11T19:02:48.000Z"
+  },
+  {
+    "id": "pretrain-agent-244",
+    "state": "edit_rs_in_project",
+    "action": "rust-developer",
+    "outcome": "recommended for sona_bridge.rs",
+    "reward": 1,
+    "timestamp": "2025-12-11T19:02:11.000Z"
+  },
+  {
+    "id": "pretrain-agent-245",
+    "state": "edit_rs_in_project",
+    "action": "rust-developer",
+    "outcome": "recommended for engine.rs",
+    "reward": 1,
+    "timestamp": "2025-12-11T19:00:49.000Z"
+  },
+  {
+    "id": "pretrain-agent-246",
+    "state": "edit_rs_in_project",
+    "action": "rust-developer",
+    "outcome": "recommended for confidence.rs",
+    "reward": 1,
+    "timestamp": "2025-12-11T18:58:49.000Z"
+  },
+  {
+    "id": "pretrain-agent-247",
+    "state": "edit_rs_in_project",
+    "action": "rust-developer",
+    "outcome": "recommended for refiner.rs",
+    "reward": 1,
+    "timestamp": "2025-12-11T18:58:46.000Z"
+  },
+  {
+    "id": "pretrain-agent-248",
+    "state": "edit_rs_in_project",
+    "action": "rust-developer",
+    "outcome": "recommended for attention.rs",
+    "reward": 1,
+    "timestamp": "2025-12-11T18:57:39.000Z"
+  },
+  {
+    "id": "pretrain-agent-249",
+    "state": "edit_rs_in_project",
+    "action": "rust-developer",
+    "outcome": "recommended for mlp.rs",
+    "reward": 1,
+    "timestamp": "2025-12-11T18:57:35.000Z"
+  },
+  {
+    "id": "pretrain-agent-250",
+    "state": "edit_rs_in_project",
+    "action": "rust-developer",
+    "outcome": "recommended for types.rs",
+    "reward": 1,
+    "timestamp": "2025-12-11T18:56:01.000Z"
+  },
+  {
+    "id": "pretrain-agent-251",
+    "state": "edit_rs_in_project",
+    "action": "rust-developer",
+    "outcome": "recommended for config.rs",
+    "reward": 1,
+    "timestamp": "2025-12-11T18:55:57.000Z"
+  },
+  {
+    "id": "pretrain-agent-252",
+    "state": "edit_rs_in_project",
+    "action": "rust-developer",
+    "outcome": "recommended for error.rs",
+    "reward": 1,
+    "timestamp": "2025-12-11T18:55:54.000Z"
+  },
+  {
+    "id": "pretrain-agent-253",
+    "state": "edit_rs_in_project",
+    "action": "rust-developer",
+    "outcome": "recommended for mod.rs",
+    "reward": 1,
+    "timestamp": "2025-12-11T18:55:51.000Z"
+  },
+  {
+    "id": "pretrain-agent-254",
+    "state": "edit_rs_in_ruvector-postgres",
+    "action": "rust-developer",
+    "outcome": "recommended for triple_store.rs",
+    "reward": 1,
+    "timestamp": "2025-12-11T18:50:56.000Z"
+  },
+  {
+    "id": "pretrain-agent-255",
+    "state": "edit_rs_in_ruvector-postgres",
+    "action": "rust-developer",
+    "outcome": "recommended for results.rs",
+    "reward": 1,
+    "timestamp": "2025-12-11T18:50:46.000Z"
+  },
+  {
+    "id": "pretrain-agent-256",
+    "state": "edit_rs_in_ruvector-postgres",
+    "action": "rust-developer",
+    "outcome": "recommended for operators.rs",
+    "reward": 1,
+    "timestamp": "2025-12-11T18:49:04.000Z"
+  },
+  {
+    "id": "pretrain-agent-257",
+    "state": "edit_md_in_project",
+    "action": "technical-writer",
+    "outcome": "recommended for 08_RELEASE.md",
+    "reward": 1,
+    "timestamp": "2025-12-11T18:41:46.000Z"
+  },
+  {
+    "id": "pretrain-agent-258",
+    "state": "edit_md_in_project",
+    "action": "technical-writer",
+    "outcome": "recommended for 07_OPTIMIZATION.md",
+    "reward": 1,
+    "timestamp": "2025-12-11T18:40:40.000Z"
+  },
+  {
+    "id": "pretrain-agent-259",
+    "state": "edit_md_in_project",
+    "action": "technical-writer",
+    "outcome": "recommended for 06_BENCHMARKS.md",
+    "reward": 1,
+    "timestamp": "2025-12-11T18:38:41.000Z"
+  },
+  {
+    "id": "pretrain-agent-260",
+    "state": "edit_md_in_project",
+    "action": "technical-writer",
+    "outcome": "recommended for 05_COMPLETION.md",
+    "reward": 1,
+    "timestamp": "2025-12-11T18:37:14.000Z"
+  },
+  {
+    "id": "pretrain-agent-261",
+    "state": "edit_md_in_project",
+    "action": "technical-writer",
+    "outcome": "recommended for 04_REFINEMENT.md",
+    "reward": 1,
+    "timestamp": "2025-12-11T18:36:06.000Z"
+  },
+  {
+    "id": "pretrain-agent-262",
+    "state": "edit_md_in_project",
+    "action": "technical-writer",
+    "outcome": "recommended for 03_ARCHITECTURE.md",
+    "reward": 1,
+    "timestamp": "2025-12-11T18:34:37.000Z"
+  },
+  {
+    "id": "pretrain-agent-263",
+    "state": "edit_md_in_project",
+    "action": "technical-writer",
+    "outcome": "recommended for 02_PSEUDOCODE.md",
+    "reward": 1,
+    "timestamp": "2025-12-11T18:31:52.000Z"
+  },
+  {
+    "id": "pretrain-agent-264",
+    "state": "edit_md_in_project",
+    "action": "technical-writer",
+    "outcome": "recommended for 01_SPECIFICATION.md",
+    "reward": 1,
+    "timestamp": "2025-12-11T18:30:31.000Z"
+  },
+  {
+    "id": "pretrain-agent-265",
+    "state": "edit_md_in_project",
+    "action": "technical-writer",
+    "outcome": "recommended for 00_OVERVIEW.md",
+    "reward": 1,
+    "timestamp": "2025-12-11T18:29:41.000Z"
+  },
+  {
+    "id": "pretrain-agent-266",
+    "state": "edit_tsx_in_rvlite",
+    "action": "general-developer",
+    "outcome": "recommended for SupplyChainSimulation.tsx",
+    "reward": 1,
+    "timestamp": "2025-12-11T00:28:15.000Z"
+  },
+  {
+    "id": "pretrain-agent-267",
+    "state": "edit_ts_in_rvlite",
+    "action": "typescript-developer",
+    "outcome": "recommended for NeuralEngine.ts",
+    "reward": 1,
+    "timestamp": "2025-12-10T23:40:32.000Z"
+  },
+  {
+    "id": "pretrain-agent-268",
+    "state": "edit_tsx_in_rvlite",
+    "action": "general-developer",
+    "outcome": "recommended for SimulationEngine.tsx",
+    "reward": 1,
+    "timestamp": "2025-12-10T23:38:25.000Z"
+  },
+  {
+    "id": "pretrain-agent-269",
+    "state": "edit_md_in_rvlite",
+    "action": "technical-writer",
+    "outcome": "recommended for IMPLEMENTATION_SUMMARY.md",
+    "reward": 1,
+    "timestamp": "2025-12-10T23:28:08.000Z"
+  },
+  {
+    "id": "pretrain-agent-270",
+    "state": "edit_md_in_rvlite",
+    "action": "technical-writer",
+    "outcome": "recommended for SQL_SCHEMA_BROWSER.md",
+    "reward": 1,
+    "timestamp": "2025-12-10T23:27:01.000Z"
+  },
+  {
+    "id": "pretrain-agent-271",
+    "state": "edit_md_in_rvlite",
+    "action": "technical-writer",
+    "outcome": "recommended for VECTOR_INSPECTOR_IMPLEMENTATION.md",
+    "reward": 1,
+    "timestamp": "2025-12-10T23:26:25.000Z"
+  },
+  {
+    "id": "pretrain-agent-272",
+    "state": "edit_md_in_rvlite",
+    "action": "technical-writer",
+    "outcome": "recommended for START_HERE.md",
+    "reward": 1,
+    "timestamp": "2025-12-10T23:22:21.000Z"
+  },
+  {
+    "id": "pretrain-agent-273",
+    "state": "edit_md_in_rvlite",
+    "action": "technical-writer",
+    "outcome": "recommended for QUICK_REFERENCE.md",
+    "reward": 1,
+    "timestamp": "2025-12-10T23:19:43.000Z"
+  },
+  {
+    "id": "pretrain-agent-274",
+    "state": "edit_md_in_rvlite",
+    "action": "technical-writer",
+    "outcome": "recommended for README.md",
+    "reward": 1,
+    "timestamp": "2025-12-10T23:19:06.000Z"
+  },
+  {
+    "id": "pretrain-agent-275",
+    "state": "edit_py_in_rvlite",
+    "action": "python-developer",
+    "outcome": "recommended for apply-fix.py",
+    "reward": 1,
+    "timestamp": "2025-12-10T23:19:01.000Z"
+  },
+  {
+    "id": "pretrain-agent-276",
+    "state": "edit_rs_in_ruvector-postgres",
+    "action": "rust-developer",
+    "outcome": "recommended for download_models.rs",
+    "reward": 1,
+    "timestamp": "2025-12-10T23:18:34.000Z"
+  },
+  {
+    "id": "pretrain-agent-277",
+    "state": "edit_md_in_rvlite",
+    "action": "technical-writer",
+    "outcome": "recommended for VISUAL_INTEGRATION_MAP.md",
+    "reward": 1,
+    "timestamp": "2025-12-10T23:18:19.000Z"
+  },
+  {
+    "id": "pretrain-agent-278",
+    "state": "edit_md_in_rvlite",
+    "action": "technical-writer",
+    "outcome": "recommended for SUMMARY.md",
+    "reward": 1,
+    "timestamp": "2025-12-10T23:18:07.000Z"
+  },
+  {
+    "id": "pretrain-agent-279",
+    "state": "edit_py_in_project",
+    "action": "python-developer",
+    "outcome": "recommended for apply-changes.py",
+    "reward": 1,
+    "timestamp": "2025-12-10T23:17:56.000Z"
+  },
+  {
+    "id": "pretrain-agent-280",
+    "state": "edit_md_in_rvlite",
+    "action": "technical-writer",
+    "outcome": "recommended for QUICK_START.md",
+    "reward": 1,
+    "timestamp": "2025-12-10T23:17:17.000Z"
+  },
+  {
+    "id": "pretrain-agent-281",
+    "state": "edit_md_in_rvlite",
+    "action": "technical-writer",
+    "outcome": "recommended for IMPLEMENTATION_SUMMARY.md",
+    "reward": 1,
+    "timestamp": "2025-12-10T23:17:03.000Z"
+  },
+  {
+    "id": "pretrain-agent-282",
+    "state": "edit_md_in_rvlite",
+    "action": "technical-writer",
+    "outcome": "recommended for README_FILTER_BUILDER.md",
+    "reward": 1,
+    "timestamp": "2025-12-10T23:16:37.000Z"
+  },
+  {
+    "id": "pretrain-agent-283",
+    "state": "edit_tsx_in_rvlite",
+    "action": "general-developer",
+    "outcome": "recommended for schema-browser-ui.tsx",
+    "reward": 1,
+    "timestamp": "2025-12-10T23:16:34.000Z"
+  },
+  {
+    "id": "pretrain-agent-284",
+    "state": "edit_md_in_rvlite",
+    "action": "technical-writer",
+    "outcome": "recommended for INTEGRATION_GUIDE.md",
+    "reward": 1,
+    "timestamp": "2025-12-10T23:15:56.000Z"
+  },
+  {
+    "id": "pretrain-agent-285",
+    "state": "edit_md_in_rvlite",
+    "action": "technical-writer",
+    "outcome": "recommended for FILTER_BUILDER_DEMO.md",
+    "reward": 1,
+    "timestamp": "2025-12-10T23:15:44.000Z"
+  },
+  {
+    "id": "pretrain-agent-286",
+    "state": "edit_json_in_rvlite",
+    "action": "config-specialist",
+    "outcome": "recommended for sample-bulk-import.json",
+    "reward": 1,
+    "timestamp": "2025-12-10T23:15:04.000Z"
+  },
+  {
+    "id": "pretrain-agent-287",
+    "state": "edit_md_in_rvlite",
+    "action": "technical-writer",
+    "outcome": "recommended for CODE_SNIPPETS.md",
+    "reward": 1,
+    "timestamp": "2025-12-10T23:14:58.000Z"
+  },
+  {
+    "id": "pretrain-agent-288",
+    "state": "edit_csv_in_rvlite",
+    "action": "general-developer",
+    "outcome": "recommended for sample-bulk-import.csv",
+    "reward": 1,
+    "timestamp": "2025-12-10T23:14:47.000Z"
+  },
+  {
+    "id": "pretrain-agent-289",
+    "state": "edit_tsx_in_rvlite",
+    "action": "general-developer",
+    "outcome": "recommended for bulk-import-code.tsx",
+    "reward": 1,
+    "timestamp": "2025-12-10T23:14:34.000Z"
+  },
+  {
+    "id": "pretrain-agent-290",
+    "state": "edit_md_in_rvlite",
+    "action": "technical-writer",
+    "outcome": "recommended for IMPLEMENTATION_GUIDE.md",
+    "reward": 1,
+    "timestamp": "2025-12-10T23:14:32.000Z"
+  },
+  {
+    "id": "pretrain-agent-291",
+    "state": "edit_tsx_in_project",
+    "action": "general-developer",
+    "outcome": "recommended for vector-detail-modal.tsx",
+    "reward": 1,
+    "timestamp": "2025-12-10T23:14:07.000Z"
+  },
+  {
+    "id": "pretrain-agent-292",
+    "state": "edit_sh_in_rvlite",
+    "action": "system-admin",
+    "outcome": "recommended for apply-filter-builder.sh",
+    "reward": 1,
+    "timestamp": "2025-12-10T23:13:39.000Z"
+  },
+  {
+    "id": "pretrain-agent-293",
+    "state": "edit_sh_in_rvlite",
+    "action": "system-admin",
+    "outcome": "recommended for apply-bulk-import.sh",
+    "reward": 1,
+    "timestamp": "2025-12-10T23:13:25.000Z"
+  },
+  {
+    "id": "pretrain-agent-294",
+    "state": "edit_md_in_rvlite",
+    "action": "technical-writer",
+    "outcome": "recommended for BULK_IMPORT_IMPLEMENTATION.md",
+    "reward": 1,
+    "timestamp": "2025-12-10T23:12:56.000Z"
+  },
+  {
+    "id": "pretrain-agent-295",
+    "state": "edit_py_in_rvlite",
+    "action": "python-developer",
+    "outcome": "recommended for apply-schema-browser.py",
+    "reward": 1,
+    "timestamp": "2025-12-10T23:12:41.000Z"
+  },
+  {
+    "id": "pretrain-agent-296",
+    "state": "edit_ts_in_project",
+    "action": "typescript-developer",
+    "outcome": "recommended for handler-function.ts",
+    "reward": 1,
+    "timestamp": "2025-12-10T23:12:35.000Z"
+  },
+  {
+    "id": "pretrain-agent-297",
+    "state": "edit_ts_in_rvlite",
+    "action": "typescript-developer",
+    "outcome": "recommended for filter-helpers.ts",
+    "reward": 1,
+    "timestamp": "2025-12-10T23:12:32.000Z"
+  },
+  {
+    "id": "pretrain-agent-298",
+    "state": "edit_md_in_rvlite",
+    "action": "technical-writer",
+    "outcome": "recommended for FILTER_BUILDER_INTEGRATION.md",
+    "reward": 1,
+    "timestamp": "2025-12-10T23:12:11.000Z"
+  },
+  {
+    "id": "pretrain-agent-299",
+    "state": "edit_tsx_in_rvlite",
+    "action": "general-developer",
+    "outcome": "recommended for GraphVisualization.tsx",
+    "reward": 1,
+    "timestamp": "2025-12-10T23:11:57.000Z"
+  },
+  {
+    "id": "pretrain-agent-300",
+    "state": "edit_tsx_in_rvlite",
+    "action": "general-developer",
+    "outcome": "recommended for schema-browser.patch.tsx",
+    "reward": 1,
+    "timestamp": "2025-12-10T23:11:35.000Z"
+  },
+  {
+    "id": "pretrain-agent-301",
+    "state": "edit_tsx_in_rvlite",
+    "action": "general-developer",
+    "outcome": "recommended for FilterBuilder.tsx",
+    "reward": 1,
+    "timestamp": "2025-12-10T23:11:01.000Z"
+  },
+  {
+    "id": "pretrain-agent-302",
+    "state": "edit_md_in_rvlite",
+    "action": "technical-writer",
+    "outcome": "recommended for vector-inspector-changes.md",
+    "reward": 1,
+    "timestamp": "2025-12-10T23:10:41.000Z"
+  },
+  {
+    "id": "pretrain-agent-303",
+    "state": "edit_ts_in_rvlite",
+    "action": "typescript-developer",
+    "outcome": "recommended for useLearning.ts",
+    "reward": 1,
+    "timestamp": "2025-12-10T21:37:07.000Z"
+  },
+  {
+    "id": "pretrain-agent-304",
+    "state": "edit_json_in_rvlite",
+    "action": "config-specialist",
+    "outcome": "recommended for package.json",
+    "reward": 1,
+    "timestamp": "2025-12-10T21:25:34.000Z"
+  },
+  {
+    "id": "pretrain-agent-305",
+    "state": "edit_mjs_in_rvlite",
+    "action": "general-developer",
+    "outcome": "recommended for test-all.mjs",
+    "reward": 1,
+    "timestamp": "2025-12-10T21:25:20.000Z"
+  },
+  {
+    "id": "pretrain-agent-306",
+    "state": "edit_mjs_in_rvlite",
+    "action": "general-developer",
+    "outcome": "recommended for test-sql.mjs",
+    "reward": 1,
+    "timestamp": "2025-12-10T21:08:15.000Z"
+  },
+  {
+    "id": "pretrain-agent-307",
+    "state": "edit_mjs_in_rvlite",
+    "action": "general-developer",
+    "outcome": "recommended for e2e-wasm-test.mjs",
+    "reward": 1,
+    "timestamp": "2025-12-10T21:01:01.000Z"
+  },
+  {
+    "id": "pretrain-agent-308",
+    "state": "edit_rs_in_rvlite",
+    "action": "rust-developer",
+    "outcome": "recommended for parser.rs",
+    "reward": 1,
+    "timestamp": "2025-12-10T20:53:47.000Z"
+  },
+  {
+    "id": "pretrain-agent-309",
+    "state": "edit_mjs_in_rvlite",
+    "action": "general-developer",
+    "outcome": "recommended for debug-keys.mjs",
+    "reward": 1,
+    "timestamp": "2025-12-10T20:51:54.000Z"
+  },
+  {
+    "id": "pretrain-agent-310",
+    "state": "edit_mjs_in_rvlite",
+    "action": "general-developer",
+    "outcome": "recommended for debug-sparql.mjs",
+    "reward": 1,
+    "timestamp": "2025-12-10T20:49:25.000Z"
+  },
+  {
+    "id": "pretrain-agent-311",
+    "state": "edit_mjs_in_rvlite",
+    "action": "general-developer",
+    "outcome": "recommended for test-wasm.mjs",
+    "reward": 1,
+    "timestamp": "2025-12-10T20:45:16.000Z"
+  },
+  {
+    "id": "pretrain-agent-312",
+    "state": "edit_mjs_in_rvlite",
+    "action": "general-developer",
+    "outcome": "recommended for test-queries.mjs",
+    "reward": 1,
+    "timestamp": "2025-12-10T20:35:21.000Z"
+  },
+  {
+    "id": "pretrain-agent-313",
+    "state": "edit_mjs_in_rvlite",
+    "action": "general-developer",
+    "outcome": "recommended for test-queries.mjs",
+    "reward": 1,
+    "timestamp": "2025-12-10T20:21:25.000Z"
+  },
+  {
+    "id": "pretrain-agent-314",
+    "state": "edit_ts_in_rvlite",
+    "action": "typescript-developer",
+    "outcome": "recommended for vite.config.ts",
+    "reward": 1,
+    "timestamp": "2025-12-10T19:12:21.000Z"
+  },
+  {
+    "id": "pretrain-agent-315",
+    "state": "edit_ts_in_rvlite",
+    "action": "typescript-developer",
+    "outcome": "recommended for useRvLite.ts",
+    "reward": 1,
+    "timestamp": "2025-12-10T18:54:50.000Z"
+  },
+  {
+    "id": "pretrain-agent-316",
+    "state": "edit_ts_in_rvlite",
+    "action": "typescript-developer",
+    "outcome": "recommended for hero.ts",
+    "reward": 1,
+    "timestamp": "2025-12-10T18:48:24.000Z"
+  },
+  {
+    "id": "pretrain-agent-317",
+    "state": "edit_tsx_in_rvlite",
+    "action": "general-developer",
+    "outcome": "recommended for App.tsx",
+    "reward": 1,
+    "timestamp": "2025-12-10T18:41:24.000Z"
+  },
+  {
+    "id": "pretrain-agent-318",
+    "state": "edit_tsx_in_rvlite",
+    "action": "general-developer",
+    "outcome": "recommended for main.tsx",
+    "reward": 1,
+    "timestamp": "2025-12-10T18:39:37.000Z"
+  },
+  {
+    "id": "pretrain-agent-319",
+    "state": "edit_css_in_rvlite",
+    "action": "frontend-developer",
+    "outcome": "recommended for index.css",
+    "reward": 1,
+    "timestamp": "2025-12-10T18:39:31.000Z"
+  },
+  {
+    "id": "pretrain-agent-320",
+    "state": "edit_md_in_project",
+    "action": "technical-writer",
+    "outcome": "recommended for summary.md",
+    "reward": 1,
+    "timestamp": "2025-12-10T18:39:18.000Z"
+  },
+  {
+    "id": "pretrain-agent-321",
+    "state": "edit_js_in_rvlite",
+    "action": "javascript-developer",
+    "outcome": "recommended for postcss.config.js",
+    "reward": 1,
+    "timestamp": "2025-12-10T18:39:04.000Z"
+  },
+  {
+    "id": "pretrain-agent-322",
+    "state": "edit_js_in_rvlite",
+    "action": "javascript-developer",
+    "outcome": "recommended for tailwind.config.js",
+    "reward": 1,
+    "timestamp": "2025-12-10T18:39:01.000Z"
+  },
+  {
+    "id": "pretrain-agent-323",
+    "state": "edit_rs_in_project",
+    "action": "rust-developer",
+    "outcome": "recommended for hnswio.rs",
+    "reward": 1,
+    "timestamp": "2025-12-10T18:14:33.000Z"
+  },
+  {
+    "id": "pretrain-agent-324",
+    "state": "edit_rs_in_project",
+    "action": "rust-developer",
+    "outcome": "recommended for hnsw.rs",
+    "reward": 1,
+    "timestamp": "2025-12-10T18:14:13.000Z"
+  },
+  {
+    "id": "pretrain-agent-325",
+    "state": "edit_rs_in_ruvector-core",
+    "action": "rust-developer",
+    "outcome": "recommended for lockfree.rs",
+    "reward": 1,
+    "timestamp": "2025-12-10T18:07:13.000Z"
+  },
+  {
+    "id": "pretrain-agent-326",
+    "state": "edit_rs_in_ruvector-core",
+    "action": "rust-developer",
+    "outcome": "recommended for flat.rs",
+    "reward": 1,
+    "timestamp": "2025-12-10T18:06:58.000Z"
+  },
+  {
+    "id": "pretrain-agent-327",
+    "state": "edit_rs_in_ruvector-core",
+    "action": "rust-developer",
+    "outcome": "recommended for distance.rs",
+    "reward": 1,
+    "timestamp": "2025-12-10T18:04:35.000Z"
+  },
+  {
+    "id": "pretrain-agent-328",
+    "state": "edit_js_in_rvlite",
+    "action": "javascript-developer",
+    "outcome": "recommended for env-polyfill.js",
+    "reward": 1,
+    "timestamp": "2025-12-10T18:00:06.000Z"
+  },
+  {
+    "id": "pretrain-agent-329",
+    "state": "edit_rs_in_sona",
+    "action": "rust-developer",
+    "outcome": "recommended for reasoning_bank.rs",
+    "reward": 1,
+    "timestamp": "2025-12-10T17:51:45.000Z"
+  },
+  {
+    "id": "pretrain-agent-330",
+    "state": "edit_rs_in_sona",
+    "action": "rust-developer",
+    "outcome": "recommended for factory.rs",
+    "reward": 1,
+    "timestamp": "2025-12-10T17:48:30.000Z"
+  },
+  {
+    "id": "pretrain-agent-331",
+    "state": "edit_rs_in_sona",
+    "action": "rust-developer",
+    "outcome": "recommended for federated.rs",
+    "reward": 1,
+    "timestamp": "2025-12-10T17:47:25.000Z"
+  },
+  {
+    "id": "pretrain-agent-332",
+    "state": "edit_md_in_project",
+    "action": "technical-writer",
+    "outcome": "recommended for summary.md",
+    "reward": 1,
+    "timestamp": "2025-12-10T17:42:27.000Z"
+  },
+  {
+    "id": "pretrain-agent-333",
+    "state": "edit_rs_in_sona",
+    "action": "rust-developer",
+    "outcome": "recommended for pipeline.rs",
+    "reward": 1,
+    "timestamp": "2025-12-10T17:39:40.000Z"
+  },
+  {
+    "id": "pretrain-agent-334",
+    "state": "edit_rs_in_sona",
+    "action": "rust-developer",
+    "outcome": "recommended for trajectory.rs",
+    "reward": 1,
+    "timestamp": "2025-12-10T17:39:37.000Z"
+  },
+  {
+    "id": "pretrain-agent-335",
+    "state": "edit_rs_in_sona",
+    "action": "rust-developer",
+    "outcome": "recommended for types.rs",
+    "reward": 1,
+    "timestamp": "2025-12-10T17:39:33.000Z"
+  },
+  {
+    "id": "pretrain-agent-336",
+    "state": "edit_rs_in_sona",
+    "action": "rust-developer",
+    "outcome": "recommended for coordinator.rs",
+    "reward": 1,
+    "timestamp": "2025-12-10T17:38:57.000Z"
+  },
+  {
+    "id": "pretrain-agent-337",
+    "state": "edit_rs_in_sona",
+    "action": "rust-developer",
+    "outcome": "recommended for background.rs",
+    "reward": 1,
+    "timestamp": "2025-12-10T17:38:42.000Z"
+  },
+  {
+    "id": "pretrain-agent-338",
+    "state": "edit_rs_in_sona",
+    "action": "rust-developer",
+    "outcome": "recommended for lib.rs",
+    "reward": 1,
+    "timestamp": "2025-12-10T17:38:30.000Z"
+  },
+  {
+    "id": "pretrain-agent-339",
+    "state": "edit_rs_in_sona",
+    "action": "rust-developer",
+    "outcome": "recommended for time_compat.rs",
+    "reward": 1,
+    "timestamp": "2025-12-10T17:38:18.000Z"
+  },
+  {
+    "id": "pretrain-agent-340",
+    "state": "edit_js_in_project",
+    "action": "javascript-developer",
+    "outcome": "recommended for cli.js",
+    "reward": 1,
+    "timestamp": "2025-12-10T17:33:20.000Z"
+  },
+  {
+    "id": "pretrain-agent-341",
+    "state": "edit_md_in_project",
+    "action": "technical-writer",
+    "outcome": "recommended for summary.md",
+    "reward": 1,
+    "timestamp": "2025-12-10T17:01:43.000Z"
+  },
+  {
+    "id": "pretrain-agent-342",
+    "state": "edit_md_in_project",
+    "action": "technical-writer",
+    "outcome": "recommended for README.md",
+    "reward": 1,
+    "timestamp": "2025-12-10T16:59:53.000Z"
+  },
+  {
+    "id": "pretrain-agent-343",
+    "state": "edit_json_in_project",
+    "action": "config-specialist",
+    "outcome": "recommended for tsconfig.json",
+    "reward": 1,
+    "timestamp": "2025-12-10T16:59:03.000Z"
+  },
+  {
+    "id": "pretrain-agent-344",
+    "state": "edit_ts_in_project",
+    "action": "typescript-developer",
+    "outcome": "recommended for index.ts",
+    "reward": 1,
+    "timestamp": "2025-12-10T16:58:54.000Z"
+  },
+  {
+    "id": "pretrain-agent-345",
+    "state": "edit_js_in_project",
+    "action": "javascript-developer",
+    "outcome": "recommended for cli.js",
+    "reward": 1,
+    "timestamp": "2025-12-10T16:58:15.000Z"
+  },
+  {
+    "id": "pretrain-agent-346",
+    "state": "edit_json_in_project",
+    "action": "config-specialist",
+    "outcome": "recommended for package.json",
+    "reward": 1,
+    "timestamp": "2025-12-10T16:57:13.000Z"
+  },
+  {
+    "id": "pretrain-agent-347",
+    "state": "edit_rs_in_rvlite",
+    "action": "rust-developer",
+    "outcome": "recommended for indexeddb.rs",
+    "reward": 1,
+    "timestamp": "2025-12-10T16:26:34.000Z"
+  },
+  {
+    "id": "pretrain-agent-348",
+    "state": "edit_rs_in_rvlite",
+    "action": "rust-developer",
+    "outcome": "recommended for state.rs",
+    "reward": 1,
+    "timestamp": "2025-12-10T16:26:31.000Z"
+  },
+  {
+    "id": "pretrain-agent-349",
+    "state": "edit_rs_in_rvlite",
+    "action": "rust-developer",
+    "outcome": "recommended for mod.rs",
+    "reward": 1,
+    "timestamp": "2025-12-10T16:26:27.000Z"
+  },
+  {
+    "id": "pretrain-agent-350",
+    "state": "edit_unknown_in_ruvector-postgres",
+    "action": "general-developer",
+    "outcome": "recommended for Dockerfile",
+    "reward": 1,
+    "timestamp": "2025-12-10T16:01:13.000Z"
+  },
+  {
+    "id": "pretrain-agent-351",
+    "state": "edit_md_in_project",
+    "action": "technical-writer",
+    "outcome": "recommended for summary.md",
+    "reward": 1,
+    "timestamp": "2025-12-10T15:49:47.000Z"
+  },
+  {
+    "id": "pretrain-agent-352",
+    "state": "edit_rs_in_ruvector-core",
+    "action": "rust-developer",
+    "outcome": "recommended for embeddings.rs",
+    "reward": 1,
+    "timestamp": "2025-12-10T15:46:49.000Z"
+  },
+  {
+    "id": "pretrain-agent-353",
+    "state": "edit_sql_in_ruvector-postgres",
+    "action": "database-expert",
+    "outcome": "recommended for init.sql",
+    "reward": 1,
+    "timestamp": "2025-12-10T15:46:38.000Z"
+  },
+  {
+    "id": "pretrain-agent-354",
+    "state": "edit_md_in_rvlite",
+    "action": "technical-writer",
+    "outcome": "recommended for CYPHER_IMPLEMENTATION.md",
+    "reward": 1,
+    "timestamp": "2025-12-10T15:43:02.000Z"
+  },
+  {
+    "id": "pretrain-agent-355",
+    "state": "edit_md_in_rvlite",
+    "action": "technical-writer",
+    "outcome": "recommended for SQL_IMPLEMENTATION.md",
+    "reward": 1,
+    "timestamp": "2025-12-10T15:40:48.000Z"
+  },
+  {
+    "id": "pretrain-agent-356",
+    "state": "edit_rs_in_project",
+    "action": "rust-developer",
+    "outcome": "recommended for rvlite_struct_fix.rs",
+    "reward": 1,
+    "timestamp": "2025-12-10T15:39:30.000Z"
+  },
+  {
+    "id": "pretrain-agent-357",
+    "state": "edit_rs_in_rvlite",
+    "action": "rust-developer",
+    "outcome": "recommended for lib_sql.rs",
+    "reward": 1,
+    "timestamp": "2025-12-10T15:39:03.000Z"
+  },
+  {
+    "id": "pretrain-agent-358",
+    "state": "edit_md_in_rvlite",
+    "action": "technical-writer",
+    "outcome": "recommended for SPARQL_IMPLEMENTATION.md",
+    "reward": 1,
+    "timestamp": "2025-12-10T15:36:54.000Z"
+  },
+  {
+    "id": "pretrain-agent-359",
+    "state": "edit_rs_in_rvlite",
+    "action": "rust-developer",
+    "outcome": "recommended for cypher_integration_test.rs",
+    "reward": 1,
+    "timestamp": "2025-12-10T15:35:01.000Z"
+  },
+  {
+    "id": "pretrain-agent-360",
+    "state": "edit_rs_in_rvlite",
+    "action": "rust-developer",
+    "outcome": "recommended for mod.rs",
+    "reward": 1,
+    "timestamp": "2025-12-10T15:32:44.000Z"
+  },
+  {
+    "id": "pretrain-agent-361",
+    "state": "edit_rs_in_rvlite",
+    "action": "rust-developer",
+    "outcome": "recommended for executor.rs",
+    "reward": 1,
+    "timestamp": "2025-12-10T15:32:38.000Z"
+  },
+  {
+    "id": "pretrain-agent-362",
+    "state": "edit_rs_in_rvlite",
+    "action": "rust-developer",
+    "outcome": "recommended for executor.rs",
+    "reward": 1,
+    "timestamp": "2025-12-10T15:32:06.000Z"
+  },
+  {
+    "id": "pretrain-agent-363",
+    "state": "edit_rs_in_rvlite",
+    "action": "rust-developer",
+    "outcome": "recommended for graph_store.rs",
+    "reward": 1,
+    "timestamp": "2025-12-10T15:31:16.000Z"
+  },
+  {
+    "id": "pretrain-agent-364",
+    "state": "edit_rs_in_rvlite",
+    "action": "rust-developer",
+    "outcome": "recommended for tests.rs",
+    "reward": 1,
+    "timestamp": "2025-12-10T15:30:53.000Z"
+  },
+  {
+    "id": "pretrain-agent-365",
+    "state": "edit_rs_in_rvlite",
+    "action": "rust-developer",
+    "outcome": "recommended for executor.rs",
+    "reward": 1,
+    "timestamp": "2025-12-10T15:30:50.000Z"
+  },
+  {
+    "id": "pretrain-agent-366",
+    "state": "edit_rs_in_rvlite",
+    "action": "rust-developer",
+    "outcome": "recommended for parser.rs",
+    "reward": 1,
+    "timestamp": "2025-12-10T15:30:46.000Z"
+  },
+  {
+    "id": "pretrain-agent-367",
+    "state": "edit_rs_in_rvlite",
+    "action": "rust-developer",
+    "outcome": "recommended for ast.rs",
+    "reward": 1,
+    "timestamp": "2025-12-10T15:30:43.000Z"
+  },
+  {
+    "id": "pretrain-agent-368",
+    "state": "edit_rs_in_rvlite",
+    "action": "rust-developer",
+    "outcome": "recommended for mod.rs",
+    "reward": 1,
+    "timestamp": "2025-12-10T15:30:39.000Z"
+  },
+  {
+    "id": "pretrain-agent-369",
+    "state": "edit_rs_in_rvlite",
+    "action": "rust-developer",
+    "outcome": "recommended for lexer.rs",
+    "reward": 1,
+    "timestamp": "2025-12-10T15:30:22.000Z"
+  },
+  {
+    "id": "pretrain-agent-370",
+    "state": "edit_rs_in_rvlite",
+    "action": "rust-developer",
+    "outcome": "recommended for triple_store.rs",
+    "reward": 1,
+    "timestamp": "2025-12-10T15:30:18.000Z"
+  },
+  {
+    "id": "pretrain-agent-371",
+    "state": "edit_rs_in_rvlite",
+    "action": "rust-developer",
+    "outcome": "recommended for ast.rs",
+    "reward": 1,
+    "timestamp": "2025-12-10T15:30:18.000Z"
+  },
+  {
+    "id": "pretrain-agent-372",
+    "state": "edit_rs_in_rvlite",
+    "action": "rust-developer",
+    "outcome": "recommended for mod.rs",
+    "reward": 1,
+    "timestamp": "2025-12-10T15:28:54.000Z"
+  },
+  {
+    "id": "pretrain-agent-373",
+    "state": "edit_md_in_project",
+    "action": "technical-writer",
+    "outcome": "recommended for summary.md",
+    "reward": 1,
+    "timestamp": "2025-12-10T15:22:16.000Z"
+  },
+  {
+    "id": "pretrain-agent-374",
+    "state": "edit_md_in_ruvector-postgres",
+    "action": "technical-writer",
+    "outcome": "recommended for README.md",
+    "reward": 1,
+    "timestamp": "2025-12-09T19:44:31.000Z"
+  },
+  {
+    "id": "pretrain-agent-375",
+    "state": "edit_md_in_rvlite",
+    "action": "technical-writer",
+    "outcome": "recommended for INTEGRATION_SUCCESS.md",
+    "reward": 1,
+    "timestamp": "2025-12-09T19:41:43.000Z"
+  },
+  {
+    "id": "pretrain-agent-376",
+    "state": "edit_md_in_rvlite",
+    "action": "technical-writer",
+    "outcome": "recommended for GETRANDOM_RESOLUTION_SUCCESS.md",
+    "reward": 1,
+    "timestamp": "2025-12-09T19:38:00.000Z"
+  },
+  {
+    "id": "pretrain-agent-377",
+    "state": "edit_toml_in_project",
+    "action": "general-developer",
+    "outcome": "recommended for Cargo.toml",
+    "reward": 1,
+    "timestamp": "2025-12-09T19:32:35.000Z"
+  },
+  {
+    "id": "pretrain-agent-378",
+    "state": "edit_rs_in_rvlite",
+    "action": "rust-developer",
+    "outcome": "recommended for build.rs",
+    "reward": 1,
+    "timestamp": "2025-12-09T19:30:13.000Z"
+  },
+  {
+    "id": "pretrain-agent-379",
+    "state": "edit_md_in_rvlite",
+    "action": "technical-writer",
+    "outcome": "recommended for GETRANDOM_RESOLUTION_STRATEGY.md",
+    "reward": 1,
+    "timestamp": "2025-12-09T19:27:21.000Z"
+  },
+  {
+    "id": "pretrain-agent-380",
+    "state": "edit_toml_in_ruvector-gnn-wasm",
+    "action": "general-developer",
+    "outcome": "recommended for Cargo.toml",
+    "reward": 1,
+    "timestamp": "2025-12-09T19:25:08.000Z"
+  },
+  {
+    "id": "pretrain-agent-381",
+    "state": "edit_toml_in_ruvector-graph-wasm",
+    "action": "general-developer",
+    "outcome": "recommended for Cargo.toml",
+    "reward": 1,
+    "timestamp": "2025-12-09T19:24:26.000Z"
+  },
+  {
+    "id": "pretrain-agent-382",
+    "state": "edit_md_in_rvlite",
+    "action": "technical-writer",
+    "outcome": "recommended for POC_RESULTS.md",
+    "reward": 1,
+    "timestamp": "2025-12-09T19:06:14.000Z"
+  },
+  {
+    "id": "pretrain-agent-383",
+    "state": "edit_html_in_rvlite",
+    "action": "frontend-developer",
+    "outcome": "recommended for demo.html",
+    "reward": 1,
+    "timestamp": "2025-12-09T19:06:10.000Z"
+  },
+  {
+    "id": "pretrain-agent-384",
+    "state": "edit_md_in_project",
+    "action": "technical-writer",
+    "outcome": "recommended for PUBLICATION_COMPLETE.md",
+    "reward": 1,
+    "timestamp": "2025-12-09T19:06:01.000Z"
+  },
+  {
+    "id": "pretrain-agent-385",
+    "state": "edit_toml_in_rvlite",
+    "action": "general-developer",
+    "outcome": "recommended for config.toml",
+    "reward": 1,
+    "timestamp": "2025-12-09T19:02:37.000Z"
+  },
+  {
+    "id": "pretrain-agent-386",
+    "state": "edit_toml_in_ruvector-postgres",
+    "action": "general-developer",
+    "outcome": "recommended for Cargo.toml",
+    "reward": 1,
+    "timestamp": "2025-12-09T19:01:26.000Z"
+  },
+  {
+    "id": "pretrain-agent-387",
+    "state": "edit_md_in_rvlite",
+    "action": "technical-writer",
+    "outcome": "recommended for README.md",
+    "reward": 1,
+    "timestamp": "2025-12-09T18:57:18.000Z"
+  },
+  {
+    "id": "pretrain-agent-388",
+    "state": "edit_rs_in_rvlite",
+    "action": "rust-developer",
+    "outcome": "recommended for wasm.rs",
+    "reward": 1,
+    "timestamp": "2025-12-09T18:57:14.000Z"
+  },
+  {
+    "id": "pretrain-agent-389",
+    "state": "edit_rs_in_rvlite",
+    "action": "rust-developer",
+    "outcome": "recommended for lib.rs",
+    "reward": 1,
+    "timestamp": "2025-12-09T18:57:10.000Z"
+  },
+  {
+    "id": "pretrain-agent-390",
+    "state": "edit_toml_in_rvlite",
+    "action": "general-developer",
+    "outcome": "recommended for Cargo.toml",
+    "reward": 1,
+    "timestamp": "2025-12-09T18:57:07.000Z"
+  },
+  {
+    "id": "pretrain-agent-391",
+    "state": "edit_md_in_rvlite",
+    "action": "technical-writer",
+    "outcome": "recommended for 05_ARCHITECTURE_REVIEW_AND_VALIDATION.md",
+    "reward": 1,
+    "timestamp": "2025-12-09T18:52:32.000Z"
+  },
+  {
+    "id": "pretrain-agent-392",
+    "state": "edit_md_in_rvlite",
+    "action": "technical-writer",
+    "outcome": "recommended for 04_REVISED_ARCHITECTURE_MAX_REUSE.md",
+    "reward": 1,
+    "timestamp": "2025-12-09T18:49:40.000Z"
+  },
+  {
+    "id": "pretrain-agent-393",
+    "state": "edit_md_in_rvlite",
+    "action": "technical-writer",
+    "outcome": "recommended for 03_IMPLEMENTATION_ROADMAP.md",
+    "reward": 1,
+    "timestamp": "2025-12-09T18:46:40.000Z"
+  },
+  {
+    "id": "pretrain-agent-394",
+    "state": "edit_md_in_project",
+    "action": "technical-writer",
+    "outcome": "recommended for FINAL_REVIEW_REPORT.md",
+    "reward": 1,
+    "timestamp": "2025-12-09T18:45:49.000Z"
+  },
+  {
+    "id": "pretrain-agent-395",
+    "state": "edit_md_in_rvlite",
+    "action": "technical-writer",
+    "outcome": "recommended for 00_EXISTING_WASM_ANALYSIS.md",
+    "reward": 1,
+    "timestamp": "2025-12-09T18:45:30.000Z"
+  },
+  {
+    "id": "pretrain-agent-396",
+    "state": "edit_md_in_rvlite",
+    "action": "technical-writer",
+    "outcome": "recommended for 02_API_SPECIFICATION.md",
+    "reward": 1,
+    "timestamp": "2025-12-09T18:43:24.000Z"
+  },
+  {
+    "id": "pretrain-agent-397",
+    "state": "edit_md_in_rvlite",
+    "action": "technical-writer",
+    "outcome": "recommended for 01_SPECIFICATION.md",
+    "reward": 1,
+    "timestamp": "2025-12-09T18:43:20.000Z"
+  },
+  {
+    "id": "pretrain-agent-398",
+    "state": "edit_md_in_rvlite",
+    "action": "technical-writer",
+    "outcome": "recommended for SPARC_OVERVIEW.md",
+    "reward": 1,
+    "timestamp": "2025-12-09T18:40:33.000Z"
+  },
+  {
+    "id": "pretrain-agent-399",
+    "state": "edit_md_in_project",
+    "action": "technical-writer",
+    "outcome": "recommended for RUVECTOR_WASM_STANDALONE_ARCHITECTURE.md",
+    "reward": 1,
+    "timestamp": "2025-12-09T18:37:58.000Z"
+  },
+  {
+    "id": "pretrain-agent-400",
+    "state": "edit_md_in_project",
+    "action": "technical-writer",
+    "outcome": "recommended for RUVECTOR_PGLITE_CRITICAL_GAPS.md",
+    "reward": 1,
+    "timestamp": "2025-12-09T18:32:06.000Z"
+  },
+  {
+    "id": "pretrain-agent-401",
+    "state": "edit_md_in_project",
+    "action": "technical-writer",
+    "outcome": "recommended for ZERO_WARNINGS_ACHIEVED.md",
+    "reward": 1,
+    "timestamp": "2025-12-09T18:29:28.000Z"
+  },
+  {
+    "id": "pretrain-agent-402",
+    "state": "edit_rs_in_ruvector-postgres",
+    "action": "rust-developer",
+    "outcome": "recommended for traversal.rs",
+    "reward": 1,
+    "timestamp": "2025-12-09T18:27:41.000Z"
+  },
+  {
+    "id": "pretrain-agent-403",
+    "state": "edit_rs_in_ruvector-postgres",
+    "action": "rust-developer",
+    "outcome": "recommended for flash.rs",
+    "reward": 1,
+    "timestamp": "2025-12-09T18:27:36.000Z"
+  },
+  {
+    "id": "pretrain-agent-404",
+    "state": "edit_rs_in_ruvector-postgres",
+    "action": "rust-developer",
+    "outcome": "recommended for scaled_dot.rs",
+    "reward": 1,
+    "timestamp": "2025-12-09T18:27:31.000Z"
+  },
+  {
+    "id": "pretrain-agent-405",
+    "state": "edit_rs_in_ruvector-postgres",
+    "action": "rust-developer",
+    "outcome": "recommended for hnsw.rs",
+    "reward": 1,
+    "timestamp": "2025-12-09T18:27:26.000Z"
+  },
+  {
+    "id": "pretrain-agent-406",
+    "state": "edit_rs_in_ruvector-postgres",
+    "action": "rust-developer",
+    "outcome": "recommended for parser.rs",
+    "reward": 1,
+    "timestamp": "2025-12-09T18:27:22.000Z"
+  },
+  {
+    "id": "pretrain-agent-407",
+    "state": "edit_rs_in_ruvector-postgres",
+    "action": "rust-developer",
+    "outcome": "recommended for operators.rs",
+    "reward": 1,
+    "timestamp": "2025-12-09T18:27:14.000Z"
+  },
+  {
+    "id": "pretrain-agent-408",
+    "state": "edit_md_in_project",
+    "action": "technical-writer",
+    "outcome": "recommended for RUVECTOR_PGLITE_IMPLEMENTATION_PLAN.md",
+    "reward": 1,
+    "timestamp": "2025-12-09T18:27:13.000Z"
+  },
+  {
+    "id": "pretrain-agent-409",
+    "state": "edit_rs_in_ruvector-postgres",
+    "action": "rust-developer",
+    "outcome": "recommended for mod.rs",
+    "reward": 1,
+    "timestamp": "2025-12-09T18:22:53.000Z"
+  },
+  {
+    "id": "pretrain-agent-410",
+    "state": "edit_rs_in_ruvector-postgres",
+    "action": "rust-developer",
+    "outcome": "recommended for patterns.rs",
+    "reward": 1,
+    "timestamp": "2025-12-09T18:21:27.000Z"
+  },
+  {
+    "id": "pretrain-agent-411",
+    "state": "edit_md_in_project",
+    "action": "technical-writer",
+    "outcome": "recommended for SUCCESS_REPORT.md",
+    "reward": 1,
+    "timestamp": "2025-12-09T18:19:19.000Z"
+  },
+  {
+    "id": "pretrain-agent-412",
+    "state": "edit_md_in_project",
+    "action": "technical-writer",
+    "outcome": "recommended for ROOT_CAUSE_AND_FIX.md",
+    "reward": 1,
+    "timestamp": "2025-12-09T18:13:01.000Z"
+  },
+  {
+    "id": "pretrain-agent-413",
+    "state": "edit_sql_in_ruvector-postgres",
+    "action": "database-expert",
+    "outcome": "recommended for ruvector--0.1.0.sql",
+    "reward": 1,
+    "timestamp": "2025-12-09T18:09:40.000Z"
+  },
+  {
+    "id": "pretrain-agent-414",
+    "state": "edit_md_in_project",
+    "action": "technical-writer",
+    "outcome": "recommended for FINAL_SUMMARY.md",
+    "reward": 1,
+    "timestamp": "2025-12-09T18:03:23.000Z"
+  },
+  {
+    "id": "pretrain-agent-415",
+    "state": "edit_unknown_in_ruvector-postgres",
+    "action": "general-developer",
+    "outcome": "recommended for Dockerfile",
+    "reward": 1,
+    "timestamp": "2025-12-09T17:55:37.000Z"
+  },
+  {
+    "id": "pretrain-agent-416",
+    "state": "edit_md_in_project",
+    "action": "technical-writer",
+    "outcome": "recommended for FIXES_APPLIED.md",
+    "reward": 1,
+    "timestamp": "2025-12-09T17:51:27.000Z"
+  },
+  {
+    "id": "pretrain-agent-417",
+    "state": "edit_rs_in_ruvector-postgres",
+    "action": "rust-developer",
+    "outcome": "recommended for executor.rs",
+    "reward": 1,
+    "timestamp": "2025-12-09T17:49:23.000Z"
+  },
+  {
+    "id": "pretrain-agent-418",
+    "state": "edit_rs_in_ruvector-postgres",
+    "action": "rust-developer",
+    "outcome": "recommended for functions.rs",
+    "reward": 1,
+    "timestamp": "2025-12-09T17:48:32.000Z"
+  },
+  {
+    "id": "pretrain-agent-419",
+    "state": "edit_md_in_project",
+    "action": "technical-writer",
+    "outcome": "recommended for PR66_REVIEW_COMMENT.md",
+    "reward": 1,
+    "timestamp": "2025-12-09T17:46:56.000Z"
+  },
+  {
+    "id": "pretrain-agent-420",
+    "state": "edit_md_in_project",
+    "action": "technical-writer",
+    "outcome": "recommended for PR66_TEST_REPORT.md",
+    "reward": 1,
+    "timestamp": "2025-12-09T17:35:46.000Z"
+  },
+  {
+    "id": "pretrain-agent-421",
+    "state": "edit_sql_in_project",
+    "action": "database-expert",
+    "outcome": "recommended for test_sparql_pr66.sql",
+    "reward": 1,
+    "timestamp": "2025-12-09T17:34:24.000Z"
+  },
+  {
+    "id": "pretrain-agent-422",
+    "state": "edit_md_in_project",
+    "action": "technical-writer",
+    "outcome": "recommended for IMPLEMENTATION_COMPLETE.md",
+    "reward": 1,
+    "timestamp": "2025-11-23T00:19:38.000Z"
+  },
+  {
+    "id": "pretrain-agent-423",
+    "state": "edit_md_in_project",
+    "action": "technical-writer",
+    "outcome": "recommended for GRANULARITY_RELEASE_SUMMARY.md",
+    "reward": 1,
+    "timestamp": "2025-11-23T00:17:08.000Z"
+  },
+  {
+    "id": "pretrain-agent-424",
+    "state": "edit_md_in_project",
+    "action": "technical-writer",
+    "outcome": "recommended for election-granularity-guide.md",
+    "reward": 1,
+    "timestamp": "2025-11-23T00:11:48.000Z"
+  },
+  {
+    "id": "pretrain-agent-425",
+    "state": "edit_mjs_in_project",
+    "action": "general-developer",
+    "outcome": "recommended for election-granularity-example.mjs",
+    "reward": 1,
+    "timestamp": "2025-11-23T00:06:52.000Z"
+  },
+  {
+    "id": "pretrain-agent-426",
+    "state": "edit_ts_in_project",
+    "action": "typescript-developer",
+    "outcome": "recommended for granularity.ts",
+    "reward": 1,
+    "timestamp": "2025-11-23T00:06:47.000Z"
+  },
+  {
+    "id": "pretrain-agent-427",
+    "state": "edit_mjs_in_project",
+    "action": "general-developer",
+    "outcome": "recommended for election-fraud-detection.mjs",
+    "reward": 1,
+    "timestamp": "2025-11-22T23:47:00.000Z"
+  },
+  {
+    "id": "pretrain-agent-428",
+    "state": "edit_ts_in_project",
+    "action": "typescript-developer",
+    "outcome": "recommended for realtime-monitor.ts",
+    "reward": 1,
+    "timestamp": "2025-11-22T23:44:29.000Z"
+  },
+  {
+    "id": "pretrain-agent-429",
+    "state": "edit_ts_in_project",
+    "action": "typescript-developer",
+    "outcome": "recommended for fraud-detection.ts",
+    "reward": 1,
+    "timestamp": "2025-11-22T23:42:31.000Z"
+  },
+  {
+    "id": "pretrain-agent-430",
+    "state": "edit_mjs_in_project",
+    "action": "general-developer",
+    "outcome": "recommended for run-election-simulation.mjs",
+    "reward": 1,
+    "timestamp": "2025-11-22T23:29:11.000Z"
+  },
+  {
+    "id": "pretrain-agent-431",
+    "state": "edit_md_in_project",
+    "action": "technical-writer",
+    "outcome": "recommended for election-2026-example.md",
+    "reward": 1,
+    "timestamp": "2025-11-22T23:26:02.000Z"
+  },
+  {
+    "id": "pretrain-agent-432",
+    "state": "edit_ts_in_project",
+    "action": "typescript-developer",
+    "outcome": "recommended for index.ts",
+    "reward": 1,
+    "timestamp": "2025-11-22T23:25:56.000Z"
+  },
+  {
+    "id": "pretrain-agent-433",
+    "state": "edit_ts_in_project",
+    "action": "typescript-developer",
+    "outcome": "recommended for simulator.ts",
+    "reward": 1,
+    "timestamp": "2025-11-22T23:20:10.000Z"
+  },
+  {
+    "id": "pretrain-agent-434",
+    "state": "edit_ts_in_project",
+    "action": "typescript-developer",
+    "outcome": "recommended for states.ts",
+    "reward": 1,
+    "timestamp": "2025-11-22T23:13:19.000Z"
+  },
+  {
+    "id": "pretrain-agent-435",
+    "state": "edit_ts_in_project",
+    "action": "typescript-developer",
+    "outcome": "recommended for types.ts",
+    "reward": 1,
+    "timestamp": "2025-11-22T23:13:13.000Z"
+  },
+  {
+    "id": "pretrain-agent-436",
+    "state": "edit_md_in_project",
+    "action": "technical-writer",
+    "outcome": "recommended for STREAMING_OPTIMIZATION_RELEASE.md",
+    "reward": 1,
+    "timestamp": "2025-11-22T22:59:30.000Z"
+  },
+  {
+    "id": "pretrain-agent-437",
+    "state": "edit_md_in_project",
+    "action": "technical-writer",
+    "outcome": "recommended for pr-update.md",
+    "reward": 1,
+    "timestamp": "2025-11-22T22:57:28.000Z"
+  },
+  {
+    "id": "pretrain-agent-438",
+    "state": "edit_md_in_project",
+    "action": "technical-writer",
+    "outcome": "recommended for STREAMING_OPTIMIZATION_RELEASE.md",
+    "reward": 1,
+    "timestamp": "2025-11-22T22:57:16.000Z"
+  },
+  {
+    "id": "pretrain-agent-439",
+    "state": "edit_md_in_project",
+    "action": "technical-writer",
+    "outcome": "recommended for QA_AGENT_SUMMARY.md",
+    "reward": 1,
+    "timestamp": "2025-11-22T22:45:39.000Z"
+  },
+  {
+    "id": "pretrain-agent-440",
+    "state": "edit_md_in_project",
+    "action": "technical-writer",
+    "outcome": "recommended for streaming-optimization-example.md",
+    "reward": 1,
+    "timestamp": "2025-11-22T22:44:35.000Z"
+  },
+  {
+    "id": "pretrain-agent-441",
+    "state": "edit_md_in_project",
+    "action": "technical-writer",
+    "outcome": "recommended for EXECUTIVE_SUMMARY.md",
+    "reward": 1,
+    "timestamp": "2025-11-22T22:44:01.000Z"
+  },
+  {
+    "id": "pretrain-agent-442",
+    "state": "edit_md_in_project",
+    "action": "technical-writer",
+    "outcome": "recommended for INITIALIZATION_QUICK_START.md",
+    "reward": 1,
+    "timestamp": "2025-11-22T22:43:18.000Z"
+  },
+  {
+    "id": "pretrain-agent-443",
+    "state": "edit_md_in_project",
+    "action": "technical-writer",
+    "outcome": "recommended for STREAMING_OPTIMIZATION_TEST_RESULTS.md",
+    "reward": 1,
+    "timestamp": "2025-11-22T22:41:39.000Z"
+  },
+  {
+    "id": "pretrain-agent-444",
+    "state": "edit_rs_in_project",
+    "action": "rust-developer",
+    "outcome": "recommended for test_initialization.rs",
+    "reward": 1,
+    "timestamp": "2025-11-22T22:41:11.000Z"
+  },
+  {
+    "id": "pretrain-agent-445",
+    "state": "edit_md_in_project",
+    "action": "technical-writer",
+    "outcome": "recommended for INITIALIZATION.md",
+    "reward": 1,
+    "timestamp": "2025-11-22T22:40:56.000Z"
+  },
+  {
+    "id": "pretrain-agent-446",
+    "state": "edit_txt_in_project",
+    "action": "general-developer",
+    "outcome": "recommended for component-diagram.txt",
+    "reward": 1,
+    "timestamp": "2025-11-22T22:40:34.000Z"
+  },
+  {
+    "id": "pretrain-agent-447",
+    "state": "edit_ts_in_project",
+    "action": "typescript-developer",
+    "outcome": "recommended for streaming-optimization.test.ts",
+    "reward": 1,
+    "timestamp": "2025-11-22T22:38:36.000Z"
+  },
+  {
+    "id": "pretrain-agent-448",
+    "state": "edit_md_in_project",
+    "action": "technical-writer",
+    "outcome": "recommended for initialization-system-design.md",
+    "reward": 1,
+    "timestamp": "2025-11-22T22:37:55.000Z"
+  },
+  {
+    "id": "pretrain-agent-449",
+    "state": "edit_rs_in_project",
+    "action": "rust-developer",
+    "outcome": "recommended for config_demo.rs",
+    "reward": 1,
+    "timestamp": "2025-11-22T22:37:49.000Z"
+  },
+  {
+    "id": "pretrain-agent-450",
+    "state": "edit_rs_in_project",
+    "action": "rust-developer",
+    "outcome": "recommended for initialization_demo.rs",
+    "reward": 1,
+    "timestamp": "2025-11-22T22:37:26.000Z"
+  },
+  {
+    "id": "pretrain-agent-451",
+    "state": "edit_md_in_project",
+    "action": "technical-writer",
+    "outcome": "recommended for CODE_REVIEW_INIT_SYSTEM.md",
+    "reward": 1,
+    "timestamp": "2025-11-22T22:37:04.000Z"
+  },
+  {
+    "id": "pretrain-agent-452",
+    "state": "edit_rs_in_ruvector-core",
+    "action": "rust-developer",
+    "outcome": "recommended for init.rs",
+    "reward": 1,
+    "timestamp": "2025-11-22T22:33:35.000Z"
+  },
+  {
+    "id": "pretrain-agent-453",
+    "state": "edit_rs_in_ruvector-core",
+    "action": "rust-developer",
+    "outcome": "recommended for config.rs",
+    "reward": 1,
+    "timestamp": "2025-11-22T22:32:33.000Z"
+  },
+  {
+    "id": "pretrain-agent-454",
+    "state": "edit_mjs_in_project",
+    "action": "general-developer",
+    "outcome": "recommended for test-streaming-optimization.mjs",
+    "reward": 1,
+    "timestamp": "2025-11-22T22:24:02.000Z"
+  },
+  {
+    "id": "pretrain-agent-455",
+    "state": "edit_ts_in_project",
+    "action": "typescript-developer",
+    "outcome": "recommended for streaming-optimization.ts",
+    "reward": 1,
+    "timestamp": "2025-11-22T22:18:16.000Z"
+  },
+  {
+    "id": "pretrain-agent-456",
+    "state": "edit_md_in_project",
+    "action": "technical-writer",
+    "outcome": "recommended for README.md",
+    "reward": 1,
+    "timestamp": "2025-11-22T22:16:40.000Z"
+  },
+  {
+    "id": "pretrain-agent-457",
+    "state": "edit_ts_in_project",
+    "action": "typescript-developer",
+    "outcome": "recommended for index.ts",
+    "reward": 1,
+    "timestamp": "2025-11-22T22:16:23.000Z"
+  },
+  {
+    "id": "pretrain-agent-458",
+    "state": "edit_ts_in_project",
+    "action": "typescript-developer",
+    "outcome": "recommended for streaming-optimization.ts",
+    "reward": 1,
+    "timestamp": "2025-11-22T22:10:37.000Z"
+  },
+  {
+    "id": "pretrain-agent-459",
+    "state": "edit_mjs_in_project",
+    "action": "general-developer",
+    "outcome": "recommended for advanced-optimization-engine.mjs",
+    "reward": 1,
+    "timestamp": "2025-11-22T22:04:53.000Z"
+  },
+  {
+    "id": "pretrain-agent-460",
+    "state": "edit_mjs_in_project",
+    "action": "general-developer",
+    "outcome": "recommended for streaming-selflearn-test.mjs",
+    "reward": 1,
+    "timestamp": "2025-11-22T21:50:42.000Z"
+  },
+  {
+    "id": "pretrain-agent-461",
+    "state": "edit_js_in_project",
+    "action": "javascript-developer",
+    "outcome": "recommended for context-cache.test.js",
+    "reward": 1,
+    "timestamp": "2025-11-22T21:06:33.000Z"
+  },
+  {
+    "id": "pretrain-agent-462",
+    "state": "edit_js_in_project",
+    "action": "javascript-developer",
+    "outcome": "recommended for client.test.js",
+    "reward": 1,
+    "timestamp": "2025-11-22T21:06:20.000Z"
+  },
+  {
+    "id": "pretrain-agent-463",
+    "state": "edit_ts_in_project",
+    "action": "typescript-developer",
+    "outcome": "recommended for tsup.config.ts",
+    "reward": 1,
+    "timestamp": "2025-11-22T21:01:48.000Z"
+  },
+  {
+    "id": "pretrain-agent-464",
+    "state": "edit_md_in_project",
+    "action": "technical-writer",
+    "outcome": "recommended for AI_AGENT_AUTO_FIX.md",
     "reward": 1,
     "timestamp": "2026-07-09T11:38:21.881Z",
     "abGroup": "treatment"
@@ -8998,5 +12269,2750 @@
     "reward": 1,
     "timestamp": "2026-07-09T20:43:14.865Z",
     "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783451997081",
+    "state": "edit_toml_in_project",
+    "action": "successful-edit",
+    "outcome": "completed",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:19:57.081Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783451997292",
+    "state": "cargo_in_general",
+    "action": "command-succeeded",
+    "outcome": "cargo check -p envctl",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:19:57.292Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452013936",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl-agentdb-wire2 && git add home/.claude/hooks/ruvector-intel-brid",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:20:13.936Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452024446",
+    "state": "git_in_general",
+    "action": "command-succeeded",
+    "outcome": "git -C /home/flexnetos/lifeos/src/envctl log --oneline -3; git -C /home/flexnetos/lifeos/src/envctl ",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:20:24.446Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452044708",
+    "state": "cargo_in_general",
+    "action": "command-succeeded",
+    "outcome": "cargo test -p rusty-idd",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:20:44.708Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452045013",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'echo \"=== 1. live bridge route (foreign repo)\"; cd /home/flexnetos/lifeos/src/rusty-idd 2>",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:20:45.013Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452046800",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'echo \"=== 3. AgentDB via env (as future sessions see it)\"; cd /home/flexnetos/lifeos/src/e",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:20:46.800Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452108643",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "echo \"=== loop process ===\"; ps -o pid,etimes,cmd -p 1591031 2>/dev/null || echo \"PID 1591031 not ru",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:21:48.643Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452121109",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl-grit-wire 2>/dev/null || cd /home/flexnetos/lifeos/src/envctl\ne",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:22:01.109Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452148486",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "A=/home/flexnetos/lifeos/src/envctl/home/.claude\necho \"=== is settings.json drift committed or worki",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:22:28.486Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452185157",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "L=/tmp/claude-1001/-home-flexnetos/e6465ed1-7a7b-4cfd-be4d-64ac3937ac27/scratchpad/gap-analysis/gaps",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:23:05.157Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452240450",
+    "state": "git_in_general",
+    "action": "command-succeeded",
+    "outcome": "git -C /home/flexnetos/lifeos/src/envctl worktree add /home/flexnetos/lifeos/src/envctl-toolchain-ru",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:24:00.450Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452248196",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl\necho \"=== fetch + branch state ===\"; git fetch origin --quiet 2",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:24:08.196Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452254699",
+    "state": "edit_md_in_project",
+    "action": "successful-edit",
+    "outcome": "completed",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:24:14.699Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452274120",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl\nWT=/home/flexnetos/lifeos/src/envctl-harness-conform\ngit worktr",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:24:34.120Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452274746",
+    "state": "edit_md_in_project",
+    "action": "successful-edit",
+    "outcome": "completed",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:24:34.746Z",
+    "abGroup": "control"
+  },
+  {
+    "id": "traj-1783452278216",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "WT=/home/flexnetos/lifeos/src/envctl-harness-conform\necho \"########## GAP-0011: icm command refs ###",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:24:38.216Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452284877",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "WT=/home/flexnetos/lifeos/src/envctl-harness-conform\necho \"########## GAP-0013: FlexNetOS path drift",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:24:44.877Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452292622",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'TS=$(date -u +%Y%m%dT%H%M%SZ) && mkdir -p ~/.claude/archive/$TS/envctl-home-claude && cp -",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:24:52.622Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452304156",
+    "state": "git_in_general",
+    "action": "command-succeeded",
+    "outcome": "git -C /home/flexnetos/FlexNetOS/src/envctl-harness-wt merge --ff-only harness/toolchain-rule 2>&1 |",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:25:04.156Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452304205",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "echo \"=== is ~/FlexNetOS a symlink? ===\"; ls -ld /home/flexnetos/FlexNetOS 2>/dev/null; readlink -f ",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:25:04.205Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452338173",
+    "state": "git_in_general",
+    "action": "command-succeeded",
+    "outcome": "git -C /home/flexnetos/lifeos/src/envctl push origin develop 2>&1 | tail -2; git -C /home/flexnetos/",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:25:38.173Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452353551",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "echo \"=== PATH dirs writable for a symlink ===\"; echo \"$PATH\" | tr ':' '\\n' | grep -E \"$HOME\" \necho;",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:25:53.551Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452401173",
+    "state": "edit_md_in_project",
+    "action": "successful-edit",
+    "outcome": "completed",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:26:41.173Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452411700",
+    "state": "edit_md_in_project",
+    "action": "successful-edit",
+    "outcome": "completed",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:26:51.700Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452413328",
+    "state": "git_in_general",
+    "action": "command-succeeded",
+    "outcome": "git show 937746f4 --stat",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:26:53.328Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452413958",
+    "state": "git_in_general",
+    "action": "command-succeeded",
+    "outcome": "git show 937746f4",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:26:53.958Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452417889",
+    "state": "git_in_general",
+    "action": "command-succeeded",
+    "outcome": "git -C /home/flexnetos/lifeos/src/meta-ruvector branch fix/intelligence-hook-plumbing 937746f4 && gi",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:26:57.889Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452422670",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl && git fetch --all --prune 2>&1; echo \"---\"; git branch -a -vv;",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:27:02.670Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452424076",
+    "state": "edit_md_in_project",
+    "action": "successful-edit",
+    "outcome": "completed",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:27:04.076Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452429470",
+    "state": "edit_md_in_project",
+    "action": "successful-edit",
+    "outcome": "completed",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:27:09.470Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452430428",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "grep -n \"PENDING_PATH\\|function ensureDataDir\\|function sessionGet\\|function recordEdit\\|function re",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:27:10.428Z",
+    "abGroup": "control"
+  },
+  {
+    "id": "traj-1783452438955",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl && echo \"=== Q1: ff-ancestry origin/master -> develop ===\"; git",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:27:18.955Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452440575",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl && echo \"=== Q2: deletions master...develop ===\"; git diff orig",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:27:20.575Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452441318",
+    "state": "edit_json_in_project",
+    "action": "successful-edit",
+    "outcome": "completed",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:27:21.318Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452447219",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "gh pr create --base main --head fix/intelligence-hook-plumbing --title \"fix(intelligence): repair ho",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:27:27.219Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452449291",
+    "state": "edit_tmpl_in_project",
+    "action": "successful-edit",
+    "outcome": "completed",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:27:29.291Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452449386",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'echo \"=== envctl open PRs\"; gh pr list -R FlexNetOS/envctl --state open 2>&1 | head -10; e",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:27:29.386Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452451496",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl && echo \"=== Q3: develop ancestor of codex branch? ===\"; git me",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:27:31.496Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452453060",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl && echo \"=== Q4: merge-tree origin/develop x codex ===\"; git me",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:27:33.060Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452459969",
+    "state": "edit_sh_in_project",
+    "action": "successful-edit",
+    "outcome": "completed",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:27:39.969Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452471655",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl && echo \"=== Q4 follow-up: tree comparison develop vs codex ===",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:27:51.655Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452472894",
+    "state": "edit_md_in_project",
+    "action": "successful-edit",
+    "outcome": "completed",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:27:52.894Z",
+    "abGroup": "control"
+  },
+  {
+    "id": "traj-1783452476209",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl && echo \"=== Q6: local branches merged into origin/develop ===\"",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:27:56.209Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452488418",
+    "state": "git_in_general",
+    "action": "command-succeeded",
+    "outcome": "git -C /home/flexnetos/lifeos/src/meta-ruvector remote -v | head -4; gh pr create -R FlexNetOS/meta-",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:28:08.418Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452490309",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "WT=/home/flexnetos/lifeos/src/envctl-harness-conform\necho \"=== settings.json + .tmpl valid JSON? ===",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:28:10.309Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452493832",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'for n in 90 92 93 94 95; do gh pr view $n -R FlexNetOS/meta-ruvector --json number,title,b",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:28:13.832Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452496872",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl && echo \"=== grit-wire tree vs develop tree ===\"; git diff --st",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:28:16.872Z",
+    "abGroup": "control"
+  },
+  {
+    "id": "traj-1783452500205",
+    "state": "edit_md_in_project",
+    "action": "successful-edit",
+    "outcome": "completed",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:28:20.205Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452500210",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/meta-ruvector/.claude\necho \"=== does intelligence.cjs require @ruvecto",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:28:20.210Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452508620",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /tmp\nbun run - <<'EOF'\n// Reproduce success-derivation edge cases\nfunction derive(resp) {\n  resp ",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:28:28.620Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452514490",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "WT=/home/flexnetos/lifeos/src/envctl-harness-conform\necho \"=== any remaining BARE harness-halt.sh an",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:28:34.490Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452523580",
+    "state": "edit_sh_in_project",
+    "action": "successful-edit",
+    "outcome": "completed",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:28:43.580Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452524080",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'gh pr view 96 -R FlexNetOS/meta-ruvector --json mergeable,mergeStateStatus -q \"{mergeable:",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:28:44.080Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452528728",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/meta-ruvector/.claude/intelligence\nsed -n '28,55p' index.js\necho \"=== ",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:28:48.728Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452533476",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "WT=/home/flexnetos/lifeos/src/envctl-harness-conform\necho \"=== bash -n on edited shell hooks ===\"\nba",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:28:53.476Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452543633",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'gh run view --job 85709858723 -R FlexNetOS/meta-ruvector --log 2>&1 | tail -25'",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:29:03.633Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452551970",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl-harness-conform\ngit config user.name  >/dev/null 2>&1 || git co",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:29:11.970Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452563118",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'gh run view --job 85709858723 -R FlexNetOS/meta-ruvector --log 2>&1 | grep -B4 \"unexpected",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:29:23.118Z",
+    "abGroup": "control"
+  },
+  {
+    "id": "traj-1783452565453",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'gh run view --job 85709858874 -R FlexNetOS/meta-ruvector --log 2>&1 | grep -iB2 -iA8 \"erro",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:29:25.453Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452582655",
+    "state": "git_in_general",
+    "action": "command-succeeded",
+    "outcome": "git -C /home/flexnetos/lifeos/src/meta-ruvector ls-files external/ | head -5; ls /home/flexnetos/lif",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:29:42.655Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452585842",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'gh run view --job 85709858874 -R FlexNetOS/meta-ruvector --log 2>&1 | tail -30'",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:29:45.842Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452607219",
+    "state": "git_in_general",
+    "action": "command-succeeded",
+    "outcome": "git -C /home/flexnetos/lifeos/src/meta-ruvector submodule status | head -5; ls /home/flexnetos/lifeo",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:30:07.219Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452612019",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'gh run view --job 85609913450 -R FlexNetOS/meta-ruvector --log 2>&1 | grep -v \"^Security a",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:30:12.019Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452629204",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'gh run view --job 85609913450 -R FlexNetOS/meta-ruvector --log 2>&1 | grep -iE \"RUSTSEC|ca",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:30:29.204Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452632498",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'timeout 60 cargo metadata --no-deps --format-version 1 >/dev/null 2>/tmp/claude-1001/-home",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:30:32.498Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452659961",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'gh run view --job 85609913450 -R FlexNetOS/meta-ruvector --log 2>&1 | grep -A16 \"RUSTSEC-2",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:30:59.961Z",
+    "abGroup": "control"
+  },
+  {
+    "id": "traj-1783452670785",
+    "state": "git_in_general",
+    "action": "command-succeeded",
+    "outcome": "git -C /home/flexnetos/lifeos/src/meta-ruvector submodule update --init external/ruqu external/rvdna",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:31:10.785Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452686135",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'gh run view --job 85609913450 -R FlexNetOS/meta-ruvector --log 2>&1 | grep -B8 \"RUSTSEC-20",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:31:26.135Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452688059",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'timeout 120 cargo metadata --no-deps --format-version 1 >/dev/null 2>&1; echo \"metadata ex",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:31:28.059Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452774866",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'timeout 120 cargo tree -i quick-xml@0.26.0 2>&1 | head -15'",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:32:54.866Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452776814",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd .github/workflows && grep -ln \"Rustfmt\\|fmt\" clippy-fmt.yml ci.yml 2>/dev/null; grep -r",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:32:56.814Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452790501",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'timeout 300 cargo tree -i quick-xml@0.26.0 2>&1 | tail -12'",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:33:10.501Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452801978",
+    "state": "git_in_general",
+    "action": "command-succeeded",
+    "outcome": "git -C /home/flexnetos/lifeos/src/meta-ruvector status --short | head -5; bash -lc 'grep -A2 \"name =",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:33:21.978Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452829604",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'timeout 300 cargo tree -i quick-xml@0.26.0 --target all 2>&1 | grep -v Downloaded | head -",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:33:49.604Z",
+    "abGroup": "control"
+  },
+  {
+    "id": "traj-1783452838402",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'python3 - <<'\"'\"'EOF'\"'\"'\nimport re\nlock = open(\"Cargo.lock\").read()\npkgs = lock.split(\"[[",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:33:58.402Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452855963",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'python3 - <<'\"'\"'EOF'\"'\"'\nimport re\nlock = open(\"Cargo.lock\").read()\npkgs = lock.split(\"[[",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:34:15.963Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452868999",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'grep -rn \"pprof\" --include=Cargo.toml . 2>/dev/null | grep -v target | head; curl -sL http",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:34:28.999Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452882389",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'curl -s -A \"meta-ruvector-ci-fix\" \"https://crates.io/api/v1/crates/pprof\" | jq -r \".crate.",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:34:42.389Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452893219",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'curl -s -A \"meta-ruvector-ci-fix\" \"https://crates.io/api/v1/crates/inferno/0.12.7/dependen",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:34:53.219Z",
+    "abGroup": "control"
+  },
+  {
+    "id": "traj-1783452921212",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'gh run view --job 85609913450 -R FlexNetOS/meta-ruvector --log 2>&1 | grep -E \"ID:\" | head",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:35:21.212Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452957030",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd .github/workflows && grep -ln \"Security audit\" *.yml; grep -ln \"graph-condense-percepti",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:35:57.030Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783452990716",
+    "state": "git_in_general",
+    "action": "command-succeeded",
+    "outcome": "git -C /home/flexnetos/lifeos/src/meta-ruvector worktree add /home/flexnetos/lifeos/src/mrv-ci-fix -",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:36:30.716Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453132933",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix/.github/workflows && python3 - <<'\"'\"'EOF'\"'\"'\nim",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:38:52.933Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453159353",
+    "state": "edit_py_in_project",
+    "action": "successful-edit",
+    "outcome": "completed",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:39:19.353Z",
+    "abGroup": "control"
+  },
+  {
+    "id": "traj-1783453167485",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && git status --short | head -3; cd .github/workf",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:39:27.485Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453179577",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix/.github/workflows && python3 -c \"\nimport glob, ya",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:39:39.577Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453182400",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl-harness-conform\ngit push -u origin harness/conform-gaps 2>&1 | ",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:39:42.400Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453196572",
+    "state": "edit_py_in_project",
+    "action": "successful-edit",
+    "outcome": "completed",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:39:56.572Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453197761",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl-harness-conform\ngh pr create --base develop --head harness/conf",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:39:57.761Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453201051",
+    "state": "edit_py_in_project",
+    "action": "successful-edit",
+    "outcome": "completed",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:40:01.051Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453204469",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl-harness-conform\ngh pr merge 448 --auto --squash 2>&1 | tail -4\n",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:40:04.469Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453217793",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl-harness-conform\ngit fetch origin --quiet\necho \"=== develop HEAD",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:40:17.793Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453225472",
+    "state": "edit_py_in_project",
+    "action": "successful-edit",
+    "outcome": "completed",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:40:25.472Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453239400",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && git checkout -- .github/workflows/ && cd .gith",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:40:39.400Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453249270",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl-harness-conform\ngit merge --no-commit --no-ff origin/develop 2>",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:40:49.270Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453251700",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && git diff .github/workflows/validate-lockfile.y",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:40:51.700Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453272079",
+    "state": "edit_json_in_project",
+    "action": "successful-edit",
+    "outcome": "completed",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:41:12.079Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453278798",
+    "state": "edit_toml_in_project",
+    "action": "successful-edit",
+    "outcome": "completed",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:41:18.798Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453282253",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && timeout 300 cargo update -p crossbeam-epoch 2>",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:41:22.253Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453293156",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && timeout 300 cargo fmt --all --check 2>&1 | tai",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:41:33.156Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453302828",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'which rustfmt cargo-fmt 2>&1; rustup component list 2>/dev/null | grep -i fmt | head -2; l",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:41:42.828Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453308048",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl-harness-conform\necho \"=== confirm no conflict markers remain an",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:41:48.048Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453320456",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && find external/ruqu external/rvdna -name \"*.rs\"",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:42:00.456Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453322335",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl-harness-conform\necho \"=== every hook referenced in settings.jso",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:42:02.335Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453335940",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl-harness-conform\ngit add home/.claude/settings.json home/.claude",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:42:15.940Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453339895",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/mrv-ci-fix && git add .github/workflows .cargo/audit.toml Cargo.lock &",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:42:19.895Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453357315",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "gh pr create -R FlexNetOS/meta-ruvector --base main --head ci/fix-workspace-checks --title \"ci: chec",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:42:37.315Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453376963",
+    "state": "git_in_general",
+    "action": "command-succeeded",
+    "outcome": "git -C /home/flexnetos/lifeos/src/meta-ruvector fetch origin develop 2>&1 | tail -1; git -C /home/fl",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:42:56.963Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453406680",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-audit-dev/.github/workflows && python3 /tmp/claude-1001/",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:43:26.680Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453413470",
+    "state": "edit_py_in_project",
+    "action": "successful-edit",
+    "outcome": "completed",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:43:33.470Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453420148",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-audit-dev/.github/workflows && python3 /tmp/claude-1001/",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:43:40.148Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453438182",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl-harness-conform\ngit push 2>&1 | tail -3\necho; echo \"=== #448 st",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:43:58.182Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453450083",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl-harness-conform\ngit fetch origin --quiet\necho \"=== develop HEAD",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:44:10.083Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453451630",
+    "state": "edit_toml_in_project",
+    "action": "successful-edit",
+    "outcome": "completed",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:44:11.630Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453463425",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl-harness-conform\n# nudge GitHub to recompute by re-reading; poll",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:44:23.425Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453474316",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/mrv-audit-dev && git add -A && git commit -m \"ci(develop): clear secur",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:44:34.316Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453491071",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "L=/tmp/claude-1001/-home-flexnetos/e6465ed1-7a7b-4cfd-be4d-64ac3937ac27/scratchpad/gap-analysis/gaps",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:44:51.071Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453491156",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'gh pr view 95 -R FlexNetOS/meta-ruvector --json additions,deletions,changedFiles,commits -",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:44:51.156Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453524952",
+    "state": "git_in_general",
+    "action": "command-succeeded",
+    "outcome": "git --version && git remote -v && git rev-parse --abbrev-ref HEAD",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:45:24.952Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453532973",
+    "state": "git_in_general",
+    "action": "command-succeeded",
+    "outcome": "git fetch upstream main 2>&1 | tail -5; echo \"---MERGE-BASE---\"; git merge-base origin/main upstream",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:45:32.973Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453533246",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "echo \"===DIFFSTAT ORIGIN...UPSTREAM===\"; git diff origin/main...upstream/main --stat | tail -1; echo",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:45:33.246Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453542582",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "echo \"===FILES DELETED ON UPSTREAM SIDE (present in base+origin, gone in upstream)===\"; git diff ori",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:45:42.582Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453545166",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "echo \"===TOP 15 BY DELETIONS (base..upstream)===\"; git diff $(git merge-base origin/main upstream/ma",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:45:45.166Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453560537",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "echo \"===FILES WITH ACTUAL LINE DELETIONS (base..upstream), top 15===\"; git diff $(git merge-base or",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:46:00.537Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453562860",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "echo \"===MERGE-TREE (write-tree, newer git)===\"; git merge-tree --write-tree origin/main upstream/ma",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:46:02.860Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453569278",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "echo \"===FULL CONFLICT SECTION===\"; grep \"^CONFLICT\" /tmp/mt.out; echo; echo \"===CONFLICTED FILE PAT",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:46:09.278Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453586729",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "BASE=$(git merge-base origin/main upstream/main); echo \"===DOES UPSTREAM TOUCH .claude/ ?===\"; git d",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:46:26.729Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453589576",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "BASE=$(git merge-base origin/main upstream/main); echo \"===NEW TOP-LEVEL CRATES ADDED BY UPSTREAM (d",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:46:29.576Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453603985",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "BASE=$(git merge-base origin/main upstream/main); echo \"===UPSTREAM's change to .claude/settings.jso",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:46:43.985Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453607049",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "echo \"===Cargo.toml CONFLICT HUNKS (merge-tree materialized)===\"; git merge-tree --write-tree origin",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:46:47.049Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453625519",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'sleep 90; gh pr checks 97 -R FlexNetOS/meta-ruvector 2>&1 | awk \"{print \\$1, \\$2}\" | sort ",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:47:05.519Z",
+    "abGroup": "control"
+  },
+  {
+    "id": "traj-1783453630661",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "BASE=$(git merge-base origin/main upstream/main); echo \"===Does OUR fork modify ci.yml since base? (",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:47:10.661Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453636391",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "echo \"===CONFLICT CATEGORY COUNTS===\"; C=$(grep \"^CONFLICT\" /tmp/mt.out); echo \"Binary .node artifac",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:47:16.391Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453640559",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'JOB=$(gh pr checks 97 -R FlexNetOS/meta-ruvector 2>&1 | grep \"^Rustfmt\" | head -1 | grep -",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:47:20.559Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453648925",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'gh pr checks 97 -R FlexNetOS/meta-ruvector 2>&1 | grep -i \"rustfmt\\|fail\" | head -6'",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:47:28.925Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453679199",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'gh api repos/FlexNetOS/meta-ruvector/branches/main/protection/required_status_checks 2>&1 ",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:47:59.199Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453703319",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'for name in \"Rustfmt\" \"Cargo check\" \"Security audit\"; do JOB=$(gh pr checks 97 -R FlexNetO",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:48:23.319Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453712143",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'gh run view --job 85712805750 -R FlexNetOS/meta-ruvector --log 2>&1 | tail -20'",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:48:32.143Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453724336",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'for j in 85712805750 85712805629 85712805698; do echo \"=== job $j\"; gh api repos/FlexNetOS",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:48:44.336Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453747055",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && grep -n -A6 \"Rustfmt\\|Cargo check\\|name: Secur",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:49:07.055Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453758954",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && sed -n 15,34p .github/workflows/ci.yml && sed ",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:49:18.954Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453774137",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && cargo check --workspace --exclude ruvector-pos",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:49:34.137Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453778824",
+    "state": "edit_py_in_project",
+    "action": "successful-edit",
+    "outcome": "completed",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:49:38.824Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453802893",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && python3 /tmp/claude-1001/-home-flexnetos-lifeo",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:50:02.893Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453841275",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && python3 - <<PYEOF\nimport json, subprocess\nmeta",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:50:41.275Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453857330",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'tail -3 /tmp/claude-1001/-home-flexnetos-lifeos-src-meta-ruvector/551be785-a12f-4b6a-b8a2-",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:50:57.330Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783453861872",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/mrv-ci-fix && git add -A && git commit -m \"style: cargo fmt --all over",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:51:01.872Z",
+    "abGroup": "control"
+  },
+  {
+    "id": "traj-1783454008207",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl\necho \"=== confirm grit-wire changes are on develop (squash-merg",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:53:28.207Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783454028148",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "echo \"=== loop process ===\"; ps -o pid,etimes,cmd -p 1591031 2>/dev/null | tail -1 || echo \"not runn",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:53:48.148Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783454125053",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'sleep 240; echo \"=== PR 97 required checks:\"; gh pr checks 97 -R FlexNetOS/meta-ruvector 2",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:55:25.053Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783454136794",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'gh run view --job 85714526648 -R FlexNetOS/meta-ruvector --log 2>&1 | grep -E \"^Security a",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:55:36.794Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783454141135",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl\necho \"=== conform worktree clean? (merged via #448) ===\"\nCLEAN=",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:55:41.135Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783454146661",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'gh run view --job 85714526648 -R FlexNetOS/meta-ruvector --log 2>&1 | grep -aE \"Crate:|ID:",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:55:46.661Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783454156170",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'gh run view --job 85714526648 -R FlexNetOS/meta-ruvector --log 2>&1 | tail -40 | sed \"s/\\x",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:55:56.170Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783454200066",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'which cargo-audit; nix run nixpkgs#cargo-audit -- audit --version 2>&1 | tail -1'",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:56:40.066Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783454211246",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && nix run nixpkgs#cargo-audit -- audit 2>&1 | se",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:56:51.246Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783454361016",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && nix run nixpkgs#cargo-audit -- audit 2>&1 | se",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:59:21.016Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783454395656",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'grep -n \"reqwest\" /home/flexnetos/lifeos/src/mrv-ci-fix/crates/ruvector-core/Cargo.toml; g",
+    "reward": 1,
+    "timestamp": "2026-07-07T19:59:55.656Z",
+    "abGroup": "control"
+  },
+  {
+    "id": "traj-1783454411394",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'grep -n \"patch.crates-io\" /home/flexnetos/lifeos/src/mrv-ci-fix/Cargo.toml; grep -n \"^vers",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:00:11.394Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783454422367",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'grep -n \"^version\" /home/flexnetos/lifeos/src/mrv-ci-fix/Cargo.toml | head -2; grep -rn \"w",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:00:22.367Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783454440625",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'curl -s -A \"meta-ruvector-ci-fix\" \"https://crates.io/api/v1/crates/ruvector-core\" | jq -r ",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:00:40.625Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783454453765",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'grep -rn \"ruvector-core = \\\"0.1\\\"\\|ruvector-core = { version = \\\"0.1\" /home/flexnetos/life",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:00:53.765Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783454466875",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'grep -n \"^simd\\|^uuid-support\" /home/flexnetos/lifeos/src/mrv-ci-fix/crates/ruvector-core/",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:01:06.875Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783454608848",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && sed -i \"s#ruvector-core = { version = \\\"0.1\\\",",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:03:28.848Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783454623952",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && timeout 300 cargo update -p exo-core -p exo-ba",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:03:43.952Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783454637780",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && timeout 300 cargo metadata --format-version 1 ",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:03:57.780Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783454652221",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'grep -rn \"exo-.* = \\\"0.1\\\"\\|exo-.* = { version\" /home/flexnetos/lifeos/src/mrv-ci-fix/exam",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:04:12.221Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783454661014",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix/examples/exo-ai-2025/crates && for f in */Cargo.t",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:04:21.014Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783454670306",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && timeout 300 cargo metadata --format-version 1 ",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:04:30.306Z",
+    "abGroup": "control"
+  },
+  {
+    "id": "traj-1783454697617",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && timeout 590 cargo check -p exo-core -p exo-bac",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:04:57.617Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783454708906",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && nix run nixpkgs#cargo-audit -- audit 2>&1 | se",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:05:08.906Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783454727906",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/mrv-ci-fix && git add -A && git commit -m \"fix(deps): kill rustls-webp",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:05:27.906Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783454750834",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && ls external/ruqu/crates/*/build.rs external/rv",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:05:50.834Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783455193544",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'sleep 420; echo \"=== PR 97 required:\"; gh pr checks 97 -R FlexNetOS/meta-ruvector 2>&1 | g",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:13:13.544Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783455207223",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'gh api repos/FlexNetOS/meta-ruvector/check-runs/85717456875/annotations 2>/dev/null | jq -",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:13:27.223Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783455220179",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'sed -n 56,80p /home/flexnetos/lifeos/src/mrv-ci-fix/.github/workflows/ci.yml; which cargo-",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:13:40.179Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783455235812",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'grep -n -B2 -A8 \"deny warnings\" /home/flexnetos/lifeos/src/mrv-ci-fix/.github/workflows/cl",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:13:55.812Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783455246370",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && CLIPPY_DRIVER=$(which clippy-driver) && RUSTC_",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:14:06.370Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783455576951",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'sleep 300; echo \"=== 97:\"; gh pr checks 97 -R FlexNetOS/meta-ruvector 2>&1 | grep -E \"^(Ru",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:19:36.951Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783455594222",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cat /tmp/claude-1001/-home-flexnetos-lifeos-src-meta-ruvector/551be785-a12f-4b6a-b8a2-3e97",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:19:54.222Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783455597979",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'gh api repos/FlexNetOS/meta-ruvector/actions/jobs/85717457357/logs 2>&1 | sed \"s/\\x1b\\[[0-",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:19:57.979Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783455719298",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'gh run view --job 85717457357 -R FlexNetOS/meta-ruvector --log 2>&1 | sed \"s/\\x1b\\[[0-9;]*",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:21:59.298Z",
+    "abGroup": "control"
+  },
+  {
+    "id": "traj-1783455729195",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'gh run view --job 85717457357 -R FlexNetOS/meta-ruvector --log 2>&1 | sed \"s/\\x1b\\[[0-9;]*",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:22:09.195Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783455752116",
+    "state": "edit_sh_in_project",
+    "action": "successful-edit",
+    "outcome": "completed",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:22:32.116Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783455770873",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash /tmp/claude-1001/-home-flexnetos-lifeos-src-meta-ruvector/551be785-a12f-4b6a-b8a2-3e97939f32db/",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:22:50.873Z",
+    "abGroup": "control"
+  },
+  {
+    "id": "traj-1783455782278",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'grep -an \"error\" /tmp/claude-1001/-home-flexnetos-lifeos-src-meta-ruvector/551be785-a12f-4",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:23:02.278Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783455794657",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'grep -an \"Cargo check (workspace)\\|Process completed\\|Checking\\|Compiling\" /tmp/claude-100",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:23:14.657Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783455811785",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && timeout 120 cargo tree -i glib-sys 2>&1 | grep",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:23:31.785Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783455827353",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'grep -rn \"apt-get install\" /home/flexnetos/lifeos/src/mrv-ci-fix/.github/workflows/ci.yml ",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:23:47.353Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783455839545",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && sed -i \"s#sudo apt-get update \\&\\& sudo apt-ge",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:23:59.545Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783455874105",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && CLIPPY_DRIVER=$(which clippy-driver) && RUSTC_",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:24:34.105Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783455908766",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'grep -rn \"clippy::pedantic\\|deny(\\|warn(\" /home/flexnetos/lifeos/src/mrv-ci-fix/crates/ruv",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:25:08.766Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783455944238",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && PKGS=$(cargo metadata --no-deps --format-versi",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:25:44.238Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783455973360",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && RUSTC_WORKSPACE_WRAPPER=$(which clippy-driver)",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:26:13.360Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783455990150",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && RUSTC_WORKSPACE_WRAPPER=$(which clippy-driver)",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:26:30.150Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456018692",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && RUSTC_WORKSPACE_WRAPPER=$(which clippy-driver)",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:26:58.692Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456054307",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && RUSTC_WORKSPACE_WRAPPER=$(which clippy-driver)",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:27:34.307Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456100789",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && RUSTC_WORKSPACE_WRAPPER=$(which clippy-driver)",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:28:20.789Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456116968",
+    "state": "edit_py_in_project",
+    "action": "successful-edit",
+    "outcome": "completed",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:28:36.968Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456130204",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && python3 /tmp/claude-1001/-home-flexnetos-lifeo",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:28:50.204Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456139833",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'grep -n -A8 \"\\[lints\" /home/flexnetos/lifeos/src/mrv-ci-fix/crates/codex-env/Cargo.toml /h",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:28:59.833Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456163132",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && python3 - <<PYEOF\nfor f, extra in [\n    (\"crat",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:29:23.132Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456175510",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && RUSTC_WORKSPACE_WRAPPER=$(which clippy-driver)",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:29:35.510Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456199883",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'tail -12 /home/flexnetos/lifeos/src/mrv-ci-fix/crates/ruvix/crates/proof/Cargo.toml; grep ",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:29:59.883Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456230453",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && RUSTC_WORKSPACE_WRAPPER=$(which clippy-driver)",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:30:30.453Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456263981",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && RUSTC_WORKSPACE_WRAPPER=$(which clippy-driver)",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:31:03.981Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456270181",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl\ngit fetch origin --quiet\necho \"=== CLAIM: #448 MERGED to develo",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:31:10.181Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456290055",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && touch crates/ruvix/crates/proof/src/lib.rs && ",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:31:30.055Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456291030",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl\necho \"=== what did the 3 post-#448 commits touch? (counter-exam",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:31:31.030Z",
+    "abGroup": "control"
+  },
+  {
+    "id": "traj-1783456301552",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && RUSTC_WORKSPACE_WRAPPER=$(which clippy-driver)",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:31:41.552Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456313259",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl\nD=origin/develop\necho \"=== CLAIM GAP-0011: recall/remember guar",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:31:53.259Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456331329",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && touch crates/ruvector-graph-transformer-wasm/s",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:32:11.329Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456334430",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl\nD=origin/develop\necho \"=== CLAIM GAP-0012: full-path kill switc",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:32:14.430Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456360235",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && python3 - <<PYEOF\nf = \"crates/ruvix/crates/bcm",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:32:40.235Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456363923",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl\nD=origin/develop\necho \"=== CLAIM: no dangling hook refs on deve",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:32:43.923Z",
+    "abGroup": "control"
+  },
+  {
+    "id": "traj-1783456374659",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && RUSTC_WORKSPACE_WRAPPER=$(which clippy-driver)",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:32:54.659Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456397997",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/mrv-ci-fix && git add -A && git status --short | wc -l && git commit -",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:33:17.997Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456414401",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'sed -n 525,600p /home/flexnetos/lifeos/src/meta-ruvector/.claude/helpers/intelligence.cjs'",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:33:34.401Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456417985",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "A=/home/flexnetos/lifeos/src/envctl/home/.claude\necho \"=== run the loop's EXACT probes against the n",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:33:37.985Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456432835",
+    "state": "git_in_general",
+    "action": "command-succeeded",
+    "outcome": "git -C /home/flexnetos/lifeos/src/meta-ruvector worktree add /home/flexnetos/lifeos/src/mrv-96-fixes",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:33:52.835Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456442472",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "A=/home/flexnetos/lifeos/src/envctl/home/.claude\necho \"=== the 2 residual runtime-path-drift files (",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:34:02.472Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456453389",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "ls -la /home/flexnetos/lifeos/src/meta-ruvector/.claude/ && echo '---' && ls /home/flexnetos/lifeos/",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:34:13.389Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456453506",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "grep -rn \"agent-env\" /home/flexnetos/lifeos/src/envctl --include=\"*.md\" --include=\"*.rs\" --include=\"",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:34:13.506Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456454497",
+    "state": "edit_cjs_in_project",
+    "action": "successful-edit",
+    "outcome": "completed",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:34:14.497Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456459717",
+    "state": "edit_cjs_in_project",
+    "action": "successful-edit",
+    "outcome": "completed",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:34:19.717Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456466943",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "ls -R /home/flexnetos/lifeos/src/envctl/docs/runbook/ | head -60; echo '==='; wc -l /home/flexnetos/",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:34:26.943Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456474403",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-96-fixes && python3 - <<PYEOF\nimport json\np = \".claude/i",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:34:34.403Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456491363",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "L=/tmp/claude-1001/-home-flexnetos/e6465ed1-7a7b-4cfd-be4d-64ac3937ac27/scratchpad/gap-analysis/gaps",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:34:51.363Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456493659",
+    "state": "edit_cjs_in_project",
+    "action": "successful-edit",
+    "outcome": "completed",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:34:53.659Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456522139",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "ls /home/flexnetos/lifeos/src/meta-ruvector/.claude/skills/ && echo '=== agents ===' && ls /home/fle",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:35:22.140Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456523357",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc \"grep -n -A14 \\\"'session-end':\\\" /home/flexnetos/lifeos/src/mrv-96-fixes/.claude/helpers/ho",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:35:23.357Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456530971",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "ls /home/flexnetos/lifeos/src/meta-ruvector/.claude/skills/ruvector/; echo '==='; head -20 /home/fle",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:35:30.971Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456532163",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "ls -la /home/flexnetos/lifeos/src/envctl/docs/runbook/agent-env/ 2>&1; echo \"---README/STORIES---\"; ",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:35:32.163Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456533694",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl && git branch -a --list 2>/dev/null | head && git status --shor",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:35:33.694Z",
+    "abGroup": "control"
+  },
+  {
+    "id": "traj-1783456544213",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl && git log --oneline develop..HEAD | head -10; echo '==='; git ",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:35:44.213Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456544707",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-96-fixes && echo \"[]\" > .claude-flow/data/auto-memory-st",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:35:44.707Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456555149",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'which envctl && envctl agent --help 2>&1 | head -40'",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:35:55.149Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456563689",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/mrv-96-fixes && git status --short && git add .claude/helpers/intellig",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:36:03.689Z",
+    "abGroup": "control"
+  },
+  {
+    "id": "traj-1783456571287",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'envctl agent doctor --color never 2>&1 | head -30; echo \"=== init help ===\"; envctl agent ",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:36:11.287Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456576976",
+    "state": "git_in_general",
+    "action": "command-succeeded",
+    "outcome": "git -C /home/flexnetos/lifeos/src/meta-ruvector worktree remove /home/flexnetos/lifeos/src/mrv-96-fi",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:36:16.976Z",
+    "abGroup": "control"
+  },
+  {
+    "id": "traj-1783456586904",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'envctl agent list --color never 2>&1 | head -15; echo \"=== lock check ===\"; envctl agent l",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:36:26.904Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456590470",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl/crates/agent-env/src\necho \"=== mcp.rs: local binary / yazelix /",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:36:30.470Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456603368",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl/crates/agent-env/src\necho \"=== fsops.rs: scope_root + resolve_d",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:36:43.368Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456607352",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/envctl && envctl agent sync --help 2>&1 | grep -A3 -- \"--con",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:36:47.352Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456617915",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "ls /home/flexnetos/lifeos/src/envctl/agent-skills/agent-env-config/",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:36:57.915Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456618787",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl/crates/agent-env/src\necho \"=== driver.rs 60-135 context build =",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:36:58.787Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456705780",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/meta-ruvector/.claude/skills && for d in */; do f=\"$d/SKILL.md\"; if [ ",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:38:25.780Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456784187",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/meta-ruvector && git branch -a | head -10 && git worktree list && git ",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:39:44.187Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456823812",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl\ngit fetch origin --quiet\necho \"=== develop HEAD ===\"; git log o",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:40:23.812Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456868735",
+    "state": "edit_md_in_project",
+    "action": "successful-edit",
+    "outcome": "completed",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:41:08.735Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456889620",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "WT=/home/flexnetos/lifeos/src/envctl-pathfix\necho \"=== residual FlexNetOS/{var,src} runtime-path ref",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:41:29.620Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456898997",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "mkdir -p agent-skills && cp -a .claude/skills/. agent-skills/ && ls agent-skills | wc -l && diff -rq",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:41:38.997Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456913443",
+    "state": "edit_yaml_in_project",
+    "action": "successful-edit",
+    "outcome": "completed",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:41:53.443Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456922323",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/envctl && envctl agent lock --config /home/flexnetos/lifeos/",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:42:02.323Z",
+    "abGroup": "control"
+  },
+  {
+    "id": "traj-1783456927195",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'sleep 330; for n in 96 97 98; do echo \"=== $n:\"; gh pr checks $n -R FlexNetOS/meta-ruvecto",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:42:07.195Z",
+    "abGroup": "control"
+  },
+  {
+    "id": "traj-1783456929200",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "ls -la /home/flexnetos/lifeos/src/meta-ruvector/agent-env.lock && head -30 /home/flexnetos/lifeos/sr",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:42:09.200Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456939199",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/envctl && envctl agent sync --config /home/flexnetos/lifeos/",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:42:19.199Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456957114",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "TS=$(date -u +%Y%m%dT%H%M%SZ) && mkdir -p ~/.claude/archive/$TS/meta-ruvector/.claude && cp -a /home",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:42:37.114Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456961171",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && python3 /tmp/claude-1001/-home-flexnetos-lifeo",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:42:41.171Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783456970021",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'JOB=$(gh pr checks 97 -R FlexNetOS/meta-ruvector 2>&1 | awk -F\"\\t\" \"\\$1==\\\"Cargo check\\\" &",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:42:50.021Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457006934",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/envctl && envctl agent lock --config /home/flexnetos/lifeos/",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:43:26.934Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457046018",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'JOB=$(gh pr checks 97 -R FlexNetOS/meta-ruvector 2>&1 | awk -F\"\\t\" \"\\$1==\\\"Cargo check\\\" &",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:44:06.018Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457062662",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'grep -oE \"name = \\\"[a-z0-9-]+-sys\\\"\" /home/flexnetos/lifeos/src/mrv-ci-fix/Cargo.lock | so",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:44:22.663Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457071868",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/meta-ruvector\necho \"===== 1. agent-env.yaml exists + content =====\"\nca",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:44:31.868Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457088332",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/meta-ruvector\necho \"===== dir WITHOUT SKILL.md (silently skipped by di",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:44:48.332Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457109639",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/meta-ruvector\necho \"=== all agent-skills subdirs incl. hidden ===\"; fi",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:45:09.639Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457117175",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && sed -i \"s#libfontconfig1-dev libglib2.0-dev li",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:45:17.175Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457142312",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && RUSTC_WORKSPACE_WRAPPER=$(which clippy-driver)",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:45:42.312Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457159205",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && timeout 300 cargo check -p ruvix-dtb 2>&1 | gr",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:45:59.205Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457166136",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "ls -la /home/flexnetos/lifeos/src/meta-ruvector/agent-skills/.claude-flow/ 2>&1 | head; echo '==='; ",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:46:06.136Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457172589",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && timeout 300 cargo check -p ruvix-dtb --all-tar",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:46:12.589Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457179752",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "/home/flexnetos/.claude/hooks/harness-archive.sh /home/flexnetos/lifeos/src/meta-ruvector/agent-skil",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:46:19.752Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457187019",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/envctl && envctl agent lock --config /home/flexnetos/lifeos/",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:46:27.019Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457187194",
+    "state": "git_in_general",
+    "action": "command-succeeded",
+    "outcome": "git status --short | grep -vE '\\.claude/intelligence' | head; echo '=== untracked agent-env ==='; gi",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:46:27.195Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457210316",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && timeout 590 cargo check --workspace --exclude ",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:46:50.316Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457213969",
+    "state": "git_in_general",
+    "action": "command-succeeded",
+    "outcome": "git ls-files .claude/skills | head -3; echo \"tracked .claude/skills files: $(git ls-files .claude/sk",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:46:53.969Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457230494",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/envctl && git fetch origin master develop 2>&1 | tail -1; ec",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:47:10.494Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457247577",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/envctl && git log -1 --oneline origin/master develop codex-h",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:47:27.577Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457378187",
+    "state": "git_in_general",
+    "action": "command-succeeded",
+    "outcome": "git fetch origin --quiet 2>&1 | tail -2; echo \"=== does develop exist? ===\"; git branch -r | grep -E",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:49:38.187Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457378312",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "grep -rniE 'meta-ruvector|per-repo|another repo|multiple repo|monorepo|downstream|consumer repo' /ho",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:49:38.312Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457416956",
+    "state": "git_in_general",
+    "action": "command-succeeded",
+    "outcome": "git log --oneline origin/develop -1; git log --oneline main -1; echo \"=== main vs develop divergence",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:50:16.956Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457451166",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "echo \"=== do the dirty intelligence json differ between develop and main? ===\"; git diff --stat orig",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:50:51.166Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457460394",
+    "state": "git_in_general",
+    "action": "command-succeeded",
+    "outcome": "git checkout -b feat/agent-env-adopt-meta-ruvector origin/develop 2>&1 | tail -3; echo \"=== on branc",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:51:00.394Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457470036",
+    "state": "git_in_general",
+    "action": "command-succeeded",
+    "outcome": "git add agent-env.yaml agent-env.lock agent-skills/ && echo \"=== staged (count) ===\" && git diff --c",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:51:10.036Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457481836",
+    "state": "git_in_general",
+    "action": "command-succeeded",
+    "outcome": "git commit -q -F - <<'EOF'\nfeat(agent-env): adopt meta-ruvector/.claude skills under envctl agent-en",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:51:21.836Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457531748",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl-pathfix\ngit push -u origin harness/pathfix-residual 2>&1 | tail",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:52:11.748Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457543192",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl-pathfix\ngh pr merge 449 --auto --squash 2>&1 | tail -3\nfor i in",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:52:23.193Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457557009",
+    "state": "git_in_general",
+    "action": "command-succeeded",
+    "outcome": "git push -u origin feat/agent-env-adopt-meta-ruvector 2>&1 | tail -5",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:52:37.009Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457564568",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl-pathfix\ngit fetch origin --quiet\ngit merge --ff-only origin/dev",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:52:44.568Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457570974",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "gh pr create --base develop --head feat/agent-env-adopt-meta-ruvector --title \"feat(agent-env): adop",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:52:50.974Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457581151",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl-pathfix\necho \"=== develop now vs my branch base ===\"; git log o",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:53:01.151Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457583138",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "echo \"=== remotes ===\"; git remote -v | grep -E 'origin|upstream'; echo \"=== gh default repo ===\"; g",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:53:03.138Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457599119",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl-pathfix\necho \"=== my fix still present after merge? ===\"\ngrep -",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:53:19.119Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457622032",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "gh pr create --repo FlexNetOS/meta-ruvector --base develop --head feat/agent-env-adopt-meta-ruvector",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:53:42.032Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457629525",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "gh pr merge 99 --repo FlexNetOS/meta-ruvector --auto --squash 2>&1 | tail -8",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:53:49.525Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457638692",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "gh pr view 99 --repo FlexNetOS/meta-ruvector --json number,state,autoMergeRequest,mergeStateStatus,b",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:53:58.692Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457673874",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl && echo \"=== envctl remote ===\"; git remote -v | grep origin | ",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:54:33.874Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457699402",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'grep -n -B4 -A24 \"core-and-rest\" /home/flexnetos/lifeos/src/mrv-ci-fix/.github/workflows/c",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:54:59.402Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457709433",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'sed -n 172,240p /home/flexnetos/lifeos/src/mrv-ci-fix/.github/workflows/ci.yml'",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:55:09.433Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457715595",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "echo \"=== is FlexNetOS/envctl public? ===\"; gh repo view FlexNetOS/envctl --json visibility,name 2>&",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:55:15.595Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457719188",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'sed -n 240,300p /home/flexnetos/lifeos/src/mrv-ci-fix/.github/workflows/ci.yml | grep -n \"",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:55:19.188Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457729183",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'sed -n 270,330p /home/flexnetos/lifeos/src/mrv-ci-fix/.github/workflows/ci.yml | grep -B2 ",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:55:29.183Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457733447",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "cd /home/flexnetos/lifeos/src/envctl && git ls-files manifest/ | head -3 && echo \"manifest tracked: ",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:55:33.447Z",
+    "abGroup": "treatment"
+  },
+  {
+    "id": "traj-1783457751244",
+    "state": "other_in_general",
+    "action": "command-succeeded",
+    "outcome": "bash -lc 'cd /home/flexnetos/lifeos/src/mrv-ci-fix && python3 - <<PYEOF > /tmp/claude-1001/-home-fle",
+    "reward": 1,
+    "timestamp": "2026-07-07T20:55:51.244Z",
+    "abGroup": "control"
   }
 ]

@@ -1,26 +1,347 @@
-version: 3
+version: 2
 skills:
-  skill::v3|33:https://github.com/FlexNetOS/meta|17:meta-gitkb-review:
-    destination: .codex/skills/meta-gitkb-review
-    hash: f59fc59b0ade740a4e9346a05e55ad820443b1dbc2094aa3a19900b88b4f0ddf
-    skill: meta-gitkb-review
-    description: Review a FlexNetOS Meta peer through the shared Meta/GitKB policy while preserving its independent repository and native assistant adapters.
-    source: https://github.com/FlexNetOS/meta
-    source_revision: ref:fb7273a7c8d05dce0bac649ded940a86ad41e107
+  ./agent-skills::agentdb-advanced:
+    destination: .claude/skills/agentdb-advanced
+    hash: 3f65000770885fe9da2ec4c4403e6eeb17f1992fe9b971b99ef6b02d7c8b5f4f
+    skill: agentdb-advanced
+    description: '"Master advanced AgentDB features including QUIC synchronization, multi-database management, custom distance metrics, hybrid search, and distributed systems integration. Use when building distributed AI systems, multi-agent coordination, or advanced vector search applications."'
+    source: ./agent-skills
+    source_revision: local
+    scope: project
+  ./agent-skills::agentdb-learning:
+    destination: .claude/skills/agentdb-learning
+    hash: e2efb5866c3526d4b1148c7ae27dce2f7ab2ba5a1f8f4f6dd4440826d527cb36
+    skill: agentdb-learning
+    description: '"Create and train AI learning plugins with AgentDB''s 9 reinforcement learning algorithms. Includes Decision Transformer, Q-Learning, SARSA, Actor-Critic, and more. Use when building self-learning agents, implementing RL, or optimizing agent behavior through experience."'
+    source: ./agent-skills
+    source_revision: local
+    scope: project
+  ./agent-skills::agentdb-memory-patterns:
+    destination: .claude/skills/agentdb-memory-patterns
+    hash: 3ac529916524057bec5c48f0740342d379b27b1eccf9cc6062419fcc112cdad9
+    skill: agentdb-memory-patterns
+    description: '"Implement persistent memory patterns for AI agents using AgentDB. Includes session memory, long-term storage, pattern learning, and context management. Use when building stateful agents, chat systems, or intelligent assistants."'
+    source: ./agent-skills
+    source_revision: local
+    scope: project
+  ./agent-skills::agentdb-optimization:
+    destination: .claude/skills/agentdb-optimization
+    hash: 9fe65ac7af33c07553a5932e632144496e4684c1ca74a12193228c7c8ca8630c
+    skill: agentdb-optimization
+    description: '"Optimize AgentDB performance with quantization (4-32x memory reduction), HNSW indexing (150x faster search), caching, and batch operations. Use when optimizing memory usage, improving search speed, or scaling to millions of vectors."'
+    source: ./agent-skills
+    source_revision: local
+    scope: project
+  ./agent-skills::agentdb-vector-search:
+    destination: .claude/skills/agentdb-vector-search
+    hash: c1052fd1e9706b7ed7f539468a044c09da7f4aa338c689441cc83eec7812f697
+    skill: agentdb-vector-search
+    description: '"Implement semantic vector search with AgentDB for intelligent document retrieval, similarity matching, and context-aware querying. Use when building RAG systems, semantic search engines, or intelligent knowledge bases."'
+    source: ./agent-skills
+    source_revision: local
+    scope: project
+  ./agent-skills::agentic-jujutsu:
+    destination: .claude/skills/agentic-jujutsu
+    hash: b6fbf52d2407b73f455a96c6aae629bf31f38281446d8dceafcacd9434716198
+    skill: agentic-jujutsu
+    description: Quantum-resistant, self-learning version control for AI agents with ReasoningBank intelligence and multi-agent coordination
+    source: ./agent-skills
+    source_revision: local
+    scope: project
+  ./agent-skills::browser:
+    destination: .claude/skills/browser
+    hash: 741fd9ed613ff7efde3a3051e7a0a6f59ecfbe48f69827246d95377843709f1c
+    skill: browser
+    description: Web browser automation with AI-optimized snapshots for claude-flow agents
+    source: ./agent-skills
+    source_revision: local
+    scope: project
+  ./agent-skills::cross-repo-integration:
+    destination: .claude/skills/cross-repo-integration
+    hash: 5d5e52c4fe2c5266b6c4d5835589e1f591b364abdc93fb3a65ec73d4393fe6d0
+    skill: cross-repo-integration
+    description: Map and execute the FlexNetOS/ruvector ↔ FlexNetOS/weftos integration topology. Use when a task spans both repos — e.g. exposing a brain capability from ruvector to a weft runtime, validating that a ruvector API change is reflected in weftos clients, or routing a weftos agent through pi.ruv.io. ruvector is the BRAIN; weftos is the RUNTIME.
+    source: ./agent-skills
+    source_revision: local
+    scope: project
+  ./agent-skills::custom-workers:
+    destination: .claude/skills/custom-workers
+    hash: cd585863a8ab1af181f2101a6d62432b4e52f146a0a872ffe3b3d14a412a4c6c
+    skill: custom-workers
+    description: '"Create and run custom background analysis workers with composable phases. Use when you need automated code analysis, security scanning, pattern learning, or API documentation generation."'
+    source: ./agent-skills
+    source_revision: local
+    scope: project
+  ./agent-skills::flow-nexus-neural:
+    destination: .claude/skills/flow-nexus-neural
+    hash: cf71c29bc7d08d9dd719df04846ef3b5136112762f06221d89b0ecf4a30e52d4
+    skill: flow-nexus-neural
+    description: Train and deploy neural networks in distributed E2B sandboxes with Flow Nexus
+    source: ./agent-skills
+    source_revision: local
+    scope: project
+  ./agent-skills::flow-nexus-platform:
+    destination: .claude/skills/flow-nexus-platform
+    hash: 98afea414ec17fd66f007d89b0547d40990da151144362c8c4563b65e4abe489
+    skill: flow-nexus-platform
+    description: Comprehensive Flow Nexus platform management - authentication, sandboxes, app deployment, payments, and challenges
+    source: ./agent-skills
+    source_revision: local
+    scope: project
+  ./agent-skills::flow-nexus-swarm:
+    destination: .claude/skills/flow-nexus-swarm
+    hash: 586ac3ce177122ddda0b02b5649868a33edc6046db2b87dd960f3a5bb02cc65e
+    skill: flow-nexus-swarm
+    description: Cloud-based AI swarm deployment and event-driven workflow automation with Flow Nexus platform
+    source: ./agent-skills
+    source_revision: local
+    scope: project
+  ./agent-skills::github-code-review:
+    destination: .claude/skills/github-code-review
+    hash: a05f83306a1ca957182fb4ffa87f1263ceb0d72239024db0a8803575f3c33a9c
+    skill: github-code-review
+    description: Comprehensive GitHub code review with AI-powered swarm coordination
+    source: ./agent-skills
+    source_revision: local
+    scope: project
+  ./agent-skills::github-multi-repo:
+    destination: .claude/skills/github-multi-repo
+    hash: 16ebf24f0ffdc317fb9acf8c095badaaa8a504800b68e6c694f80beee6632df9
+    skill: github-multi-repo
+    description: Multi-repository coordination, synchronization, and architecture management with AI swarm orchestration
+    source: ./agent-skills
+    source_revision: local
+    scope: project
+  ./agent-skills::github-project-management:
+    destination: .claude/skills/github-project-management
+    hash: a1887a488bf41f967ff54775f1131ac8cdad6e12aba7b14553d7162c9e2a6d6f
+    skill: github-project-management
+    description: Comprehensive GitHub project management with swarm-coordinated issue tracking, project board automation, and sprint planning
+    source: ./agent-skills
+    source_revision: local
+    scope: project
+  ./agent-skills::github-release-management:
+    destination: .claude/skills/github-release-management
+    hash: 3004d15a84ecd89775ba745d82495690c89d1544bebb9fd65367abec779d02ff
+    skill: github-release-management
+    description: Comprehensive GitHub release orchestration with AI swarm coordination for automated versioning, testing, deployment, and rollback management
+    source: ./agent-skills
+    source_revision: local
+    scope: project
+  ./agent-skills::github-workflow-automation:
+    destination: .claude/skills/github-workflow-automation
+    hash: cb5dcfe187245a69c9a7d502b60265643ace867a56da06befef1e913e207c1cf
+    skill: github-workflow-automation
+    description: Advanced GitHub Actions workflow automation with AI swarm coordination, intelligent CI/CD pipelines, and comprehensive repository management
+    source: ./agent-skills
+    source_revision: local
+    scope: project
+  ./agent-skills::gitnexus-usage:
+    destination: .claude/skills/gitnexus-usage
+    hash: d94fbb87474765a5e7019fa7b2c0e3df82ef02a2c158215bcab38bf6486e5fe3
+    skill: gitnexus-usage
+    description: '''Use the GitNexus code-graph MCP server to query, impact-analyze, and refactor across the ruvector workspace (~150 crates). Reach for this skill BEFORE doing wide refactors, large grep sweeps, or "where is X called from" questions — the graph is faster and more accurate than reading files. Lives at .gitnexus/ (gitignored). MCP tools: query, context, impact, detect_changes, rename, cypher.'''
+    source: ./agent-skills
+    source_revision: local
+    scope: project
+  ./agent-skills::hive-mind-advanced:
+    destination: .claude/skills/hive-mind-advanced
+    hash: a82b93a2d41f0dcb7d920311d27e28dba533d1062c3a00444c7ef54ad73140e0
+    skill: hive-mind-advanced
+    description: Advanced Hive Mind collective intelligence system for queen-led multi-agent coordination with consensus mechanisms and persistent memory
+    source: ./agent-skills
+    source_revision: local
+    scope: project
+  ./agent-skills::hooks-automation:
+    destination: .claude/skills/hooks-automation
+    hash: d2e6aaee34a4a12db79de3336811ad27e1c7bb3ded8b6ba47228f5951463b1a4
+    skill: hooks-automation
+    description: Automated coordination, formatting, and learning from Claude Code operations using intelligent hooks with MCP integration. Includes pre/post task hooks, session management, Git integration, memory coordination, and neural pattern training for enhanced development workflows.
+    source: ./agent-skills
+    source_revision: local
+    scope: project
+  ./agent-skills::mempalace-usage:
+    destination: .claude/skills/mempalace-usage
+    hash: 69c64ab1e94264cae79d7cbcb5974105624507f20ba88baf7244582beb993828
+    skill: mempalace-usage
+    description: Use the MemPalace MCP server for persistent cross-session memory of decisions, conversations, and learnings. The palace lives at ~/.mempalace/ (per-user, not per-repo) and exposes 9 MCP tools — search, add_drawer, list_wings, list_rooms, get_taxonomy, check_duplicate, delete_drawer, reconnect, status. Reach for this skill BEFORE asking the user to re-explain something they already told you, AFTER making a non-obvious decision worth remembering, or when you need verbatim recall of past conversations.
+    source: ./agent-skills
+    source_revision: local
+    scope: project
+  ./agent-skills::pair-programming:
+    destination: .claude/skills/pair-programming
+    hash: 6d78cede5dbd0b4457526d7c52488c62d3c3ec062b01aa0c97eadc2efc6f8dfc
+    skill: pair-programming
+    description: AI-assisted pair programming with multiple modes (driver/navigator/switch), real-time verification, quality monitoring, and comprehensive testing. Supports TDD, debugging, refactoring, and learning sessions. Features automatic role switching, continuous code review, security scanning, and performance optimization with truth-score verification.
+    source: ./agent-skills
+    source_revision: local
+    scope: project
+  ./agent-skills::performance-analysis:
+    destination: .claude/skills/performance-analysis
+    hash: 83234fdba6ac641fa0d7d5c167746a6895f3d9ff06ba07c42116f626807ed080
+    skill: performance-analysis
+    description: Comprehensive performance analysis, bottleneck detection, and optimization recommendations for Claude Flow swarms
+    source: ./agent-skills
+    source_revision: local
+    scope: project
+  ./agent-skills::reasoningbank-agentdb:
+    destination: .claude/skills/reasoningbank-agentdb
+    hash: 1cfb22e54bfc89d95c855a0756ca80cb21f3553378ec0370aedf253d1a3e13b3
+    skill: reasoningbank-agentdb
+    description: '"Implement ReasoningBank adaptive learning with AgentDB''s 150x faster vector database. Includes trajectory tracking, verdict judgment, memory distillation, and pattern recognition. Use when building self-learning agents, optimizing decision-making, or implementing experience replay systems."'
+    source: ./agent-skills
+    source_revision: local
+    scope: project
+  ./agent-skills::reasoningbank-intelligence:
+    destination: .claude/skills/reasoningbank-intelligence
+    hash: 7c8d4bcae296032483c7d6b1364439a8245802c22bf338e8e344dc294aabfb43
+    skill: reasoningbank-intelligence
+    description: '"Implement adaptive learning with ReasoningBank for pattern recognition, strategy optimization, and continuous improvement. Use when building self-learning agents, optimizing workflows, or implementing meta-cognitive systems."'
+    source: ./agent-skills
+    source_revision: local
+    scope: project
+  ./agent-skills::ruvector:
+    destination: .claude/skills/ruvector
+    hash: 6ca0cca7cc243dc7a78042e557203ae163347106ca6fbcc9a99a71bc4fc71586
+    skill: ruvector
+    description: Use for ruvector repository development patterns, npm release workflows, package synchronization, CI guardrails, and supply-chain hardening.
+    source: ./agent-skills
+    source_revision: local
+    scope: project
+  ./agent-skills::self-learning-loop:
+    destination: .claude/skills/self-learning-loop
+    hash: fd9ee9dd0c0167f658c3726bf86ceab2f53c9d01f03af2f7357690e598286477
+    skill: self-learning-loop
+    description: Run the FlexNetOS self-learning agent loop — Identify → Implement → Validate → Optimize → Distill — using the Attractor NLSpec as the blueprint and ruvector's ReasoningBank + AgentDB as the memory substrate. Use when designing or extending agent behavior that should accumulate experience over multiple runs.
+    source: ./agent-skills
+    source_revision: local
+    scope: project
+  ./agent-skills::skill-builder:
+    destination: .claude/skills/skill-builder
+    hash: 95501745a572ff0aea55b07f1ab5d6a8f44c01000dc1dbf58e690ec903e66ab0
+    skill: skill-builder
+    description: '"Create new Claude Code Skills with proper YAML frontmatter, progressive disclosure structure, and complete directory organization. Use when you need to build custom skills for specific workflows, generate skill templates, or understand the Claude Skills specification."'
+    source: ./agent-skills
+    source_revision: local
+    scope: project
+  ./agent-skills::sparc-methodology:
+    destination: .claude/skills/sparc-methodology
+    hash: 8df6fbe542b8d0712016a9ba7592f73c5e88d5dc6fa3efab87f91a35c2976ba8
+    skill: sparc-methodology
+    description: SPARC (Specification, Pseudocode, Architecture, Refinement, Completion) comprehensive development methodology with multi-agent orchestration
+    source: ./agent-skills
+    source_revision: local
+    scope: project
+  ./agent-skills::stream-chain:
+    destination: .claude/skills/stream-chain
+    hash: 9d06ba2bc0f15c40e69b11d436d264353f64730ca54d0c1ec9c4fc01b22dafc4
+    skill: stream-chain
+    description: Stream-JSON chaining for multi-agent pipelines, data transformation, and sequential workflows
+    source: ./agent-skills
+    source_revision: local
+    scope: project
+  ./agent-skills::swarm-advanced:
+    destination: .claude/skills/swarm-advanced
+    hash: b37ec38f4217ffee74ab018bb780f602fe06bcd3d23d41d25c855ea6ab69389c
+    skill: swarm-advanced
+    description: Advanced swarm orchestration patterns for research, development, testing, and complex distributed workflows
+    source: ./agent-skills
+    source_revision: local
+    scope: project
+  ./agent-skills::swarm-orchestration:
+    destination: .claude/skills/swarm-orchestration
+    hash: b335376a1d435158e6f3d112d492edced6b75b70376eb0ffa01070cc9756cef6
+    skill: swarm-orchestration
+    description: '"Orchestrate multi-agent swarms with agentic-flow for parallel task execution, dynamic topology, and intelligent coordination. Use when scaling beyond single agents, implementing complex workflows, or building distributed AI systems."'
+    source: ./agent-skills
+    source_revision: local
+    scope: project
+  ./agent-skills::understand-anything-usage:
+    destination: .claude/skills/understand-anything-usage
+    hash: c71d24513385d58f1e20a2771f1b5a751df1701b0dec06748552d59657b4589a
+    skill: understand-anything-usage
+    description: Use Understand-Anything (LLM + static analysis dashboard generator) when starting on an unfamiliar area of ruvector, onboarding to a crate, or producing an architecture map for a refactor. Provides 8 slash-commands (/understand, /understand-onboard, /understand-explain, /understand-diff, /understand-chat, /understand-domain, /understand-knowledge, /understand-dashboard) that emit structured artifacts under `.understand-anything/`. Skill is plugin-style — runs through Claude Code, Codex, Gemini, OpenCode, or pi-coder.
+    source: ./agent-skills
+    source_revision: local
+    scope: project
+  ./agent-skills::v3-cli-modernization:
+    destination: .claude/skills/v3-cli-modernization
+    hash: cbf00bfe699b4608b3d1a4a5a2e8bb11220635dbbcefdef771eebb9d7a03b242
+    skill: v3-cli-modernization
+    description: '"CLI modernization and hooks system enhancement for claude-flow v3. Implements interactive prompts, command decomposition, enhanced hooks integration, and intelligent workflow automation."'
+    source: ./agent-skills
+    source_revision: local
+    scope: project
+  ./agent-skills::v3-core-implementation:
+    destination: .claude/skills/v3-core-implementation
+    hash: d0eaa7c3ac26625bb7c595e358a37ed4896f947d2a073bc12e262e483d69e65b
+    skill: v3-core-implementation
+    description: '"Core module implementation for claude-flow v3. Implements DDD domains, clean architecture patterns, dependency injection, and modular TypeScript codebase with comprehensive testing."'
+    source: ./agent-skills
+    source_revision: local
+    scope: project
+  ./agent-skills::v3-ddd-architecture:
+    destination: .claude/skills/v3-ddd-architecture
+    hash: ae5c082f2fd8b4c23bd3b778207c1c7614047b4cecad8e0ff459ad99ef40144d
+    skill: v3-ddd-architecture
+    description: '"Domain-Driven Design architecture for claude-flow v3. Implements modular, bounded context architecture with clean separation of concerns and microkernel pattern."'
+    source: ./agent-skills
+    source_revision: local
+    scope: project
+  ./agent-skills::v3-integration-deep:
+    destination: .claude/skills/v3-integration-deep
+    hash: eb52be75aba0e9893227e12b9484ead294645d53ea03bca34b907d6c771b7670
+    skill: v3-integration-deep
+    description: '"Deep agentic-flow@alpha integration implementing ADR-001. Eliminates 10,000+ duplicate lines by building claude-flow as specialized extension rather than parallel implementation."'
+    source: ./agent-skills
+    source_revision: local
+    scope: project
+  ./agent-skills::v3-mcp-optimization:
+    destination: .claude/skills/v3-mcp-optimization
+    hash: 649931b71d0425448263f53e7cfe39dbab1477a835b76feee348d494844cfaa7
+    skill: v3-mcp-optimization
+    description: '"MCP server optimization and transport layer enhancement for claude-flow v3. Implements connection pooling, load balancing, tool registry optimization, and performance monitoring for sub-100ms response times."'
+    source: ./agent-skills
+    source_revision: local
+    scope: project
+  ./agent-skills::v3-memory-unification:
+    destination: .claude/skills/v3-memory-unification
+    hash: d2a57c6abed31de8984508a8e674184f06c9976f7867e549cd66003a2c667c26
+    skill: v3-memory-unification
+    description: '"Unify 6+ memory systems into AgentDB with HNSW indexing for 150x-12,500x search improvements. Implements ADR-006 (Unified Memory Service) and ADR-009 (Hybrid Memory Backend)."'
+    source: ./agent-skills
+    source_revision: local
+    scope: project
+  ./agent-skills::v3-performance-optimization:
+    destination: .claude/skills/v3-performance-optimization
+    hash: 65628051e74b38999f67e42083041b95e1b033ec10ab9c813649c6955d577435
+    skill: v3-performance-optimization
+    description: '"Achieve aggressive v3 performance targets: 2.49x-7.47x Flash Attention speedup, 150x-12,500x search improvements, 50-75% memory reduction. Comprehensive benchmarking and optimization suite."'
+    source: ./agent-skills
+    source_revision: local
+    scope: project
+  ./agent-skills::v3-security-overhaul:
+    destination: .claude/skills/v3-security-overhaul
+    hash: 57a29bdbeac796cf3a787680ed9e0ed654f380759039d7aeaaf4cbd6f2524af2
+    skill: v3-security-overhaul
+    description: '"Complete security architecture overhaul for claude-flow v3. Addresses critical CVEs (CVE-1, CVE-2, CVE-3) and implements secure-by-default patterns. Use for security-first v3 implementation."'
+    source: ./agent-skills
+    source_revision: local
+    scope: project
+  ./agent-skills::v3-swarm-coordination:
+    destination: .claude/skills/v3-swarm-coordination
+    hash: b52d4569728a8c73df964d8862dff657cb1bc8b8a5ff7910e8a818f258ab72cc
+    skill: v3-swarm-coordination
+    description: '"15-agent hierarchical mesh coordination for v3 implementation. Orchestrates parallel execution across security, core, and integration domains following 10 ADRs with 14-week timeline."'
+    source: ./agent-skills
+    source_revision: local
+    scope: project
+  ./agent-skills::verification-quality:
+    destination: .claude/skills/verification-quality
+    hash: 605c59169c56d5afce2dfa20d85361ecb2bc6ace987022f24ff911383b735669
+    skill: verification-quality
+    description: '"Comprehensive truth scoring, code quality verification, and automatic rollback system with 0.95 accuracy threshold for ensuring high-quality agent outputs and codebase reliability."'
+    source: ./agent-skills
+    source_revision: local
     scope: project
 assets: {}
-source_selectors:
-  skill::v3|33:https://github.com/FlexNetOS/meta|17:meta-gitkb-review: v2|base=56:v1|kind=skill|sub-dir=16:agent-env/skills|selection=name|scope=project|targets=2|32:.agents/skills/meta-gitkb-review31:.codex/skills/meta-gitkb-review
-installed_outputs:
-  67:skill::v3|33:https://github.com/FlexNetOS/meta|17:meta-gitkb-review|31:.codex/skills/meta-gitkb-review|10:skill-tree|4:tree:
-    asset_id: skill::v3|33:https://github.com/FlexNetOS/meta|17:meta-gitkb-review
-    destination: .codex/skills/meta-gitkb-review
-    format: skill-tree
-    unit: tree
-    hash: f59fc59b0ade740a4e9346a05e55ad820443b1dbc2094aa3a19900b88b4f0ddf
-  67:skill::v3|33:https://github.com/FlexNetOS/meta|17:meta-gitkb-review|32:.agents/skills/meta-gitkb-review|10:skill-tree|4:tree:
-    asset_id: skill::v3|33:https://github.com/FlexNetOS/meta|17:meta-gitkb-review
-    destination: .agents/skills/meta-gitkb-review
-    format: skill-tree
-    unit: tree
-    hash: f59fc59b0ade740a4e9346a05e55ad820443b1dbc2094aa3a19900b88b4f0ddf
