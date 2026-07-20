@@ -149,6 +149,7 @@ impl LatencyStats {
             .fold(f64::NEG_INFINITY, f64::max)
     }
 
+    #[allow(dead_code)]
     pub fn count(&self) -> usize {
         self.times_ms.len()
     }
@@ -766,13 +767,13 @@ fn benchmark_gnn_forward(
                         new_features[node][d] += features[neighbor][d];
                     }
                 }
-                for d in 0..dims {
-                    new_features[node][d] /= neighbors.len() as f32;
+                for v in new_features[node].iter_mut() {
+                    *v /= neighbors.len() as f32;
                 }
 
                 // ReLU activation
-                for d in 0..dims {
-                    new_features[node][d] = new_features[node][d].max(0.0);
+                for v in new_features[node].iter_mut() {
+                    *v = v.max(0.0);
                 }
             }
 
@@ -817,7 +818,7 @@ fn benchmark_quantization(dims: usize, num_vectors: usize) -> Result<BenchmarkRe
     // Benchmark scalar quantization (INT8)
     let start = Instant::now();
 
-    let quantized: Vec<Vec<i8>> = vectors
+    let _quantized: Vec<Vec<i8>> = vectors
         .iter()
         .map(|v| {
             let max_val = v.iter().map(|x| x.abs()).fold(0.0f32, f32::max);

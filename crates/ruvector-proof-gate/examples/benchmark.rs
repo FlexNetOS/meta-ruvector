@@ -87,7 +87,6 @@ fn run_bench<G: WriteGate>(
         variant: name,
         n,
         dims,
-        queries: n,
         mean_ns,
         p50_ns: p50,
         p95_ns: p95,

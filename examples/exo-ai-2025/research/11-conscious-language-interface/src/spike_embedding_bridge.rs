@@ -80,6 +80,12 @@ impl SpikeInjection {
     }
 }
 
+impl Default for SpikeInjection {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// Polychronous group representing a qualia/experience
 #[derive(Debug, Clone)]
 pub struct PolychronousGroup {
@@ -105,7 +111,7 @@ impl PolychronousGroup {
         // Add normalized neuron IDs and times
         for (neuron, time) in &self.pattern {
             features.push(*neuron as f32 / 1_000_000.0); // Normalize neuron ID
-            features.push(*time as f32 / 10_000_000.0);  // Normalize time (10ms window)
+            features.push(*time as f32 / 10_000_000.0); // Normalize time (10ms window)
         }
 
         features
@@ -137,10 +143,14 @@ pub struct LearnableMapping {
     /// Training step counter
     step: u64,
 
-    /// Accumulated gradients (for batch updates)
+    /// Accumulated gradients (for batch updates; retained for schema completeness)
+    #[allow(dead_code)]
     gradient_accumulator: Option<GradientAccumulator>,
 }
 
+// Gradient accumulator fields are written during training but not read back —
+// retained for batch-update state completeness.
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 struct GradientAccumulator {
     encoder_grad_1: Vec<Vec<f32>>,
@@ -217,11 +227,7 @@ impl LearnableMapping {
     /// Forward pass through encoder: embedding → neuron activations
     pub fn encode_forward(&self, embedding: &[f32]) -> Vec<f32> {
         // Layer 1: embedding → hidden (with ReLU)
-        let hidden = self.linear_forward(
-            embedding,
-            &self.encoder_weights_1,
-            &self.encoder_bias_1,
-        );
+        let hidden = self.linear_forward(embedding, &self.encoder_weights_1, &self.encoder_bias_1);
         let hidden_activated: Vec<f32> = hidden.iter().map(|&x| x.max(0.0)).collect();
 
         // Layer 2: hidden → neuron activations (with sigmoid)
@@ -366,7 +372,8 @@ impl SpikeEmbeddingBridge {
         // Cache for learning
         let cache_id = self.next_cache_id;
         self.next_cache_id += 1;
-        self.encoding_cache.insert(cache_id, (embedding.to_vec(), injection.clone()));
+        self.encoding_cache
+            .insert(cache_id, (embedding.to_vec(), injection.clone()));
 
         // Limit cache size
         if self.encoding_cache.len() > 1000 {
@@ -503,7 +510,7 @@ fn cosine_distance(a: &[f32], b: &[f32]) -> f32 {
 fn rand_float() -> f32 {
     use std::cell::Cell;
     thread_local! {
-        static SEED: Cell<u64> = Cell::new(0xDEADBEEF12345678);
+        static SEED: Cell<u64> = const { Cell::new(0xDEADBEEF12345678) };
     }
 
     SEED.with(|seed| {

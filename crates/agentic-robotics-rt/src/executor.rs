@@ -30,6 +30,7 @@ impl From<Duration> for Deadline {
 pub struct ROS3Executor {
     tokio_rt_high: Runtime,
     tokio_rt_low: Runtime,
+    #[allow(dead_code)]
     scheduler: Arc<Mutex<PriorityScheduler>>,
 }
 

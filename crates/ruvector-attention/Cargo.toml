@@ -46,10 +46,6 @@ harness = false
 name = "attention_benchmarks"
 harness = false
 
-[[bin]]
-name = "bench_runner"
-path = "benches/attention_benchmarks.rs"
-
 [lints.rust]
 unexpected_cfgs = { level = "allow", priority = -1 }
 unused_imports = "allow"

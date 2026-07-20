@@ -1,7 +1,8 @@
 //! Snapshot and restore functionality for rUvector collections
 //!
-//! This crate provides backup and restore capabilities for vector collections,
-//! including compression, checksums, and multiple storage backends.
+//! This crate provides full backup and restore capabilities for vector collections,
+//! including GZIP compression and SHA-256 checksums. Storage is pluggable via the
+//! [`SnapshotStorage`] trait; a filesystem backend ([`LocalStorage`]) is included.
 
 mod error;
 mod manager;

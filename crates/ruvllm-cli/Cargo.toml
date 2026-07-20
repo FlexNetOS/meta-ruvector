@@ -38,6 +38,9 @@ tower-http = { version = "0.6", features = ["cors", "trace"] }
 # Serialization
 serde = { workspace = true }
 serde_json = { workspace = true }
+# base64 encoding for OpenAI `/v1/embeddings` encoding_format="base64" (the
+# default the official openai-python client sends). 0.22 is already in the lock.
+base64 = "0.22"
 
 # Error handling
 thiserror = { workspace = true }
@@ -78,7 +81,6 @@ unused_imports = "allow"
 dead_code = "allow"
 unused_variables = "allow"
 unused_mut = "allow"
-
 unused_assignments = "allow"
 unused_must_use = "allow"
 missing_docs = "allow"
@@ -156,7 +158,6 @@ absurd_extreme_comparisons = "allow"
 incompatible_msrv = "allow"
 unused_enumerate_index = "allow"
 unused_self = "allow"
-
 map_clone = "allow"
 map_unwrap_or = "allow"
 result_map_or_into_option = "allow"

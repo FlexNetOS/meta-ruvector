@@ -1,10 +1,22 @@
-#!/bin/bash
-# Git pre-commit hook to automatically sync package-lock.json
-# Install: ln -sf ../../.githooks/pre-commit .git/hooks/pre-commit
+#!/bin/sh
+# Validate the Bun-owned npm lockfile without mutating the index during commit.
 
-export GIT_HOOK="pre-commit"
+set -eu
 
-# Run the sync script
-./scripts/sync-lockfile.sh
+repo_root=$(rtk run 'git rev-parse --show-toplevel')
+npm_dir="$repo_root/npm"
+changed=$(rtk run 'git diff --cached --name-only')
 
-exit $?
+case "$changed" in
+  *npm/*package.json*)
+    if [ ! -d "$npm_dir" ]; then
+      printf '%s\n' "npm package directory is missing: $npm_dir" >&2
+      exit 1
+    fi
+    printf '%s\n' 'Validating Bun lockfile for staged npm package changes...'
+    rtk run "cd \"$npm_dir\" && bun install --frozen-lockfile"
+    ;;
+  *)
+    printf '%s\n' 'No staged npm package manifest changes.'
+    ;;
+esac

@@ -1,26 +1,31 @@
 # ruvector-attention-wasm
 
-WebAssembly bindings for the ruvector-attention package, providing high-performance attention mechanisms for browser and Node.js environments.
+WebAssembly bindings for the [`ruvector-attention`](../ruvector-attention/) crate, providing attention mechanisms for browser and Node.js environments.
 
 ## Features
 
-- **Multiple Attention Mechanisms**:
-  - Scaled Dot-Product Attention
-  - Multi-Head Attention
-  - Hyperbolic Attention (for hierarchical data)
-  - Linear Attention (Performer-style)
-  - Flash Attention (memory-efficient)
-  - Local-Global Attention
-  - Mixture of Experts (MoE) Attention
-  - **CGT Sheaf Attention** (coherence-gated via Prime-Radiant)
+- **Attention Mechanisms** (exported Wasm classes):
+  - Multi-Head Attention (`WasmMultiHeadAttention`)
+  - Hyperbolic Attention (`WasmHyperbolicAttention`) -- for hierarchical data
+  - Linear Attention (`WasmLinearAttention`) -- Performer-style
+  - Flash Attention (`WasmFlashAttention`) -- memory-efficient, tiled
+  - Local-Global Attention (`WasmLocalGlobalAttention`)
+  - Mixture of Experts (MoE) Attention (`WasmMoEAttention`)
+  - Scaled Dot-Product Attention (`scaledDotAttention()`, a free function)
 
 - **Training Utilities**:
-  - InfoNCE contrastive loss
-  - Adam optimizer
-  - AdamW optimizer (with decoupled weight decay)
-  - Learning rate scheduler (warmup + cosine decay)
+  - InfoNCE contrastive loss (`WasmInfoNCELoss`)
+  - Adam optimizer (`WasmAdam`)
+  - AdamW optimizer with decoupled weight decay (`WasmAdamW`)
+  - SGD optimizer (`WasmSGD`)
+  - Learning rate scheduler with warmup + cosine decay (`WasmLRScheduler`)
 
-- **TypeScript Support**: Full type definitions and modern API
+- **TypeScript Support**: generated type definitions via `wasm-bindgen`
+
+> **Note:** the wasm-bindgen class names are exported verbatim (e.g.
+> `WasmMultiHeadAttention`), while free functions are camelCased
+> (e.g. `scaledDotAttention`, `cosineSimilarity`). Constructors take **positional**
+> arguments (numbers), not an options object.
 
 ## Installation
 
@@ -33,24 +38,43 @@ npm install ruvector-attention-wasm
 ### TypeScript/JavaScript
 
 ```typescript
-import { initialize, MultiHeadAttention, utils } from 'ruvector-attention-wasm';
+import init, { WasmMultiHeadAttention, cosineSimilarity } from 'ruvector-attention-wasm';
 
-// Initialize WASM module
-await initialize();
+// Initialize the WASM module
+await init();
 
-// Create multi-head attention
-const attention = new MultiHeadAttention({ dim: 64, numHeads: 8 });
+// Create multi-head attention: new WasmMultiHeadAttention(dim, numHeads)
+// (dim must be divisible by numHeads)
+const attention = new WasmMultiHeadAttention(64, 8);
 
 // Prepare inputs
 const query = new Float32Array(64);
 const keys = [new Float32Array(64), new Float32Array(64)];
 const values = [new Float32Array(64), new Float32Array(64)];
 
-// Compute attention
+// Compute attention (keys/values are arrays of Float32Array)
 const output = attention.compute(query, keys, values);
 
-// Use utilities
-const similarity = utils.cosineSimilarity(query, keys[0]);
+// Introspection getters
+console.log(attention.num_heads, attention.dim);
+
+// Utility
+const similarity = cosineSimilarity(query, keys[0]);
+```
+
+### Functional Scaled Dot-Product Attention
+
+```typescript
+import init, { scaledDotAttention } from 'ruvector-attention-wasm';
+
+await init();
+
+const query = new Float32Array(64);
+const keys = [new Float32Array(64), new Float32Array(64)];
+const values = [new Float32Array(64), new Float32Array(64)];
+
+// Optional scale argument; defaults to 1/sqrt(dim)
+const output = scaledDotAttention(query, keys, values, undefined);
 ```
 
 ### Advanced Examples
@@ -58,45 +82,51 @@ const similarity = utils.cosineSimilarity(query, keys[0]);
 #### Hyperbolic Attention
 
 ```typescript
-import { HyperbolicAttention } from 'ruvector-attention-wasm';
+import { WasmHyperbolicAttention } from 'ruvector-attention-wasm';
 
-const hyperbolic = new HyperbolicAttention({
-  dim: 128,
-  curvature: 1.0
-});
+// new WasmHyperbolicAttention(dim, curvature)
+const hyperbolic = new WasmHyperbolicAttention(128, 1.0);
 
 const output = hyperbolic.compute(query, keys, values);
+console.log('curvature:', hyperbolic.curvature);
 ```
 
-#### MoE Attention with Expert Stats
+#### MoE Attention
 
 ```typescript
-import { MoEAttention } from 'ruvector-attention-wasm';
+import { WasmMoEAttention } from 'ruvector-attention-wasm';
 
-const moe = new MoEAttention({
-  dim: 64,
-  numExperts: 4,
-  topK: 2
-});
+// new WasmMoEAttention(dim, numExperts, topK)
+const moe = new WasmMoEAttention(64, 4, 2);
 
 const output = moe.compute(query, keys, values);
+```
 
-// Get expert utilization
-const stats = moe.getExpertStats();
-console.log('Load balance:', stats.loadBalance);
+#### Flash / Linear / Local-Global Attention
+
+```typescript
+import {
+  WasmFlashAttention,
+  WasmLinearAttention,
+  WasmLocalGlobalAttention,
+} from 'ruvector-attention-wasm';
+
+const flash = new WasmFlashAttention(64, /* blockSize */ 16);
+const linear = new WasmLinearAttention(64, /* numFeatures */ 32);
+const localGlobal = new WasmLocalGlobalAttention(64, /* localWindow */ 8, /* globalTokens */ 4);
+
+const a = flash.compute(query, keys, values);
+const b = linear.compute(query, keys, values);
+const c = localGlobal.compute(query, keys, values);
 ```
 
 #### Training with InfoNCE Loss
 
 ```typescript
-import { InfoNCELoss, Adam } from 'ruvector-attention-wasm';
+import { WasmInfoNCELoss, WasmAdam } from 'ruvector-attention-wasm';
 
-const loss = new InfoNCELoss(0.07);
-const optimizer = new Adam(paramCount, {
-  learningRate: 0.001,
-  beta1: 0.9,
-  beta2: 0.999,
-});
+const loss = new WasmInfoNCELoss(0.07);          // temperature
+const optimizer = new WasmAdam(paramCount, 0.001); // (paramCount, learningRate)
 
 // Training loop
 const lossValue = loss.compute(anchor, positive, negatives);
@@ -106,22 +136,16 @@ optimizer.step(params, gradients);
 #### Learning Rate Scheduling
 
 ```typescript
-import { LRScheduler, AdamW } from 'ruvector-attention-wasm';
+import { WasmLRScheduler, WasmAdamW } from 'ruvector-attention-wasm';
 
-const scheduler = new LRScheduler({
-  initialLR: 0.001,
-  warmupSteps: 1000,
-  totalSteps: 10000,
-});
+// new WasmLRScheduler(initialLR, warmupSteps, totalSteps)
+const scheduler = new WasmLRScheduler(0.001, 1000, 10000);
 
-const optimizer = new AdamW(paramCount, {
-  learningRate: scheduler.getLR(),
-  weightDecay: 0.01,
-});
+// new WasmAdamW(paramCount, learningRate, weightDecay)
+const optimizer = new WasmAdamW(paramCount, scheduler.get_lr(), 0.01);
 
-// Training loop
 for (let step = 0; step < 10000; step++) {
-  optimizer.learningRate = scheduler.getLR();
+  optimizer.set_learning_rate(scheduler.get_lr());
   optimizer.step(params, gradients);
   scheduler.step();
 }
@@ -152,68 +176,58 @@ wasm-pack test --headless --firefox
 
 ## API Reference
 
-### Attention Mechanisms
+### Module-level functions
 
-- `MultiHeadAttention` - Standard multi-head attention
-- `HyperbolicAttention` - Attention in hyperbolic space
-- `LinearAttention` - Linear complexity attention (Performer)
-- `FlashAttention` - Memory-efficient attention
-- `LocalGlobalAttention` - Combined local and global attention
-- `MoEAttention` - Mixture of Experts attention
-- `CGTSheafAttention` - Coherence-gated via Prime-Radiant energy
-- `scaledDotAttention()` - Functional API for basic attention
+- `init()` -- wasm-bindgen start hook (installs the panic hook)
+- `version()` -- crate version string
+- `availableMechanisms()` -- list of available mechanism names
+- `scaledDotAttention(query, keys, values, scale?)` -- functional scaled dot-product attention
 
-### CGT Sheaf Attention (Prime-Radiant Integration)
+### Attention Classes
 
-The CGT (Coherence-Gated Transformer) Sheaf Attention mechanism uses Prime-Radiant's sheaf Laplacian energy to gate attention based on mathematical consistency:
+- `WasmMultiHeadAttention(dim, numHeads)` -- getters: `num_heads`, `dim`
+- `WasmHyperbolicAttention(dim, curvature)` -- getter: `curvature`
+- `WasmLinearAttention(dim, numFeatures)`
+- `WasmFlashAttention(dim, blockSize)`
+- `WasmLocalGlobalAttention(dim, localWindow, globalTokens)`
+- `WasmMoEAttention(dim, numExperts, topK)`
 
-```typescript
-import { CGTSheafAttention } from 'ruvector-attention-wasm';
-
-const cgtAttention = new CGTSheafAttention({
-  dim: 128,
-  numHeads: 8,
-  coherenceThreshold: 0.3,  // Block if energy > threshold
-});
-
-// Attention is gated by coherence energy
-const result = cgtAttention.compute(query, keys, values);
-console.log('Coherence energy:', result.energy);
-console.log('Is coherent:', result.isCoherent);
-```
-
-**Key features:**
-- Energy-weighted attention: Lower coherence energy → higher attention
-- Automatic hallucination detection via residual analysis
-- GPU-accelerated with wgpu WGSL shaders (vec4 optimized)
-- SIMD fallback (AVX-512/AVX2/NEON)
+Each class exposes `compute(query, keys, values)` where `query` is a `Float32Array`
+and `keys`/`values` are arrays of `Float32Array`.
 
 ### Training
 
-- `InfoNCELoss` - Contrastive loss function
-- `Adam` - Adam optimizer
-- `AdamW` - AdamW optimizer with weight decay
-- `LRScheduler` - Learning rate scheduler
+- `WasmInfoNCELoss(temperature)` -- `compute(anchor, positive, negatives)`
+- `WasmAdam(paramCount, learningRate)` -- `step`, `reset`, `learning_rate`, `set_learning_rate`
+- `WasmAdamW(paramCount, learningRate, weightDecay)` -- `step`, `reset`, `learning_rate`, `set_learning_rate`, `weight_decay`
+- `WasmSGD(paramCount, learningRate, momentum?)` -- `step`, `reset`, `learning_rate`, `set_learning_rate`
+- `WasmLRScheduler(initialLR, warmupSteps, totalSteps)` -- `get_lr`, `step`, `reset`
 
-### Utilities
+### Utilities (free functions)
 
-- `utils.cosineSimilarity()` - Cosine similarity between vectors
-- `utils.l2Norm()` - L2 norm of a vector
-- `utils.normalize()` - Normalize vector to unit length
-- `utils.softmax()` - Apply softmax transformation
-- `utils.attentionWeights()` - Compute attention weights from scores
-- `utils.batchNormalize()` - Batch normalization
-- `utils.randomOrthogonalMatrix()` - Generate random orthogonal matrix
-- `utils.pairwiseDistances()` - Compute pairwise distances
+- `cosineSimilarity(a, b)` -- cosine similarity between vectors
+- `l2Norm(vec)` -- L2 norm of a vector
+- `normalize(vec)` -- normalize a vector to unit length (in place)
+- `softmax(vec)` -- apply softmax (in place)
+- `attentionWeights(scores, temperature?)` -- compute attention weights from scores (in place)
+- `batchNormalize(vectors, epsilon?)` -- batch normalization
+- `randomOrthogonalMatrix(dim)` -- generate a random orthogonal matrix
+- `pairwiseDistances(vectors)` -- compute pairwise distances
+- `log(message)` / `logError(message)` -- console logging helpers
+
+## Planned / Not in This Crate
+
+- **CGT Sheaf Attention** -- the sheaf-Laplacian / coherence-gated attention lives in
+  the parent [`ruvector-attention`](../ruvector-attention/) crate behind its `sheaf`
+  feature. It is **not** exported by these WASM bindings.
+- **GPU acceleration (wgpu)** -- these bindings run on CPU/WASM only. There are no
+  GPU/wgpu code paths in this crate.
 
 ## Performance
 
-The WASM bindings provide near-native performance for attention computations:
-
-- Optimized with `opt-level = "s"` and LTO
-- SIMD acceleration where available
-- Efficient memory management
-- Zero-copy data transfer where possible
+These bindings are built with `opt-level = "s"`, LTO, and a single codegen unit for
+a small binary. Performance characteristics depend on the host engine; no specific
+latency numbers are claimed.
 
 ## License
 

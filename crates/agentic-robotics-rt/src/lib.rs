@@ -1,15 +1,18 @@
 //! ROS3 Real-Time Execution
 //!
-//! Dual runtime architecture combining Tokio (soft RT) and RTIC (hard RT)
+//! Dual-runtime architecture: two Tokio multi-threaded runtimes (a 2-thread
+//! high-priority runtime and a 4-thread low-priority runtime) with tasks routed
+//! by deadline. Hard-real-time RTIC integration is planned but not yet
+//! implemented; "priority" is currently expressed by runtime routing, not by
+//! OS-level thread priorities.
 
 pub mod executor;
-pub mod scheduler;
 pub mod latency;
+pub mod scheduler;
 
-pub use executor::{ROS3Executor, Priority, Deadline};
-pub use scheduler::PriorityScheduler;
+pub use executor::{Deadline, Priority, ROS3Executor};
 pub use latency::LatencyTracker;
-
+pub use scheduler::PriorityScheduler;
 
 /// Real-time task priority levels
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]

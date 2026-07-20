@@ -1,18 +1,36 @@
 # rvm-memory
 
-Guest physical address space management for the RVM microhypervisor.
+Guest physical address space management for the RVM microhypervisor, built
+around a **four-tier, coherence-driven memory model** with reconstruction
+capability (ADR-136 / ADR-138).
 
-Provides safe abstractions over stage-2 page table mappings with
-capability-gated access. Each partition has an independent guest physical
-address space. All mapping operations are recorded in the witness trail.
-Memory regions can be shared between partitions with explicit grants.
+## Four-Tier Memory Model (ADR-136)
 
-## Key Types and Functions
+| Tier | Name | Description |
+|------|------|-------------|
+| 0 | Hot | Per-core SRAM / L1-adjacent; always resident during execution |
+| 1 | Warm | Shared DRAM; resident if the residency rule is met |
+| 2 | Dormant | Compressed checkpoint + delta; reconstructed on demand |
+| 3 | Cold | Persistent archival; accessed only during recovery |
 
-- `MemoryRegion` -- descriptor: guest base, host base, page count, permissions, owner
+Tier transitions are explicit (not demand-paged) and are driven by coherence,
+falling back to static thresholds (DC-1) when the coherence engine is absent.
+The crate is `#![no_std]` with zero heap allocation and `#![forbid(unsafe_code)]`.
+
+## Key Components
+
+- `Tier` / `TierManager` / `TierThresholds` / `RegionTierState` -- coherence-driven tier placement and transitions (`tier`)
+- `BuddyAllocator` -- power-of-two physical page allocator (`allocator`)
+- `RegionManager` / `OwnedRegion` / `RegionConfig` / `AddressMapping` -- owned-region lifecycle and address translation (`region`)
+- `ReconstructionPipeline` / `CompressedCheckpoint` / `CheckpointId` / `WitnessDelta` / `ReconstructionResult` / `create_checkpoint` -- dormant-state restoration (`reconstruction`)
+
+## Crate-Root Helpers
+
+- `MemoryRegion` -- a legacy descriptor (ADR-138 compatibility): guest base, host base, page count, permissions, owner. For new code prefer `OwnedRegion`, which carries tier metadata.
 - `MemoryPermissions` -- RWX permission flags with constants (`READ_ONLY`, `READ_WRITE`, `READ_EXECUTE`)
 - `validate_region(region)` -- checks alignment, page count, and permission validity
 - `regions_overlap(a, b)` -- detects overlapping regions within the same partition
+- `regions_overlap_host(a, b)` -- detects host-physical overlap across partitions (isolation check)
 - `PAGE_SIZE` -- 4 KiB page size constant
 
 ## Example

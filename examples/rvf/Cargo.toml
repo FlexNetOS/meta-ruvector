@@ -4,8 +4,6 @@ version = "0.1.0"
 edition = "2021"
 publish = false
 
-[workspace]
-
 [dependencies]
 rvf-types = { path = "../../crates/rvf/rvf-types", features = ["std"] }
 rvf-wire = { path = "../../crates/rvf/rvf-wire" }

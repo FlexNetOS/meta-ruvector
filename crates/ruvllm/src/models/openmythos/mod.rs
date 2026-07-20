@@ -23,6 +23,10 @@
 //! synthetic weights in the unit tests.
 
 #![cfg(feature = "candle")]
+// The module docs above link to internal implementation items (recurrent::*,
+// attention) for maintainer-facing architecture notes; these modules are
+// intentionally private, so allow the private intra-doc links.
+#![allow(rustdoc::private_intra_doc_links)]
 
 mod attention;
 mod block;

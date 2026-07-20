@@ -25,11 +25,14 @@
 //! - learning_sessions: RL training data
 
 use crate::embeddings::{BoxedEmbeddingProvider, HashEmbedding};
+
+#[cfg(feature = "onnx-embeddings")]
+use crate::embeddings::onnx::OnnxEmbedding;
 use crate::error::{Result, RuvectorError};
 use crate::types::*;
 use crate::vector_db::VectorDB;
 use parking_lot::RwLock;
-use redb::{Database, TableDefinition};
+use redb::{Database, ReadableDatabase, TableDefinition};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -134,10 +137,37 @@ pub struct AgenticDB {
 }
 
 impl AgenticDB {
-    /// Create a new AgenticDB with the given options and default hash-based embeddings
+    /// Create a new AgenticDB with semantic embeddings (ONNX) when available,
+    /// falling back to hash-based embeddings otherwise.
     pub fn new(options: DbOptions) -> Result<Self> {
-        let embedding_provider = Arc::new(HashEmbedding::new(options.dimensions));
+        let embedding_provider: BoxedEmbeddingProvider =
+            Self::default_embedding_provider(options.dimensions);
         Self::with_embedding_provider(options, embedding_provider)
+    }
+
+    /// Return the default embedding provider — ONNX semantic (if onnx-embeddings feature), else hash.
+    #[cfg(feature = "onnx-embeddings")]
+    fn default_embedding_provider(dimensions: usize) -> BoxedEmbeddingProvider {
+        match OnnxEmbedding::from_pretrained("Xenova/all-MiniLM-L6-v2") {
+            Ok(onnx) => {
+                tracing::info!(
+                    "AgenticDB: using ONNX semantic embeddings (384-dim, all-MiniLM-L6-v2)"
+                );
+                Arc::new(onnx)
+            }
+            Err(e) => {
+                tracing::warn!(
+                    "AgenticDB: ONNX model unavailable ({e}), falling back to hash embeddings"
+                );
+                Arc::new(HashEmbedding::new(dimensions))
+            }
+        }
+    }
+
+    #[cfg(not(feature = "onnx-embeddings"))]
+    fn default_embedding_provider(dimensions: usize) -> BoxedEmbeddingProvider {
+        tracing::info!("AgenticDB: using hash embeddings (feature onnx-embeddings not enabled)");
+        Arc::new(HashEmbedding::new(dimensions))
     }
 
     /// Create a new AgenticDB with a custom embedding provider

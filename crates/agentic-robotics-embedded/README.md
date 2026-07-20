@@ -4,35 +4,64 @@
 [![Documentation](https://docs.rs/agentic-robotics-embedded/badge.svg)](https://docs.rs/agentic-robotics-embedded)
 [![License](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue.svg)](../../LICENSE)
 
-**Embedded systems support for Agentic Robotics**
+**Placeholder crate for future embedded support in Agentic Robotics**
 
-Part of the [Agentic Robotics](https://github.com/ruvnet/vibecast) framework - high-performance robotics middleware with ROS2 compatibility.
+Part of the [Agentic Robotics](https://github.com/ruvnet/vibecast) framework.
 
-## Features
+> ⚠️ **Status: placeholder / skeleton.** This crate does **not** yet provide
+> embedded runtime support. Today it is a small `std` crate that exports two
+> configuration types sketching the intended API. The embedded dependencies
+> (Embassy, RTIC) are commented out in `Cargo.toml`, and the `embassy` / `rtic`
+> Cargo features exist but are empty (they enable no code). There is currently
+> no no-std build, no real-time executor integration, and no target HAL.
 
-- 🔌 **No-std compatible**: Run on bare-metal embedded systems
-- ⚡ **RTIC integration**: Real-Time Interrupt-driven Concurrency
-- 🚀 **Embassy support**: Modern async/await for embedded
-- 💾 **Minimal footprint**: < 50KB code size
-- 🎯 **Zero-allocation**: Static memory allocation
-- 🔋 **Low power**: Optimized for battery-powered robots
+## What it provides today
+
+The entire public API is two types:
+
+```rust
+use agentic_robotics_embedded::{EmbeddedPriority, EmbeddedConfig};
+
+// Task priority enum: Low = 0, Normal = 1, High = 2, Critical = 3.
+let priority = EmbeddedPriority::High;
+
+// Configuration struct with defaults (tick_rate_hz = 1000, stack_size = 4096).
+let config = EmbeddedConfig::default();
+assert_eq!(config.tick_rate_hz, 1000);
+assert_eq!(config.stack_size, 4096);
+
+// Or construct explicitly.
+let custom = EmbeddedConfig { tick_rate_hz: 500, stack_size: 8192 };
+let _ = (priority, config, custom);
+```
+
+| Type | Kind | Fields / variants |
+|------|------|-------------------|
+| `EmbeddedPriority` | enum (`Copy`) | `Low`, `Normal`, `High`, `Critical` |
+| `EmbeddedConfig` | struct (`Clone`, `Default`) | `tick_rate_hz: u32`, `stack_size: usize` |
 
 ## Installation
 
 ```toml
 [dependencies]
-agentic-robotics-core = { version = "0.1.0", default-features = false }
-agentic-robotics-embedded = "0.1.0"
+agentic-robotics-embedded = "0.1"
 ```
 
-## Supported Platforms
+This crate currently depends on `agentic-robotics-core` plus `serde`, `anyhow`,
+and `thiserror`. It builds as a normal `std` crate.
 
-| Platform | Status | Framework | Example |
-|----------|--------|-----------|---------|
-| **STM32** | ✅ Supported | RTIC, Embassy | STM32F4, STM32H7 |
-| **ESP32** | ✅ Supported | Embassy | ESP32-C3, ESP32-S3 |
-| **nRF** | ✅ Supported | Embassy | nRF52, nRF53 |
-| **RP2040** | ✅ Supported | Embassy | Raspberry Pi Pico |
+## Planned / WIP
+
+The following are intended directions but are **not** implemented yet:
+
+- **no-std support** for bare-metal targets.
+- **Embassy** async executor integration (the `embassy` feature is a stub).
+- **RTIC** real-time concurrency integration (the `rtic` feature is a stub).
+- **Target support** for boards such as STM32, ESP32, nRF, and RP2040.
+- A minimal, allocation-conscious footprint suitable for microcontrollers.
+
+The optional Embassy/RTIC dependencies are present (commented out) in
+`Cargo.toml` to mark this direction; they are not yet wired in.
 
 ## License
 
@@ -51,4 +80,4 @@ at your option.
 
 ---
 
-**Part of the Agentic Robotics framework** • Built with ❤️ by the Agentic Robotics Team
+**Part of the Agentic Robotics framework**

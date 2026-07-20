@@ -1,11 +1,14 @@
 //! WASM bindings for EXO-AI 2025 Cognitive Substrate
 //!
-//! This module provides browser bindings for the EXO substrate, enabling:
-//! - Pattern storage and retrieval
+//! This module provides browser/Node.js bindings for the EXO substrate, backed
+//! by `ruvector-core`'s in-memory `VectorDB`. Currently supported:
+//! - Pattern storage, retrieval, and deletion
 //! - Similarity search with various distance metrics
-//! - Temporal memory coordination
-//! - Causal queries
 //! - Browser-based cognitive operations
+//!
+//! Patterns carry timestamps and causal antecedents, and the substrate config
+//! accepts `enable_temporal` / `enable_causal` flags, but temporal-window and
+//! causal-cone query APIs are **not yet implemented** in this crate.
 
 use js_sys::{Array, Float32Array, Object, Promise, Reflect};
 use parking_lot::Mutex;

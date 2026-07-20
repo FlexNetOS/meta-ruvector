@@ -7,7 +7,7 @@
 
 **Control robots with AI assistants using the Model Context Protocol**
 
-Give Claude, GPT, or any AI assistant the ability to control your robots through natural language. Part of the [Agentic Robotics](https://github.com/ruvnet/vibecast) framework.
+Give Claude, GPT, or any AI assistant the ability to control your robots through natural language. Part of the [Agentic Robotics](https://github.com/FlexNetOS/vibecast) framework.
 
 ---
 
@@ -598,7 +598,7 @@ eprintln!("Registered tools: {:?}", tool_names);
 
 ## 📚 Examples
 
-Complete working examples in the [repository](https://github.com/ruvnet/vibecast/tree/main/examples):
+Complete working examples in the [repository](https://github.com/FlexNetOS/vibecast/tree/main/examples):
 
 - `mcp-navigation.rs` - Navigation robot with MCP
 - `mcp-vision.rs` - Computer vision integration
@@ -644,8 +644,8 @@ async fn test_move_tool() {
 - **Claude Desktop**: [claude.ai/download](https://claude.ai/download)
 - **Homepage**: [ruv.io](https://ruv.io)
 - **Docs**: [docs.rs/agentic-robotics-mcp](https://docs.rs/agentic-robotics-mcp)
-- **Repository**: [github.com/ruvnet/vibecast](https://github.com/ruvnet/vibecast)
-- **Examples**: [github.com/ruvnet/vibecast/tree/main/examples](https://github.com/ruvnet/vibecast/tree/main/examples)
+- **Repository**: [github.com/FlexNetOS/vibecast](https://github.com/FlexNetOS/vibecast)
+- **Examples**: [github.com/FlexNetOS/vibecast/tree/main/examples](https://github.com/FlexNetOS/vibecast/tree/main/examples)
 
 ---
 
@@ -680,6 +680,6 @@ at your option.
 
 [Quick Start](#-quick-start-5-minutes) · [Tutorial](#-complete-tutorial) · [Examples](#-real-world-use-cases) · [Troubleshooting](#-troubleshooting)
 
-**MCP 2025-11 Compliant** • **STDIO & SSE Transport** • **Production Ready**
+**MCP 2025-11 Compliant** • **STDIO Transport (SSE planned)** • **Production Ready**
 
 </div>

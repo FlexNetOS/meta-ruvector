@@ -77,7 +77,7 @@ fn setup_kernel() -> Kernel {
 
 fn run_throughput_bench<F>(name: &str, duration_secs: u64, mut f: F) -> (u64, Duration, f64)
 where
-    F: FnMut() -> (),
+    F: FnMut(),
 {
     let target_duration = Duration::from_secs(duration_secs);
     let start = Instant::now();
@@ -164,7 +164,7 @@ fn main() {
 
             let _ = kernel.dispatch(Syscall::VectorPutProved {
                 store,
-                key: VectorKey::new((nonce % 100000) as u64),
+                key: VectorKey::new(nonce % 100000),
                 data: data.clone(),
                 proof,
             });
@@ -197,7 +197,7 @@ fn main() {
 
             let _ = kernel.dispatch(Syscall::VectorPutProved {
                 store,
-                key: VectorKey::new((nonce % 100000) as u64),
+                key: VectorKey::new(nonce % 100000),
                 data: data.clone(),
                 proof,
             });
@@ -274,7 +274,7 @@ fn main() {
             let proof = kernel.create_proof(mutation_hash, ProofTier::Reflex, nonce);
             let _ = kernel.dispatch(Syscall::VectorPutProved {
                 store: vector_store,
-                key: VectorKey::new((nonce % 100000) as u64),
+                key: VectorKey::new(nonce % 100000),
                 data: vec![1.0, 2.0, 3.0, 4.0],
                 proof,
             });

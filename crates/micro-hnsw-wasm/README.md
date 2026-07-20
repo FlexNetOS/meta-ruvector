@@ -1,12 +1,12 @@
-# Micro HNSW v2.2 - Neuromorphic Vector Search Engine
+# Micro HNSW v2.3 - Neuromorphic Vector Search Engine
 
-A **7.2KB** neuromorphic computing core that fuses graph-based vector search (HNSW) with biologically-inspired spiking neural networks. Designed for 256-core ASIC deployment, edge AI, and real-time similarity-driven neural processing.
+A neuromorphic computing core that fuses graph-based vector search (HNSW) with biologically-inspired spiking neural networks. Designed for 256-core ASIC deployment, edge AI, and real-time similarity-driven neural processing.
 
 > **Vector search meets brain-inspired computing** — query vectors trigger neural spikes, enabling attention mechanisms, winner-take-all selection, and online learning through spike-timing dependent plasticity (STDP).
 
 ## Why Micro HNSW + SNN?
 
-Traditional vector databases return ranked results. Micro HNSW v2.2 goes further: similarity scores become neural currents that drive a spiking network. This enables:
+Traditional vector databases return ranked results. Micro HNSW v2.3 goes further: similarity scores become neural currents that drive a spiking network. This enables:
 
 - **Spiking Attention**: Similar vectors compete via lateral inhibition — only the strongest survive
 - **Temporal Coding**: Spike timing encodes confidence (first spike = best match)
@@ -34,6 +34,14 @@ Traditional vector databases return ranked results. Micro HNSW v2.2 goes further
 - **STDP plasticity**: Hebbian learning from spike correlations
 - **Spike propagation**: Graph-routed neural activation
 - **HNSW→SNN bridge**: Vector similarity drives neural currents
+
+### Novel Neuromorphic Discoveries (v2.3)
+- **Spike-Timing Vector Encoding**: Convert vectors to temporal spike patterns
+- **Homeostatic Plasticity**: Self-stabilizing network activity
+- **Oscillatory Resonance**: Frequency-tuned (gamma, 40 Hz) search amplification
+- **Temporal Pattern Recognition**: Spike-based similarity matching
+- **Winner-Take-All Circuits**: Competitive neural selection via lateral inhibition
+- **Dendritic Computation**: Non-linear local processing
 
 ### Deployment
 - **7.2KB WASM**: Runs anywhere WebAssembly runs
@@ -587,7 +595,7 @@ class SensorFusion {
                                   │
                                   ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│                    MICRO HNSW v2.2 CORE (7.2KB)                      │
+│                       MICRO HNSW v2.3 CORE                          │
 ├─────────────────────────────────────────────────────────────────────┤
 │                                                                      │
 │   ┌─────────────┐    ┌─────────────┐    ┌─────────────┐            │
@@ -758,7 +766,8 @@ The `verilog/` directory contains synthesizable RTL for direct ASIC implementati
 | v1 | 4.6KB | L2 only, single core, greedy search |
 | v2 | 7.3KB | +3 metrics, +multi-core, +beam search |
 | v2.1 | 5.5KB | +node types, +edge weights, +GNN updates, wasm-opt |
-| **v2.2** | **7.2KB** | +LIF neurons, +STDP learning, +spike propagation, +HNSW-SNN bridge |
+| v2.2 | 7.2KB | +LIF neurons, +STDP learning, +spike propagation, +HNSW-SNN bridge |
+| **v2.3** | **<12KB target** | +spike-timing encoding, +homeostatic plasticity, +oscillatory resonance, +temporal pattern recognition, +winner-take-all circuits, +dendritic computation |
 
 ## Performance
 

@@ -8,16 +8,14 @@ use std::io::Write;
 use std::process::{Command, Stdio};
 
 mod common;
-use common::{free_port, spawn_fakeworker};
-
-const BRIDGE: &str = env!("CARGO_BIN_EXE_ruvllm-bridge");
+use common::{cargo_bin, free_port, spawn_fakeworker};
 
 #[test]
 fn ruvllm_bridge_single_request_returns_vector_response() {
     let port = free_port();
     let mut worker = spawn_fakeworker(port, 4, "fp:llm-cli");
 
-    let mut child = Command::new(BRIDGE)
+    let mut child = Command::new(cargo_bin("ruvllm-bridge"))
         .args([
             "--workers",
             &format!("127.0.0.1:{}", port),
@@ -65,7 +63,7 @@ fn ruvllm_bridge_multi_line_with_request_id_propagates() {
     let port = free_port();
     let mut worker = spawn_fakeworker(port, 4, "fp:llm-cli");
 
-    let mut child = Command::new(BRIDGE)
+    let mut child = Command::new(cargo_bin("ruvllm-bridge"))
         .args([
             "--workers",
             &format!("127.0.0.1:{}", port),
@@ -118,7 +116,7 @@ fn ruvllm_bridge_blank_stdin_lines_are_ignored() {
     let port = free_port();
     let mut worker = spawn_fakeworker(port, 4, "fp:llm-cli");
 
-    let mut child = Command::new(BRIDGE)
+    let mut child = Command::new(cargo_bin("ruvllm-bridge"))
         .args([
             "--workers",
             &format!("127.0.0.1:{}", port),
@@ -156,7 +154,7 @@ fn ruvllm_bridge_malformed_request_emits_error_line_continues() {
     let port = free_port();
     let mut worker = spawn_fakeworker(port, 4, "fp:llm-cli");
 
-    let mut child = Command::new(BRIDGE)
+    let mut child = Command::new(cargo_bin("ruvllm-bridge"))
         .args([
             "--workers",
             &format!("127.0.0.1:{}", port),
@@ -202,7 +200,7 @@ fn ruvllm_bridge_malformed_request_emits_error_line_continues() {
 
 #[test]
 fn ruvllm_bridge_no_workers_flag_errors_immediately() {
-    let out = Command::new(BRIDGE)
+    let out = Command::new(cargo_bin("ruvllm-bridge"))
         .output()
         .expect("run bridge with no flags");
     assert!(!out.status.success(), "expected non-zero exit");
@@ -216,7 +214,7 @@ fn ruvllm_bridge_no_workers_flag_errors_immediately() {
 
 #[test]
 fn ruvllm_bridge_workers_without_fingerprint_refused() {
-    let out = Command::new(BRIDGE)
+    let out = Command::new(cargo_bin("ruvllm-bridge"))
         .args(["--workers", "127.0.0.1:1", "--dim", "4"])
         .output()
         .expect("run bridge");
@@ -231,7 +229,10 @@ fn ruvllm_bridge_workers_without_fingerprint_refused() {
 
 #[test]
 fn ruvllm_bridge_help_prints_synopsis() {
-    let out = Command::new(BRIDGE).arg("--help").output().expect("--help");
+    let out = Command::new(cargo_bin("ruvllm-bridge"))
+        .arg("--help")
+        .output()
+        .expect("--help");
     assert!(out.status.success());
     let stdout = String::from_utf8_lossy(&out.stdout);
     assert!(stdout.contains("JSONL"));
@@ -255,7 +256,7 @@ fn ruvllm_bridge_cache_without_fingerprint_refused() {
     // No --fingerprint AND no --allow-empty-fingerprint ⇒ gate fires
     // on either the workers-empty-fp gate or the cache-empty-fp gate
     // (whichever is checked first; both reference §2a in the message).
-    let out = Command::new(BRIDGE)
+    let out = Command::new(cargo_bin("ruvllm-bridge"))
         .args(["--workers", "127.0.0.1:1", "--dim", "4", "--cache", "1024"])
         .output()
         .expect("run bridge");
@@ -278,7 +279,7 @@ fn ruvllm_bridge_cache_with_fingerprint_accepted() {
     let port = free_port();
     let mut worker = spawn_fakeworker(port, 4, "fp:cache-test");
 
-    let mut child = Command::new(BRIDGE)
+    let mut child = Command::new(cargo_bin("ruvllm-bridge"))
         .args([
             "--workers",
             &format!("127.0.0.1:{}", port),
@@ -328,7 +329,7 @@ fn ruvllm_bridge_cache_with_fingerprint_accepted() {
 
 #[test]
 fn ruvllm_bridge_version_prints_pkg_name_and_version() {
-    let out = Command::new(BRIDGE)
+    let out = Command::new(cargo_bin("ruvllm-bridge"))
         .arg("--version")
         .output()
         .expect("--version");

@@ -1,13 +1,19 @@
 //! # Router Core
 //!
-//! High-performance vector database and neural routing inference engine.
+//! High-performance vector database storage and retrieval engine.
 //!
 //! This crate provides the core functionality for:
-//! - Vector storage and retrieval
+//! - Vector storage and retrieval ([`VectorDB`])
 //! - HNSW (Hierarchical Navigable Small World) indexing
-//! - Multiple quantization techniques (scalar, product, binary)
-//! - SIMD-optimized distance calculations
-//! - AgenticDB API compatibility
+//! - Multiple distance metrics: Euclidean, Cosine, Dot Product, Manhattan
+//!   ([`DistanceMetric`])
+//! - Metadata filtering on search results
+//!
+//! Note: a `QuantizationType` and a [`quantization`] module exist in the
+//! configuration/utility surface, but quantization is **not** yet applied inside
+//! the index or storage layers (vectors are stored/searched as full-precision
+//! `f32`). This crate is the storage/search engine only — it does not implement
+//! request routing despite the historical "router" name.
 
 #![allow(unsafe_op_in_unsafe_fn)]
 #![allow(missing_docs)]

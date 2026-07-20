@@ -107,7 +107,9 @@ struct Flow {
     syn_flag: bool,
     ack_flag: bool,
     rst_flag: bool,
+    #[allow(dead_code)] // illustrative TCP flag fields captured for completeness
     psh_flag: bool,
+    #[allow(dead_code)] // illustrative TCP flag fields captured for completeness
     fin_flag: bool,
     payload_entropy: f64, // 0-8 bits
     truth: Attack,
@@ -199,7 +201,7 @@ fn generate_flows(n: usize, seed: u64) -> Vec<Flow> {
         f.truth = Attack::PortScan;
         f.time_s = scan_start + j as f64 * 0.5;
         f.duration_ms = 2.0 + lcg_f64(&mut rng) * 10.0;
-        f.bytes_sent = 40 + (lcg_next(&mut rng) % 60) as u64;
+        f.bytes_sent = 40 + lcg_next(&mut rng) % 60;
         f.bytes_recv = 0;
         f.pkts_sent = 1;
         f.pkts_recv = 0;
@@ -223,8 +225,8 @@ fn generate_flows(n: usize, seed: u64) -> Vec<Flow> {
         f.truth = Attack::BruteForce;
         f.time_s = 28800.0 + j as f64 * 2.0; // 8am
         f.duration_ms = 100.0 + lcg_f64(&mut rng) * 200.0;
-        f.bytes_sent = 80 + (lcg_next(&mut rng) % 200) as u64;
-        f.bytes_recv = 60 + (lcg_next(&mut rng) % 100) as u64;
+        f.bytes_sent = 80 + lcg_next(&mut rng) % 200;
+        f.bytes_recv = 60 + lcg_next(&mut rng) % 100;
         f.pkts_sent = 3 + (lcg_next(&mut rng) % 5) as u32;
         f.pkts_recv = 2;
         f.protocol = Protocol::Tcp;
@@ -247,8 +249,8 @@ fn generate_flows(n: usize, seed: u64) -> Vec<Flow> {
         f.truth = Attack::Exfiltration;
         f.time_s = 7200.0 + j as f64 * 120.0; // 2-3am
         f.duration_ms = 5000.0 + lcg_f64(&mut rng) * 15000.0;
-        f.bytes_sent = 500_000 + (lcg_next(&mut rng) % 2_000_000) as u64;
-        f.bytes_recv = 200 + (lcg_next(&mut rng) % 500) as u64;
+        f.bytes_sent = 500_000 + lcg_next(&mut rng) % 2_000_000;
+        f.bytes_recv = 200 + lcg_next(&mut rng) % 500;
         f.pkts_sent = 300 + (lcg_next(&mut rng) % 500) as u32;
         f.pkts_recv = 5;
         f.protocol = Protocol::Tcp;
@@ -271,8 +273,8 @@ fn generate_flows(n: usize, seed: u64) -> Vec<Flow> {
         f.truth = Attack::C2Beacon;
         f.time_s = 3600.0 * j as f64 / 15.0 * 24.0; // spread across day
         f.duration_ms = 50.0 + lcg_f64(&mut rng) * 100.0;
-        f.bytes_sent = 80 + (lcg_next(&mut rng) % 150) as u64;
-        f.bytes_recv = 60 + (lcg_next(&mut rng) % 120) as u64;
+        f.bytes_sent = 80 + lcg_next(&mut rng) % 150;
+        f.bytes_recv = 60 + lcg_next(&mut rng) % 120;
         f.pkts_sent = 1;
         f.pkts_recv = 1;
         f.protocol = Protocol::Tcp;
@@ -293,7 +295,7 @@ fn generate_flows(n: usize, seed: u64) -> Vec<Flow> {
         f.truth = Attack::DDoS;
         f.time_s = 43200.0 + j as f64 * 0.3; // noon burst
         f.duration_ms = 1.0 + lcg_f64(&mut rng) * 5.0;
-        f.bytes_sent = 40 + (lcg_next(&mut rng) % 80) as u64;
+        f.bytes_sent = 40 + lcg_next(&mut rng) % 80;
         f.bytes_recv = 0;
         f.pkts_sent = 50 + (lcg_next(&mut rng) % 200) as u32;
         f.pkts_recv = 0;
@@ -321,8 +323,8 @@ fn generate_flows(n: usize, seed: u64) -> Vec<Flow> {
         f.truth = Attack::LateralMovement;
         f.time_s = 50400.0 + j as f64 * 60.0; // 2pm
         f.duration_ms = 200.0 + lcg_f64(&mut rng) * 1000.0;
-        f.bytes_sent = 1000 + (lcg_next(&mut rng) % 10000) as u64;
-        f.bytes_recv = 500 + (lcg_next(&mut rng) % 5000) as u64;
+        f.bytes_sent = 1000 + lcg_next(&mut rng) % 10000;
+        f.bytes_recv = 500 + lcg_next(&mut rng) % 5000;
         f.pkts_sent = 10 + (lcg_next(&mut rng) % 30) as u32;
         f.pkts_recv = 8 + (lcg_next(&mut rng) % 20) as u32;
         f.protocol = Protocol::Tcp;
@@ -575,9 +577,9 @@ fn solve_mincut(lambdas: &[f64], edges: &[Edge], gamma: f64) -> Vec<bool> {
             adj[u].push((v, idx));
             adj[v].push((u, idx + 1));
         };
-    for i in 0..m {
-        let p0 = lambdas[i].max(0.0);
-        let p1 = (-lambdas[i]).max(0.0);
+    for (i, &lam) in lambdas.iter().enumerate() {
+        let p0 = lam.max(0.0);
+        let p1 = (-lam).max(0.0);
         if p0 > 1e-12 {
             ae(&mut adj, &mut caps, s, i, p0);
         }
@@ -769,10 +771,10 @@ fn main() {
     }
 
     // Extract embeddings
-    let embs: Vec<Vec<f32>> = flows.iter().map(|f| extract_embedding(f)).collect();
+    let embs: Vec<Vec<f32>> = flows.iter().map(extract_embedding).collect();
 
     // Build graph and solve
-    let lam: Vec<f64> = flows.iter().map(|f| anomaly_score(f)).collect();
+    let lam: Vec<f64> = flows.iter().map(anomaly_score).collect();
     let edges = build_graph(&flows, &embs, alpha, beta, k_nn);
     println!(
         "\n  Graph: {} edges ({:.1} per flow)",

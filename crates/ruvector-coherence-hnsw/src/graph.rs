@@ -110,8 +110,8 @@ impl FlatGraph {
                 while added < m_lj && attempts < m_lj * 8 {
                     attempts += 1;
                     let j = dist.sample(&mut rng);
-                    if j != i && !neighbors[i].contains(&(j as u32)) {
-                        neighbors[i].push(j as u32);
+                    if j != i && !node_neighbors.contains(&(j as u32)) {
+                        node_neighbors.push(j as u32);
                         added += 1;
                     }
                 }

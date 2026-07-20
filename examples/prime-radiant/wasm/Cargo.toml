@@ -5,7 +5,7 @@ edition = "2021"
 authors = ["Prime-Radiant Team"]
 license = "MIT OR Apache-2.0"
 description = "WASM bindings for Prime-Radiant Advanced Math modules"
-repository = "https://github.com/ruvnet/ruvector"
+repository = "https://github.com/FlexNetOS/ruvector"
 keywords = ["wasm", "category-theory", "homotopy-type-theory", "spectral-analysis", "causal-inference"]
 categories = ["wasm", "mathematics", "science"]
 
@@ -52,15 +52,3 @@ wasm-bindgen-rayon = { version = "1.2", optional = true }
 [dev-dependencies]
 wasm-bindgen-test = "0.3"
 
-[profile.release]
-# Optimize for small binary size
-opt-level = "s"
-lto = true
-codegen-units = 1
-panic = "abort"
-
-[package.metadata.wasm-pack.profile.release]
-wasm-opt = ["-Os", "--enable-mutable-globals"]
-
-# Exclude from parent workspace
-[workspace]

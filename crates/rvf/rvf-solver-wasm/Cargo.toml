@@ -4,8 +4,8 @@ version = "0.1.0"
 edition = "2021"
 description = "RVF self-learning temporal solver WASM module — Thompson Sampling, PolicyKernel, three-loop architecture"
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/ruvnet/ruvector"
-homepage = "https://github.com/ruvnet/ruvector"
+repository = "https://github.com/FlexNetOS/ruvector"
+homepage = "https://github.com/FlexNetOS/ruvector"
 categories = ["wasm", "algorithms"]
 keywords = ["solver", "wasm", "thompson-sampling", "temporal", "rvf"]
 rust-version = "1.87"
@@ -21,8 +21,3 @@ libm = "0.2"
 serde = { version = "1.0", default-features = false, features = ["derive", "alloc"] }
 serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
 
-[profile.release]
-opt-level = "z"
-lto = true
-codegen-units = 1
-strip = true

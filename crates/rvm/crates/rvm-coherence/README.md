@@ -20,6 +20,26 @@ Sensor data --> Phi computation --> EMA filter --> Score update --> Scheduler fe
 - `EmaFilter` -- fixed-point EMA filter (basis points, no floating-point)
 - `SensorReading` -- raw Phi reading with partition ID and timestamp
 - `phi_to_coherence_bp(phi)` -- convert raw Phi to basis-point coherence (stub mapping)
+- `compute_coherence_score` / `recompute_all_scores` / `PartitionCoherenceResult` -- score computation (`scoring`)
+- `CoherenceGraph` / `NeighborIter` / `GraphError` -- partition communication topology (`graph`)
+- `PressureResult` / `MergeSignal` and thresholds (`SPLIT_THRESHOLD_BP`, `MERGE_COHERENCE_THRESHOLD_BP`) -- cut-pressure / split-merge signals (`pressure`)
+- `FennelPlacer` / `DEFAULT_ALPHA_MILLI` -- streaming partition placement (`fennel`)
+
+## Bridge: Pluggable Backends (`bridge`)
+
+The coherence pipeline is parameterized over swappable backends:
+
+- `MinCutBackend` -- trait for a minimum-cut implementation (`find_min_cut`, `backend_name`). `MinCutBridge` / `MinCutResult` (`mincut`) is the built-in budgeted Stoer-Wagner heuristic.
+- `CoherenceBackend` -- trait for a coherence-scoring backend.
+
+This lets the same engine run on the in-crate heuristic or on a richer external scorer (e.g. RuVector) without changing call sites.
+
+## Engine: Decision Drivers (`engine`, `adaptive`)
+
+- `CoherenceEngine` -- trait that maps coherence state to a `CoherenceDecision` (with `SplitPlan` / `SplitSide` and the `CRITICAL_PRESSURE_BP` / `MAX_SPLIT_CONDUCTANCE_BP` thresholds).
+- `DefaultCoherenceEngine` -- the built-in engine.
+- `AdaptiveCoherenceEngine` -- adapts recomputation frequency to CPU load.
+- `RuVectorCoherenceEngine` -- RuVector-backed engine, gated behind the `ruvector` feature; `new(mincut_backend, coherence_backend)` wires in `MinCutBackend` + `CoherenceBackend` implementations.
 
 ## Example
 
@@ -46,7 +66,9 @@ assert_eq!(score2.as_basis_points(), 7200);
 
 ## Features
 
+- `std` / `alloc` -- standard-library / allocator support
 - `sched` -- enables `rvm-sched` integration for coherence-weighted scheduling
+- `ruvector` -- activates the pluggable-backend bridge code and exposes `RuVectorCoherenceEngine`
 
 ## Workspace Dependencies
 

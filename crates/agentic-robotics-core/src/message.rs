@@ -1,7 +1,7 @@
 //! Message definitions and traits
 
-use serde::{Deserialize, Serialize};
 use rkyv::{Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
+use serde::{Deserialize, Serialize};
 
 /// Message trait for ROS3 messages
 pub trait Message: Serialize + for<'de> Deserialize<'de> + Send + Sync + 'static {
@@ -54,7 +54,9 @@ pub struct Point3D {
 }
 
 /// Point cloud message
-#[derive(Debug, Clone, Serialize, Deserialize, Archive, RkyvSerialize, RkyvDeserialize)]
+#[derive(
+    Debug, Clone, Default, Serialize, Deserialize, Archive, RkyvSerialize, RkyvDeserialize,
+)]
 pub struct PointCloud {
     pub points: Vec<Point3D>,
     pub intensities: Vec<f32>,
@@ -64,16 +66,6 @@ pub struct PointCloud {
 impl Message for PointCloud {
     fn type_name() -> &'static str {
         "ros3_msgs/PointCloud"
-    }
-}
-
-impl Default for PointCloud {
-    fn default() -> Self {
-        Self {
-            points: Vec::new(),
-            intensities: Vec::new(),
-            timestamp: 0,
-        }
     }
 }
 

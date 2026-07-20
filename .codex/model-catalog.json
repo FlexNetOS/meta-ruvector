@@ -1,0 +1,122 @@
+{
+  "models": [
+    {
+      "additional_speed_tiers": [
+        "fast"
+      ],
+      "apply_patch_tool_type": "freeform",
+      "auto_compact_token_limit": null,
+      "availability_nux": {
+        "message": "GPT-5.5 is configured for the local Codex harness."
+      },
+      "base_instructions": "",
+      "context_window": 4000000,
+      "default_reasoning_level": "medium",
+      "default_reasoning_summary": "none",
+      "default_service_tier": null,
+      "default_verbosity": "low",
+      "description": "Frontier model for complex coding, research, and real-world work.",
+      "display_name": "GPT-5.5",
+      "effective_context_window_percent": 95,
+      "experimental_supported_tools": [],
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "max_context_window": 4000000,
+      "priority": 0,
+      "service_tiers": [
+        {
+          "description": "1.5x speed, increased usage",
+          "id": "priority",
+          "name": "Fast"
+        }
+      ],
+      "shell_type": "shell_command",
+      "slug": "gpt-5.5",
+      "support_verbosity": true,
+      "supported_in_api": true,
+      "supported_reasoning_levels": [
+        {
+          "description": "Fast responses with lighter reasoning",
+          "effort": "low"
+        },
+        {
+          "description": "Balances speed and reasoning depth for everyday tasks",
+          "effort": "medium"
+        },
+        {
+          "description": "Greater reasoning depth for complex problems",
+          "effort": "high"
+        },
+        {
+          "description": "Extra high reasoning depth for complex problems",
+          "effort": "xhigh"
+        }
+      ],
+      "supports_image_detail_original": true,
+      "supports_parallel_tool_calls": true,
+      "supports_reasoning_summaries": true,
+      "supports_search_tool": true,
+      "truncation_policy": {
+        "limit": 10000,
+        "mode": "tokens"
+      },
+      "upgrade": null,
+      "visibility": "list",
+      "web_search_tool_type": "text_and_image"
+    },
+    {
+      "additional_speed_tiers": [],
+      "apply_patch_tool_type": "freeform",
+      "auto_compact_token_limit": null,
+      "availability_nux": null,
+      "base_instructions": "",
+      "context_window": 1000000,
+      "default_reasoning_level": "medium",
+      "default_reasoning_summary": "none",
+      "default_service_tier": null,
+      "default_verbosity": "low",
+      "description": "Fast model for focused subagent work.",
+      "display_name": "GPT-5.4 mini",
+      "effective_context_window_percent": 95,
+      "experimental_supported_tools": [],
+      "input_modalities": [
+        "text",
+        "image"
+      ],
+      "max_context_window": 1000000,
+      "priority": 1,
+      "service_tiers": [],
+      "shell_type": "shell_command",
+      "slug": "gpt-5.4-mini",
+      "support_verbosity": true,
+      "supported_in_api": true,
+      "supported_reasoning_levels": [
+        {
+          "description": "Fast responses with lighter reasoning",
+          "effort": "low"
+        },
+        {
+          "description": "Balances speed and reasoning depth for everyday tasks",
+          "effort": "medium"
+        },
+        {
+          "description": "Greater reasoning depth for complex problems",
+          "effort": "high"
+        }
+      ],
+      "supports_image_detail_original": true,
+      "supports_parallel_tool_calls": true,
+      "supports_reasoning_summaries": true,
+      "supports_search_tool": true,
+      "truncation_policy": {
+        "limit": 10000,
+        "mode": "tokens"
+      },
+      "upgrade": null,
+      "visibility": "list",
+      "web_search_tool_type": "text_and_image"
+    }
+  ]
+}

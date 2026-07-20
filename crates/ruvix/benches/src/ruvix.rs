@@ -269,7 +269,7 @@ pub fn bench_vector_put_proved(config: &BenchConfig) -> BenchmarkResult {
 
         let _ = kernel.dispatch(Syscall::VectorPutProved {
             store,
-            key: VectorKey::new((nonce % 100) as u64),
+            key: VectorKey::new(nonce % 100),
             data: vec![1.0, 2.0, 3.0, 4.0],
             proof,
         });
@@ -284,7 +284,7 @@ pub fn bench_vector_put_proved(config: &BenchConfig) -> BenchmarkResult {
         let start = Instant::now();
         let _ = kernel.dispatch(Syscall::VectorPutProved {
             store,
-            key: VectorKey::new((nonce % 100) as u64),
+            key: VectorKey::new(nonce % 100),
             data: vec![1.0, 2.0, 3.0, 4.0],
             proof,
         });
@@ -403,7 +403,7 @@ pub fn bench_proof_tiers(config: &BenchConfig) -> Vec<(String, BenchmarkResult)>
 
             let _ = kernel.dispatch(Syscall::VectorPutProved {
                 store,
-                key: VectorKey::new((nonce % 100) as u64),
+                key: VectorKey::new(nonce % 100),
                 data: vec![1.0, 2.0, 3.0, 4.0],
                 proof,
             });
@@ -418,7 +418,7 @@ pub fn bench_proof_tiers(config: &BenchConfig) -> Vec<(String, BenchmarkResult)>
             let start = Instant::now();
             let _ = kernel.dispatch(Syscall::VectorPutProved {
                 store,
-                key: VectorKey::new((nonce % 100) as u64),
+                key: VectorKey::new(nonce % 100),
                 data: vec![1.0, 2.0, 3.0, 4.0],
                 proof,
             });
@@ -459,7 +459,7 @@ pub fn bench_vector_dimensions(config: &BenchConfig) -> Vec<(u32, BenchmarkResul
 
             let _ = kernel.dispatch(Syscall::VectorPutProved {
                 store,
-                key: VectorKey::new((nonce % 100) as u64),
+                key: VectorKey::new(nonce % 100),
                 data: data.clone(),
                 proof,
             });
@@ -474,7 +474,7 @@ pub fn bench_vector_dimensions(config: &BenchConfig) -> Vec<(u32, BenchmarkResul
             let start = Instant::now();
             let _ = kernel.dispatch(Syscall::VectorPutProved {
                 store,
-                key: VectorKey::new((nonce % 100) as u64),
+                key: VectorKey::new(nonce % 100),
                 data: data.clone(),
                 proof,
             });

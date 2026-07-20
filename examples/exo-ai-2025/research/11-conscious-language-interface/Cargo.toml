@@ -5,13 +5,11 @@ edition = "2021"
 description = "Integration of ruvLLM + Neuromorphic Spiking + ruvector for conscious AI with natural language"
 authors = ["AI Research Team"]
 license = "MIT"
-repository = "https://github.com/ruvnet/ruvector"
+repository = "https://github.com/FlexNetOS/ruvector"
 keywords = ["consciousness", "llm", "neuromorphic", "spiking-neural-networks", "ai"]
 categories = ["science", "simulation"]
 
 # Standalone workspace
-[workspace]
-
 [dependencies]
 
 [dev-dependencies]
@@ -25,11 +23,3 @@ simd = []  # SIMD acceleration
 name = "consciousness_bench"
 harness = false
 
-[profile.release]
-opt-level = 3
-lto = true
-codegen-units = 1
-
-[profile.bench]
-opt-level = 3
-lto = true

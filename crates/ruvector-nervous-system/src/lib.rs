@@ -71,6 +71,15 @@
 //! let bus = ShardedEventBus::new_spatial(4, 256);
 //! bus.push(event).unwrap();
 //! ```
+//!
+//! ## Plasticity Module
+//!
+//! Synaptic plasticity and learning rules:
+//! - **BTSP**: Behavioral Timescale Synaptic Plasticity for one-shot learning
+//! - **EWC**: Elastic Weight Consolidation for continual learning
+//! - **E-prop**: Eligibility Propagation for online learning in spiking networks
+//!   (re-exported as [`EpropLIF`], [`EpropNetwork`], [`EpropSynapse`],
+//!   [`LearningSignal`])
 
 pub mod compete;
 pub mod dendrite;

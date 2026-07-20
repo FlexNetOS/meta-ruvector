@@ -6,10 +6,34 @@ RuVector Format runtime providing the RvfStore API, background compaction, and s
 
 `rvf-runtime` is the main entry point for applications that want to read and write RVF files:
 
-- **RvfStore** -- high-level API for storing and retrieving vectors
+- **`RvfStore`** -- high-level API for storing and retrieving vectors (`store` module)
 - **HNSW query path** -- queries route through the persisted HNSW index when one is available
 - **Compaction** -- background merge of segments to reclaim space
 - **Streaming I/O** -- append-only writes with configurable flush policy
+
+### DoS hardening (`dos`, ADR-033 §3.3.1)
+
+- **`BudgetTokenBucket`** -- per-connection token bucket rate-limiting distance ops (`try_consume`, `remaining`, `refill`).
+- **`NegativeCache`** -- caches degenerate query signatures and blacklists repeat offenders (`record_degenerate`, `is_blacklisted`).
+- **`ProofOfWork`** -- optional proof-of-work challenge for public endpoints.
+- **`QuerySignature`** -- compact fingerprint of a query (`from_query`) used as the negative-cache key.
+
+### Adversarial safety (`adversarial`, `safety_net`)
+
+- **`is_degenerate_distribution`** / **`centroid_distance_cv`** -- detect degenerate (adversarial) distance distributions via coefficient-of-variation, with `DEGENERATE_CV_THRESHOLD`.
+- **`adaptive_n_probe`**, **`effective_n_probe_with_drift`**, **`combined_effective_n_probe`** -- adapt the number of probes when the distribution is degenerate.
+- **`should_activate_safety_net`** / **`selective_safety_net_scan`** -- fall back to a bounded exact scan (`Candidate`, `SafetyNetResult`) when HNSW returns too few candidates.
+
+### AGI cognitive container (`agi_container`, ADR-036)
+
+- **`AgiContainerBuilder`** / **`ParsedAgiManifest`** -- assemble and parse the META segment that pins an intelligence runtime (model id, governance policy, orchestrator/tool/agent configs, eval suite, skill library) into a single RVF artifact. Builder uses a fluent `with_*` API (`with_model_id`, `with_policy`, `with_orchestrator`, ...). The other AGI parts (`agi_authority`, `agi_coherence`) provide authority and coherence-gate support.
+
+### Seed, witness, and crypto
+
+- **`SeedBuilder`** / **`ParsedSeed`** / **`DownloadManifest`** -- bootstrap-seed assembly (`qr_seed`).
+- **`WitnessBuilder`** / **`ParsedWitness`** / **`ScorecardBuilder`** / **`GovernancePolicy`** -- witness records and governance (`witness`, ADR-035).
+- **`sign_seed`** / **`verify_seed`** / **`seed_content_hash`** (HMAC-SHA256; Ed25519 variants under the `ed25519` feature) -- seed signing/verification (`seed_crypto`).
+- **`CowEngine`** / **`CowMap`** / **`CowCompactor`** -- copy-on-write segment management.
 
 ## Usage
 
@@ -114,64 +138,45 @@ When `FileIdentity` is present (non-zero `file_id`), the manifest segment includ
 
 `rvf-runtime` provides low-level write-path support for the two computational container segment types defined in [ADR-030](../../../docs/adr/ADR-030-rvf-computational-container.md): KERNEL_SEG (`0x0E`) and EBPF_SEG (`0x0F`).
 
-### Internal Write-Path API
+### Public `RvfStore` API
 
-The `SegmentWriter` exposes internal methods for writing computational container segments:
+`RvfStore` exposes public methods for embedding and extracting computational container segments:
 
-- `write_kernel_seg()` -- writes a KERNEL_SEG containing a 128-byte `KernelHeader`, a compressed kernel image, and an optional kernel command line.
-- `write_ebpf_seg()` -- writes an EBPF_SEG containing a 64-byte `EbpfHeader`, eBPF program bytecode (ELF object), and optional BTF data.
+- `embed_kernel(arch, kernel_type, kernel_flags, kernel_image, api_port, cmdline)` -- writes a KERNEL_SEG (128-byte `KernelHeader` + kernel image + optional command line); returns the new segment id.
+- `embed_kernel_with_binding(...)` / `extract_kernel_binding()` -- kernel embedding with a `KernelBinding` record.
+- `extract_kernel()` -- reads the KERNEL_SEG back, returning `Option<(header_bytes, image_bytes)>`.
+- `embed_ebpf(program_type, attach_type, max_dimension, program_bytecode, btf_data)` -- writes an EBPF_SEG (64-byte `EbpfHeader` + bytecode + optional BTF); returns the new segment id.
+- `extract_ebpf()` -- reads the EBPF_SEG back, returning `Option<(header_bytes, program_bytes)>`.
 
-These are `pub(crate)` methods used by the segment codec layer. Public `embed_kernel()` / `extract_kernel()` and `embed_ebpf()` / `extract_ebpf()` convenience methods on `RvfStore` are planned for Phase 2 and Phase 3 of the computational container implementation but are not yet available.
+Under the hood these delegate to the `pub(crate)` `SegmentWriter::write_kernel_seg()` / `write_ebpf_seg()` methods in the write-path layer.
 
 ### Unknown Segment Preservation
 
 During compaction, `rvf-runtime` preserves segments with unknown or unrecognized types. This means KERNEL_SEG and EBPF_SEG payloads written by newer tooling are retained even when compaction is performed by a runtime version that predates the computational container feature. The compactor copies unknown segments verbatim to the compacted output.
 
-### Example: Writing a Test Stub Kernel Segment
+### Example: Embed and Extract a Kernel Segment
 
 ```rust
-use std::io::Cursor;
+// Embed a kernel image into the store's .rvf file.
+// arch=0x00 (x86_64), kernel_type=0xFE (test stub),
+// kernel_flags=0x0050 (HAS_QUERY_API | HAS_ADMIN_API), api_port=8080.
+let seg_id = store.embed_kernel(
+    0x00,
+    0xFE,
+    0x0050,
+    b"test-kernel-stub",
+    8080,
+    Some("console=ttyS0"),
+)?;
 
-// Build a 128-byte KernelHeader (raw bytes for now; typed struct planned)
-let mut kernel_header = [0u8; 128];
-// Magic: "RVKN" (0x52564B4E) little-endian
-kernel_header[0..4].copy_from_slice(&0x52564B4E_u32.to_le_bytes());
-// header_version = 1
-kernel_header[4..6].copy_from_slice(&1_u16.to_le_bytes());
-// arch = 0x00 (x86_64)
-kernel_header[6] = 0x00;
-// kernel_type = 0xFE (TestStub)
-kernel_header[7] = 0xFE;
-// kernel_flags: HAS_QUERY_API (bit 4) | HAS_ADMIN_API (bit 6)
-kernel_header[8..12].copy_from_slice(&0x0050_u32.to_le_bytes());
-// min_memory_mb = 32
-kernel_header[12..16].copy_from_slice(&32_u32.to_le_bytes());
+// Extract it back (None if no KERNEL_SEG is present).
+if let Some((header_bytes, image_bytes)) = store.extract_kernel()? {
+    // header_bytes is the 128-byte KernelHeader; image_bytes is the kernel image.
+}
 
-let fake_image = b"test-kernel-stub";
-let cmdline = b"console=ttyS0";
-
-// Use the internal SegmentWriter (not public API)
-// let (seg_id, offset) = writer.write_kernel_seg(
-//     &mut output, &kernel_header, fake_image, Some(cmdline),
-// )?;
-```
-
-### Planned Public API (Not Yet Implemented)
-
-The following methods are planned for `RvfStore`:
-
-```rust
-// Embed a kernel image into the store's .rvf file
-// store.embed_kernel(kernel_image, kernel_config)?;
-
-// Extract the kernel image from an existing .rvf file
-// let (header, image) = store.extract_kernel()?;
-
-// Embed an eBPF program
-// store.embed_ebpf(program_elf, ebpf_config)?;
-
-// Extract the eBPF program
-// let (header, elf) = store.extract_ebpf()?;
+// eBPF programs use the analogous embed_ebpf() / extract_ebpf() pair.
+let ebpf_seg = store.embed_ebpf(0, 0, 64, program_bytecode, None)?;
+let _ = store.extract_ebpf()?;
 ```
 
 ## License

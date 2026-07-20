@@ -269,6 +269,7 @@ export const NativeVectorDb = implementation.VectorDb;
 export class VectorIndex {
   private db: VectorDBWrapper;
   private _dimension: number;
+  private _metric?: string;
   private _storagePath: string;
 
   constructor(opts: { dimension: number; metric?: string; indexType?: string }) {
@@ -276,6 +277,7 @@ export class VectorIndex {
       throw new Error(`Invalid dimensions: must be positive, got ${opts.dimension}`);
     }
     this._dimension = opts.dimension;
+    this._metric = opts.metric;
     // Use a unique temp path per instance to avoid cross-instance dimension conflicts
     this._storagePath = require('os').tmpdir() + `/ruvector-idx-${Date.now()}-${Math.random().toString(36).slice(2)}.db`;
     this.db = new VectorDBWrapper({ dimensions: opts.dimension, distanceMetric: opts.metric, storagePath: this._storagePath });
@@ -290,7 +292,7 @@ export class VectorIndex {
     _opts?: { batchSize?: number; progressCallback?: (p: number) => void }
   ): Promise<string[]> {
     const ids: string[] = [];
-    const batchSize = _opts?.batchSize ?? entries.length;
+    const batchSize = Math.max(1, _opts?.batchSize ?? entries.length);
     for (let i = 0; i < entries.length; i += batchSize) {
       const slice = entries.slice(i, i + batchSize);
       const batch = slice.map(e => ({ id: e.id, vector: new Float32Array(e.values) }));
@@ -324,7 +326,7 @@ export class VectorIndex {
     // Create a fresh db at a new temp path to reset state
     const newPath = require('os').tmpdir() + `/ruvector-idx-${Date.now()}-${Math.random().toString(36).slice(2)}.db`;
     this._storagePath = newPath;
-    this.db = new VectorDBWrapper({ dimensions: this._dimension, storagePath: newPath });
+    this.db = new VectorDBWrapper({ dimensions: this._dimension, distanceMetric: this._metric, storagePath: newPath });
   }
 
   async optimize(): Promise<void> {
@@ -333,13 +335,17 @@ export class VectorIndex {
 }
 
 /** Get backend info (compat with old getBackendInfo() call). */
-export function getBackendInfo(): { type: 'native' | 'wasm'; version: string; features: string[] } {
-  const type = implementationType === 'native' ? 'native' : 'wasm';
+export function getBackendInfo(): { type: 'native' | 'wasm' | 'rvf'; version: string; features: string[] } {
+  const backendType = implementationType === 'native' ? 'native'
+    : implementationType === 'rvf' ? 'rvf'
+    : 'wasm';
   const { version } = getVersion();
-  const features: string[] = type === 'native'
+  const features: string[] = backendType === 'native'
     ? ['SIMD', 'Multi-threading', 'Rust-native']
+    : backendType === 'rvf'
+    ? ['RVF-container', 'Persistence', 'Cross-platform']
     : ['Browser-compatible', 'Cross-platform'];
-  return { type, version, features };
+  return { type: backendType, version, features };
 }
 
 /** Check native availability (compat alias for isNative()). */

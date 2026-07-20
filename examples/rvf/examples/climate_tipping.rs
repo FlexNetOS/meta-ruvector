@@ -30,8 +30,8 @@ fn solve_mincut(lam: &[f64], edges: &[(usize, usize, f64)], gamma: f64) -> Vec<b
             adj[u].push((v, i));
             adj[v].push((u, i + 1));
         };
-    for i in 0..m {
-        let (p0, p1) = (lam[i].max(0.0), (-lam[i]).max(0.0));
+    for (i, &lam_i) in lam.iter().enumerate() {
+        let (p0, p1) = (lam_i.max(0.0), (-lam_i).max(0.0));
         if p0 > 1e-12 {
             add(&mut adj, &mut caps, s, i, p0);
         }
@@ -115,7 +115,7 @@ fn moving_average(data: &[f64], window: usize) -> Vec<f64> {
     let half = window / 2;
     (0..n)
         .map(|i| {
-            let lo = if i >= half { i - half } else { 0 };
+            let lo = i.saturating_sub(half);
             let hi = (i + half + 1).min(n);
             let count = hi - lo;
             data[lo..hi].iter().sum::<f64>() / count as f64
@@ -418,7 +418,7 @@ fn main() {
                 "", "", "", "", "", ""
             );
             for &ti in &trans {
-                let before_start = if ti > 10 { ti - 10 } else { 0 };
+                let before_start = ti.saturating_sub(10);
                 let after_end = (ti + 10).min(n);
                 let before_mean =
                     scales[si][before_start..ti].iter().sum::<f64>() / (ti - before_start) as f64;
@@ -477,9 +477,9 @@ fn main() {
     let mut meta_edges: Vec<(usize, usize, f64)> = Vec::new();
 
     // Within each scale: temporal chain edges
-    for si in 0..n_scales {
+    for (si, scale) in scales.iter().enumerate() {
         for yi in 0..n.saturating_sub(1) {
-            let diff = (scales[si][yi] - scales[si][yi + 1]).abs();
+            let diff = (scale[yi] - scale[yi + 1]).abs();
             let w = 1.0 / (1.0 + diff * 5.0);
             meta_edges.push((node_id(si, yi), node_id(si, yi + 1), w));
             meta_edges.push((node_id(si, yi + 1), node_id(si, yi), w));
@@ -488,8 +488,8 @@ fn main() {
 
     // Cross-scale: connect same year across adjacent scales
     for si in 0..n_scales - 1 {
-        for yi in 0..n {
-            let diff = (scales[si][yi] - scales[si + 1][yi]).abs();
+        for (yi, &sv) in scales[si].iter().enumerate() {
+            let diff = (sv - scales[si + 1][yi]).abs();
             let w = 1.0 / (1.0 + diff * 3.0);
             meta_edges.push((node_id(si, yi), node_id(si + 1, yi), w));
             meta_edges.push((node_id(si + 1, yi), node_id(si, yi), w));
@@ -497,8 +497,8 @@ fn main() {
     }
     // Also connect non-adjacent scales (raw <-> 10yr, 5yr <-> 20yr)
     for &(sa, sb) in &[(0usize, 2usize), (1usize, 3usize)] {
-        for yi in 0..n {
-            let diff = (scales[sa][yi] - scales[sb][yi]).abs();
+        for (yi, &sav) in scales[sa].iter().enumerate() {
+            let diff = (sav - scales[sb][yi]).abs();
             let w = 0.5 / (1.0 + diff * 3.0);
             meta_edges.push((node_id(sa, yi), node_id(sb, yi), w));
             meta_edges.push((node_id(sb, yi), node_id(sa, yi), w));
@@ -516,8 +516,8 @@ fn main() {
 
     // Find transitions in meta-graph per scale
     let mut meta_transitions: Vec<Vec<usize>> = Vec::new();
-    for si in 0..n_scales {
-        meta_transitions.push(find_transitions(&meta_scale_regimes[si]));
+    for regime in &meta_scale_regimes {
+        meta_transitions.push(find_transitions(regime));
     }
 
     // ══════════════════════════════════════════════════════════════════════
@@ -534,8 +534,8 @@ fn main() {
 
     // Collect all unique transition years across all scales from meta-graph
     let mut all_trans_years: Vec<usize> = Vec::new();
-    for si in 0..n_scales {
-        for &ti in &meta_transitions[si] {
+    for trans in &meta_transitions {
+        for &ti in trans {
             all_trans_years.push(ti);
         }
     }
@@ -557,13 +557,9 @@ fn main() {
     for &center in &merged_years {
         let mut count = 0;
         let mut which_scales = Vec::new();
-        for si in 0..n_scales {
-            for &ti in &meta_transitions[si] {
-                let diff = if ti > center {
-                    ti - center
-                } else {
-                    center - ti
-                };
+        for (si, trans) in meta_transitions.iter().enumerate() {
+            for &ti in trans {
+                let diff = ti.abs_diff(center);
                 if diff <= tolerance {
                     count += 1;
                     which_scales.push(si);

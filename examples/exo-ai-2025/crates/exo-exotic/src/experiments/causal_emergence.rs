@@ -49,8 +49,8 @@ impl TransitionMatrix {
         let n = self.n_states;
         let mut marginal = vec![0.0f64; n];
         for from in 0..n {
-            for to in 0..n {
-                marginal[to] += self.get(from, to) / n as f64;
+            for (to, m) in marginal.iter_mut().enumerate() {
+                *m += self.get(from, to) / n as f64;
             }
         }
         marginal
@@ -83,7 +83,7 @@ pub struct CoarseGraining {
 impl CoarseGraining {
     /// Block coarse-graining: group consecutive states
     pub fn block(n_micro: usize, block_size: usize) -> Self {
-        let n_macro = (n_micro + block_size - 1) / block_size;
+        let n_macro = n_micro.div_ceil(block_size);
         let micro_to_macro = (0..n_micro).map(|i| i / block_size).collect();
         Self {
             micro_to_macro,

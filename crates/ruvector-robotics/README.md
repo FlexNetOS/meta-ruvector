@@ -5,22 +5,22 @@ Unified cognitive robotics platform built on ruvector's vector database, graph n
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────┐
-│                ruvector-robotics                 │
-├────────────┬────────────┬──────────┬────────────┤
-│   bridge   │ perception │cognitive │    mcp     │
-├────────────┼────────────┼──────────┼────────────┤
-│ Point3D    │ SceneGraph │ Behavior │ Tool       │
-│ PointCloud │  Builder   │  Trees   │ Registry   │
-│ RobotState │ Obstacle   │ Cognitive│ 15+ Tools  │
-│ Pose       │  Detector  │  Core    │ MCP Schema │
-│ SceneGraph │ Anomaly    │ Memory   │            │
-│ Trajectory │  Detection │ Skills   │            │
-│ Spatial    │ Trajectory │ Swarm    │            │
-│  Index     │  Predict   │ World    │            │
-│ Pipeline   │            │  Model   │            │
-│ Converters │            │ Decision │            │
-└────────────┴────────────┴──────────┴────────────┘
+┌────────────────────────────────────────────────────────────┐
+│                      ruvector-robotics                       │
+├────────────┬────────────┬───────────┬──────────┬────────────┤
+│   bridge   │ perception │  planning │cognitive │    mcp     │
+├────────────┼────────────┼───────────┼──────────┼────────────┤
+│ Point3D    │ SceneGraph │ GridPath  │ Behavior │ Tool       │
+│ PointCloud │  Builder   │ Velocity  │  Trees   │ Registry   │
+│ RobotState │ Obstacle   │  Command  │ Cognitive│ 15+ Tools  │
+│ Pose       │  Detector  │           │  Core    │ MCP Schema │
+│ SceneGraph │ Anomaly    │           │ Memory   │            │
+│ Trajectory │  Detection │           │ Skills   │            │
+│ Spatial    │ Trajectory │           │ Swarm    │            │
+│  Index     │  Predict   │           │ World    │            │
+│ Pipeline   │            │           │  Model   │            │
+│ Converters │            │           │ Decision │            │
+└────────────┴────────────┴───────────┴──────────┴────────────┘
 ```
 
 ## Modules
@@ -35,6 +35,10 @@ Unified cognitive robotics platform built on ruvector's vector database, graph n
 - **SceneGraphBuilder**: Spatial hash clustering with union-find for point cloud segmentation
 - **ObstacleDetector**: Grid-based obstacle detection with heuristic classification (Static/Dynamic/Unknown)
 - **PerceptionPipeline**: Full perception stack with obstacle detection, scene graph construction, attention focusing, anomaly detection
+
+### planning — Path Planning
+- **GridPath**: A planned route as an ordered sequence of grid waypoints
+- **VelocityCommand**: Per-step motion commands (linear/angular velocity) to follow the planned path
 
 ### cognitive — Autonomous Intelligence
 - **BehaviorTree**: Composable reactive control structures (Sequence, Selector, Parallel, Decorators)

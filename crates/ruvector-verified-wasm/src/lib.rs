@@ -63,6 +63,12 @@ pub struct JsProofEnv {
     cache: ConversionCache,
 }
 
+impl Default for JsProofEnv {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[wasm_bindgen]
 impl JsProofEnv {
     /// Create a new proof environment with all optimizations.

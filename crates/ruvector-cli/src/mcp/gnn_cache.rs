@@ -24,6 +24,8 @@ use tokio::sync::RwLock;
 #[derive(Debug, Clone)]
 pub struct CacheEntry<T> {
     pub value: T,
+    // Creation timestamp recorded for cache monitoring/diagnostics; written on insert, not yet read.
+    #[allow(dead_code)]
     pub created_at: Instant,
     pub last_accessed: Instant,
     pub access_count: u64,
@@ -57,6 +59,8 @@ pub struct GnnCacheConfig {
     /// TTL for cached query results (in seconds)
     pub query_result_ttl_secs: u64,
     /// Whether to preload common layer configurations
+    // Consumed by `preload_common_layers()`/`with_preload()`; retained config flag not yet read on the default path.
+    #[allow(dead_code)]
     pub preload_common: bool,
 }
 
@@ -257,12 +261,16 @@ impl GnnCache {
     }
 
     /// Clear all caches
+    // Retained cache-management API; not yet wired to a runtime/eviction path.
+    #[allow(dead_code)]
     pub async fn clear(&self) {
         self.layers.write().await.clear();
         self.query_results.write().await.clear();
     }
 
     /// Preload common layer configurations for faster first access
+    // Invoked by `McpHandler::with_preload`; retained warm-up path not yet on the default startup.
+    #[allow(dead_code)]
     pub async fn preload_common_layers(&self) {
         // Common configurations used in practice
         let common_configs = [
@@ -386,7 +394,7 @@ mod tests {
         let cache = GnnCache::new(GnnCacheConfig::default());
 
         // First access - miss
-        let layer1 = cache.get_or_create_layer(128, 256, 4, 0.1).await;
+        let _layer1 = cache.get_or_create_layer(128, 256, 4, 0.1).await;
         let stats = cache.stats().await;
         assert_eq!(stats.layer_misses, 1);
         assert_eq!(stats.layer_hits, 0);

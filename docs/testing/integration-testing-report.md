@@ -304,7 +304,7 @@ cargo bench -p ruvector-bench --bench comparison_benchmark
 npm install ruvector
 
 # From source
-git clone https://github.com/ruvnet/ruvector
+git clone https://github.com/FlexNetOS/ruvector
 cd ruvector
 cargo build --release
 ```
@@ -321,7 +321,7 @@ cargo build --release
 
 | OS | Version | Architecture | Status |
 |----|---------|--------------|--------|
-| Linux | Ubuntu 22.04+ | x86_64 | ⏳ Pending |
+| Linux | Ubuntu 26.04+ | x86_64 | ⏳ Pending |
 | Linux | Fedora 38+ | x86_64 | ⏳ Pending |
 | Linux | Arch Linux | x86_64 | ⏳ Pending |
 | macOS | 13+ (Ventura) | Intel | ⏳ Pending |

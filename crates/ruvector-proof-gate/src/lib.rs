@@ -31,6 +31,29 @@ mod payload;
 pub use gate::{HashChainGate, MerkleGate, NullGate, WriteGate};
 pub use payload::{GateError, GateVariant, WritePayload, WriteReceipt};
 
+/// Generate a deterministic synthetic dataset for benchmarks.
+///
+/// Returns `n` payloads with `dims`-dimensional f32 vectors. Uses a simple
+/// LCG so benchmarks are reproducible without an external RNG dependency.
+pub fn synthetic_payloads(n: usize, dims: usize) -> Vec<WritePayload> {
+    let mut state: u64 = 0x6b37_9d3c_2a85_f1e4;
+    let mut next = move || -> f32 {
+        // Xorshift64
+        state ^= state << 13;
+        state ^= state >> 7;
+        state ^= state << 17;
+        // Map to [-1, 1]
+        (state as i64 as f64 / i64::MAX as f64) as f32
+    };
+
+    (0..n)
+        .map(|i| {
+            let vector: Vec<f32> = (0..dims).map(|_| next()).collect();
+            WritePayload::new(i as u64, vector)
+        })
+        .collect()
+}
+
 #[cfg(test)]
 #[allow(clippy::items_after_test_module)]
 mod tests {
@@ -229,27 +252,4 @@ mod tests {
             "HashChain and Merkle roots must differ"
         );
     }
-}
-
-/// Generate a deterministic synthetic dataset for benchmarks.
-///
-/// Returns `n` payloads with `dims`-dimensional f32 vectors. Uses a simple
-/// LCG so benchmarks are reproducible without an external RNG dependency.
-pub fn synthetic_payloads(n: usize, dims: usize) -> Vec<WritePayload> {
-    let mut state: u64 = 0x6b37_9d3c_2a85_f1e4;
-    let mut next = move || -> f32 {
-        // Xorshift64
-        state ^= state << 13;
-        state ^= state >> 7;
-        state ^= state << 17;
-        // Map to [-1, 1]
-        (state as i64 as f64 / i64::MAX as f64) as f32
-    };
-
-    (0..n)
-        .map(|i| {
-            let vector: Vec<f32> = (0..dims).map(|_| next()).collect();
-            WritePayload::new(i as u64, vector)
-        })
-        .collect()
 }

@@ -17,6 +17,7 @@ pub struct TableSchema {
 
 impl TableSchema {
     /// Find the vector column in the schema
+    #[allow(dead_code)]
     fn find_vector_column(&self) -> Option<(String, usize)> {
         for col in &self.columns {
             if let DataType::Vector(dims) = col.data_type {
@@ -106,33 +107,26 @@ impl SqlEngine {
             });
         }
 
-        // Find vector column
-        let (vector_column, vector_dimensions) = columns
-            .iter()
-            .find_map(|col| {
-                if let DataType::Vector(dims) = col.data_type {
-                    Some((col.name.clone(), dims))
-                } else {
-                    None
-                }
-            })
-            .ok_or_else(|| RvLiteError {
+        let mut schema = TableSchema {
+            name: name.clone(),
+            columns,
+            vector_column: None,
+            vector_dimensions: None,
+        };
+
+        let (vector_column, vector_dimensions) =
+            schema.find_vector_column().ok_or_else(|| RvLiteError {
                 message: "Table must have at least one VECTOR column".to_string(),
                 kind: ErrorKind::SqlError,
             })?;
-
-        let schema = TableSchema {
-            name: name.clone(),
-            columns,
-            vector_column: Some(vector_column),
-            vector_dimensions: Some(vector_dimensions),
-        };
+        schema.vector_column = Some(vector_column);
+        schema.vector_dimensions = Some(vector_dimensions);
 
         // Create vector database for this table
         let db_options = ruvector_core::types::DbOptions {
             dimensions: vector_dimensions,
             distance_metric: ruvector_core::DistanceMetric::Cosine,
-            storage_path: "memory://".to_string(),
+            storage_path: crate::transient_storage_path(&format!("sql-{name}")),
             hnsw_config: None,
             quantization: None,
         };
@@ -290,7 +284,7 @@ impl SqlEngine {
                 // truncation still yields enough results (HNSW returns k nearest
                 // before filtering, so with k==limit we may get 0 matches).
                 let k = if filter.is_some() {
-                    (base_k * 20).max(100)
+                    base_k.saturating_mul(20).max(100)
                 } else {
                     base_k
                 };

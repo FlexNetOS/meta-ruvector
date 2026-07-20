@@ -9,10 +9,10 @@
 
 ```toml
 [dependencies]
-ruvector-graph = "0.1.1"
+ruvector-graph = "2.2.3"
 ```
 
-Most graph databases make you choose: you can have relationships *or* vector search, a query language *or* raw traversals, pairwise edges *or* nothing. `ruvector-graph` gives you all of them together. Write familiar Cypher queries like Neo4j, attach vector embeddings to any node for semantic search, and model complex group relationships with hyperedges that connect three or more nodes at once. It runs on servers, in browsers via WASM, and across clusters with built-in RAFT consensus. Part of the [RuVector](https://github.com/ruvnet/ruvector) ecosystem.
+Most graph databases make you choose: you can have relationships *or* vector search, a query language *or* raw traversals, pairwise edges *or* nothing. `ruvector-graph` gives you all of them together. Write familiar Cypher queries like Neo4j, attach vector embeddings to any node for semantic search, and model complex group relationships with hyperedges that connect three or more nodes at once. It runs on servers, in browsers via WASM, and across clusters with built-in RAFT consensus. Part of the [RuVector](https://github.com/FlexNetOS/ruvector) ecosystem.
 
 | | ruvector-graph | Neo4j / Typical Graph DB | Vector DB + Custom Glue |
 |---|---|---|---|
@@ -43,7 +43,7 @@ Most graph databases make you choose: you can have relationships *or* vector sea
 
 ```toml
 [dependencies]
-ruvector-graph = "0.1.1"
+ruvector-graph = "2.2.3"
 ```
 
 ### Feature Flags
@@ -51,13 +51,13 @@ ruvector-graph = "0.1.1"
 ```toml
 [dependencies]
 # Full feature set
-ruvector-graph = { version = "0.1.1", features = ["full"] }
+ruvector-graph = { version = "2.2.3", features = ["full"] }
 
 # Minimal WASM-compatible build
-ruvector-graph = { version = "0.1.1", default-features = false, features = ["wasm"] }
+ruvector-graph = { version = "2.2.3", default-features = false, features = ["wasm"] }
 
 # Distributed deployment
-ruvector-graph = { version = "0.1.1", features = ["distributed"] }
+ruvector-graph = { version = "2.2.3", features = ["distributed"] }
 ```
 
 Available features:
@@ -266,7 +266,7 @@ Vector similarity       ~2ms             10K ops/s
 
 - **[RuVector README](../../README.md)** - Complete project overview
 - **[API Documentation](https://docs.rs/ruvector-graph)** - Full API reference
-- **[GitHub Repository](https://github.com/ruvnet/ruvector)** - Source code
+- **[GitHub Repository](https://github.com/FlexNetOS/ruvector)** - Source code
 
 ## License
 
@@ -276,10 +276,10 @@ Vector similarity       ~2ms             10K ops/s
 
 <div align="center">
 
-**Part of [RuVector](https://github.com/ruvnet/ruvector) - Built by [rUv](https://ruv.io)**
+**Part of [RuVector](https://github.com/FlexNetOS/ruvector) - Built by [rUv](https://ruv.io)**
 
-[![Star on GitHub](https://img.shields.io/github/stars/ruvnet/ruvector?style=social)](https://github.com/ruvnet/ruvector)
+[![Star on GitHub](https://img.shields.io/github/stars/FlexNetOS/ruvector?style=social)](https://github.com/FlexNetOS/ruvector)
 
-[Documentation](https://docs.rs/ruvector-graph) | [Crates.io](https://crates.io/crates/ruvector-graph) | [GitHub](https://github.com/ruvnet/ruvector)
+[Documentation](https://docs.rs/ruvector-graph) | [Crates.io](https://crates.io/crates/ruvector-graph) | [GitHub](https://github.com/FlexNetOS/ruvector)
 
 </div>

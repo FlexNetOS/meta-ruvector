@@ -1,6 +1,6 @@
 [package]
 name = "sevensense-interpretation"
-description = "LLM-powered interpretation for 7sense bioacoustics platform"
+description = "Evidence-based interpretation for 7sense bioacoustics platform (WIP skeleton)"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

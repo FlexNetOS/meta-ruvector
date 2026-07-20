@@ -1,5 +1,5 @@
 // Prefetch Prediction Benchmark - Accuracy and performance metrics
-use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId};
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use demand_paged_cognition::*;
 
 fn bench_prefetch_accuracy(c: &mut Criterion) {
@@ -7,21 +7,18 @@ fn bench_prefetch_accuracy(c: &mut Criterion) {
 
     // Sequential pattern
     group.bench_function("sequential_pattern", |b| {
-        b.iter_with_setup(
-            || PrefetchCoordinator::new(),
-            |coordinator| {
-                let context = vec![0.1, 0.2, 0.3];
+        b.iter_with_setup(PrefetchCoordinator::new, |coordinator| {
+            let context = vec![0.1, 0.2, 0.3];
 
-                // Build sequential pattern
-                for i in 0..100 {
-                    coordinator.record_access(i, &context);
-                }
+            // Build sequential pattern
+            for i in 0..100 {
+                coordinator.record_access(i, &context);
+            }
 
-                // Predict next
-                let predictions = coordinator.predict_and_queue(100, &context, 10);
-                black_box(predictions)
-            },
-        );
+            // Predict next
+            let predictions = coordinator.predict_and_queue(100, &context, 10);
+            black_box(predictions)
+        });
     });
 
     // Random pattern
@@ -38,7 +35,7 @@ fn bench_prefetch_accuracy(c: &mut Criterion) {
                 for i in 0..100 {
                     let mut hasher = DefaultHasher::new();
                     i.hash(&mut hasher);
-                    let page = (hasher.finish() % 1000) as u64;
+                    let page = hasher.finish() % 1000;
                     coordinator.record_access(page, &context);
                 }
 
@@ -88,18 +85,14 @@ fn bench_streaming_learning(c: &mut Criterion) {
         let predictor = HoeffdingTreePredictor::new();
         let features = AccessFeatures::new(42);
 
-        b.iter(|| {
-            predictor.update(black_box(42), black_box(&features))
-        });
+        b.iter(|| predictor.update(black_box(42), black_box(&features)));
     });
 
     // Markov update
     group.bench_function("markov_update", |b| {
         let predictor = MarkovPredictor::new();
 
-        b.iter(|| {
-            predictor.update(black_box(1), black_box(2))
-        });
+        b.iter(|| predictor.update(black_box(1), black_box(2)));
     });
 
     group.finish();
@@ -117,10 +110,8 @@ fn bench_feature_extraction(c: &mut Criterion) {
                 let context = vec![0.1, 0.2, 0.3, 0.4, 0.5];
 
                 b.iter(|| {
-                    let features = AccessFeatures::from_history(
-                        black_box(&history),
-                        black_box(&context),
-                    );
+                    let features =
+                        AccessFeatures::from_history(black_box(&history), black_box(&context));
                     black_box(features.to_vector())
                 });
             },

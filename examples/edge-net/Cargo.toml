@@ -5,7 +5,7 @@ edition = "2021"
 authors = ["RuVector Team"]
 license = "MIT"
 description = "Distributed compute intelligence network - contribute browser compute, earn credits"
-repository = "https://github.com/ruvnet/ruvector"
+repository = "https://github.com/FlexNetOS/ruvector"
 keywords = ["wasm", "p2p", "distributed-computing", "web-workers", "ai"]
 categories = ["wasm", "web-programming", "cryptography"]
 
@@ -92,10 +92,3 @@ ruvector-economy-wasm = { path = "../../crates/ruvector-economy-wasm", optional 
 [dev-dependencies]
 wasm-bindgen-test = "0.3"
 
-[profile.release]
-lto = true
-opt-level = "s"
-codegen-units = 1
-
-[package.metadata.wasm-pack.profile.release]
-wasm-opt = false

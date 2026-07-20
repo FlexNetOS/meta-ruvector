@@ -5,18 +5,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Rust](https://img.shields.io/badge/rust-1.77%2B-orange.svg)](https://www.rust-lang.org)
 
-**A Graph Neural Network layer that makes HNSW vector search get smarter over time.**
+**A graph-neural-network layer for refining embeddings over HNSW-style neighbor structure, with built-in continual-learning tooling.**
 
-Most vector indexes return the same results every time you search. `ruvector-gnn` adds a GNN layer on top of HNSW that learns from your query patterns -- so search results actually improve with use. It runs message passing directly on the HNSW graph structure with SIMD acceleration, keeping latency low even on large indexes. Part of the [RuVector](https://github.com/ruvnet/ruvector) ecosystem.
-
-| | ruvector-gnn | Standard HNSW Search |
-|---|---|---|
-| **Search quality** | GNN re-ranks neighbors using learned attention weights -- results improve over time | Static ranking -- same results every time |
-| **Graph awareness** | Operates directly on HNSW topology; understands graph structure | Treats index as a flat lookup table |
-| **Attention mechanisms** | Multi-head GAT weighs which neighbors matter for each query | No attention -- all neighbors weighted equally |
-| **Inductive learning** | GraphSAGE generalizes to unseen nodes without retraining | Cannot learn from new data |
-| **Hardware acceleration** | SIMD-optimized aggregation; memory-mapped weights for large models | Basic distance calculations only |
-| **Deployment** | Native Rust, Node.js (NAPI-RS), and WASM from the same crate | Typically single-platform |
+`ruvector-gnn` provides a single message-passing layer (`RuvectorLayer`) that combines multi-head attention, edge-weighted aggregation, a GRU update, and layer normalization, plus a self-supervised graph autoencoder (`GraphMAE`) and a continual-learning toolkit (Adam/SGD optimizers, an experience replay buffer, Elastic Weight Consolidation, and learning-rate schedulers). Part of the [RuVector](https://github.com/ruvnet/ruvector) ecosystem.
 
 ## Installation
 
@@ -24,236 +15,195 @@ Add `ruvector-gnn` to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-ruvector-gnn = "0.1.1"
+ruvector-gnn = "2.2"
 ```
 
 ### Feature Flags
 
 ```toml
 [dependencies]
-# Default with SIMD and memory mapping
-ruvector-gnn = { version = "0.1.1", features = ["simd", "mmap"] }
-
-# WASM-compatible build
-ruvector-gnn = { version = "0.1.1", default-features = false, features = ["wasm"] }
-
-# Node.js bindings
-ruvector-gnn = { version = "0.1.1", features = ["napi"] }
+# Default build with memory mapping
+ruvector-gnn = { version = "2.2", features = ["mmap"] }
 ```
 
 Available features:
-- `simd` (default): SIMD-optimized operations
-- `mmap` (default): Memory-mapped weight storage
-- `wasm`: WebAssembly-compatible build
-- `napi`: Node.js bindings via NAPI-RS
+- `mmap` (native, off-wasm): Memory-mapped gradient accumulation (`MmapManager`, `MmapGradientAccumulator`, `AtomicBitmap`)
+- `cold-tier` (native, off-wasm): Cold-tier storage module
 
 ## Key Features
 
 | Feature | What It Does | Why It Matters |
 |---------|-------------|----------------|
-| **GCN Layers** | Graph Convolutional Network forward pass over HNSW neighbors | Learns structural patterns in your data without manual feature engineering |
-| **GAT Layers** | Multi-head Graph Attention with interpretable weights | Automatically discovers which neighbors are most relevant per query |
-| **GraphSAGE** | Inductive learning with neighbor sampling | Handles new, unseen nodes without retraining the full model |
-| **SIMD Aggregation** | Hardware-accelerated message passing | Keeps GNN overhead under 15 ms for 100K-node graphs |
-| **Memory Mapping** | Large model weights loaded via mmap | Run models bigger than RAM; only pages what's needed |
-| **INT8/FP16 Quantization** | Compressed weight storage | 2-4x smaller models with minimal accuracy loss |
-| **Custom Aggregators** | Mean, max, and LSTM aggregation modes | Tune the aggregation strategy to your data distribution |
-| **Skip Connections** | Residual connections for deep GNN stacks | Train deeper networks without vanishing gradients |
-| **Batch Processing** | Parallel message passing with Rayon | Saturates all cores during training and inference |
-| **Layer Normalization** | Normalize activations between layers | Stable training dynamics across different graph sizes |
+| **`RuvectorLayer`** | One message-passing layer: per-node multi-head attention over neighbors, edge-weighted aggregation, a GRU update, and layer norm | Refines an embedding using its neighbors without manual feature engineering |
+| **`GraphMAE`** | Masked graph autoencoder (`GATEncoder` + `GraphMAEDecoder`) with feature masking and SCE/MSE reconstruction loss | Self-supervised pretraining of node representations |
+| **Continual learning** | `Optimizer` (Adam/SGD), `ReplayBuffer` (reservoir sampling), `ElasticWeightConsolidation`, `LearningRateScheduler` | Train incrementally while mitigating catastrophic forgetting |
+| **Differentiable search** | `differentiable_search`, `hierarchical_forward`, `cosine_similarity` | Query/search helpers over learned embeddings |
+| **Compression** | `TensorCompress` with `CompressionLevel` producing `CompressedTensor` | Compress stored tensors |
+| **Memory mapping** (`mmap`) | `MmapGradientAccumulator` over `MmapManager` | Accumulate gradients backed by mmap'd storage |
 
 ## Quick Start
 
-### Basic GCN Layer
+### A single `RuvectorLayer`
 
 ```rust
-use ruvector_gnn::{GCNLayer, GNNConfig, MessagePassing};
-use ndarray::Array2;
+use ruvector_gnn::RuvectorLayer;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Configure GCN layer
-    let config = GNNConfig {
-        input_dim: 128,
-        output_dim: 64,
-        hidden_dim: 128,
-        num_heads: 4,        // For GAT
-        dropout: 0.1,
-        activation: Activation::ReLU,
-    };
+    // input_dim, hidden_dim, attention heads, dropout
+    let layer = RuvectorLayer::new(128, 64, 4, 0.1)?;
 
-    // Create GCN layer
-    let gcn = GCNLayer::new(config)?;
+    // Current node embedding
+    let node: Vec<f32> = vec![0.0; 128];
 
-    // Node features (num_nodes x input_dim)
-    let features = Array2::zeros((1000, 128));
+    // Neighbor embeddings (e.g. HNSW neighbors)
+    let neighbors: Vec<Vec<f32>> = vec![vec![0.0; 128]; 8];
 
-    // Adjacency list (HNSW neighbors)
-    let adjacency: Vec<Vec<usize>> = /* from HNSW index */;
+    // Edge weights (e.g. distances), one per neighbor
+    let edge_weights: Vec<f32> = vec![1.0; 8];
 
-    // Forward pass
-    let output = gcn.forward(&features, &adjacency)?;
-
-    println!("Output shape: {:?}", output.shape());
+    // Forward pass returns the updated node embedding
+    let updated = layer.forward(&node, &neighbors, &edge_weights);
+    println!("updated dim: {}", updated.len()); // 64
     Ok(())
 }
 ```
 
-### Graph Attention Network
+### Self-supervised pretraining with `GraphMAE`
 
 ```rust
-use ruvector_gnn::{GATLayer, AttentionConfig};
+use ruvector_gnn::{GraphMAE, GraphMAEConfig, GraphData, LossFn};
 
-// Configure multi-head attention
-let config = AttentionConfig {
-    input_dim: 128,
-    output_dim: 64,
-    num_heads: 8,
-    concat_heads: true,
-    dropout: 0.1,
-    leaky_relu_slope: 0.2,
-};
+let config = GraphMAEConfig::default();
+let mae = GraphMAE::new(config);
 
-let gat = GATLayer::new(config)?;
-
-// Forward with attention
-let (output, attention_weights) = gat.forward_with_attention(&features, &adjacency)?;
-
-// Attention weights for interpretability
-for (node_id, weights) in attention_weights.iter().enumerate() {
-    println!("Node {}: attention weights = {:?}", node_id, weights);
-}
+// GraphData holds node features and adjacency for masked reconstruction.
+// See `GraphData`, `FeatureMasking`, and the `sce_loss` / `mse_loss` helpers.
 ```
 
-### GraphSAGE with Custom Aggregator
+### Continual learning (forgetting mitigation)
 
 ```rust
-use ruvector_gnn::{GraphSAGE, SAGEConfig, Aggregator};
-
-let config = SAGEConfig {
-    input_dim: 128,
-    output_dim: 64,
-    num_layers: 2,
-    aggregator: Aggregator::Mean,
-    sample_sizes: vec![10, 5],  // Neighbor sampling per layer
-    normalize: true,
+use ruvector_gnn::{
+    Optimizer, OptimizerType,
+    ReplayBuffer,
+    ElasticWeightConsolidation,
+    LearningRateScheduler, SchedulerType,
 };
 
-let sage = GraphSAGE::new(config)?;
+// Adam optimizer
+let mut optimizer = Optimizer::new(OptimizerType::Adam {
+    learning_rate: 0.001,
+    beta1: 0.9,
+    beta2: 0.999,
+    epsilon: 1e-8,
+});
 
-// Mini-batch training with neighbor sampling
-let embeddings = sage.forward_minibatch(
-    &features,
-    &adjacency,
-    &batch_nodes,  // Target nodes
-)?;
+// Experience replay (reservoir sampling)
+let mut replay = ReplayBuffer::new(10_000);
+
+// EWC to prevent catastrophic forgetting
+let mut ewc = ElasticWeightConsolidation::new(0.4);
+
+// Cosine-annealing schedule
+let mut scheduler = LearningRateScheduler::new(
+    SchedulerType::CosineAnnealing { t_max: 100, eta_min: 1e-6 },
+    0.001,
+);
 ```
 
-### Integration with Ruvector Core
+### Differentiable search helpers
 
 ```rust
-use ruvector_core::VectorDB;
-use ruvector_gnn::{HNSWMessagePassing, GNNEmbedder};
+use ruvector_gnn::{cosine_similarity, differentiable_search, hierarchical_forward};
 
-// Load vector database
-let db = VectorDB::open("vectors.db")?;
-
-// Create GNN that operates on HNSW structure
-let gnn = GNNEmbedder::new(GNNConfig {
-    input_dim: db.dimensions(),
-    output_dim: 64,
-    num_layers: 2,
-    ..Default::default()
-})?;
-
-// Get HNSW neighbors for message passing
-let hnsw_graph = db.get_hnsw_graph()?;
-
-// Compute GNN embeddings
-let gnn_embeddings = gnn.encode(&db.get_all_vectors()?, &hnsw_graph)?;
-
-// Enhanced search using GNN embeddings
-let results = db.search_with_gnn(&query_vector, &gnn, 10)?;
+let a = [1.0_f32, 0.0, 0.0];
+let b = [1.0_f32, 0.0, 0.0];
+let sim = cosine_similarity(&a, &b);
 ```
 
 ## API Overview
 
-### Core Types
+### Public re-exports (from `lib.rs`)
 
 ```rust
-// GNN layer configuration
-pub struct GNNConfig {
-    pub input_dim: usize,
-    pub output_dim: usize,
-    pub hidden_dim: usize,
-    pub num_heads: usize,
-    pub dropout: f32,
-    pub activation: Activation,
-}
+// Layer
+pub use layer::RuvectorLayer;
 
-// Message passing interface
-pub trait MessagePassing {
-    fn aggregate(&self, features: &Array2<f32>, neighbors: &[Vec<usize>]) -> Array2<f32>;
-    fn update(&self, aggregated: &Array2<f32>, self_features: &Array2<f32>) -> Array2<f32>;
-    fn forward(&self, features: &Array2<f32>, adjacency: &[Vec<usize>]) -> Result<Array2<f32>>;
-}
+// Self-supervised autoencoder
+pub use graphmae::{
+    mse_loss, sce_loss, FeatureMasking, GATEncoder, GraphData, GraphMAE,
+    GraphMAEConfig, GraphMAEDecoder, LossFn, MaskResult,
+};
 
-// Layer types
-pub struct GCNLayer { /* ... */ }
-pub struct GATLayer { /* ... */ }
-pub struct GraphSAGE { /* ... */ }
+// Continual learning
+pub use training::{
+    info_nce_loss, local_contrastive_loss, sgd_step, Loss, LossType,
+    OnlineConfig, Optimizer, OptimizerType, TrainConfig,
+};
+pub use replay::{DistributionStats, ReplayBuffer, ReplayEntry};
+pub use ewc::ElasticWeightConsolidation;
+pub use scheduler::{LearningRateScheduler, SchedulerType};
+
+// Search & query
+pub use search::{cosine_similarity, differentiable_search, hierarchical_forward};
+pub use query::{QueryMode, QueryResult, RuvectorQuery, SubGraph};
+
+// Compression
+pub use compress::{CompressedTensor, CompressionLevel, TensorCompress};
+
+// Errors
+pub use error::{GnnError, Result};
+
+// mmap feature only:
+pub use mmap::{AtomicBitmap, MmapGradientAccumulator, MmapManager};
 ```
 
-### Layer Operations
+### `RuvectorLayer`
 
 ```rust
-impl GCNLayer {
-    pub fn new(config: GNNConfig) -> Result<Self>;
-    pub fn forward(&self, x: &Array2<f32>, adj: &[Vec<usize>]) -> Result<Array2<f32>>;
-    pub fn save_weights(&self, path: &str) -> Result<()>;
-    pub fn load_weights(&mut self, path: &str) -> Result<()>;
+impl RuvectorLayer {
+    /// input_dim, hidden_dim, heads, dropout (0.0..=1.0).
+    /// Errors if dropout is out of range or hidden_dim is not divisible by heads.
+    pub fn new(input_dim: usize, hidden_dim: usize, heads: usize, dropout: f32)
+        -> Result<Self, GnnError>;
+
+    /// Update one node's embedding from its neighbors and edge weights.
+    pub fn forward(
+        &self,
+        node_embedding: &[f32],
+        neighbor_embeddings: &[Vec<f32>],
+        edge_weights: &[f32],
+    ) -> Vec<f32>;
 }
-
-impl GATLayer {
-    pub fn new(config: AttentionConfig) -> Result<Self>;
-    pub fn forward(&self, x: &Array2<f32>, adj: &[Vec<usize>]) -> Result<Array2<f32>>;
-    pub fn forward_with_attention(&self, x: &Array2<f32>, adj: &[Vec<usize>])
-        -> Result<(Array2<f32>, Vec<Vec<f32>>)>;
-}
 ```
 
-## Performance
+Internally `RuvectorLayer` is composed of `Linear`, `LayerNorm`, `MultiHeadAttention`, and `GRUCell` building blocks (also defined in the `layer` module).
 
-### Benchmarks (100K Nodes, Avg Degree 16)
+## Modules
 
-```
-Operation               Latency (p50)    GFLOPS
------------------------------------------------------
-GCN forward (1 layer)   ~15ms            12.5
-GAT forward (8 heads)   ~45ms            8.2
-GraphSAGE (2 layers)    ~25ms            10.1
-Message aggregation     ~5ms             25.0
-```
-
-### Memory Usage
-
-```
-Model Size              Peak Memory
----------------------------------------
-128 -> 64 (1 layer)     ~50MB
-128 -> 64 (4 layers)    ~150MB
-With mmap weights       ~10MB (+ disk)
-```
+| Module | Contents |
+|--------|----------|
+| `layer` | `RuvectorLayer` and its building blocks |
+| `graphmae` | Masked graph autoencoder (`GraphMAE`, `GATEncoder`, `GraphMAEDecoder`, masking, losses) |
+| `training` | Optimizers, online training config, contrastive/SGD helpers |
+| `replay` | Experience replay buffer |
+| `ewc` | Elastic Weight Consolidation |
+| `scheduler` | Learning-rate schedulers |
+| `search` | Differentiable/hierarchical search helpers |
+| `query` | Query types over learned embeddings |
+| `compress` | Tensor compression |
+| `tensor` | Tensor primitives |
+| `error` | `GnnError` / `Result` |
+| `mmap` (feature) | Memory-mapped gradient accumulation |
+| `cold_tier` (feature) | Cold-tier storage |
 
 ## Related Crates
 
 - **[ruvector-core](../ruvector-core/)** - Core vector database engine
-- **[ruvector-gnn-node](../ruvector-gnn-node/)** - Node.js bindings
-- **[ruvector-gnn-wasm](../ruvector-gnn-wasm/)** - WebAssembly bindings
 - **[ruvector-graph](../ruvector-graph/)** - Graph database engine
 
 ## Documentation
 
-- **[Main README](../../README.md)** - Complete project overview
 - **[API Documentation](https://docs.rs/ruvector-gnn)** - Full API reference
 - **[GitHub Repository](https://github.com/ruvnet/ruvector)** - Source code
 

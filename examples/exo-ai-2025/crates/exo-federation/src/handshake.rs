@@ -205,7 +205,7 @@ fn generate_peer_id(host: &str, port: u16) -> String {
     use sha2::{Digest, Sha256};
     let mut hasher = Sha256::new();
     hasher.update(host.as_bytes());
-    hasher.update(&port.to_le_bytes());
+    hasher.update(port.to_le_bytes());
     hex::encode(&hasher.finalize()[..16])
 }
 
