@@ -10,16 +10,23 @@
 //! | Stage | Name | Description |
 //! |-------|------|-------------|
 //! | **0** | Hardware Init | Platform-specific initialization (mocked in Phase A) |
-//! | **1** | RVF Verify | Parse manifest + ML-DSA-65 signature verification |
+//! | **1** | RVF Verify | Parse manifest + signature check (Phase A mock; real ML-DSA-65 TBD) |
 //! | **2** | Object Create | Create root task, regions, queues, witness log |
 //! | **3** | Component Mount | Mount components + distribute capabilities |
 //! | **4** | First Attestation | Boot attestation to witness log |
 //!
 //! ## Security (SEC-001)
 //!
-//! This crate implements critical security fixes:
+//! ⚠️ **Phase A status:** The Stage-1 signature check is a
+//! [`signature`]-module **placeholder/mock**, NOT real cryptographic
+//! verification — it accepts test signatures and provides no security
+//! guarantee against forged manifests. Real **ML-DSA-65 (NIST FIPS 204)**
+//! verification is TBD (Phase B). See the [`signature`] module docs.
+//!
+//! The control-flow security policy below *is* implemented:
 //!
 //! - **Signature failure**: PANIC IMMEDIATELY, no fallback boot path
+//!   (the panic-on-failure path is real; the check it gates is a Phase-A mock)
 //! - **Root task capability drop**: After Stage 3, root task drops to minimum set
 //! - **Witness log integrity**: Append-only, cryptographically linked
 //!

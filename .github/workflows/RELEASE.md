@@ -35,7 +35,7 @@ Options:
 
 ### Stage 1: Validation (`validate`)
 
-**Runs on**: `ubuntu-22.04`
+**Runs on**: `ubuntu-26.04`
 
 **Tasks**:
 - ✅ Check code formatting with `cargo fmt`
@@ -48,7 +48,7 @@ Options:
 
 ### Stage 2: Build Rust Crates (`build-crates`)
 
-**Runs on**: `ubuntu-22.04`
+**Runs on**: `ubuntu-26.04`
 
 **Tasks**:
 - Build all workspace crates in release mode
@@ -64,7 +64,7 @@ Options:
 
 ### Stage 3: Build WASM Packages (`build-wasm`)
 
-**Runs on**: `ubuntu-22.04`
+**Runs on**: `ubuntu-26.04`
 
 **Tasks**:
 - Install `wasm-pack` build tool
@@ -75,9 +75,9 @@ Options:
   - `ruvector-tiny-dancer-wasm` (tiny dancer)
 - Upload WASM artifacts for later stages
 
-**Caching**:
-- Rust dependencies via `Swatinem/rust-cache`
-- wasm-pack binary
+**Build reuse**:
+- Kache is the only permitted persistent build-reuse layer.
+- This stage remains disabled until it is native Nushell and Kache-backed.
 
 ### Stage 4: Build Native Modules (`build-native`)
 
@@ -86,16 +86,16 @@ Options:
 **Reuses**: `./.github/workflows/build-native.yml` as callable workflow
 
 **Platforms built**:
-- Linux x64 (GNU) - `ubuntu-22.04`
-- Linux ARM64 (GNU) - `ubuntu-22.04` with cross-compilation
+- Linux x64 (GNU) - `ubuntu-26.04`
+- Linux ARM64 (GNU) - `ubuntu-26.04` with cross-compilation
 - macOS x64 (Intel) - `macos-13`
 - macOS ARM64 (Apple Silicon) - `macos-14`
 - Windows x64 (MSVC) - `windows-2022`
 
 **Build matrix details**:
 ```yaml
-- host: ubuntu-22.04, target: x86_64-unknown-linux-gnu
-- host: ubuntu-22.04, target: aarch64-unknown-linux-gnu
+- host: ubuntu-26.04, target: x86_64-unknown-linux-gnu
+- host: ubuntu-26.04, target: aarch64-unknown-linux-gnu
 - host: macos-13, target: x86_64-apple-darwin
 - host: macos-14, target: aarch64-apple-darwin
 - host: windows-2022, target: x86_64-pc-windows-msvc
@@ -105,7 +105,7 @@ Options:
 
 ### Stage 5: Publish Rust Crates (`publish-crates`)
 
-**Runs on**: `ubuntu-22.04`
+**Runs on**: `ubuntu-26.04`
 
 **Requires**:
 - ✅ Validation passed
@@ -137,7 +137,7 @@ Options:
 
 ### Stage 6: Publish npm Packages (`publish-npm`)
 
-**Runs on**: `ubuntu-22.04`
+**Runs on**: `ubuntu-26.04`
 
 **Requires**:
 - ✅ Validation passed
@@ -172,7 +172,7 @@ Options:
 
 ### Stage 7: Create GitHub Release (`create-release`)
 
-**Runs on**: `ubuntu-22.04`
+**Runs on**: `ubuntu-26.04`
 
 **Requires**:
 - ✅ All build jobs succeeded
@@ -207,7 +207,7 @@ Options:
 
 ### Stage 8: Release Summary (`release-summary`)
 
-**Runs on**: `ubuntu-22.04`
+**Runs on**: `ubuntu-26.04`
 
 **Always runs**: Even if previous jobs fail
 
@@ -260,32 +260,12 @@ The workflow uses GitHub Environments for additional security:
 2. Create `crates-io` and `npm` environments
 3. (Optional) Add required reviewers for production releases
 
-## Caching Strategy
+## Build reuse policy
 
-### Rust Cache
-```yaml
-uses: Swatinem/rust-cache@v2
-with:
-  prefix-key: 'v1-rust'
-  shared-key: 'validate|build-crates|wasm'
-```
-
-**Caches**:
-- `~/.cargo/registry`
-- `~/.cargo/git`
-- `target/` directory
-
-**Benefits**: 2-5x faster builds
-
-### Node.js Cache
-```yaml
-uses: actions/setup-node@v4
-with:
-  cache: 'npm'
-  cache-dependency-path: npm/package-lock.json
-```
-
-**Caches**: `~/.npm` directory
+Kache is the sole persistent build-reuse layer. GitHub-hosted caches, package-manager
+caches, and compiler-wrapper caches other than Kache are prohibited. The retained
+release workflow is migration source only and must not be reactivated until every
+automatic command is native Nushell and all build reuse routes through Kache.
 
 ## Build Matrix
 
@@ -293,8 +273,8 @@ The native build job uses a strategic matrix to cover all platforms:
 
 | Platform | Host Runner | Rust Target | NAPI Platform | Cross-Compile |
 |----------|-------------|-------------|---------------|---------------|
-| Linux x64 | ubuntu-22.04 | x86_64-unknown-linux-gnu | linux-x64-gnu | No |
-| Linux ARM64 | ubuntu-22.04 | aarch64-unknown-linux-gnu | linux-arm64-gnu | Yes (gcc-aarch64) |
+| Linux x64 | ubuntu-26.04 | x86_64-unknown-linux-gnu | linux-x64-gnu | No |
+| Linux ARM64 | ubuntu-26.04 | aarch64-unknown-linux-gnu | linux-arm64-gnu | Yes (gcc-aarch64) |
 | macOS Intel | macos-13 | x86_64-apple-darwin | darwin-x64 | No |
 | macOS ARM | macos-14 | aarch64-apple-darwin | darwin-arm64 | No |
 | Windows | windows-2022 | x86_64-pc-windows-msvc | win32-x64-msvc | No |
@@ -322,7 +302,7 @@ git push origin main
 git push origin v0.1.3
 
 # 5. Monitor workflow at:
-# https://github.com/ruvnet/ruvector/actions/workflows/release.yml
+# https://github.com/FlexNetOS/ruvector/actions/workflows/release.yml
 ```
 
 ### Dry Run (Test Release)
@@ -433,26 +413,10 @@ The workflow runs these jobs in parallel:
 
 Total time: ~15-25 minutes (vs. 60+ minutes sequential)
 
-### Cache Hit Rates
-
-With proper caching:
-- Rust builds: 70-90% cache hit rate
-- npm installs: 90-95% cache hit rate
-
 ### Build Time Breakdown
 
-| Job | Uncached | Cached |
-|-----|----------|--------|
-| Validate | 8-12 min | 3-5 min |
-| Build Crates | 15-20 min | 5-8 min |
-| Build WASM | 10-15 min | 4-6 min |
-| Build Native (per platform) | 8-12 min | 3-5 min |
-| Publish Crates | 5-10 min | 5-10 min |
-| Publish npm | 3-5 min | 2-3 min |
-| Create Release | 2-3 min | 2-3 min |
-
-**Total (worst case)**: ~25-30 minutes with cache
-**Total (cold start)**: ~45-60 minutes without cache
+Historical timing claims depended on prohibited cache layers and are intentionally
+retired. New timing evidence must be measured only after the Nushell/Kache migration.
 
 ## Best Practices
 
@@ -558,9 +522,9 @@ npm version patch  # 0.1.2 -> 0.1.3
 
 ## Support
 
-- **Issues**: https://github.com/ruvnet/ruvector/issues
-- **Discussions**: https://github.com/ruvnet/ruvector/discussions
-- **Documentation**: https://github.com/ruvnet/ruvector
+- **Issues**: https://github.com/FlexNetOS/ruvector/issues
+- **Discussions**: https://github.com/FlexNetOS/ruvector/discussions
+- **Documentation**: https://github.com/FlexNetOS/ruvector
 
 ## License
 

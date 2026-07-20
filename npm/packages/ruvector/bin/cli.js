@@ -136,7 +136,7 @@ function reportGnnBindingError(error) {
   if (msg.includes('Given napi value is not an array') || msg.includes('TypedArray info failed')) {
     console.error(chalk.yellow('  Note: this is a known regression in the @ruvector/gnn native binding,'));
     console.error(chalk.yellow('  not in the CLI. Track at:'));
-    console.error(chalk.white('    https://github.com/ruvnet/ruvector/issues/402'));
+    console.error(chalk.white('    https://github.com/FlexNetOS/ruvector/issues/402'));
   }
 }
 
@@ -1660,7 +1660,7 @@ program
 
     // Quick install
     console.log(chalk.cyan('Quick Install (one-liner):'));
-    console.log(chalk.white('  curl -fsSL https://raw.githubusercontent.com/ruvnet/ruvector/main/install.sh | bash'));
+    console.log(chalk.white('  curl -fsSL https://raw.githubusercontent.com/FlexNetOS/ruvector/main/install.sh | bash'));
     console.log('');
 
     if (showAll || options.npm) {
@@ -1748,10 +1748,10 @@ program
     console.log(chalk.cyan('Documentation & Resources'));
     console.log(chalk.cyan('───────────────────────────────────────────────────────────────\n'));
 
-    console.log(chalk.white('  GitHub:     https://github.com/ruvnet/ruvector'));
+    console.log(chalk.white('  GitHub:     https://github.com/FlexNetOS/ruvector'));
     console.log(chalk.white('  npm:        https://www.npmjs.com/package/ruvector'));
     console.log(chalk.white('  crates.io:  https://crates.io/crates/ruvector-core'));
-    console.log(chalk.white('  Issues:     https://github.com/ruvnet/ruvector/issues'));
+    console.log(chalk.white('  Issues:     https://github.com/FlexNetOS/ruvector/issues'));
     console.log('');
 
     console.log(chalk.cyan('Quick Commands:'));
@@ -2003,7 +2003,7 @@ program
       console.log(chalk.white(`    --grpc-port ${options.grpcPort}       # gRPC port`));
       console.log(chalk.white(`    --data-dir ${options.dataDir}  # Data directory`));
       console.log('');
-      console.log(chalk.gray('  Track progress: https://github.com/ruvnet/ruvector/issues/20'));
+      console.log(chalk.gray('  Track progress: https://github.com/FlexNetOS/ruvector/issues/20'));
       console.log('');
       return;
     }
@@ -2050,7 +2050,7 @@ program
     console.log(chalk.white('    npx ruvector cluster --join 192.168.1.10:7000'));
     console.log(chalk.white('    npx ruvector cluster --nodes'));
     console.log('');
-    console.log(chalk.gray('  Track progress: https://github.com/ruvnet/ruvector/issues/20'));
+    console.log(chalk.gray('  Track progress: https://github.com/FlexNetOS/ruvector/issues/20'));
     console.log('');
   });
 
@@ -2183,13 +2183,25 @@ const embedCmd = program.command('embed').description('Generate embeddings from 
 
 embedCmd
   .command('text')
-  .description('Embed a text string')
-  .argument('<text>', 'Text to embed')
+  .description('Embed a text string ("-" or --stdin reads from stdin; --input-file reads from a file — keeps sensitive text off argv)')
+  .argument('[text]', 'Text to embed, or "-" to read from stdin')
+  .option('--stdin', 'Read the text from stdin instead of argv')
+  .option('--input-file <path>', 'Read the text from a file instead of argv')
   .option('--adaptive', 'Use adaptive embedder with LoRA')
   .option('--domain <domain>', 'Domain for prototype learning')
   .option('-o, --output <file>', 'Output file for embedding')
   .action(async (text, opts) => {
     try {
+      // #641: raw text on argv leaks via the process table; offer stdin/file input.
+      if (opts.inputFile) {
+        text = fs.readFileSync(opts.inputFile, 'utf8').replace(/\r?\n$/, '');
+      } else if (opts.stdin || text === '-') {
+        text = fs.readFileSync(0, 'utf8').replace(/\r?\n$/, '');
+      }
+      if (!text) {
+        console.error(chalk.red('No text to embed. Pass a text argument, "-" / --stdin, or --input-file <path>.'));
+        process.exit(1);
+      }
       const { performance } = require('perf_hooks');
       const start = performance.now();
 
@@ -2835,7 +2847,7 @@ program
           console.error(chalk.red(`  GNN demo failed: ${msg}`));
           console.error(chalk.yellow('\n  This looks like a regression in the @ruvector/gnn native binding,'));
           console.error(chalk.yellow('  not in the CLI. Tracking at:'));
-          console.error(chalk.white('    https://github.com/ruvnet/ruvector/issues/402'));
+          console.error(chalk.white('    https://github.com/FlexNetOS/ruvector/issues/402'));
         } else {
           console.error(chalk.red('GNN demo failed:', msg));
         }
@@ -3017,6 +3029,51 @@ function sanitizeDimension(value, fallback) {
   return (Number.isInteger(value) && value > 0 && value <= 65536) ? value : fallback;
 }
 
+/**
+ * Write a file atomically: serialize to a unique temp file in the same
+ * directory, then rename() over the target. rename() is atomic on a POSIX
+ * filesystem, so a concurrent reader never observes a torn/half-written file.
+ * This is the root-cause fix for the intelligence.json wipe under Claude Code,
+ * where every hook is a separate short-lived process sharing the store: a
+ * plain writeFileSync lets one process read a half-written file mid-write.
+ * The temp name carries pid + timestamp so concurrent writers never collide on
+ * the temp file; the final rename is last-writer-wins.
+ */
+function atomicWriteFileSync(filePath, data) {
+  const dir = path.dirname(filePath);
+  const tmp = path.join(dir, `.${path.basename(filePath)}.tmp.${process.pid}.${Date.now()}`);
+  try {
+    fs.writeFileSync(tmp, data);
+    fs.renameSync(tmp, filePath);
+  } catch (err) {
+    try { fs.rmSync(tmp, { force: true }); } catch { /* best-effort temp cleanup */ }
+    throw err;
+  }
+}
+
+/**
+ * Read a JSON intelligence store for a standalone command. Returns `{}` for a
+ * missing store (legitimate fresh start), but on a corrupt/unparseable store
+ * quarantines the file (renames it aside) and throws instead of returning `{}`.
+ * The previous `try { parse } catch {}` → `{}` pattern let a corrupt read
+ * degrade to an empty object that the command then wrote back, wiping the
+ * store. Mirrors Intelligence.load()'s corrupt handling.
+ */
+function readIntelStoreSafe(dataPath) {
+  if (!fs.existsSync(dataPath)) return {};
+  try {
+    return JSON.parse(fs.readFileSync(dataPath, 'utf-8'));
+  } catch (err) {
+    const quarantine = `${dataPath}.corrupt-${Date.now()}`;
+    try { fs.renameSync(dataPath, quarantine); } catch { /* still fail loud below */ }
+    throw new Error(
+      `ruvector: intelligence store at ${dataPath} is corrupt and was quarantined to ` +
+      `${quarantine} rather than overwritten with an empty store — ` +
+      `restore it or delete it to start fresh. (${err.message})`
+    );
+  }
+}
+
 class Intelligence {
   constructor(options = {}) {
     this.intelPath = this.getIntelPath();
@@ -3144,39 +3201,56 @@ class Intelligence {
       edges: [],
       stats: { total_patterns: 0, total_memories: 0, total_trajectories: 0, total_errors: 0, session_count: 0, last_session: 0 }
     };
+    // A missing store is a legitimate fresh start.
+    if (!fs.existsSync(this.intelPath)) return defaults;
+
+    let data;
     try {
-      if (fs.existsSync(this.intelPath)) {
-        const data = JSON.parse(fs.readFileSync(this.intelPath, 'utf-8'));
-        // Merge with defaults to ensure all fields exist. The file is
-        // untrusted on-disk input (ADR-210 security pass): shape-check each
-        // field so a hand-edited/corrupted store cannot crash later code
-        // that iterates arrays or spreads objects.
-        const asArray = (v, dflt) => (Array.isArray(v) ? v : dflt);
-        const asObject = (v, dflt) => (v && typeof v === 'object' && !Array.isArray(v) ? v : dflt);
-        return {
-          patterns: asObject(data.patterns, defaults.patterns),
-          memories: asArray(data.memories, defaults.memories),
-          trajectories: asArray(data.trajectories, defaults.trajectories),
-          errors: asObject(data.errors, defaults.errors),
-          file_sequences: asArray(data.file_sequences, defaults.file_sequences),
-          agents: asObject(data.agents, defaults.agents),
-          edges: asArray(data.edges, defaults.edges),
-          stats: { ...defaults.stats, ...asObject(data.stats, {}) },
-          // ADR-210 D0: embedding provenance of stored memory vectors
-          // (null = legacy store, read-only for vector writes until reembed).
-          // Malformed records are treated as absent (sanitized, never crash).
-          embeddingProvenance: sanitizeProvenanceSafe(data.embeddingProvenance),
-          // Preserve in-flight trajectories so trajectory-end (run in a later
-          // process) can find what trajectory-begin recorded (#517)
-          activeTrajectories: data.activeTrajectories || {},
-          // Preserve auxiliary learned data if present
-          coEditPatterns: data.coEditPatterns || undefined,
-          sequences: data.sequences || undefined,
-          learning: data.learning || undefined
-        };
-      }
-    } catch {}
-    return defaults;
+      data = JSON.parse(fs.readFileSync(this.intelPath, 'utf-8'));
+    } catch (err) {
+      // A corrupt/unreadable store must NOT silently degrade to empty defaults:
+      // the caller would then save() the emptiness back over the real data,
+      // destroying weeks of accumulated memories with no signal. Quarantine the
+      // file (rename it aside so it is preserved and the next save cannot clobber
+      // it) and fail loud. With atomicWriteFileSync() below, a concurrent writer
+      // can no longer produce a torn read, so reaching here means genuine
+      // corruption — a fresh store restarts cleanly on the next run.
+      const quarantine = `${this.intelPath}.corrupt-${Date.now()}`;
+      try { fs.renameSync(this.intelPath, quarantine); } catch { /* still fail loud below */ }
+      throw new Error(
+        `ruvector: intelligence store at ${this.intelPath} is corrupt and was quarantined ` +
+        `to ${quarantine} rather than overwritten with an empty store — ` +
+        `restore it or delete it to start fresh. (${err.message})`
+      );
+    }
+
+    // Merge with defaults to ensure all fields exist. The file is
+    // untrusted on-disk input (ADR-210 security pass): shape-check each
+    // field so a hand-edited/corrupted store cannot crash later code
+    // that iterates arrays or spreads objects.
+    const asArray = (v, dflt) => (Array.isArray(v) ? v : dflt);
+    const asObject = (v, dflt) => (v && typeof v === 'object' && !Array.isArray(v) ? v : dflt);
+    return {
+      patterns: asObject(data.patterns, defaults.patterns),
+      memories: asArray(data.memories, defaults.memories),
+      trajectories: asArray(data.trajectories, defaults.trajectories),
+      errors: asObject(data.errors, defaults.errors),
+      file_sequences: asArray(data.file_sequences, defaults.file_sequences),
+      agents: asObject(data.agents, defaults.agents),
+      edges: asArray(data.edges, defaults.edges),
+      stats: { ...defaults.stats, ...asObject(data.stats, {}) },
+      // ADR-210 D0: embedding provenance of stored memory vectors
+      // (null = legacy store, read-only for vector writes until reembed).
+      // Malformed records are treated as absent (sanitized, never crash).
+      embeddingProvenance: sanitizeProvenanceSafe(data.embeddingProvenance),
+      // Preserve in-flight trajectories so trajectory-end (run in a later
+      // process) can find what trajectory-begin recorded (#517)
+      activeTrajectories: data.activeTrajectories || {},
+      // Preserve auxiliary learned data if present
+      coEditPatterns: data.coEditPatterns || undefined,
+      sequences: data.sequences || undefined,
+      learning: data.learning || undefined
+    };
   }
 
   save() {
@@ -3205,7 +3279,7 @@ class Intelligence {
       }
     }
 
-    fs.writeFileSync(this.intelPath, JSON.stringify(this.data, null, 2));
+    atomicWriteFileSync(this.intelPath, JSON.stringify(this.data, null, 2));
   }
 
   now() { return Math.floor(Date.now() / 1000); }
@@ -4530,7 +4604,7 @@ npx ruvector hooks init --force      # Overwrite existing configuration
 \`\`\`
 
 ---
-*Powered by [RuVector](https://github.com/ruvnet/ruvector) self-learning intelligence v2.0*
+*Powered by [RuVector](https://github.com/FlexNetOS/ruvector) self-learning intelligence v2.0*
 `;
     fs.writeFileSync(claudeMdPath, claudeMdContent);
     console.log(chalk.green('✅ CLAUDE.md created in project root'));
@@ -5602,12 +5676,7 @@ hooksCmd.command('learning-config')
 
     // Load existing intelligence data
     const dataPath = path.join(process.cwd(), '.ruvector', 'intelligence.json');
-    let data = {};
-    try {
-      if (fs.existsSync(dataPath)) {
-        data = JSON.parse(fs.readFileSync(dataPath, 'utf-8'));
-      }
-    } catch (e) {}
+    let data = readIntelStoreSafe(dataPath);
 
     const engine = new LearningEngineClass();
     if (data.learning) {
@@ -5641,7 +5710,7 @@ hooksCmd.command('learning-config')
     // Save
     data.learning = engine.export();
     fs.mkdirSync(path.dirname(dataPath), { recursive: true });
-    fs.writeFileSync(dataPath, JSON.stringify(data, null, 2));
+    atomicWriteFileSync(dataPath, JSON.stringify(data, null, 2));
 
     console.log(JSON.stringify({
       success: true,
@@ -5661,12 +5730,7 @@ hooksCmd.command('learning-stats')
     }
 
     const dataPath = path.join(process.cwd(), '.ruvector', 'intelligence.json');
-    let data = {};
-    try {
-      if (fs.existsSync(dataPath)) {
-        data = JSON.parse(fs.readFileSync(dataPath, 'utf-8'));
-      }
-    } catch (e) {}
+    let data = readIntelStoreSafe(dataPath);
 
     const engine = new LearningEngineClass();
     if (data.learning) {
@@ -5709,12 +5773,7 @@ hooksCmd.command('learning-update')
     }
 
     const dataPath = path.join(process.cwd(), '.ruvector', 'intelligence.json');
-    let data = {};
-    try {
-      if (fs.existsSync(dataPath)) {
-        data = JSON.parse(fs.readFileSync(dataPath, 'utf-8'));
-      }
-    } catch (e) {}
+    let data = readIntelStoreSafe(dataPath);
 
     const engine = new LearningEngineClass();
     if (data.learning) {
@@ -5734,7 +5793,7 @@ hooksCmd.command('learning-update')
 
     // Save
     data.learning = engine.export();
-    fs.writeFileSync(dataPath, JSON.stringify(data, null, 2));
+    atomicWriteFileSync(dataPath, JSON.stringify(data, null, 2));
 
     console.log(JSON.stringify({
       success: true,
@@ -5757,12 +5816,7 @@ hooksCmd.command('compress')
     }
 
     const dataPath = path.join(process.cwd(), '.ruvector', 'intelligence.json');
-    let data = {};
-    try {
-      if (fs.existsSync(dataPath)) {
-        data = JSON.parse(fs.readFileSync(dataPath, 'utf-8'));
-      }
-    } catch (e) {}
+    let data = readIntelStoreSafe(dataPath);
 
     const compress = new TensorCompressClass({
       autoCompress: false,
@@ -5797,7 +5851,7 @@ hooksCmd.command('compress')
 
     // Save compressed data
     data.compressedPatterns = compress.export();
-    fs.writeFileSync(dataPath, JSON.stringify(data, null, 2));
+    atomicWriteFileSync(dataPath, JSON.stringify(data, null, 2));
 
     console.log(JSON.stringify({
       success: true,
@@ -5816,12 +5870,7 @@ hooksCmd.command('compress-stats')
     }
 
     const dataPath = path.join(process.cwd(), '.ruvector', 'intelligence.json');
-    let data = {};
-    try {
-      if (fs.existsSync(dataPath)) {
-        data = JSON.parse(fs.readFileSync(dataPath, 'utf-8'));
-      }
-    } catch (e) {}
+    let data = readIntelStoreSafe(dataPath);
 
     const compress = new TensorCompressClass({ autoCompress: false });
     if (data.compressedPatterns) {
@@ -5870,12 +5919,7 @@ hooksCmd.command('compress-store')
     }
 
     const dataPath = path.join(process.cwd(), '.ruvector', 'intelligence.json');
-    let data = {};
-    try {
-      if (fs.existsSync(dataPath)) {
-        data = JSON.parse(fs.readFileSync(dataPath, 'utf-8'));
-      }
-    } catch (e) {}
+    let data = readIntelStoreSafe(dataPath);
 
     const compress = new TensorCompressClass({ autoCompress: false });
     if (data.compressedPatterns) {
@@ -5886,7 +5930,7 @@ hooksCmd.command('compress-store')
 
     data.compressedPatterns = compress.export();
     fs.mkdirSync(path.dirname(dataPath), { recursive: true });
-    fs.writeFileSync(dataPath, JSON.stringify(data, null, 2));
+    atomicWriteFileSync(dataPath, JSON.stringify(data, null, 2));
 
     const stats = compress.getStats();
     console.log(JSON.stringify({
@@ -5909,12 +5953,7 @@ hooksCmd.command('compress-get')
     }
 
     const dataPath = path.join(process.cwd(), '.ruvector', 'intelligence.json');
-    let data = {};
-    try {
-      if (fs.existsSync(dataPath)) {
-        data = JSON.parse(fs.readFileSync(dataPath, 'utf-8'));
-      }
-    } catch (e) {}
+    let data = readIntelStoreSafe(dataPath);
 
     const compress = new TensorCompressClass({ autoCompress: false });
     if (data.compressedPatterns) {
@@ -5950,12 +5989,7 @@ hooksCmd.command('learn')
     }
 
     const dataPath = path.join(process.cwd(), '.ruvector', 'intelligence.json');
-    let data = {};
-    try {
-      if (fs.existsSync(dataPath)) {
-        data = JSON.parse(fs.readFileSync(dataPath, 'utf-8'));
-      }
-    } catch (e) {}
+    let data = readIntelStoreSafe(dataPath);
 
     const engine = new LearningEngineClass();
     if (data.learning) {
@@ -5989,7 +6023,7 @@ hooksCmd.command('learn')
     // Save
     data.learning = engine.export();
     fs.mkdirSync(path.dirname(dataPath), { recursive: true });
-    fs.writeFileSync(dataPath, JSON.stringify(data, null, 2));
+    atomicWriteFileSync(dataPath, JSON.stringify(data, null, 2));
 
     console.log(JSON.stringify(result));
   });
@@ -6034,12 +6068,7 @@ hooksCmd.command('batch-learn')
     }
 
     const dataPath = path.join(process.cwd(), '.ruvector', 'intelligence.json');
-    let data = {};
-    try {
-      if (fs.existsSync(dataPath)) {
-        data = JSON.parse(fs.readFileSync(dataPath, 'utf-8'));
-      }
-    } catch (e) {}
+    let data = readIntelStoreSafe(dataPath);
 
     const engine = new LearningEngineClass();
     if (data.learning) {
@@ -6067,7 +6096,7 @@ hooksCmd.command('batch-learn')
     // Save
     data.learning = engine.export();
     fs.mkdirSync(path.dirname(dataPath), { recursive: true });
-    fs.writeFileSync(dataPath, JSON.stringify(data, null, 2));
+    atomicWriteFileSync(dataPath, JSON.stringify(data, null, 2));
 
     const stats = engine.getStatsSummary();
     console.log(JSON.stringify({
@@ -7991,7 +8020,7 @@ const RVF_EXAMPLES = [
   { name: 'reasoning_grandchild', size: '162 B', desc: 'Minimal derived file' },
 ];
 
-const RVF_BASE_URL = 'https://raw.githubusercontent.com/ruvnet/ruvector/main/examples/rvf/output';
+const RVF_BASE_URL = 'https://raw.githubusercontent.com/FlexNetOS/ruvector/main/examples/rvf/output';
 
 rvfCmd.command('examples')
   .description('List available example .rvf files')
@@ -8010,7 +8039,7 @@ rvfCmd.command('examples')
       const size = chalk.yellow(ex.size.padStart(maxSize));
       console.log(`  ${name}  ${size}  ${chalk.dim(ex.desc)}`);
     }
-    console.log(chalk.dim(`\nFull catalog: https://github.com/ruvnet/ruvector/tree/main/examples/rvf/output\n`));
+    console.log(chalk.dim(`\nFull catalog: https://github.com/FlexNetOS/ruvector/tree/main/examples/rvf/output\n`));
   });
 
 rvfCmd.command('download [names...]')
@@ -8200,7 +8229,7 @@ mcpCmd.command('info')
 
 mcpCmd.command('tools')
   .description('List all MCP tools with descriptions (JSON output)')
-  .option('--group <group>', 'Filter by group (hooks, workers, rvf, rvlite, brain, edge, identity)')
+  .option('--group <group>', 'Filter by group (hooks, workers, rvf, rvlite, brain, edge, identity, decompile)')
   .option('--json', 'JSON output')
   .action((opts) => {
     const tools = {
@@ -8322,6 +8351,14 @@ mcpCmd.command('tools')
       'identity': [
         { name: 'identity_generate', desc: 'Generate new pi key' },
         { name: 'identity_show', desc: 'Show current identity' },
+      ],
+      'decompile': [
+        { name: 'decompile_package', desc: 'Decompile an npm package + witness' },
+        { name: 'decompile_file', desc: 'Decompile a single file' },
+        { name: 'decompile_url', desc: 'Decompile from a URL' },
+        { name: 'decompile_diff', desc: 'Diff two decompiled artifacts' },
+        { name: 'decompile_search', desc: 'Search decompiled artifacts' },
+        { name: 'decompile_witness', desc: 'Verify decompile witness' },
       ],
     };
 
@@ -10002,7 +10039,7 @@ const optimizeCmd = program.command('optimize')
       console.error(chalk.yellow('\n  ruvector optimize: not yet shipped in this release.\n'));
       console.error(chalk.gray('  The optimizer module (profiles, settings generation) is in development'));
       console.error(chalk.gray('  and will land in a future release. Track progress at:'));
-      console.error(chalk.white('    https://github.com/ruvnet/ruvector/issues/401\n'));
+      console.error(chalk.white('    https://github.com/FlexNetOS/ruvector/issues/401\n'));
       process.exit(1);
     }
 
@@ -10232,6 +10269,12 @@ harnessCmd
 // Bare `ruvector harness` defaults to status
 harnessCmd.action(() => printHarnessStatus({}));
 
-program.parse();
+// Only drive the CLI when executed directly; when required (e.g. by tests)
+// expose the store-durability internals instead of parsing argv.
+if (require.main === module) {
+  program.parse();
+} else {
+  module.exports = { atomicWriteFileSync, readIntelStoreSafe, Intelligence };
+}
 
 

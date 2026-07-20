@@ -1,5 +1,5 @@
+use agentic_robotics_core::{Publisher, RobotState};
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use ros3_core::{Publisher, RobotState};
 
 fn benchmark_publish(c: &mut Criterion) {
     let rt = tokio::runtime::Runtime::new().unwrap();
@@ -15,7 +15,7 @@ fn benchmark_publish(c: &mut Criterion) {
 }
 
 fn benchmark_serialization(c: &mut Criterion) {
-    use ros3_core::serialization::{serialize_cdr, serialize_rkyv};
+    use agentic_robotics_core::serialization::{serialize_cdr, serialize_rkyv};
 
     let msg = RobotState::default();
 

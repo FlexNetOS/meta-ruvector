@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 description = "Multi-Pi cluster coordinator for ruvector Hailo embedding workers (ADR-167 §8)"
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/ruvnet/ruvector"
+repository = "https://github.com/FlexNetOS/ruvector"
 keywords = ["ruvector", "hailo", "cluster", "embedding", "edge-ai"]
 categories = ["network-programming", "embedded"]
 # Iter 202 — internal-only crate. Carries path deps on ruvector-hailo
@@ -159,10 +159,3 @@ harness = false
 #
 # Default `cargo build --release` still uses the fast-compile profile;
 # opt in with `cargo build --profile=ultra` when you want the extra ~5-15%.
-[profile.ultra]
-inherits = "release"
-lto = "fat"
-codegen-units = 1
-panic = "abort"
-strip = "symbols"
-debug = false

@@ -1860,7 +1860,7 @@ dependencies = [
 
 [[package]]
 name = "ruvector-coherence"
-version = "2.0.6"
+version = "2.2.3"
 dependencies = [
  "serde",
  "serde_json",
@@ -2178,6 +2178,17 @@ dependencies = [
  "criterion",
  "proptest",
  "ruvix-region",
+ "ruvix-types",
+]
+
+[[package]]
+name = "rvf-swarm-demo"
+version = "0.1.0"
+dependencies = [
+ "ruvix-cap",
+ "ruvix-nucleus",
+ "ruvix-queue",
+ "ruvix-sched",
  "ruvix-types",
 ]
 

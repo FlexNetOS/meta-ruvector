@@ -224,8 +224,8 @@ mod tests {
         let id = [42u8; 32];
         let mut w = CrossParadigmWitness::new(7, id, WitnessDecision::Defer);
         w.sheaf_energy = Some(1.618);
-        w.lambda_min_cut = Some(3.14159);
-        w.phi_value = Some(2.718);
+        w.lambda_min_cut = Some(std::f64::consts::PI);
+        w.phi_value = Some(std::f64::consts::E);
         let encoded = w.encode();
         assert!(encoded.len() > 64);
     }

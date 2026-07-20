@@ -1,6 +1,6 @@
 #!/bin/bash
-# Script to publish router-wasm v0.1.1 to crates.io
-# This script waits for router-core v0.1.1 to be available
+# Script to publish ruvector-router-wasm v0.1.1 to crates.io
+# This script waits for ruvector-router-core v0.1.1 to be available
 
 set -e
 
@@ -8,7 +8,7 @@ set -e
 REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
 
 echo "=========================================="
-echo "router-wasm v0.1.1 Publication Script"
+echo "ruvector-router-wasm v0.1.1 Publication Script"
 echo "=========================================="
 echo ""
 
@@ -29,8 +29,8 @@ fi
 echo "✓ CRATES_API_KEY loaded"
 echo ""
 
-# Step 1: Wait for router-core v0.1.1
-echo "Step 1: Checking for router-core v0.1.1..."
+# Step 1: Wait for ruvector-router-core v0.1.1
+echo "Step 1: Checking for ruvector-router-core v0.1.1..."
 MAX_ATTEMPTS=30
 ATTEMPT=0
 
@@ -38,14 +38,14 @@ while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
     ATTEMPT=$((ATTEMPT + 1))
     echo "  Check $ATTEMPT/$MAX_ATTEMPTS ($(date +%H:%M:%S))"
 
-    if cargo search router-core 2>&1 | grep -q "router-core.*0\.1\.1"; then
-        echo "✓ router-core v0.1.1 found on crates.io!"
+    if cargo search ruvector-router-core 2>&1 | grep -q "ruvector-router-core.*0\.1\.1"; then
+        echo "✓ ruvector-router-core v0.1.1 found on crates.io!"
         break
     fi
 
     if [ $ATTEMPT -eq $MAX_ATTEMPTS ]; then
-        echo "✗ Timeout: router-core v0.1.1 not found after $MAX_ATTEMPTS attempts"
-        echo "  Current version: $(cargo search router-core 2>&1 | grep "router-core =" | head -1)"
+        echo "✗ Timeout: ruvector-router-core v0.1.1 not found after $MAX_ATTEMPTS attempts"
+        echo "  Current version: $(cargo search ruvector-router-core 2>&1 | grep "ruvector-router-core =" | head -1)"
         exit 1
     fi
 
@@ -60,9 +60,9 @@ cargo login "$CRATES_API_KEY"
 echo "✓ Successfully logged in"
 echo ""
 
-# Step 3: Navigate to router-wasm directory
-echo "Step 3: Navigating to router-wasm directory..."
-cd "$REPO_ROOT"/crates/router-wasm
+# Step 3: Navigate to ruvector-router-wasm directory
+echo "Step 3: Navigating to ruvector-router-wasm directory..."
+cd "$REPO_ROOT"/crates/ruvector-router-wasm
 echo "✓ Current directory: $(pwd)"
 echo ""
 
@@ -73,11 +73,11 @@ echo "..."
 echo ""
 
 # Step 5: Publish
-echo "Step 5: Publishing router-wasm v0.1.1..."
+echo "Step 5: Publishing ruvector-router-wasm v0.1.1..."
 echo ""
 cargo publish --allow-dirty
 
 echo ""
 echo "=========================================="
-echo "✓ SUCCESS: router-wasm v0.1.1 published!"
+echo "✓ SUCCESS: ruvector-router-wasm v0.1.1 published!"
 echo "=========================================="

@@ -33,14 +33,3 @@ embuild = "0.33"
 # Iter A bring-up profile: opt-level=z to fit comfortably under 16 MB
 # flash with mbedtls headroom for iter B; keep panics→abort to shrink the
 # image and surface fatal radar parse errors in journalctl-style logs.
-[profile.release]
-opt-level    = "z"
-lto          = "fat"
-codegen-units = 1
-panic        = "abort"
-strip        = "symbols"
-debug        = false
-
-[profile.dev]
-opt-level    = "s"
-debug        = 1

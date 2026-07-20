@@ -1,6 +1,6 @@
 {
   "name": "@ruvector/rvf-wasm",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "RuVector Format WASM microkernel for browser and edge vector operations",
   "type": "module",
   "main": "pkg/rvf_wasm.mjs",
@@ -22,7 +22,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ruvnet/ruvector"
+    "url": "https://github.com/FlexNetOS/ruvector"
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org/",

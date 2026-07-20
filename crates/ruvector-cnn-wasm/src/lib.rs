@@ -1,12 +1,19 @@
 //! WASM bindings for ruvector-cnn
 //!
-//! Provides WebAssembly bindings for CNN-based image embedding extraction.
+//! Provides WebAssembly bindings for image embedding extraction plus
+#![allow(dead_code, unused_imports, unused_variables)]
+//! contrastive-learning losses and a few SIMD-backed tensor ops.
 //!
 //! ## Features
 //!
-//! - SIMD-optimized convolutions (WASM SIMD128)
-//! - Contrastive learning (InfoNCE, Triplet loss)
-//! - MobileNet-style efficient architectures
+//! - `WasmCnnEmbedder`: a lightweight spatial-statistics embedding — it does
+//!   **not** run a learned CNN. The embedding is built from per-channel mean
+//!   and standard deviation plus per-block average luminance, then optionally
+//!   L2-normalized.
+//! - SIMD-backed primitives via `ruvector_cnn::simd` (dot product, ReLU/ReLU6,
+//!   batch norm, global average pooling) exposed through `SimdOps` / `LayerOps`
+//! - Contrastive learning losses: InfoNCE (`WasmInfoNCELoss`) and triplet
+//!   (`WasmTripletLoss`)
 
 #![allow(clippy::new_without_default)]
 
@@ -275,7 +282,7 @@ impl WasmTripletLoss {
         negatives: &[f32],
         dim: usize,
     ) -> Result<f32, JsValue> {
-        if anchors.len() % dim != 0
+        if !anchors.len().is_multiple_of(dim)
             || positives.len() != anchors.len()
             || negatives.len() != anchors.len()
         {

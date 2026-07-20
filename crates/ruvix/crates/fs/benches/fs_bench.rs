@@ -96,7 +96,9 @@ fn bench_ramfs_operations(c: &mut Criterion) {
         let mut fs = RamFs::new();
         fs.mount().unwrap();
         let root = fs.root().unwrap();
-        let file_id = fs.create(root, "test.txt", FileType::Regular, 0o644).unwrap();
+        let file_id = fs
+            .create(root, "test.txt", FileType::Regular, 0o644)
+            .unwrap();
 
         b.iter(|| {
             let stat = fs.stat(black_box(file_id)).unwrap();
@@ -116,7 +118,9 @@ fn bench_ramfs_io(c: &mut Criterion) {
         let mut fs = RamFs::new();
         fs.mount().unwrap();
         let root = fs.root().unwrap();
-        let file_id = fs.create(root, "data.bin", FileType::Regular, 0o644).unwrap();
+        let file_id = fs
+            .create(root, "data.bin", FileType::Regular, 0o644)
+            .unwrap();
         let data = [0xABu8; 1024];
 
         b.iter(|| {
@@ -131,7 +135,9 @@ fn bench_ramfs_io(c: &mut Criterion) {
         let mut fs = RamFs::new();
         fs.mount().unwrap();
         let root = fs.root().unwrap();
-        let file_id = fs.create(root, "data.bin", FileType::Regular, 0o644).unwrap();
+        let file_id = fs
+            .create(root, "data.bin", FileType::Regular, 0o644)
+            .unwrap();
         let data = [0xABu8; 1024];
         fs.write(file_id, 0, &data).unwrap();
 
@@ -148,7 +154,9 @@ fn bench_ramfs_io(c: &mut Criterion) {
         let mut fs = RamFs::new();
         fs.mount().unwrap();
         let root = fs.root().unwrap();
-        let file_id = fs.create(root, "large.bin", FileType::Regular, 0o644).unwrap();
+        let file_id = fs
+            .create(root, "large.bin", FileType::Regular, 0o644)
+            .unwrap();
         let data = vec![0xABu8; 65536];
 
         b.iter(|| {
@@ -163,7 +171,9 @@ fn bench_ramfs_io(c: &mut Criterion) {
         let mut fs = RamFs::new();
         fs.mount().unwrap();
         let root = fs.root().unwrap();
-        let file_id = fs.create(root, "large.bin", FileType::Regular, 0o644).unwrap();
+        let file_id = fs
+            .create(root, "large.bin", FileType::Regular, 0o644)
+            .unwrap();
         let data = vec![0xABu8; 65536];
         fs.write(file_id, 0, &data).unwrap();
 
@@ -219,12 +229,17 @@ fn bench_ramfs_directory(c: &mut Criterion) {
 
         let mut current = root;
         for name in ["a", "b", "c", "d", "e"] {
-            current = fs.create(current, name, FileType::Directory, 0o755).unwrap();
+            current = fs
+                .create(current, name, FileType::Directory, 0o755)
+                .unwrap();
         }
-        fs.create(current, "file.txt", FileType::Regular, 0o644).unwrap();
+        fs.create(current, "file.txt", FileType::Regular, 0o644)
+            .unwrap();
 
         b.iter(|| {
-            let id = fs.lookup_path(Path::new(black_box("/a/b/c/d/e/file.txt"))).unwrap();
+            let id = fs
+                .lookup_path(Path::new(black_box("/a/b/c/d/e/file.txt")))
+                .unwrap();
             black_box(id)
         });
     });

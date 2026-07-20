@@ -74,6 +74,7 @@ pub struct ExoRetrievalDomain {
 }
 
 impl ExoRetrievalDomain {
+    /// Create a new retrieval domain with its canonical `exo-retrieval` id.
     pub fn new() -> Self {
         Self {
             id: DomainId("exo-retrieval".to_string()),
@@ -288,6 +289,7 @@ pub struct ExoGraphDomain {
 }
 
 impl ExoGraphDomain {
+    /// Create a new graph domain with its canonical `exo-graph` id.
     pub fn new() -> Self {
         Self {
             id: DomainId("exo-graph".to_string()),
@@ -340,7 +342,7 @@ impl ExoGraphDomain {
         } else {
             0.0
         };
-        let elegance = if coverage_ratio >= 1.0 && coverage_ratio <= 1.5 {
+        let elegance = if (1.0..=1.5).contains(&coverage_ratio) {
             1.0
         } else if coverage_ratio > 0.8 {
             0.7
@@ -431,7 +433,7 @@ impl Domain for ExoGraphDomain {
         } else {
             0.0
         };
-        let elegance = if coverage_ratio >= 1.0 && coverage_ratio <= 1.5 {
+        let elegance = if (1.0..=1.5).contains(&coverage_ratio) {
             1.0
         } else if coverage_ratio > 0.8 {
             0.7
@@ -813,12 +815,12 @@ mod tests {
         // Train for a few cycles
         let (ret_score, gph_score) = adapter.warmup(10);
         assert!(
-            ret_score >= 0.0 && ret_score <= 1.0,
+            (0.0..=1.0).contains(&ret_score),
             "retrieval score in [0,1]: {}",
             ret_score
         );
         assert!(
-            gph_score >= 0.0 && gph_score <= 1.0,
+            (0.0..=1.0).contains(&gph_score),
             "graph score in [0,1]: {}",
             gph_score
         );

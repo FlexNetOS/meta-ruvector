@@ -92,7 +92,7 @@ impl NeuromorphicState {
 
     /// HDC encode: project f32 vector to binary hypervector via random projection.
     fn hd_encode(&self, vec: &[f32]) -> Vec<u8> {
-        let n_bytes = (self.hd_dim + 7) / 8;
+        let n_bytes = self.hd_dim.div_ceil(8);
         let mut hv = vec![0u8; n_bytes];
         // Pseudo-random projection via LCG seeded per dimension
         let mut seed = 0x9e3779b97f4a7c15u64;

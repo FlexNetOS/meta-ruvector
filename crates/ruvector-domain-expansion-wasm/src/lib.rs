@@ -22,6 +22,12 @@ pub struct WasmDomainExpansionEngine {
     inner: DomainExpansionEngine,
 }
 
+impl Default for WasmDomainExpansionEngine {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[wasm_bindgen]
 impl WasmDomainExpansionEngine {
     /// Create a new domain expansion engine with 3 core domains.
@@ -125,6 +131,11 @@ impl WasmDomainExpansionEngine {
     }
 
     /// Verify a transfer delta. Returns verification JSON.
+    // The argument count mirrors the engine's `verify_transfer` signature and is
+    // part of the stable JS-exported API (source/target IDs plus the four
+    // before/after scores and two cycle counts); grouping them into a struct
+    // would change the wasm-bindgen ABI for no behavioral benefit.
+    #[allow(clippy::too_many_arguments)]
     #[wasm_bindgen(js_name = verifyTransfer)]
     pub fn verify_transfer(
         &self,
@@ -322,6 +333,12 @@ pub struct WasmScoreboard {
     inner: AccelerationScoreboard,
 }
 
+impl Default for WasmScoreboard {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[wasm_bindgen]
 impl WasmScoreboard {
     /// Create a new scoreboard.
@@ -374,6 +391,13 @@ impl WasmScoreboard {
 #[cfg(feature = "rvf")]
 #[wasm_bindgen]
 pub struct WasmRvfBridge;
+
+#[cfg(feature = "rvf")]
+impl Default for WasmRvfBridge {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 #[cfg(feature = "rvf")]
 #[wasm_bindgen]

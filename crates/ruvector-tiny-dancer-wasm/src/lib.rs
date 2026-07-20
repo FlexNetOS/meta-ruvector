@@ -13,8 +13,9 @@ use wasm_bindgen::prelude::*;
 /// Initialize panic hook for better error messages in WASM
 #[wasm_bindgen(start)]
 pub fn init() {
-    #[cfg(feature = "console_error_panic_hook")]
-    console_error_panic_hook::set_once();
+    // panic hook intentionally disabled in wasm builds; add feature if needed
+    // #[cfg(feature = "console_error_panic_hook")]
+    // console_error_panic_hook::set_once();
 }
 
 /// Router configuration for WASM
@@ -27,6 +28,12 @@ pub struct RouterConfig {
     enable_circuit_breaker: bool,
     circuit_breaker_threshold: u32,
     enable_quantization: bool,
+}
+
+impl Default for RouterConfig {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 #[wasm_bindgen]

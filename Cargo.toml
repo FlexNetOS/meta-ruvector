@@ -1,5 +1,9 @@
 [workspace]
 exclude = ["external/ruqu", "external/rvdna", "examples/OSpipe", "examples/rvf", "crates/micro-hnsw-wasm", "crates/ruvector-hyperbolic-hnsw", "crates/ruvector-hyperbolic-hnsw-wasm", "examples/ruvLLM/esp32", "examples/ruvLLM/esp32-flash", "examples/edge-net", "examples/data", "examples/ruvLLM", "examples/delta-behavior", "crates/rvf", "crates/rvf/*", "crates/rvf/*/*", "examples/rvf-desktop", "crates/mcp-brain-server",
+    # emergent-time-wasm: standalone cdylib with own opt-level=z, panic=abort
+    "crates/emergent-time-wasm",
+    # sonic-ct crates: self-contained detached workspaces
+    "crates/sonic-ct", "crates/sonic-ct-wasm",
     # ruvector-postgres is a pgrx-based PostgreSQL extension. Its build script
     # requires `$PGRX_HOME` set up via `cargo install cargo-pgrx --version 0.12.9`
     # and `cargo pgrx init`, which downloads and builds multiple Postgres
@@ -16,86 +20,223 @@ exclude = ["external/ruqu", "external/rvdna", "examples/OSpipe", "examples/rvf",
     # ruos-thermal: Pi 5 thermal supervisor skeleton (ADR-174). Standalone
     # for now; joins workspace once daemon mode + Unix socket protocol
     # land in iters 92-97.
-    "crates/ruos-thermal"]
+    "crates/ruos-thermal",
+    # Vendored [patch.crates-io] override source for hnsw_rs — a patch source is
+    # not a workspace member by design (two copies exist for different patch
+    # tables); excluded explicitly so it is accounted for, not silently orphaned.
+    "patches/hnsw_rs",
+    "scripts/patches/hnsw_rs",
+    # Standalone docker integration-test harness (ruvector-attention-integration-test);
+    # run inside its container, not part of the host `cargo build --workspace`.
+    "tests/docker-integration",
+    # spiking-network was WIP skeleton — completed (source stubs added 2026-06-25); promoted to members above.
+    # Removed from exclude so it builds as a workspace member.
+
+    # ruvector-attention-cli / ruvector-sparse-inference-wasm: stale against
+    # current ruvector-attention / sparse-model APIs (calls removed methods like
+    # ScaledDotProductAttention::compute, SparseModel::{encode,forward_embedding,
+    # sparsity_statistics}). They do not compile, so they are excluded rather
+    # than added as broken members; re-align to the current APIs, then re-add.
+    "crates/ruvector-attention-cli",
+    "crates/ruvector-hyperbolic-hnsw",
+    "crates/ruvector-hyperbolic-hnsw-wasm",
+    "crates/ruvector-postgres",
+    "crates/ruvector-sparse-inference-wasm",
+    "crates/rvf",
+    "crates/rvf/*",
+    "crates/rvf/*/*",
+    "examples/data",
+    "examples/delta-behavior",
+    "examples/edge-net",
+    "examples/ruvLLM",
+    "examples/ruvLLM/esp32",
+    "examples/ruvLLM/esp32-flash",
+    "examples/vibecast-7sense/crates/sevensense-analysis",
+    "examples/vibecast-7sense/crates/sevensense-api",
+    "examples/vibecast-7sense/crates/sevensense-audio",
+    "examples/vibecast-7sense/crates/sevensense-core",
+    "examples/vibecast-7sense/crates/sevensense-embedding",
+    "examples/vibecast-7sense/crates/sevensense-interpretation",
+    "examples/vibecast-7sense/crates/sevensense-learning",
+    "examples/vibecast-7sense/crates/sevensense-vector",
+    "external/ruqu",
+    "external/rvdna",
+    "patches/hnsw_rs",
+    "scripts/patches/hnsw_rs",
+    "tests/docker-integration",
+]
+
+# =============================================================================
+# MEMBERS — all crate paths that are part of this workspace build.
+# =============================================================================
+
 members = [
-    "crates/ruvector-acorn",
-    "crates/ruvector-acorn-wasm",
-    "crates/ruvector-rabitq",
-    "crates/ruvector-rabitq-wasm",
-    "crates/ruvector-rulake",
-    "crates/ruvector-core",
-    "crates/ruvector-node",
-    "crates/ruvector-wasm",
-    "crates/ruvector-cli",
-    "crates/ruvector-bench",
-    "crates/ruvector-metrics",
-    "crates/ruvector-filter",
-    "crates/ruvector-router-core",
-    "crates/ruvector-router-cli",
-    "crates/ruvector-router-ffi",
-    "crates/ruvector-router-wasm",
-    "crates/ruvector-server",
-    "crates/ruvector-snapshot",
-    "crates/ruvector-tiny-dancer-core",
-    "crates/ruvector-tiny-dancer-wasm",
-    "crates/ruvector-tiny-dancer-node",
-    "crates/ruvector-collections",
-    "crates/ruvector-cluster",
-    "crates/ruvector-raft",
-    "crates/ruvector-replication",
-    "crates/ruvector-graph",
-    "crates/ruvector-graph-node",
-    "crates/ruvector-graph-wasm",
-    "crates/ruvector-gnn",
-    "crates/ruvector-proof-gate",
-    "crates/ruvector-gnn-rerank",
-    "crates/ruvector-gnn-node",
-    "crates/ruvector-gnn-wasm",
-    "crates/ruvector-attention",
-    "crates/ruvector-attention-wasm",
-    "crates/ruvector-attention-node",
-    "crates/ruvector-cnn",
-    "crates/ruvector-cnn-wasm",
-    "crates/ruvector-mincut",
-    "crates/ruvector-mincut-wasm",
-    "crates/ruvector-mincut-node",
-    "crates/ruvector-mincut-gated-transformer",
-    "crates/ruvector-mincut-gated-transformer-wasm",
-    # NOTE: ruvector-postgres is in workspace `exclude` (pgrx env requirement).
-    "crates/ruvector-nervous-system",
-    # Iter 219 — hailo backend rejoined the workspace (closes
-    # ADR-178 Gap E folded into Gap B). All three build clean on
-    # x86 with default features; opting into the actual NPU path
-    # requires `--features hailo` on a Pi 5 + AI HAT+.
-    "crates/hailort-sys",
-    "crates/ruvector-hailo",
-    "crates/ruvector-mmwave",
-    "crates/ruvector-hailo-cluster",
-    "examples/refrag-pipeline",
-    "examples/scipix",
-    "examples/google-cloud",
-    "examples/subpolynomial-time",
-    "crates/sona",
-    "crates/rvlite",
-    "crates/ruvector-nervous-system",
-    "crates/ruvector-dag",
-    "crates/ruvector-dag-wasm",
-    "crates/ruvector-nervous-system-wasm",
-    "crates/ruvector-economy-wasm",
-    "crates/ruvector-learning-wasm",
-    "crates/ruvector-exotic-wasm",
-    "crates/ruvector-attention-unified-wasm",
-    "crates/ruvector-fpga-transformer",
-    "crates/ruvector-fpga-transformer-wasm",
-    "crates/ruvector-sparse-inference",
-    "crates/ruvector-math",
-    "crates/ruvector-math-wasm",
-    "examples/benchmarks",
+    # exo-ai-2025 research crates (un-nested standalone workspaces)
+    "examples/exo-ai-2025/research/01-neuromorphic-spiking",
+    "examples/exo-ai-2025/research/02-quantum-superposition",
+    "examples/exo-ai-2025/research/03-time-crystal-cognition",
+    "examples/exo-ai-2025/research/04-sparse-persistent-homology",
+    "examples/exo-ai-2025/research/05-memory-mapped-neural-fields",
+    "examples/exo-ai-2025/research/06-federated-collective-phi",
+    "examples/exo-ai-2025/research/07-causal-emergence",
+    "examples/exo-ai-2025/research/08-meta-simulation-consciousness",
+    "examples/exo-ai-2025/research/09-hyperbolic-attention",
+    "examples/exo-ai-2025/research/10-thermodynamic-learning",
+    "examples/exo-ai-2025/research/11-conscious-language-interface",
+    # FULL UNION of main + develop members (no exclusions — all crates wired).
+    "crates/agentic-robotics-benchmarks",
+    "crates/agentic-robotics-core",
+    "crates/agentic-robotics-embedded",
+    "crates/agentic-robotics-mcp",
+    "crates/agentic-robotics-node",
+    "crates/agentic-robotics-rt",
+    "crates/codex-env",
     "crates/cognitum-gate-kernel",
     "crates/cognitum-gate-tilezero",
-    "crates/mcp-gate",
+    "crates/emergent-time",
+    "crates/hailort-sys",
     "crates/mcp-brain",
     "crates/mcp-brain-server",
+    "crates/mcp-gate",
+    "crates/neural-trader-coherence",
+    "crates/neural-trader-core",
+    "crates/neural-trader-replay",
+    "crates/neural-trader-strategies",
+    "crates/neural-trader-wasm",
+    "crates/photonlayer-bench",
+    "crates/photonlayer-cli",
+    "crates/photonlayer-core",
+    "crates/photonlayer-ruvector",
+    "crates/photonlayer-wasm",
+    "crates/prime-radiant",
+    "crates/ruos-thermal",
+    "crates/ruvector-acorn",
+    "crates/ruvector-acorn-wasm",
+    "crates/ruvector-agent-memory",
+    "crates/ruvector-attention",
+    "crates/ruvector-attention-node",
+    "crates/ruvector-attention-unified-wasm",
+    "crates/ruvector-attention-wasm",
+    "crates/ruvector-attn-mincut",
+    "crates/ruvector-bench",
+    "crates/ruvector-bet4-ivf-bench",
+    "crates/ruvector-cli",
+    "crates/ruvector-cluster",
+    "crates/ruvector-cnn",
+    "crates/ruvector-cnn-wasm",
+    "crates/ruvector-cognitive-container",
+    "crates/ruvector-coherence",
+    "crates/ruvector-coherence-hnsw",
+    "crates/ruvector-collections",
+    "crates/ruvector-consciousness",
+    "crates/ruvector-consciousness-wasm",
+    "crates/ruvector-core",
+    "crates/ruvector-crv",
+    "crates/ruvector-dag",
+    "crates/ruvector-dag-wasm",
+    "crates/ruvector-decompiler",
+    "crates/ruvector-decompiler-wasm",
+    "crates/ruvector-delta-consensus",
+    "crates/ruvector-delta-core",
+    "crates/ruvector-delta-graph",
+    "crates/ruvector-delta-index",
+    "crates/ruvector-delta-wasm",
+    "crates/ruvector-diskann",
+    "crates/ruvector-diskann-node",
+    "crates/ruvector-dither",
+    "crates/ruvector-domain-expansion",
+    "crates/ruvector-domain-expansion-wasm",
+    "crates/ruvector-economy-wasm",
+    "crates/ruvector-exotic-wasm",
+    "crates/ruvector-filter",
+    "crates/ruvector-fpga-transformer",
+    "crates/ruvector-fpga-transformer-wasm",
+    "crates/ruvector-gnn",
+    "crates/ruvector-gnn-node",
+    "crates/ruvector-gnn-rerank",
+    "crates/ruvector-gnn-wasm",
+    "crates/ruvector-graph",
+    "crates/ruvector-graph-condense",
+    "crates/ruvector-graph-condense-wasm",
+    "crates/ruvector-graph-node",
+    "crates/ruvector-graph-transformer",
+    "crates/ruvector-graph-transformer-node",
+    "crates/ruvector-graph-transformer-wasm",
+    "crates/ruvector-graph-wasm",
+    "crates/ruvector-hailo",
+    "crates/ruvector-hailo-cluster",
+    "crates/ruvector-hnsw-repair",
+    "crates/ruvector-hybrid",
+    "crates/ruvector-kalshi",
+    "crates/ruvector-learning-wasm",
+    "crates/ruvector-math",
+    "crates/ruvector-math-wasm",
+    "crates/ruvector-maxsim",
+    "crates/ruvector-metrics",
+    "crates/ruvector-mincut",
+    "crates/ruvector-mincut-gated-transformer",
+    "crates/ruvector-mincut-gated-transformer-wasm",
+    "crates/ruvector-mincut-node",
+    "crates/ruvector-mincut-wasm",
+    "crates/ruvector-mmwave",
+    "crates/ruvector-nervous-system",
+    "crates/ruvector-nervous-system-wasm",
+    "crates/ruvector-node",
+    "crates/ruvector-perception",
+    "crates/ruvector-profiler",
+    "crates/ruvector-proof-gate",
+    "crates/ruvector-rabitq",
+    "crates/ruvector-rabitq-wasm",
+    "crates/ruvector-raft",
+    "crates/ruvector-rairs",
+    "crates/ruvector-replication",
+    "crates/ruvector-robotics",
+    "crates/ruvector-router-cli",
+    "crates/ruvector-router-core",
+    "crates/ruvector-router-ffi",
+    "crates/ruvector-router-wasm",
+    "crates/ruvector-rulake",
+    "crates/ruvector-server",
+    "crates/ruvector-snapshot",
+    "crates/ruvector-solver",
+    "crates/ruvector-solver-node",
+    "crates/ruvector-solver-wasm",
+    "crates/ruvector-sparse-inference",
+    "crates/ruvector-sparsifier",
+    "crates/ruvector-sparsifier-wasm",
+    "crates/ruvector-temporal-coherence",
+    "crates/ruvector-temporal-tensor",
+    "crates/ruvector-temporal-tensor-wasm",
+    "crates/ruvector-tiny-dancer-core",
+    "crates/ruvector-tiny-dancer-node",
+    "crates/ruvector-tiny-dancer-wasm",
+    "crates/ruvector-verified",
+    "crates/ruvector-verified-wasm",
+    "crates/ruvector-wasm",
+    "crates/ruvix/benches",
+    "crates/ruvix/crates/aarch64",
+    "crates/ruvix/crates/bcm2711",
+    "crates/ruvix/crates/boot",
+    "crates/ruvix/crates/cap",
+    "crates/ruvix/crates/cli",
+    "crates/ruvix/crates/dma",
+    "crates/ruvix/crates/drivers",
+    "crates/ruvix/crates/dtb",
+    "crates/ruvix/crates/fs",
+    "crates/ruvix/crates/hal",
+    "crates/ruvix/crates/net",
+    "crates/ruvix/crates/nucleus",
+    "crates/ruvix/crates/physmem",
+    "crates/ruvix/crates/proof",
+    "crates/ruvix/crates/queue",
+    "crates/ruvix/crates/region",
+    "crates/ruvix/crates/sched",
+    "crates/ruvix/crates/shell",
+    "crates/ruvix/crates/smp",
+    "crates/ruvix/crates/types",
+    "crates/ruvix/crates/vecgraph",
+    "crates/ruvix/examples/cognitive_demo",
+    "crates/ruvix/tests",
     "crates/ruvllm",
     "crates/ruvllm-cli",
     "crates/ruvllm-wasm",
@@ -152,6 +293,7 @@ members = [
     "crates/ruvix/benches",
     "crates/ruvix/examples/cognitive_demo",
     # rvAgent — AI Agent Framework (DeepAgents Rust conversion)
+    "crates/codex-env",
     "crates/rvAgent/rvagent-core",
     "crates/rvAgent/rvagent-backends",
     "crates/rvAgent/rvagent-middleware",
@@ -166,6 +308,10 @@ members = [
     "examples/a2a-swarm",
     # ETL pipeline example
     "examples/train-discoveries",
+    # RuView SkyGraph appliance core (ADR-199 Phases 1-4, synthetic ADS-B)
+    "examples/sky-monitor",
+    # Browser-facing WASM projection engine for the SkyGraph dashboard (ADR-199 presentation plane)
+    "examples/sky-monitor/wasm",
     # Spectral graph sparsification
     "crates/ruvector-sparsifier",
     "crates/ruvector-sparsifier-wasm",
@@ -228,8 +374,10 @@ members = [
     "crates/ruvllm_retrieval_diffusion",
     # RAIRS IVF: Redundant Assignment + Amplified Inverse Residual (ADR-193)
     "crates/ruvector-rairs",
-    # BET 4 (SepRAG #534): LB-B&B IVF probing vs plain IVF nprobe
-    "crates/ruvector-bet4-ivf-bench",
+    # Hybrid sparse-dense search: BM25 + ANN + RRF / RSF / ScoreFusion (ADR-256)
+    "crates/ruvector-hybrid",
+    # LSM-ANN: write-optimized streaming vector index for agent memory (ADR-264)
+    "crates/ruvector-lsm-ann",
     # Structure-preserving graph condensation via dynamic min-cut communities
     "crates/ruvector-graph-condense",
     "crates/ruvector-graph-condense-wasm",
@@ -238,6 +386,28 @@ members = [
     # Calculus of emergent / relational time (Wheeler-DeWitt, Page-Wootters,
     # entropic, thermal) + Structural Proper Time for agentic systems.
     "crates/emergent-time",
+    # PhotonLayer: learned optical-frontend computing simulator (ADR-260)
+    "crates/photonlayer-core",
+    "crates/photonlayer-bench",
+    "crates/photonlayer-ruvector",
+    "crates/photonlayer-cli",
+    "crates/photonlayer-wasm",
+    # Crate-membership audit (meta-integration): these were orphaned — present
+    # with [package] but members of no workspace, so `cargo build --workspace`
+    # never built them. Promoted here because they compile AND pass the
+    # `clippy --workspace --all-targets -- -D warnings` CI gate. Other recovered
+    # orphans that compile but still carry clippy debt are in `exclude` below.
+    "crates/ruvector-temporal-tensor-wasm",
+    "crates/ruvector-bet4-ivf-bench",
+    # spiking-network: event-driven SNN for ASIC neuromorphic computing
+    "examples/spiking-network",
+    # agentic-robotics-*: DDS/ROS2 robotics middleware cluster (ruvnet/vibecast) — requires zenoh/rustdds/cdr workspace deps
+    "crates/agentic-robotics-core",
+    "crates/agentic-robotics-rt",
+    "crates/agentic-robotics-node",
+    "crates/agentic-robotics-mcp",
+    "crates/agentic-robotics-embedded",
+    "crates/agentic-robotics-benchmarks",
 ]
 resolver = "2"
 
@@ -250,16 +420,36 @@ edition = "2021"
 rust-version = "1.77"
 license = "MIT"
 authors = ["Ruvector Team"]
-repository = "https://github.com/ruvnet/ruvector"
+repository = "https://github.com/FlexNetOS/ruvector"
+homepage = "https://ruv.io"
+description = "Neuromorphic vector search engine with spiking neural networks and HNSW indexing"
+keywords = ["neuromorphic", "vector-search", "hnsw", "spiking", "snn"]
+categories = ["algorithms", "science"]
+documentation = "https://docs.rs/ruvector"
 
 [workspace.dependencies]
+# Cognitum Seed / Cloud SDK (https://cognitum.one/developers).
+# Vendored in-tree at `vendor/cognitum-one/` (v0.2.1, MIT, upstream
+# `cognitum-one/sdks` @ `a9e1c073`). See `vendor/cognitum-one/VENDORED.md`
+# for provenance and update procedure. Crates opt in by listing
+# `cognitum-one.workspace = true` in their own `Cargo.toml`. Default features
+# enable rustls + the `seed` (LAN appliance) surface; add `mdns` / `stream` /
+# `blocking` features per crate as needed.
+cognitum-one = { path = "vendor/cognitum-one", default-features = false, features = ["rustls", "seed"] }
+
 # Core functionality
-redb = "2.1"
+redb = "4.1"
 memmap2 = "0.9"
 hnsw_rs = "0.3"
 simsimd = "5.9"
 rayon = "1.10"
 crossbeam = "0.8"
+
+# DDS / robotics middleware (used by agentic-robotics-* crates)
+zenoh = "1.9"
+rustdds = "0.11"
+cdr = "0.2"
+hdrhistogram = "7.5"
 
 # Serialization
 rkyv = "0.8"

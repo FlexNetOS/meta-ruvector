@@ -1,0 +1,16 @@
+[package]
+name = "atas_harness"
+version = "0.1.0"
+edition = "2021"
+description = "ATAS/ESN future-timeline research harness (ARCHBP-011). Research layer only: every forecast is explicitly non-authoritative and must never gate completion or route production tasks."
+license = "MIT OR Apache-2.0"
+publish = false
+
+# Standalone crate: opts out of the meta-ruvector root workspace so the
+# production build/clippy surface is untouched (ARCHBP-011 collision rule:
+# ARCHBP-007 works in crates/ in parallel; this harness stays self-contained).
+# Zero external dependencies by design — deterministic in-crate PRNG, linear
+# algebra, and JSON writer keep every run reproducible and hermetic.
+[workspace]
+
+[dependencies]

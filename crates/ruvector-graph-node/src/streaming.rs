@@ -5,7 +5,6 @@ use futures::stream::Stream;
 use napi::bindgen_prelude::*;
 use napi_derive::napi;
 use std::pin::Pin;
-use std::task::{Context, Poll};
 
 /// Streaming query result iterator
 #[napi]

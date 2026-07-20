@@ -7,33 +7,35 @@
 
 **Point-in-time snapshots and backup for Ruvector vector databases.**
 
-`ruvector-snapshot` provides efficient snapshot creation, storage, and restoration for Ruvector databases. Supports incremental snapshots, compression, and integrity verification. Part of the [Ruvector](https://github.com/ruvnet/ruvector) ecosystem.
+`ruvector-snapshot` provides full snapshot creation, storage, and restoration for Ruvector collections, with GZIP compression and SHA-256 integrity verification. Part of the [Ruvector](https://github.com/ruvnet/ruvector) ecosystem.
 
 ## Why Ruvector Snapshot?
 
-- **Point-in-Time Recovery**: Restore to any snapshot
-- **Incremental Snapshots**: Only store changed data
+- **Point-in-Time Recovery**: Restore any saved snapshot
 - **Compression**: GZIP compression for storage efficiency
-- **Integrity Verification**: SHA-256 checksums
-- **Async I/O**: Non-blocking snapshot operations
+- **Integrity Verification**: SHA-256 checksums verified on load
+- **Async I/O**: Non-blocking snapshot operations (Tokio)
+- **Pluggable Storage**: `SnapshotStorage` trait with a `LocalStorage` backend
 
 ## Features
 
 ### Core Capabilities
 
-- **Full Snapshots**: Complete database backup
-- **Incremental Snapshots**: Delta-based backups
-- **Compression**: GZIP compression support
-- **Checksums**: SHA-256 integrity verification
+- **Full Snapshots**: Complete collection backup (`SnapshotData`)
+- **Compression**: GZIP compression of serialized snapshot data
+- **Checksums**: SHA-256 integrity verification on restore
 - **Async Operations**: Tokio-based async I/O
+- **Basic Retention**: `cleanup_old_snapshots(collection, keep_count)` keeps the N most recent
 
-### Advanced Features
+### Planned / Not Yet Implemented
 
+These are roadmap items and are **not** present in the current code:
+
+- **Incremental Snapshots**: Delta-based backups (only full snapshots today)
 - **Snapshot Scheduling**: Automated snapshot creation
-- **Retention Policies**: Automatic cleanup of old snapshots
-- **Remote Storage**: S3/GCS compatible storage (planned)
-- **Streaming Restore**: Progressive restoration
-- **Parallel Processing**: Multi-threaded snapshot creation
+- **Retention Policies**: Time-based / rule-based policies (only manual `cleanup_old_snapshots`)
+- **Remote Storage**: S3/GCS-compatible storage (`LocalStorage` only today)
+- **Streaming / Parallel Restore**
 
 ## Installation
 
@@ -49,26 +51,33 @@ ruvector-snapshot = "0.1.1"
 ### Create Snapshot
 
 ```rust
-use ruvector_snapshot::{SnapshotManager, SnapshotConfig};
+use ruvector_snapshot::{
+    SnapshotManager, SnapshotData, LocalStorage,
+};
+use ruvector_snapshot::{CollectionConfig, DistanceMetric, VectorRecord};
+use std::path::PathBuf;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Configure snapshot manager
-    let config = SnapshotConfig {
-        snapshot_dir: "./snapshots".into(),
-        compression: true,
-        verify_checksum: true,
-        ..Default::default()
-    };
+    // Choose a storage backend (LocalStorage implements SnapshotStorage)
+    let storage = Box::new(LocalStorage::new(PathBuf::from("./snapshots")));
+    let manager = SnapshotManager::new(storage);
 
-    let manager = SnapshotManager::new(config)?;
+    // Build the snapshot payload
+    let config = CollectionConfig {
+        dimension: 3,
+        metric: DistanceMetric::Cosine,
+        hnsw_config: None,
+    };
+    let vectors = vec![
+        VectorRecord::new("v1".to_string(), vec![1.0, 0.0, 0.0], None),
+        VectorRecord::new("v2".to_string(), vec![0.0, 1.0, 0.0], None),
+    ];
+    let data = SnapshotData::new("documents".to_string(), config, vectors);
 
     // Create a full snapshot
-    let snapshot = manager.create_snapshot(&db, "backup-2024-01").await?;
-    println!("Created snapshot: {} ({} bytes)",
-        snapshot.id,
-        snapshot.size_bytes
-    );
+    let snapshot = manager.create_snapshot(data).await?;
+    println!("Created snapshot: {} ({} bytes)", snapshot.id, snapshot.size_bytes);
 
     Ok(())
 }
@@ -77,44 +86,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 ### Restore from Snapshot
 
 ```rust
-use ruvector_snapshot::SnapshotManager;
-
-// List available snapshots
+// List available snapshots (newest first)
 let snapshots = manager.list_snapshots().await?;
 for snapshot in &snapshots {
-    println!("{}: {} ({})",
-        snapshot.id,
-        snapshot.created_at,
-        snapshot.size_bytes
-    );
+    println!("{}: {} ({} bytes)", snapshot.id, snapshot.created_at, snapshot.size_bytes);
 }
 
-// Restore from snapshot
-let restored_db = manager.restore_snapshot(&snapshots[0].id).await?;
-println!("Restored {} vectors", restored_db.len()?);
+// Restore: returns the SnapshotData (vectors + config), checksum-verified
+let restored = manager.restore_snapshot(&snapshots[0].id).await?;
+println!("Restored {} vectors", restored.vectors_count());
 ```
 
-### Incremental Snapshots
+### Retention
 
 ```rust
-use ruvector_snapshot::{SnapshotManager, SnapshotType};
-
-// Create base snapshot
-let base = manager.create_snapshot(&db, "base").await?;
-
-// ... database modifications ...
-
-// Create incremental snapshot
-let incremental = manager.create_incremental_snapshot(
-    &db,
-    "incremental-1",
-    &base.id
-).await?;
-
-println!("Incremental snapshot: {} bytes (vs {} full)",
-    incremental.size_bytes,
-    base.size_bytes
-);
+// Keep only the 2 most recent snapshots for a collection; returns # deleted
+let deleted = manager.cleanup_old_snapshots("documents", 2).await?;
+println!("Deleted {} old snapshots", deleted);
 ```
 
 ## API Overview
@@ -122,71 +110,65 @@ println!("Incremental snapshot: {} bytes (vs {} full)",
 ### Core Types
 
 ```rust
-// Snapshot configuration
-pub struct SnapshotConfig {
-    pub snapshot_dir: PathBuf,
-    pub compression: bool,
-    pub compression_level: u32,
-    pub verify_checksum: bool,
-    pub max_concurrent_io: usize,
+// Complete snapshot payload (what you create / restore)
+pub struct SnapshotData {
+    pub metadata: SnapshotMetadata,
+    pub config: CollectionConfig,
+    pub vectors: Vec<VectorRecord>,
 }
 
-// Snapshot metadata
+// Snapshot metadata returned after saving
 pub struct Snapshot {
     pub id: String,
+    pub collection_name: String,
     pub created_at: DateTime<Utc>,
-    pub size_bytes: u64,
-    pub checksum: String,
-    pub snapshot_type: SnapshotType,
-    pub vector_count: usize,
-    pub metadata: serde_json::Value,
+    pub vectors_count: usize,
+    pub checksum: String,    // SHA-256
+    pub size_bytes: u64,     // compressed size
 }
 
-// Snapshot types
-pub enum SnapshotType {
-    Full,
-    Incremental { base_id: String },
+// Collection config stored inside a snapshot
+pub struct CollectionConfig {
+    pub dimension: usize,
+    pub metric: DistanceMetric,           // Cosine | Euclidean | DotProduct
+    pub hnsw_config: Option<HnswConfig>,
 }
+
+// Storage backend trait + local implementation
+pub trait SnapshotStorage { /* save, load, list, delete */ }
+pub struct LocalStorage { /* filesystem backend */ }
 ```
 
 ### Manager Operations
 
 ```rust
 impl SnapshotManager {
-    pub fn new(config: SnapshotConfig) -> Result<Self>;
+    pub fn new(storage: Box<dyn SnapshotStorage>) -> Self;
 
-    // Snapshot creation
-    pub async fn create_snapshot(&self, db: &VectorDB, name: &str) -> Result<Snapshot>;
-    pub async fn create_incremental_snapshot(
-        &self,
-        db: &VectorDB,
-        name: &str,
-        base_id: &str
-    ) -> Result<Snapshot>;
+    // Creation & restoration
+    pub async fn create_snapshot(&self, snapshot_data: SnapshotData) -> Result<Snapshot>;
+    pub async fn restore_snapshot(&self, id: &str) -> Result<SnapshotData>;
 
-    // Listing and info
+    // Listing & info
     pub async fn list_snapshots(&self) -> Result<Vec<Snapshot>>;
-    pub async fn get_snapshot(&self, id: &str) -> Result<Option<Snapshot>>;
-
-    // Restoration
-    pub async fn restore_snapshot(&self, id: &str) -> Result<VectorDB>;
-    pub async fn verify_snapshot(&self, id: &str) -> Result<bool>;
+    pub async fn list_snapshots_for_collection(&self, collection_name: &str) -> Result<Vec<Snapshot>>;
+    pub async fn get_snapshot_info(&self, id: &str) -> Result<Snapshot>;
 
     // Management
     pub async fn delete_snapshot(&self, id: &str) -> Result<()>;
-    pub async fn cleanup_old_snapshots(&self, keep: usize) -> Result<usize>;
+    pub async fn cleanup_old_snapshots(&self, collection_name: &str, keep_count: usize) -> Result<usize>;
+    pub async fn total_size(&self) -> Result<u64>;
+    pub async fn collection_size(&self, collection_name: &str) -> Result<u64>;
 }
 ```
 
 ## Snapshot Format
 
-```
-snapshot-{id}/
-├── metadata.json       # Snapshot metadata
-├── vectors.bin.gz      # Compressed vector data
-├── index.bin.gz        # HNSW index data
-├── metadata.bin.gz     # Vector metadata
-└── checksum.sha256     # Integrity checksum
+With `LocalStorage`, each snapshot is written as two files in the base directory:
+
+```text
+{id}.snapshot.gz      # bincode-serialized SnapshotData, GZIP-compressed
+{id}.metadata.json    # Snapshot metadata (id, collection, checksum, size, ...)
 ```
 
 ## Related Crates

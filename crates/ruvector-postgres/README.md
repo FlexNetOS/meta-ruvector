@@ -4,13 +4,15 @@
 [![Documentation](https://docs.rs/ruvector-postgres/badge.svg)](https://docs.rs/ruvector-postgres)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14--17-blue.svg)](https://www.postgresql.org/)
-[![Docker](https://img.shields.io/badge/Docker-available-blue.svg)](https://hub.docker.com/r/ruvnet/ruvector-postgres)
+[![Docker](https://img.shields.io/badge/Docker-available-blue.svg)](https://hub.docker.com/r/flexnetos/ruvector-postgres)
 [![npm](https://img.shields.io/npm/v/@ruvector/core.svg)](https://www.npmjs.com/package/@ruvector/core)
 [![Security](https://img.shields.io/badge/Security-Audited-green.svg)](docs/SECURITY_AUDIT_REPORT.md)
 
 **A drop-in pgvector replacement that learns from your queries and gets smarter over time.**
 
-Most PostgreSQL vector extensions give you storage and search -- and that is it. RuVector-Postgres adds 143 SQL functions that bring graph neural networks, attention mechanisms, hyperbolic embeddings, self-healing indexes, and local embedding generation directly into your existing database. No sidecar service, no external API calls. Install the extension and `SELECT` your way to better results.
+Most PostgreSQL vector extensions give you storage and search -- and that is it. RuVector-Postgres adds 346 `#[pg_extern]` SQL functions that bring graph neural networks, attention mechanisms, hyperbolic embeddings, self-healing indexes, and local embedding generation directly into your existing database. No sidecar service, no external API calls. Install the extension and `SELECT` your way to better results.
+
+> Many functions live in feature-gated modules (`solver`, `math-distances`, `tda`, `sona-learning`, `domain-expansion`, `embeddings`, `gated-transformer`). The exact set installed depends on which Cargo features you build with; the 346 figure counts every `#[pg_extern]` in `src/`.
 
 | | RuVector-Postgres | pgvector | Separate vector service |
 |---|---|---|---|
@@ -28,7 +30,7 @@ Most PostgreSQL vector extensions give you storage and search -- and that is it.
 
 | Feature | What It Does | Why It Matters |
 |---|---|---|
-| **143 SQL functions** | Vector ops, GNN layers, attention, solvers, graph queries -- all as `SELECT` calls | Use familiar SQL instead of learning a new API |
+| **346 SQL functions** | Vector ops, GNN layers, attention, solvers, graph queries -- all as `SELECT` calls | Use familiar SQL instead of learning a new API |
 | **Local embeddings** | 6 fastembed models run inside PostgreSQL | No API keys, no latency, no per-call costs |
 | **46 attention mechanisms** | Flash, linear, sparse, cross, hyperbolic, mincut-gated | Transformer-grade inference without leaving the database |
 | **Sublinear solvers** | PageRank, conjugate gradient, Laplacian solver in O(log n) to O(sqrt n) | Graph analytics that scale to millions of nodes |
@@ -47,7 +49,7 @@ Most PostgreSQL vector extensions give you storage and search -- and that is it.
 docker run -d --name ruvector-pg \
   -e POSTGRES_PASSWORD=secret \
   -p 5432:5432 \
-  ruvnet/ruvector-postgres:latest
+  flexnetos/ruvector-postgres:latest
 
 # Connect with psql
 PGPASSWORD=secret psql -h localhost -p 5432 -U postgres
@@ -126,9 +128,13 @@ ORDER BY distance
 LIMIT 10;
 ```
 
-## 143 SQL Functions
+## 346 SQL Functions
 
-RuVector exposes all advanced AI capabilities as native PostgreSQL functions.
+RuVector exposes all advanced AI capabilities as native PostgreSQL functions
+(346 `#[pg_extern]` definitions across `src/`). The section counts below are
+illustrative groupings of the more commonly used functions, not an exhaustive
+listing of all 346; feature-gated modules add or remove functions depending on
+the enabled Cargo features.
 
 ### Core Vector Operations
 
@@ -1022,4 +1028,4 @@ Contributions welcome! See [CONTRIBUTING.md](../../CONTRIBUTING.md)
 
 ---
 
-Part of [RuVector](https://github.com/ruvnet/ruvector) -- the self-learning vector database.
+Part of [RuVector](https://github.com/FlexNetOS/ruvector) -- the self-learning vector database.

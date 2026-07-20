@@ -337,11 +337,9 @@ impl CoreGraphTransformer {
         env_hash[0..4].copy_from_slice(&(self.gates.len() as u32).to_le_bytes());
 
         let total = self.stats.cache_hits + self.stats.cache_misses;
-        let rate = if total > 0 {
-            ((self.stats.cache_hits * 10000) / total) as u16
-        } else {
-            0
-        };
+        let rate = (self.stats.cache_hits * 10000)
+            .checked_div(total)
+            .unwrap_or(0) as u16;
 
         Attestation {
             proof_id,
@@ -825,7 +823,7 @@ impl CoreGraphTransformer {
         }
         let n = a.len();
         let n_spaces = curvatures.len();
-        let chunk_size = (n + n_spaces - 1) / n_spaces;
+        let chunk_size = n.div_ceil(n_spaces);
 
         let mut total_dist_sq = 0.0;
 
@@ -867,7 +865,7 @@ impl CoreGraphTransformer {
     ) -> ManifoldOutput {
         let dim = features.len();
         let n_spaces = curvatures.len().max(1);
-        let chunk_size = (dim + n_spaces - 1) / n_spaces;
+        let chunk_size = dim.div_ceil(n_spaces);
 
         // Compute manifold distances from each edge
         let mut distances = Vec::new();

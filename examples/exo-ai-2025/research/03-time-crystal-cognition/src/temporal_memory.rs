@@ -553,7 +553,7 @@ mod tests {
 
     #[test]
     fn test_encode_retrieve() {
-        let mut config = TemporalMemoryConfig::default();
+        let config = TemporalMemoryConfig::default();
         let mut memory = TemporalMemory::new(config);
 
         // Create item with correct dimension (64)
@@ -585,8 +585,10 @@ mod tests {
 
     #[test]
     fn test_capacity_limit() {
-        let mut config = TemporalMemoryConfig::default();
-        config.max_capacity = 3;
+        let config = TemporalMemoryConfig {
+            max_capacity: 3,
+            ..Default::default()
+        };
 
         let mut memory = TemporalMemory::new(config);
 
@@ -602,8 +604,10 @@ mod tests {
 
     #[test]
     fn test_time_crystal_phase() {
-        let mut config = TemporalMemoryConfig::default();
-        config.pfc_neurons = 100;
+        let config = TemporalMemoryConfig {
+            pfc_neurons: 100,
+            ..Default::default()
+        };
 
         let mut memory = TemporalMemory::new(config);
 

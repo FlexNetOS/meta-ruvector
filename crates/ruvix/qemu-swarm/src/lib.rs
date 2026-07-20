@@ -104,18 +104,17 @@ pub mod orchestrator;
 mod config;
 mod error;
 
-pub use cluster::{QemuCluster, ClusterConfig, ClusterStatus};
-pub use config::{SwarmConfig, NodeDefaults, NetworkConfig};
+pub use cluster::{ClusterConfig, ClusterStatus, QemuCluster};
+pub use config::{NetworkConfig, NodeDefaults, SwarmConfig};
 pub use consensus::{
-    PbftMessage, PbftReplica, PbftConfig, PbftStats,
-    Request, PrePrepare, Prepare, Commit, Reply, ViewChange, NewView, Checkpoint,
-    Operation, OperationResult, ReplicaState,
+    Checkpoint, Commit, NewView, Operation, OperationResult, PbftConfig, PbftMessage, PbftReplica,
+    PbftStats, PrePrepare, Prepare, ReplicaState, Reply, Request, ViewChange,
 };
-pub use console::{ConsoleIO, ConsoleMessage, ConsoleFilter};
+pub use console::{ConsoleFilter, ConsoleIO, ConsoleMessage};
 pub use error::{SwarmError, SwarmResult};
-pub use network::{VirtualNetwork, NetworkTopology, Topology, MacAddress};
-pub use node::{QemuNode, NodeConfig, NodeStatus, NodeId};
-pub use orchestrator::{SwarmOrchestrator, SwarmMetrics, FaultType, DeploymentResult};
+pub use network::{MacAddress, NetworkTopology, Topology, VirtualNetwork};
+pub use node::{NodeConfig, NodeId, NodeStatus, QemuNode};
+pub use orchestrator::{DeploymentResult, FaultType, SwarmMetrics, SwarmOrchestrator};
 
 use std::time::Duration;
 
@@ -146,9 +145,8 @@ pub const CONSOLE_BASE_PORT: u16 = 5555;
 /// Prelude module for convenient imports.
 pub mod prelude {
     pub use crate::{
-        QemuCluster, ClusterConfig, QemuNode, NodeConfig,
-        SwarmOrchestrator, VirtualNetwork, ConsoleIO,
-        Topology, FaultType, SwarmResult,
-        PbftReplica, PbftConfig, PbftMessage, Operation, Request,
+        ClusterConfig, ConsoleIO, FaultType, NodeConfig, Operation, PbftConfig, PbftMessage,
+        PbftReplica, QemuCluster, QemuNode, Request, SwarmOrchestrator, SwarmResult, Topology,
+        VirtualNetwork,
     };
 }

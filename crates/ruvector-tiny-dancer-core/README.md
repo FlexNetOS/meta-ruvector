@@ -3,7 +3,7 @@
 [![Crates.io](https://img.shields.io/crates/v/ruvector-tiny-dancer-core.svg)](https://crates.io/crates/ruvector-tiny-dancer-core)
 [![Documentation](https://docs.rs/ruvector-tiny-dancer-core/badge.svg)](https://docs.rs/ruvector-tiny-dancer-core)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Build Status](https://github.com/ruvnet/ruvector/workflows/CI/badge.svg)](https://github.com/ruvnet/ruvector/actions)
+[![Build Status](https://github.com/FlexNetOS/ruvector/workflows/CI/badge.svg)](https://github.com/FlexNetOS/ruvector/actions)
 [![Rust Version](https://img.shields.io/badge/rust-1.77%2B-blue.svg)](https://www.rust-lang.org)
 
 Production-grade AI agent routing system with FastGRNN neural inference for **70-85% LLM cost reduction**.
@@ -62,7 +62,7 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-ruvector-tiny-dancer-core = "0.1.1"
+ruvector-tiny-dancer-core = "2.2.3"
 ```
 
 ### Basic Usage
@@ -367,9 +367,9 @@ For 10,000 daily queries at $0.02 per query:
 ## 📚 Resources
 
 - **Documentation**: [docs.rs/ruvector-tiny-dancer-core](https://docs.rs/ruvector-tiny-dancer-core)
-- **GitHub**: [github.com/ruvnet/ruvector](https://github.com/ruvnet/ruvector)
+- **GitHub**: [github.com/FlexNetOS/ruvector](https://github.com/FlexNetOS/ruvector)
 - **Website**: [ruv.io](https://ruv.io)
-- **Examples**: [github.com/ruvnet/ruvector/tree/main/examples](https://github.com/ruvnet/ruvector/tree/main/examples)
+- **Examples**: [github.com/FlexNetOS/ruvector/tree/main/examples](https://github.com/FlexNetOS/ruvector/tree/main/examples)
 
 ## 🤝 Contributing
 
@@ -387,4 +387,4 @@ MIT License - see [LICENSE](../../LICENSE) for details.
 
 ---
 
-Built with ❤️ by the [Ruvector Team](https://github.com/ruvnet)
+Built with ❤️ by the [Ruvector Team](https://github.com/FlexNetOS)

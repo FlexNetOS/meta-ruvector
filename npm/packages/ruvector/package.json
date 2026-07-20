@@ -1,6 +1,6 @@
 {
   "name": "ruvector",
-  "version": "0.2.32",
+  "version": "0.2.35",
   "description": "Self-learning vector database for Node.js \u2014 hybrid search, Graph RAG, FlashAttention-3, HNSW, 50+ attention mechanisms",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -62,12 +62,12 @@
   "author": "ruv.io Team <info@ruv.io> (https://ruv.io)",
   "homepage": "https://ruv.io",
   "bugs": {
-    "url": "https://github.com/ruvnet/ruvector/issues"
+    "url": "https://github.com/FlexNetOS/ruvector/issues"
   },
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ruvnet/ruvector.git",
+    "url": "https://github.com/FlexNetOS/ruvector.git",
     "directory": "npm/packages/ruvector"
   },
   "dependencies": {
@@ -93,6 +93,7 @@
     "bin/",
     "dist/",
     "src/decompiler/",
+    "src/optimizer/",
     "wasm/",
     "README.md",
     "LICENSE"

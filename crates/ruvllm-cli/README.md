@@ -299,4 +299,4 @@ cargo install ruvllm-cli --features "metal,cuda"
 
 ## License
 
-Apache-2.0 / MIT dual license.
+MIT

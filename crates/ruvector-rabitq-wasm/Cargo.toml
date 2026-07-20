@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 description = "WASM bindings for ruvector-rabitq — 1-bit quantized vector index for browsers and edge runtimes"
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/ruvnet/ruvector"
+repository = "https://github.com/FlexNetOS/ruvector"
 keywords = ["rabitq", "vector-search", "wasm", "quantization", "embeddings"]
 categories = ["wasm", "science", "algorithms"]
 
@@ -31,17 +31,3 @@ getrandom = { version = "0.2", features = ["js"] }
 [dev-dependencies]
 wasm-bindgen-test = "0.3"
 
-[profile.release]
-opt-level = "s"
-lto = true
-
-# Workspace cleanup pass: research-tier crate, doc/style churn deferred.
-# Correctness + suspicious lints stay denied.
-[lints.rust]
-unexpected_cfgs = { level = "allow", priority = -1 }
-
-[lints.clippy]
-pedantic = { level = "allow", priority = -2 }
-all = { level = "warn", priority = -1 }
-correctness = "deny"
-suspicious = "deny"
