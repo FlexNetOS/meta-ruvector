@@ -146,8 +146,6 @@ fn gen_queries(
     (queries, q_topics)
 }
 
-// ── Ground truth ─────────────────────────────────────────────────────────────
-
 fn recall_at_k(results: &[Vec<DocId>], ground: &[Vec<Vec<DocId>>], k: usize) -> f64 {
     let mut hits = 0u64;
     let mut total = 0u64;

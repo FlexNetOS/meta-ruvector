@@ -151,7 +151,9 @@ struct BenchStats {
     p95_us: f64,
 }
 
-fn run_strategy<D>(
+#[allow(clippy::too_many_arguments)]
+fn run_strategy<D, P>(
+    _name: &str,
     base: &HnswGraph,
     queries: &[Vec<f32>],
     delete_ids: &[usize],

@@ -42,6 +42,10 @@ index.d.ts
 # (v3 emits no v2-style loader), which published an empty 0.1.6 (#516)
 !npm/packages/sona/index.js
 !npm/packages/sona/index.d.ts
+# ruvector optimizer is a hand-written module (not a napi artifact); the bare
+# `index.js` rule above wrongly ignored it, so it was never committed and CI's
+# optimizer test could not resolve it.
+!npm/packages/ruvector/src/optimizer/index.js
 
 # Environment variables and secrets
 .env
@@ -203,6 +207,7 @@ crates/ruvector-hailo-cluster/Cargo.lock
 crates/hailort-sys/Cargo.lock
 crates/ruvector-mmwave/Cargo.lock
 
+
 # Local cargo-installed tool cache produced by development harnesses.
 /.crates.toml
 /.crates2.json
@@ -216,3 +221,6 @@ crates/ruvector-mmwave/Cargo.lock
 # These nested JS projects use package-lock.json as their committed lockfile.
 /npm/bun.lock
 /ui/ruvocal/bun.lock
+
+node_modules
+

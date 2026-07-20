@@ -1,7 +1,51 @@
 [workspace]
-exclude = [
-    # Excludes: only paths neither branch built as a member (nested/patch/env-gated).
-    "crates/micro-hnsw-wasm",
+exclude = ["crates/micro-hnsw-wasm", "crates/ruvector-hyperbolic-hnsw", "crates/ruvector-hyperbolic-hnsw-wasm", "examples/ruvLLM/esp32", "examples/ruvLLM/esp32-flash", "examples/edge-net", "examples/data", "examples/ruvLLM", "examples/delta-behavior", "crates/rvf", "crates/rvf/*", "crates/rvf/*/*",
+    # emergent-time-wasm: standalone cdylib with own opt-level=z, panic=abort (upstream)
+    "crates/emergent-time-wasm",
+    # sonic-ct crates: self-contained detached workspaces (upstream)
+    "crates/sonic-ct", "crates/sonic-ct-wasm",
+    # ruvector-postgres is a pgrx-based PostgreSQL extension. Its build script
+    # requires `$PGRX_HOME` set up via `cargo install cargo-pgrx --version 0.12.9`
+    # and `cargo pgrx init`, which downloads and builds multiple Postgres
+    # versions. Keep it out of default workspace builds so `cargo build --workspace`
+    # works in stock environments. Build it explicitly with `cargo build -p ruvector-postgres`
+    # after running pgrx init.
+    "crates/ruvector-postgres",
+    # Iter 219 (closes ADR-178 Gap E folded into Gap B): the hailo
+    # crates rejoined the workspace once the iter-218 ruvector-core
+    # path dep + EmbeddingProvider impls landed. The `hailo` feature
+    # stays opt-in (only `cargo build --features hailo,cpu-fallback`
+    # pulls libhailort + candle), so workspace builds on stock x86
+    # still compile without Pi-specific tooling.
+    # agentic-robotics-*: a self-contained DDS/ROS2 robotics-middleware cluster
+    # (upstream ruvnet/vibecast) — 6 crates that only depend on each other, with
+    # zero linkage to ruvector proper. They inherit workspace.package fields
+    # (homepage/documentation/description/keywords/categories) and require
+    # zenoh/rustdds/cdr — none of which exist in this workspace. Kept out of the
+    # default build so the main workspace stays lean; full integration (own
+    # nested workspace + DDS deps) is tracked as a follow-up.
+    "crates/agentic-robotics-core",
+    "crates/agentic-robotics-rt",
+    "crates/agentic-robotics-node",
+    "crates/agentic-robotics-mcp",
+    "crates/agentic-robotics-embedded",
+    "crates/agentic-robotics-benchmarks",
+    # Vendored [patch.crates-io] override source for hnsw_rs — a patch source is
+    # not a workspace member by design (two copies exist for different patch
+    # tables); excluded explicitly so it is accounted for, not silently orphaned.
+    "patches/hnsw_rs",
+    "scripts/patches/hnsw_rs",
+    # Standalone docker integration-test harness (ruvector-attention-integration-test);
+    # run inside its container, not part of the host `cargo build --workspace`.
+    "tests/docker-integration",
+    # spiking-network was WIP skeleton — completed (source stubs added 2026-06-25); promoted to members above.
+    # Removed from exclude so it builds as a workspace member.
+
+    # ruvector-attention-cli / ruvector-sparse-inference-wasm: stale against
+    # current ruvector-attention / sparse-model APIs (calls removed methods like
+    # ScaledDotProductAttention::compute, SparseModel::{encode,forward_embedding,
+    # sparsity_statistics}). They do not compile, so they are excluded rather
+    # than added as broken members; re-align to the current APIs, then re-add.
     "crates/ruvector-attention-cli",
     "crates/ruvector-hyperbolic-hnsw",
     "crates/ruvector-hyperbolic-hnsw-wasm",
@@ -205,31 +249,186 @@ members = [
     "crates/ruvllm",
     "crates/ruvllm-cli",
     "crates/ruvllm-wasm",
-    "crates/ruvllm_retrieval_diffusion",
-    "crates/ruvllm_sparse_attention",
-    "crates/rvAgent/rvagent-a2a",
-    "crates/rvAgent/rvagent-acp",
-    "crates/rvAgent/rvagent-backends",
-    "crates/rvAgent/rvagent-cli",
-    "crates/rvAgent/rvagent-core",
-    "crates/rvAgent/rvagent-mcp",
-    "crates/rvAgent/rvagent-middleware",
-    "crates/rvAgent/rvagent-subagents",
-    "crates/rvAgent/rvagent-tools",
-    "crates/rvAgent/rvagent-wasm",
-    "crates/rvlite",
-    "crates/sona",
+    "crates/prime-radiant",
+    "crates/ruvector-delta-core",
+    "crates/ruvector-delta-wasm",
+    "crates/ruvector-delta-index",
+    "crates/ruvector-delta-graph",
+    "crates/ruvector-delta-consensus",
+    "crates/ruvector-crv",
+    "crates/ruvector-temporal-tensor",
+    "crates/ruvector-domain-expansion",
+    "crates/ruvector-domain-expansion-wasm",
+    "crates/ruvector-solver",
+    "crates/ruvector-solver-wasm",
+    "crates/ruvector-solver-node",
+    "crates/ruvector-coherence",
+    "crates/ruvector-profiler",
+    "crates/ruvector-attn-mincut",
+    "crates/ruvector-cognitive-container",
+    "crates/ruvector-verified",
+    "crates/ruvector-verified-wasm",
+    "crates/ruvector-graph-transformer",
+    "crates/ruvector-graph-transformer-wasm",
+    "crates/ruvector-graph-transformer-node",
+    "examples/rvf-kernel-optimized",
+    "examples/verified-applications",
     "crates/thermorust",
-    "examples/OSpipe",
+    "crates/ruvector-dither",
+    "crates/ruvector-robotics",
+    "examples/robotics",
+    "crates/neural-trader-core",
+    "crates/neural-trader-coherence",
+    "crates/neural-trader-replay",
+    "crates/neural-trader-wasm",
+    # Kalshi integration (ADR-153)
+    "crates/ruvector-kalshi",
+    "crates/neural-trader-strategies",
+    # RuVix Cognition Kernel (organized under crates/ruvix/)
+    "crates/ruvix/crates/types",
+    "crates/ruvix/crates/region",
+    "crates/ruvix/crates/queue",
+    "crates/ruvix/crates/cap",
+    "crates/ruvix/crates/proof",
+    "crates/ruvix/crates/sched",
+    "crates/ruvix/crates/boot",
+    "crates/ruvix/crates/vecgraph",
+    "crates/ruvix/crates/nucleus",
+    # Phase B: Bare metal AArch64 support
+    "crates/ruvix/crates/hal",
+    "crates/ruvix/crates/aarch64",
+    "crates/ruvix/crates/drivers",
+    "crates/ruvix/tests",
+    "crates/ruvix/benches",
+    "crates/ruvix/examples/cognitive_demo",
+    # rvAgent — AI Agent Framework (DeepAgents Rust conversion)
+    "crates/codex-env",
+    "crates/rvAgent/rvagent-core",
+    "crates/rvAgent/rvagent-backends",
+    "crates/rvAgent/rvagent-middleware",
+    "crates/rvAgent/rvagent-tools",
+    "crates/rvAgent/rvagent-subagents",
+    "crates/rvAgent/rvagent-cli",
+    "crates/rvAgent/rvagent-acp",
+    "crates/rvAgent/rvagent-mcp",
+    "crates/rvAgent/rvagent-wasm",
+    "crates/rvAgent/rvagent-a2a",
+    # ADR-159 a2a-swarm demo
     "examples/a2a-swarm",
-    "examples/benchmarks",
-    "examples/boundary-discovery",
-    "examples/brain-boundary-discovery",
-    "examples/climate-consciousness",
-    "examples/cmb-boundary-discovery",
+    # ETL pipeline example
+    "examples/train-discoveries",
+    # RuView SkyGraph appliance core (ADR-199 Phases 1-4, synthetic ADS-B)
+    "examples/sky-monitor",
+    # Browser-facing WASM projection engine for the SkyGraph dashboard (ADR-199 presentation plane)
+    "examples/sky-monitor/wasm",
+    # Spectral graph sparsification
+    "crates/ruvector-sparsifier",
+    "crates/ruvector-sparsifier-wasm",
+    # Consciousness metrics (IIT Φ, causal emergence)
+    "crates/ruvector-consciousness",
+    "crates/ruvector-consciousness-wasm",
     "examples/cmb-consciousness",
-    "examples/earthquake-boundary-discovery",
+    "examples/gw-consciousness",
     "examples/ecosystem-consciousness",
+    "examples/quantum-consciousness",
+    "examples/gene-consciousness",
+    "examples/climate-consciousness",
+    # JS bundle decompiler (ADR-135)
+    "crates/ruvector-decompiler",
+    "crates/ruvector-decompiler-wasm",
+    # DiskANN / Vamana (ADR-143)
+    "crates/ruvector-diskann",
+    "crates/ruvector-diskann-node",
+    # Boundary-first scientific discovery PoC
+    "examples/boundary-discovery",
+    # CMB Cold Spot boundary-first discovery
+    "examples/cmb-boundary-discovery",
+    # FRB population boundary discovery (CHIME-like data)
+    "examples/frb-boundary-discovery",
+    # Cosmic void boundary information content
+    "examples/void-boundary-discovery",
+    # Multi-regime temporal attractor boundary detection
+    "examples/temporal-attractor-discovery",
+    # Music genre boundary discovery via spectral graph bisection
+    "examples/music-boundary-discovery",
+    # Weather regime boundary detection (variance/correlation precedes temperature)
+    "examples/weather-boundary-discovery",
+    # Market regime boundary discovery via correlation structure
+    "examples/market-boundary-discovery",
+    # Health state boundary detection from wearable sensor data
+    "examples/health-boundary-discovery",
+    # SETI exotic signals gallery: boundary-first detection of sub-threshold signals
+    "examples/seti-exotic-signals",
+    # SETI boundary-first discovery: sub-noise signal detection via coherence graphs
+    "examples/seti-boundary-discovery",
+    # Earthquake precursor detection via inter-station correlation boundary shifts
+    "examples/earthquake-boundary-discovery",
+    # Pandemic outbreak detection 60 days before case counts via correlation boundaries
+    "examples/pandemic-boundary-discovery",
+    # Infrastructure failure prediction via sensor correlation boundaries
+    "examples/infrastructure-boundary-discovery",
+    # Pre-seizure detection via brain correlation boundary shifts
+    "examples/brain-boundary-discovery",
+    # Clinical-publication-grade pre-seizure detection report with CSV output
+    "examples/seizure-clinical-report",
+    # Closed-loop seizure detection + therapeutic response simulation
+    "examples/seizure-therapeutic-sim",
+    # Real EEG analysis: CHB-MIT PhysioNet data with boundary-first detection
+    "examples/real-eeg-analysis",
+    # Multi-seizure cross-patient analysis: all 7 chb01 seizures
+    "examples/real-eeg-multi-seizure",
+    # ruvllm sparse attention kernel for Hailo-10H cluster (ADR-183 – ADR-190)
+    "crates/ruvllm_sparse_attention",
+    # Generic retrieval LM + masked discrete diffusion built on the kernel
+    "crates/ruvllm_retrieval_diffusion",
+    # RAIRS IVF: Redundant Assignment + Amplified Inverse Residual (ADR-193)
+    "crates/ruvector-rairs",
+    # Hybrid sparse-dense search: BM25 + ANN + RRF / RSF / ScoreFusion (ADR-256)
+    "crates/ruvector-hybrid",
+    # LSM-ANN: write-optimized streaming vector index for agent memory (ADR-264)
+    "crates/ruvector-lsm-ann",
+    # Structure-preserving graph condensation via dynamic min-cut communities
+    "crates/ruvector-graph-condense",
+    "crates/ruvector-graph-condense-wasm",
+    # Perception substrate: delta -> boundary -> coherence -> proof -> action
+    "crates/ruvector-perception",
+    # Calculus of emergent / relational time (Wheeler-DeWitt, Page-Wootters,
+    # entropic, thermal) + Structural Proper Time for agentic systems.
+    "crates/emergent-time",
+    # PhotonLayer: learned optical-frontend computing simulator (ADR-260)
+    "crates/photonlayer-core",
+    "crates/photonlayer-bench",
+    "crates/photonlayer-ruvector",
+    "crates/photonlayer-cli",
+    "crates/photonlayer-wasm",
+    # Recovered orphans — compile AND pass the clippy gate.
+    "crates/ruvector-temporal-tensor-wasm",
+    "crates/ruvector-bet4-ivf-bench",
+    # spiking-network: event-driven SNN for ASIC neuromorphic computing
+    "examples/spiking-network",
+    # Task #16: agent-memory / hnsw-repair / maxsim — promoted from exclude
+    # (compiled cleanly, clippy gate was the only blocker). Now wired in.
+    "crates/ruvector-agent-memory",
+    "crates/ruvector-hnsw-repair",
+    "crates/ruvector-maxsim",
+    # RVM bare-metal kernel: self-contained nested workspace (14 subcrates, own Cargo.toml).
+    # Cannot be added as a member — Cargo rejects nested workspace roots.
+    # Each subcrate uses `workspace = true` for deps pointing to its own [workspace.package].
+    # Task #12: Ruvix non-member subcrates (bcm2711/rpi-boot/smp/dma/dtb/fs/net/shell/drivers/physmem) —
+    # present on disk but never wired into workspace members. Added here.
+    "crates/ruvix/crates/bcm2711",
+    "crates/ruvix/crates/cli",
+    "crates/ruvix/crates/dma",
+    "crates/ruvix/crates/dtb",
+    "crates/ruvix/crates/fs",
+    "crates/ruvix/crates/net",
+    "crates/ruvix/crates/shell",
+    "crates/ruvix/crates/smp",
+    # Note: drivers already in members at line 188 — no duplicate needed.
+    "crates/ruvix/crates/physmem",
+    # Task #13: exo-ai-2025 subcrates — 9 standalone crates (literal version, no path deps).
+    # Each compiles clean in this workspace via parent's [workspace.dependencies].
+    "examples/exo-ai-2025/crates/exo-core",
     "examples/exo-ai-2025/crates/exo-backend-classical",
     "examples/exo-ai-2025/crates/exo-core",
     "examples/exo-ai-2025/crates/exo-exotic",
@@ -274,6 +473,20 @@ members = [
     "external/ruqu/crates/ruqu-exotic",
     "external/ruqu/crates/ruqu-wasm",
     "vendor/cognitum-one",
+    # Matryoshka coarse-to-fine ANN search: three-variant funnel with recall/latency tradeoffs (ADR-264)
+    "crates/ruvector-matryoshka",
+    # PQ-ADC: Product Quantization with Asymmetric Distance Computation (64× compression)
+    "crates/ruvector-pq-search",
+    # SOTA benchmark suite (ADR-265)
+    "crates/ruvector-sota-bench",
+    # Capability-gated ANN: per-vector read access control with bitset tokens (ADR-268)
+    "crates/ruvector-capgated",
+    # SPANN partition spilling for boundary-safe ANN (ADR-268)
+    "crates/ruvector-spann",
+    # TimesFM 1.0 200M decoder-only patched time-series Transformer (candle, ADR-189/191)
+    "crates/timesfm",
+    # RuVector integration for TimesFM: Forecaster + anomaly bands + sweep early-stopping
+    "crates/ruvector-timesfm",
 ]
 resolver = "2"
 

@@ -16,16 +16,16 @@ pub type Embedding = Vec<f32>;
 /// MaxSim aggregation rather than averaging.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MultiVecDoc {
-    /// Opaque identifier for this document.
+    /// Identifier this document is stored and returned under.
     pub id: DocId,
-    /// Token or chunk embeddings that represent this document.
+    /// One embedding per token/chunk that makes up the document.
     pub vecs: Vec<Embedding>,
 }
 
 /// A query likewise represented by one or more token embeddings.
 #[derive(Debug, Clone)]
 pub struct MultiVecQuery {
-    /// Token embeddings that represent the query.
+    /// One embedding per query token/chunk.
     pub vecs: Vec<Embedding>,
 }
 
@@ -59,26 +59,26 @@ impl Ord for SearchResult {
 /// Statistics from a benchmark or search run.
 #[derive(Debug, Clone, Default)]
 pub struct RunStats {
-    /// Human-readable name of the index variant (e.g. `"FlatMaxSim"`).
+    /// Name of the search variant that produced these stats.
     pub variant: String,
     /// Number of documents in the index.
     pub n_docs: usize,
-    /// Total number of token vectors across all indexed documents.
+    /// Total number of token/chunk vectors across all documents.
     pub n_token_vecs: usize,
-    /// Embedding dimension.
+    /// Embedding dimensionality.
     pub dims: usize,
-    /// Number of queries used in this run.
+    /// Number of queries executed in the run.
     pub n_queries: usize,
-    /// Mean per-query latency in microseconds.
+    /// Mean query latency in microseconds.
     pub mean_latency_us: f64,
-    /// Median (p50) per-query latency in microseconds.
+    /// Median (p50) query latency in microseconds.
     pub p50_latency_us: f64,
-    /// 95th-percentile per-query latency in microseconds.
+    /// 95th-percentile query latency in microseconds.
     pub p95_latency_us: f64,
-    /// Queries per second (throughput).
+    /// Achieved throughput in queries per second.
     pub throughput_qps: f64,
-    /// Recall@k against the flat (oracle) ground truth.
+    /// Recall@k against the brute-force ground truth.
     pub recall_at_k: f64,
-    /// Approximate memory footprint of the index in bytes.
+    /// Resident memory used by the index in bytes.
     pub memory_bytes: usize,
 }
