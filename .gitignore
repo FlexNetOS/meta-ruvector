@@ -207,7 +207,6 @@ crates/ruvector-hailo-cluster/Cargo.lock
 crates/hailort-sys/Cargo.lock
 crates/ruvector-mmwave/Cargo.lock
 
-
 # Local cargo-installed tool cache produced by development harnesses.
 /.crates.toml
 /.crates2.json
@@ -221,6 +220,3 @@ crates/ruvector-mmwave/Cargo.lock
 # These nested JS projects use package-lock.json as their committed lockfile.
 /npm/bun.lock
 /ui/ruvocal/bun.lock
-
-node_modules
-

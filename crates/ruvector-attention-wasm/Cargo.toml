@@ -31,12 +31,3 @@ wasm-bindgen-test = "0.3"
 [features]
 default = ["console_error_panic_hook"]
 
-
-# Lint debt allowlist: these lints fire on existing code and the workspace
-# CI gate is `cargo clippy --all-targets -- -D warnings`. Allowed here so the
-# gate stays red-free; groom the code, then remove entries.
-[lints.rust]
-unused_variables = "allow"
-[lints.clippy]
-manual_is_multiple_of = "allow"
-needless_range_loop = "allow"

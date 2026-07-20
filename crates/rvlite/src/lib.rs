@@ -238,6 +238,8 @@ impl RvLite {
     }
 
     /// Create with default configuration (384 dimensions, cosine similarity)
+    // Cannot implement `Default` here: the constructor is fallible (returns a
+    // `Result`/`JsValue`) and is part of the wasm-bindgen public surface.
     #[allow(clippy::should_implement_trait)]
     pub fn default() -> Result<RvLite, JsValue> {
         Self::new(RvLiteConfig::new(384))
@@ -857,8 +859,8 @@ fn parse_rdf_term(s: &str) -> Result<sparql::RdfTerm, JsValue> {
     let s = s.trim();
     if s.starts_with('<') && s.ends_with('>') {
         Ok(sparql::RdfTerm::iri(&s[1..s.len() - 1]))
-    } else if let Some(stripped) = s.strip_prefix("_:") {
-        Ok(sparql::RdfTerm::blank(stripped))
+    } else if let Some(rest) = s.strip_prefix("_:") {
+        Ok(sparql::RdfTerm::blank(rest))
     } else if s.starts_with('"') {
         let end = s.rfind('"').unwrap_or(s.len() - 1);
         let value = &s[1..end];

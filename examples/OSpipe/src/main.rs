@@ -1,3 +1,1 @@
-fn main() {
-    println!("osipe stub");
-}
+fn main() { println!("osipe stub"); }

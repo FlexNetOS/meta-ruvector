@@ -28,6 +28,5 @@ tempfile = "3.13"
 # turning this small harness into a style-churn magnet.
 [lints.clippy]
 pedantic = { level = "allow", priority = -2 }
-too_many_arguments = "allow"  # lint debt: CI denies warnings
 correctness = { level = "deny", priority = -1 }
 suspicious = { level = "deny", priority = -1 }

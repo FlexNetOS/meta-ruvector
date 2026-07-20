@@ -30,23 +30,6 @@ ignore = [
     # Re-evaluate when zenoh ships a release that bumps lz4_flex to >=0.11.6.
     "RUSTSEC-2026-0041",
 
-    # rustls-webpki 0.101.7 — name-constraint acceptance (0098/0099) and a
-    # reachable panic in CRL parsing (0104). Pulled ONLY transitively, and
-    # only at the old 0.101.7 line: the EXO-AI example crates depend on the
-    # published `ruvector-core 0.1.31` (crates.io), whose `reqwest 0.11 →
-    # rustls 0.21 → rustls-webpki 0.101.7` chain has no upstream fix (the
-    # patch lives at >= 0.103.12, a different major; 0.101.x is EOL and the
-    # local workspace ruvector-core is 2.x, so the `^0.1` requirement cannot
-    # be [patch]ed to it). The vulnerable code paths are not exercised: these
-    # examples use ruvector-core's VectorDB/types, not TLS cert/CRL
-    # validation, and 0104 explicitly notes apps that do not use CRLs are
-    # unaffected. Our production TLS runs on the current rustls-webpki 0.103.13
-    # (already patched). Re-evaluate when published ruvector-core 0.1.x bumps
-    # reqwest, or the EXO examples migrate to the 2.x workspace crates.
-    "RUSTSEC-2026-0098",
-    "RUSTSEC-2026-0099",
-    "RUSTSEC-2026-0104",
-
     # ------------------------------------------------------------------
     # "Unmaintained" warnings (informational, not vulnerabilities)
     # ------------------------------------------------------------------

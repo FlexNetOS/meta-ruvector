@@ -2312,9 +2312,7 @@ checksum = "62143029ffe8b0693509d894b0bc8150c4aca3fa26c273395bdd933bd56e91a2"
 
 [[package]]
 name = "ruvector-domain-expansion"
-version = "2.0.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a30d2a1753db421985d99b802931b3434d830f2c7bb47236636966de9a382336"
+version = "2.2.3"
 dependencies = [
  "rand 0.8.5",
  "rvf-crypto",
@@ -2381,15 +2379,7 @@ dependencies = [
 
 [[package]]
 name = "rvf-types"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a650cb7329774b8eaf764b02ee187adab7e31640a69a4efe33abcb3fc86a5170"
-
-[[package]]
-name = "rvf-types"
 version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "05adcbb7dd0f7d323314ad2de13fbfebd43b6403e3a9bcc6fea94d1b873b72c3"
 
 [[package]]
 name = "rvf-wire"
@@ -2398,7 +2388,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dc9a5b2778f0aa4442ab8ad27bc8afeab7a6a7ad2022ee65d870587e9f43f62f"
 dependencies = [
  "crc32c",
- "rvf-types 0.1.0",
+ "rvf-types",
+ "sha3",
+ "subtle",
  "xxhash-rust",
 ]
 

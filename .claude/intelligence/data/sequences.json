@@ -16,6 +16,266 @@
       "source": "crates/ruvector-core/src/lib.rs",
       "test": "crates/ruvector-core/tests/lib.test.rs",
       "editCount": 1
+    },
+    "src/mrv-95-sync/crates/ruvllm/src/backends/mod.rs|src/mrv-95-sync/crates/ruvllm/tests/backends/mod.test.rs": {
+      "source": "src/mrv-95-sync/crates/ruvllm/src/backends/mod.rs",
+      "test": "src/mrv-95-sync/crates/ruvllm/tests/backends/mod.test.rs",
+      "editCount": 1
+    },
+    "src/envctl-issue-414-wt/crates/engine/src/db.rs|src/envctl-issue-414-wt/crates/engine/tests/db.test.rs": {
+      "source": "src/envctl-issue-414-wt/crates/engine/src/db.rs",
+      "test": "src/envctl-issue-414-wt/crates/engine/tests/db.test.rs",
+      "editCount": 6
+    },
+    "src/envctl-issue-414-wt/crates/engine/src/db_index.rs|src/envctl-issue-414-wt/crates/engine/tests/db_index.test.rs": {
+      "source": "src/envctl-issue-414-wt/crates/engine/src/db_index.rs",
+      "test": "src/envctl-issue-414-wt/crates/engine/tests/db_index.test.rs",
+      "editCount": 6
+    },
+    "src/envctl-issue-414-wt/crates/engine/src/db_symbols.rs|src/envctl-issue-414-wt/crates/engine/tests/db_symbols.test.rs": {
+      "source": "src/envctl-issue-414-wt/crates/engine/src/db_symbols.rs",
+      "test": "src/envctl-issue-414-wt/crates/engine/tests/db_symbols.test.rs",
+      "editCount": 4
+    },
+    "src/envctl-issue-414-wt/crates/engine/src/db_query.rs|src/envctl-issue-414-wt/crates/engine/tests/db_query.test.rs": {
+      "source": "src/envctl-issue-414-wt/crates/engine/src/db_query.rs",
+      "test": "src/envctl-issue-414-wt/crates/engine/tests/db_query.test.rs",
+      "editCount": 3
+    },
+    "src/envctl-issue-414-wt/crates/engine/src/db_refactor.rs|src/envctl-issue-414-wt/crates/engine/tests/db_refactor.test.rs": {
+      "source": "src/envctl-issue-414-wt/crates/engine/src/db_refactor.rs",
+      "test": "src/envctl-issue-414-wt/crates/engine/tests/db_refactor.test.rs",
+      "editCount": 3
+    },
+    "src/envctl-issue-414-wt/crates/engine/src/db_deploy.rs|src/envctl-issue-414-wt/crates/engine/tests/db_deploy.test.rs": {
+      "source": "src/envctl-issue-414-wt/crates/engine/src/db_deploy.rs",
+      "test": "src/envctl-issue-414-wt/crates/engine/tests/db_deploy.test.rs",
+      "editCount": 2
+    },
+    "src/envctl-issue-414-wt/crates/engine/src/lib.rs|src/envctl-issue-414-wt/crates/engine/tests/lib.test.rs": {
+      "source": "src/envctl-issue-414-wt/crates/engine/src/lib.rs",
+      "test": "src/envctl-issue-414-wt/crates/engine/tests/lib.test.rs",
+      "editCount": 6
+    },
+    "crates/rvAgent/rvagent-engine/src/lib.rs|crates/rvAgent/rvagent-engine/tests/lib.test.rs": {
+      "source": "crates/rvAgent/rvagent-engine/src/lib.rs",
+      "test": "crates/rvAgent/rvagent-engine/tests/lib.test.rs",
+      "editCount": 18
+    },
+    "crates/rvAgent/rvagent-engine/src/workorder.rs|crates/rvAgent/rvagent-engine/tests/workorder.test.rs": {
+      "source": "crates/rvAgent/rvagent-engine/src/workorder.rs",
+      "test": "crates/rvAgent/rvagent-engine/tests/workorder.test.rs",
+      "editCount": 5
+    },
+    "src/envctl-issue-414-wt/crates/engine/src/db_watch.rs|src/envctl-issue-414-wt/crates/engine/tests/db_watch.test.rs": {
+      "source": "src/envctl-issue-414-wt/crates/engine/src/db_watch.rs",
+      "test": "src/envctl-issue-414-wt/crates/engine/tests/db_watch.test.rs",
+      "editCount": 1
+    },
+    "crates/rvAgent/rvagent-engine/src/adapter.rs|crates/rvAgent/rvagent-engine/tests/adapter.test.rs": {
+      "source": "crates/rvAgent/rvagent-engine/src/adapter.rs",
+      "test": "crates/rvAgent/rvagent-engine/tests/adapter.test.rs",
+      "editCount": 7
+    },
+    "src/envctl-issue-414-wt/crates/engine/src/db_ops.rs|src/envctl-issue-414-wt/crates/engine/tests/db_ops.test.rs": {
+      "source": "src/envctl-issue-414-wt/crates/engine/src/db_ops.rs",
+      "test": "src/envctl-issue-414-wt/crates/engine/tests/db_ops.test.rs",
+      "editCount": 3
+    },
+    "src/envctl-issue-414-wt/crates/engine/src/db_parity.rs|src/envctl-issue-414-wt/crates/engine/tests/db_parity.rs": {
+      "source": "src/envctl-issue-414-wt/crates/engine/src/db_parity.rs",
+      "test": "src/envctl-issue-414-wt/crates/engine/tests/db_parity.rs",
+      "editCount": 1
+    },
+    "src/envctl-issue-414-wt/crates/cli/src/main.rs|src/envctl-issue-414-wt/crates/cli/tests/main.test.rs": {
+      "source": "src/envctl-issue-414-wt/crates/cli/src/main.rs",
+      "test": "src/envctl-issue-414-wt/crates/cli/tests/main.test.rs",
+      "editCount": 10
+    },
+    "src/nu_plugin-issue-414-wt/crates/nu_plugin_codedb/src/main.rs|src/nu_plugin-issue-414-wt/crates/nu_plugin_codedb/tests/main.test.rs": {
+      "source": "src/nu_plugin-issue-414-wt/crates/nu_plugin_codedb/src/main.rs",
+      "test": "src/nu_plugin-issue-414-wt/crates/nu_plugin_codedb/tests/main.test.rs",
+      "editCount": 3
+    },
+    "crates/rvAgent/rvagent-engine/src/proof.rs|crates/rvAgent/rvagent-engine/tests/proof.test.rs": {
+      "source": "crates/rvAgent/rvagent-engine/src/proof.rs",
+      "test": "crates/rvAgent/rvagent-engine/tests/proof.test.rs",
+      "editCount": 1
+    },
+    "crates/rvAgent/rvagent-engine/src/schema.rs|crates/rvAgent/rvagent-engine/tests/schema.test.rs": {
+      "source": "crates/rvAgent/rvagent-engine/src/schema.rs",
+      "test": "crates/rvAgent/rvagent-engine/tests/schema.test.rs",
+      "editCount": 3
+    },
+    "crates/rvAgent/rvagent-engine/src/csv.rs|crates/rvAgent/rvagent-engine/tests/csv.test.rs": {
+      "source": "crates/rvAgent/rvagent-engine/src/csv.rs",
+      "test": "crates/rvAgent/rvagent-engine/tests/csv.test.rs",
+      "editCount": 2
+    },
+    "src/envctl-issue-414-wt/crates/engine/src/executor.rs|src/envctl-issue-414-wt/crates/engine/tests/executor.test.rs": {
+      "source": "src/envctl-issue-414-wt/crates/engine/src/executor.rs",
+      "test": "src/envctl-issue-414-wt/crates/engine/tests/executor.test.rs",
+      "editCount": 1
+    },
+    "src/envctl-issue-414-wt/crates/engine/src/catalog.rs|src/envctl-issue-414-wt/crates/engine/tests/catalog.test.rs": {
+      "source": "src/envctl-issue-414-wt/crates/engine/src/catalog.rs",
+      "test": "src/envctl-issue-414-wt/crates/engine/tests/catalog.test.rs",
+      "editCount": 1
+    },
+    "crates/rvAgent/rvagent-engine/src/ledger.rs|crates/rvAgent/rvagent-engine/tests/ledger.test.rs": {
+      "source": "crates/rvAgent/rvagent-engine/src/ledger.rs",
+      "test": "crates/rvAgent/rvagent-engine/tests/ledger.test.rs",
+      "editCount": 2
+    },
+    "crates/rvAgent/rvagent-engine/src/selection.rs|crates/rvAgent/rvagent-engine/tests/selection.test.rs": {
+      "source": "crates/rvAgent/rvagent-engine/src/selection.rs",
+      "test": "crates/rvAgent/rvagent-engine/tests/selection.test.rs",
+      "editCount": 2
+    },
+    "crates/rvAgent/rvagent-engine/src/e2e_one_workorder.rs|crates/rvAgent/rvagent-engine/tests/e2e_one_workorder.rs": {
+      "source": "crates/rvAgent/rvagent-engine/src/e2e_one_workorder.rs",
+      "test": "crates/rvAgent/rvagent-engine/tests/e2e_one_workorder.rs",
+      "editCount": 1
+    },
+    "crates/rvAgent/rvagent-engine/src/learning.rs|crates/rvAgent/rvagent-engine/tests/learning.test.rs": {
+      "source": "crates/rvAgent/rvagent-engine/src/learning.rs",
+      "test": "crates/rvAgent/rvagent-engine/tests/learning.test.rs",
+      "editCount": 1
+    },
+    "crates/rvAgent/rvagent-mcp/src/teas.rs|crates/rvAgent/rvagent-mcp/tests/teas.test.rs": {
+      "source": "crates/rvAgent/rvagent-mcp/src/teas.rs",
+      "test": "crates/rvAgent/rvagent-mcp/tests/teas.test.rs",
+      "editCount": 1
+    },
+    "crates/rvAgent/rvagent-mcp/src/lib.rs|crates/rvAgent/rvagent-mcp/tests/lib.test.rs": {
+      "source": "crates/rvAgent/rvagent-mcp/src/lib.rs",
+      "test": "crates/rvAgent/rvagent-mcp/tests/lib.test.rs",
+      "editCount": 2
+    },
+    "crates/rvAgent/rvagent-engine/src/store.rs|crates/rvAgent/rvagent-engine/tests/store.test.rs": {
+      "source": "crates/rvAgent/rvagent-engine/src/store.rs",
+      "test": "crates/rvAgent/rvagent-engine/tests/store.test.rs",
+      "editCount": 1
+    },
+    "src/envctl-issue-414-wt/crates/engine/src/db_refactor_apply_proof.rs|src/envctl-issue-414-wt/crates/engine/tests/db_refactor_apply_proof.rs": {
+      "source": "src/envctl-issue-414-wt/crates/engine/src/db_refactor_apply_proof.rs",
+      "test": "src/envctl-issue-414-wt/crates/engine/tests/db_refactor_apply_proof.rs",
+      "editCount": 1
+    },
+    "src/nu_plugin-batched-capture-wt/crates/codedb_store_redb/src/lib.rs|src/nu_plugin-batched-capture-wt/crates/codedb_store_redb/tests/lib.test.rs": {
+      "source": "src/nu_plugin-batched-capture-wt/crates/codedb_store_redb/src/lib.rs",
+      "test": "src/nu_plugin-batched-capture-wt/crates/codedb_store_redb/tests/lib.test.rs",
+      "editCount": 2
+    },
+    "src/nu_plugin-batched-capture-wt/crates/codedb/src/main.rs|src/nu_plugin-batched-capture-wt/crates/codedb/tests/main.test.rs": {
+      "source": "src/nu_plugin-batched-capture-wt/crates/codedb/src/main.rs",
+      "test": "src/nu_plugin-batched-capture-wt/crates/codedb/tests/main.test.rs",
+      "editCount": 10
+    },
+    "crates/rvAgent/rvagent-engine/src/e2e_teri_compute_world.rs|crates/rvAgent/rvagent-engine/tests/e2e_teri_compute_world.rs": {
+      "source": "crates/rvAgent/rvagent-engine/src/e2e_teri_compute_world.rs",
+      "test": "crates/rvAgent/rvagent-engine/tests/e2e_teri_compute_world.rs",
+      "editCount": 1
+    },
+    "src/nu_plugin-merge-wt/crates/codedb_core/src/merge.rs|src/nu_plugin-merge-wt/crates/codedb_core/tests/merge.test.rs": {
+      "source": "src/nu_plugin-merge-wt/crates/codedb_core/src/merge.rs",
+      "test": "src/nu_plugin-merge-wt/crates/codedb_core/tests/merge.test.rs",
+      "editCount": 5
+    },
+    "src/nu_plugin-merge-wt/crates/codedb_core/src/lib.rs|src/nu_plugin-merge-wt/crates/codedb_core/tests/lib.test.rs": {
+      "source": "src/nu_plugin-merge-wt/crates/codedb_core/src/lib.rs",
+      "test": "src/nu_plugin-merge-wt/crates/codedb_core/tests/lib.test.rs",
+      "editCount": 1
+    },
+    "src/nu_plugin-merge-wt/crates/codedb/src/main.rs|src/nu_plugin-merge-wt/crates/codedb/tests/main.test.rs": {
+      "source": "src/nu_plugin-merge-wt/crates/codedb/src/main.rs",
+      "test": "src/nu_plugin-merge-wt/crates/codedb/tests/main.test.rs",
+      "editCount": 3
+    },
+    "crates/cli/src/commands/spec_status.rs|crates/cli/tests/commands/spec_status.test.rs": {
+      "source": "crates/cli/src/commands/spec_status.rs",
+      "test": "crates/cli/tests/commands/spec_status.test.rs",
+      "editCount": 1
+    },
+    "crates/runner/src/runner.rs|crates/runner/tests/runner.test.rs": {
+      "source": "crates/runner/src/runner.rs",
+      "test": "crates/runner/tests/runner.test.rs",
+      "editCount": 3
+    },
+    "crates/core/src/templates.rs|crates/core/tests/templates.test.rs": {
+      "source": "crates/core/src/templates.rs",
+      "test": "crates/core/tests/templates.test.rs",
+      "editCount": 1
+    },
+    "crates/runner/src/config.rs|crates/runner/tests/config.test.rs": {
+      "source": "crates/runner/src/config.rs",
+      "test": "crates/runner/tests/config.test.rs",
+      "editCount": 1
+    },
+    "crates/runner/src/data.rs|crates/runner/tests/data.test.rs": {
+      "source": "crates/runner/src/data.rs",
+      "test": "crates/runner/tests/data.test.rs",
+      "editCount": 1
+    },
+    "src/rusty-idd-unify-wt/handoff-gatekeeper/src/lib.rs|src/rusty-idd-unify-wt/handoff-gatekeeper/tests/lib.test.rs": {
+      "source": "src/rusty-idd-unify-wt/handoff-gatekeeper/src/lib.rs",
+      "test": "src/rusty-idd-unify-wt/handoff-gatekeeper/tests/lib.test.rs",
+      "editCount": 3
+    },
+    "src/rusty-idd-unify-wt/hf/src/main.rs|src/rusty-idd-unify-wt/hf/tests/main.test.rs": {
+      "source": "src/rusty-idd-unify-wt/hf/src/main.rs",
+      "test": "src/rusty-idd-unify-wt/hf/tests/main.test.rs",
+      "editCount": 1
+    },
+    "src/rusty-idd-unify-wt/crates/merge-tools/src/lib.rs|src/rusty-idd-unify-wt/crates/merge-tools/tests/lib.test.rs": {
+      "source": "src/rusty-idd-unify-wt/crates/merge-tools/src/lib.rs",
+      "test": "src/rusty-idd-unify-wt/crates/merge-tools/tests/lib.test.rs",
+      "editCount": 1
+    },
+    "src/rusty-idd-unify-wt/crates/external/codegraph-core/src/mmap.rs|src/rusty-idd-unify-wt/crates/external/codegraph-core/tests/mmap.test.rs": {
+      "source": "src/rusty-idd-unify-wt/crates/external/codegraph-core/src/mmap.rs",
+      "test": "src/rusty-idd-unify-wt/crates/external/codegraph-core/tests/mmap.test.rs",
+      "editCount": 1
+    },
+    "src/rusty-idd-unify-wt/crates/core/src/cli.rs|src/rusty-idd-unify-wt/crates/core/tests/cli.test.rs": {
+      "source": "src/rusty-idd-unify-wt/crates/core/src/cli.rs",
+      "test": "src/rusty-idd-unify-wt/crates/core/tests/cli.test.rs",
+      "editCount": 1
+    },
+    "src/rusty-idd-unify-wt/crates/core/src/fs_utils.rs|src/rusty-idd-unify-wt/crates/core/tests/fs_utils.test.rs": {
+      "source": "src/rusty-idd-unify-wt/crates/core/src/fs_utils.rs",
+      "test": "src/rusty-idd-unify-wt/crates/core/tests/fs_utils.test.rs",
+      "editCount": 1
+    },
+    "src/rusty-idd-unify-wt/crates/core/src/manifest.rs|src/rusty-idd-unify-wt/crates/core/tests/manifest.test.rs": {
+      "source": "src/rusty-idd-unify-wt/crates/core/src/manifest.rs",
+      "test": "src/rusty-idd-unify-wt/crates/core/tests/manifest.test.rs",
+      "editCount": 2
+    },
+    "src/nu_plugin-pgstore-wt/crates/codedb_core/src/store.rs|src/nu_plugin-pgstore-wt/crates/codedb_core/tests/store.test.rs": {
+      "source": "src/nu_plugin-pgstore-wt/crates/codedb_core/src/store.rs",
+      "test": "src/nu_plugin-pgstore-wt/crates/codedb_core/tests/store.test.rs",
+      "editCount": 1
+    },
+    "src/nu_plugin-pgstore-wt/crates/codedb_core/src/lib.rs|src/nu_plugin-pgstore-wt/crates/codedb_core/tests/lib.test.rs": {
+      "source": "src/nu_plugin-pgstore-wt/crates/codedb_core/src/lib.rs",
+      "test": "src/nu_plugin-pgstore-wt/crates/codedb_core/tests/lib.test.rs",
+      "editCount": 1
+    },
+    "src/nu_plugin-pgstore-wt/crates/codedb_store_redb/src/lib.rs|src/nu_plugin-pgstore-wt/crates/codedb_store_redb/tests/lib.test.rs": {
+      "source": "src/nu_plugin-pgstore-wt/crates/codedb_store_redb/src/lib.rs",
+      "test": "src/nu_plugin-pgstore-wt/crates/codedb_store_redb/tests/lib.test.rs",
+      "editCount": 6
+    },
+    "src/nu_plugin-pgstore-wt/crates/codedb_store_pg/src/lib.rs|src/nu_plugin-pgstore-wt/crates/codedb_store_pg/tests/lib.test.rs": {
+      "source": "src/nu_plugin-pgstore-wt/crates/codedb_store_pg/src/lib.rs",
+      "test": "src/nu_plugin-pgstore-wt/crates/codedb_store_pg/tests/lib.test.rs",
+      "editCount": 2
+    },
+    "src/nu_plugin-pgstore-wt/crates/codedb/src/main.rs|src/nu_plugin-pgstore-wt/crates/codedb/tests/main.test.rs": {
+      "source": "src/nu_plugin-pgstore-wt/crates/codedb/src/main.rs",
+      "test": "src/nu_plugin-pgstore-wt/crates/codedb/tests/main.test.rs",
+      "editCount": 10
     }
   }
 }

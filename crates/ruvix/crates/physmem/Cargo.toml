@@ -36,14 +36,3 @@ debug-alloc = []
 name = "buddy_bench"
 harness = false
 
-
-# Lint debt allowlist: these lints fire on existing code and the workspace
-# CI gate is `cargo clippy --all-targets -- -D warnings`. Allowed here so the
-# gate stays red-free; groom the code, then remove entries.
-[lints.clippy]
-cast_possible_truncation = "allow"
-cast_precision_loss = "allow"
-large_stack_arrays = "allow"
-match_same_arms = "allow"
-missing_fields_in_debug = "allow"
-unused_self = "allow"

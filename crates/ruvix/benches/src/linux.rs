@@ -13,6 +13,8 @@
 //! | timer_wait | clock_nanosleep |
 //! | vector_put_proved | write+fsync |
 
+#[allow(unused_imports)]
+use std::time::Duration;
 use std::time::Instant;
 
 // BenchmarkResult: kept for API compat

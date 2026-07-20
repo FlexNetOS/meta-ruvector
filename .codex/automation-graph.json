@@ -111,10 +111,20 @@
   "generatedBy": "codex-env",
   "hooks": {
     "absoluteWorkspacePathPolicy": "generated runtime hooks must resolve repo root dynamically",
-    "events": [],
-    "policy": "Codex lifecycle hook products from this pre-clean-room generator are purged; rebuild clean-room hooks in a later design.",
-    "runtime": null,
-    "scriptRoot": null,
+    "events": [
+      "Notification",
+      "PostToolUse",
+      "PreCompact",
+      "PreToolUse",
+      "SessionEnd",
+      "SessionStart",
+      "Stop",
+      "SubagentStart",
+      "SubagentStop",
+      "UserPromptSubmit"
+    ],
+    "runtime": ".codex/hooks.json",
+    "scriptRoot": ".codex/hooks",
     "source": ".claude/settings.json"
   },
   "mcp": {

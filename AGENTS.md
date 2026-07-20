@@ -39,12 +39,10 @@ The mirror locates `.claude/`, then generates:
 
 - `.codex/config.toml`
 - `.codex/AGENTS.md`
+- `.codex/hooks.json`
+- `.codex/hooks/`
 - `.agents/skills/` from `.claude/skills/`
 - `.agents/skills/source-command-*` from `.claude/commands/**/*.md`
-
-Legacy `.codex` lifecycle hook products from the pre-clean-room generator are
-purged. Hooks are mandatory for the future gate, but this harness must not emit
-them until the clean-room hook design exists.
 
 Use `--lua-policy <path>` only when a repo-local transform is needed; the harness evaluates it with `mlua`.
 

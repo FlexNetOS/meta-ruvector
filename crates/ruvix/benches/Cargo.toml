@@ -93,11 +93,3 @@ mio = "1.0"
 default = []
 profiling = []
 
-
-# Lint debt allowlist: these lints fire on existing code and the workspace
-# CI gate is `cargo clippy --all-targets -- -D warnings`. Allowed here so the
-# gate stays red-free; groom the code, then remove entries.
-[lints.rust]
-unused_parens = "allow"
-[lints.clippy]
-double_parens = "allow"
