@@ -30,9 +30,7 @@
 
 use super::{Component, ComponentTickResult, KernelInterface};
 use crate::{config, manifest::ComponentType, Result};
-use ruvix_types::{
-    CapHandle, CapRights, RegionHandle, RvfComponentId, RvfMountHandle, TaskHandle, TimerSpec,
-};
+use ruvix_types::{CapHandle, CapRights, RegionHandle, RvfComponentId, RvfMountHandle, TaskHandle};
 
 /// Coordinator component for pipeline management.
 pub struct Coordinator {

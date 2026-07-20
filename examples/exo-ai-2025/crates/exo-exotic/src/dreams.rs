@@ -308,14 +308,14 @@ impl DreamEngine {
         let len = a.len().max(b.len());
         let mut result = vec![0.0; len];
 
-        for i in 0..len {
+        for (i, slot) in result.iter_mut().enumerate() {
             let val_a = a.get(i).copied().unwrap_or(0.0);
             let val_b = b.get(i).copied().unwrap_or(0.0);
 
             // Weighted combination with random perturbation
             let weight = self.rng.gen::<f64>();
             let perturbation = (self.rng.gen::<f64>() - 0.5) * self.creativity_level;
-            result[i] = (val_a * weight + val_b * (1.0 - weight) + perturbation).clamp(-1.0, 1.0);
+            *slot = (val_a * weight + val_b * (1.0 - weight) + perturbation).clamp(-1.0, 1.0);
         }
 
         result
@@ -535,7 +535,7 @@ mod tests {
         }
 
         let creativity = engine.measure_creativity();
-        assert!(creativity >= 0.0 && creativity <= 1.0);
+        assert!((0.0..=1.0).contains(&creativity));
     }
 
     #[test]

@@ -363,12 +363,7 @@ impl BenchmarkResults {
 
         format!(
             "{:.2} {} spikes/sec | {:.3} ns/spike | {} neurons | {} steps | SIMD: {}",
-            magnitude,
-            unit,
-            ns_per_spike,
-            self.total_neurons,
-            self.steps_completed,
-            self.use_simd
+            magnitude, unit, ns_per_spike, self.total_neurons, self.steps_completed, self.use_simd
         )
     }
 }
@@ -378,7 +373,7 @@ mod rand {
     use std::cell::Cell;
 
     thread_local! {
-        static SEED: Cell<u64> = Cell::new(0x123456789ABCDEF0);
+        static SEED: Cell<u64> = const { Cell::new(0x123456789ABCDEF0) };
     }
 
     pub fn random<T: Random>() -> T {
@@ -467,8 +462,10 @@ mod tests {
 
     #[test]
     fn test_feedforward_pattern() {
-        let network =
-            BitParallelSpikeNetwork::with_pattern(256, ConnectivityPattern::Feedforward { layers: 4 });
+        let network = BitParallelSpikeNetwork::with_pattern(
+            256,
+            ConnectivityPattern::Feedforward { layers: 4 },
+        );
 
         assert_eq!(network.num_neurons, 256);
         assert_eq!(network.weights.len(), 256);

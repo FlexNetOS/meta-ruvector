@@ -156,7 +156,7 @@ impl VectorIndexWrapper {
         // Add temporal information
         json_metadata.insert(
             "_timestamp".to_string(),
-            serde_json::Value::Number((pattern.timestamp.0 as i64).into()),
+            serde_json::Value::Number(pattern.timestamp.0.into()),
         );
 
         // Add antecedents
@@ -202,7 +202,7 @@ impl VectorIndexWrapper {
             .and_then(|v| v.as_str())
             .and_then(|s| s.parse::<uuid::Uuid>().ok())
             .map(PatternId)
-            .unwrap_or_else(PatternId::new);
+            .unwrap_or_default();
 
         let timestamp = metadata
             .get("_timestamp")

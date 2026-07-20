@@ -2183,13 +2183,25 @@ const embedCmd = program.command('embed').description('Generate embeddings from 
 
 embedCmd
   .command('text')
-  .description('Embed a text string')
-  .argument('<text>', 'Text to embed')
+  .description('Embed a text string ("-" or --stdin reads from stdin; --input-file reads from a file — keeps sensitive text off argv)')
+  .argument('[text]', 'Text to embed, or "-" to read from stdin')
+  .option('--stdin', 'Read the text from stdin instead of argv')
+  .option('--input-file <path>', 'Read the text from a file instead of argv')
   .option('--adaptive', 'Use adaptive embedder with LoRA')
   .option('--domain <domain>', 'Domain for prototype learning')
   .option('-o, --output <file>', 'Output file for embedding')
   .action(async (text, opts) => {
     try {
+      // #641: raw text on argv leaks via the process table; offer stdin/file input.
+      if (opts.inputFile) {
+        text = fs.readFileSync(opts.inputFile, 'utf8').replace(/\r?\n$/, '');
+      } else if (opts.stdin || text === '-') {
+        text = fs.readFileSync(0, 'utf8').replace(/\r?\n$/, '');
+      }
+      if (!text) {
+        console.error(chalk.red('No text to embed. Pass a text argument, "-" / --stdin, or --input-file <path>.'));
+        process.exit(1);
+      }
       const { performance } = require('perf_hooks');
       const start = performance.now();
 
@@ -8200,7 +8212,7 @@ mcpCmd.command('info')
 
 mcpCmd.command('tools')
   .description('List all MCP tools with descriptions (JSON output)')
-  .option('--group <group>', 'Filter by group (hooks, workers, rvf, rvlite, brain, edge, identity)')
+  .option('--group <group>', 'Filter by group (hooks, workers, rvf, rvlite, brain, edge, identity, decompile)')
   .option('--json', 'JSON output')
   .action((opts) => {
     const tools = {
@@ -8322,6 +8334,14 @@ mcpCmd.command('tools')
       'identity': [
         { name: 'identity_generate', desc: 'Generate new pi key' },
         { name: 'identity_show', desc: 'Show current identity' },
+      ],
+      'decompile': [
+        { name: 'decompile_package', desc: 'Decompile an npm package + witness' },
+        { name: 'decompile_file', desc: 'Decompile a single file' },
+        { name: 'decompile_url', desc: 'Decompile from a URL' },
+        { name: 'decompile_diff', desc: 'Diff two decompiled artifacts' },
+        { name: 'decompile_search', desc: 'Search decompiled artifacts' },
+        { name: 'decompile_witness', desc: 'Verify decompile witness' },
       ],
     };
 

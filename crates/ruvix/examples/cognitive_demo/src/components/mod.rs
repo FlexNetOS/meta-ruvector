@@ -20,7 +20,7 @@ pub use feature_extractor::FeatureExtractor;
 pub use reasoning_engine::ReasoningEngine;
 pub use sensor_adapter::SensorAdapter;
 
-use crate::{PerceptionEvent, ReasoningMutation, Result, VectorEmbedding};
+use crate::{PerceptionEvent, Result};
 use ruvix_types::{
     CapHandle, GraphHandle, ProofToken, QueueHandle, TaskHandle, VectorKey, VectorStoreHandle,
 };

@@ -57,8 +57,8 @@
 //! cargo run --example swarm-consensus
 //! ```
 
-use ruvix_nucleus::{Kernel, KernelConfig, Syscall, SyscallResult, ProofTier};
-use ruvix_types::{TaskHandle, QueueHandle, VectorKey, CapabilityRights};
+use ruvix_nucleus::{Kernel, KernelConfig, ProofTier, Syscall, SyscallResult};
+use ruvix_types::{CapabilityRights, QueueHandle, TaskHandle, VectorKey};
 
 /// Message types for swarm communication
 #[derive(Debug, Clone)]
@@ -77,10 +77,7 @@ pub enum SwarmMessage {
         signature: [u8; 64],
     },
     /// Commit notification (consensus reached)
-    Commit {
-        proposal_id: u64,
-        proof: [u8; 32],
-    },
+    Commit { proposal_id: u64, proof: [u8; 32] },
     /// Task assignment to worker
     Execute {
         task_id: u64,
@@ -132,7 +129,9 @@ impl Coordinator {
     pub fn new(kernel: &mut Kernel) -> Result<Self, &'static str> {
         // Spawn coordinator task with leader capabilities
         let task = kernel.spawn_task(
-            CapabilityRights::TASK_SPAWN | CapabilityRights::QUEUE_SEND | CapabilityRights::PROOF_EMIT,
+            CapabilityRights::TASK_SPAWN
+                | CapabilityRights::QUEUE_SEND
+                | CapabilityRights::PROOF_EMIT,
             10, // High priority
         )?;
 
@@ -149,7 +148,12 @@ impl Coordinator {
     }
 
     /// Propose a new task distribution
-    pub fn propose(&mut self, kernel: &mut Kernel, task_hash: [u8; 32], workers: &[u8]) -> Result<u64, &'static str> {
+    pub fn propose(
+        &mut self,
+        kernel: &mut Kernel,
+        task_hash: [u8; 32],
+        workers: &[u8],
+    ) -> Result<u64, &'static str> {
         self.consensus.proposal_id += 1;
         let proposal_id = self.consensus.proposal_id;
 
@@ -186,16 +190,27 @@ impl Coordinator {
     /// Process votes and commit if quorum reached
     pub fn process_votes(&mut self, kernel: &mut Kernel) -> Result<bool, &'static str> {
         // Receive votes from inbox
-        while let SyscallResult::MessageReceived { data, .. } = kernel.dispatch(Syscall::QueueRecv {
-            queue: self.inbox,
-            timeout_ns: Some(1_000_000), // 1ms timeout
-        })? {
-            if let Some(SwarmMessage::Vote { proposal_id, validator_id, approve, signature }) =
-                deserialize_message(&data)
+        while let SyscallResult::MessageReceived { data, .. } =
+            kernel.dispatch(Syscall::QueueRecv {
+                queue: self.inbox,
+                timeout_ns: Some(1_000_000), // 1ms timeout
+            })?
+        {
+            if let Some(SwarmMessage::Vote {
+                proposal_id,
+                validator_id,
+                approve,
+                signature,
+            }) = deserialize_message(&data)
             {
                 if proposal_id == self.consensus.proposal_id {
-                    self.consensus.votes.push((validator_id, approve, signature));
-                    println!("[Coordinator] Received vote from validator {}: {}", validator_id, approve);
+                    self.consensus
+                        .votes
+                        .push((validator_id, approve, signature));
+                    println!(
+                        "[Coordinator] Received vote from validator {}: {}",
+                        validator_id, approve
+                    );
                 }
             }
         }
@@ -214,7 +229,11 @@ impl Coordinator {
 
         // Create commit proof
         let commit_hash = [0u8; 32]; // Would be hash of votes
-        let proof = kernel.create_proof(commit_hash, ProofTier::Standard, self.consensus.proposal_id as u32)?;
+        let proof = kernel.create_proof(
+            commit_hash,
+            ProofTier::Standard,
+            self.consensus.proposal_id as u32,
+        )?;
 
         // Broadcast commit
         let msg = SwarmMessage::Commit {
@@ -235,7 +254,10 @@ impl Coordinator {
             proof,
         })?;
 
-        println!("[Coordinator] Consensus reached! Committed proposal {}", self.consensus.proposal_id);
+        println!(
+            "[Coordinator] Consensus reached! Committed proposal {}",
+            self.consensus.proposal_id
+        );
         Ok(())
     }
 }
@@ -249,9 +271,15 @@ pub struct Validator {
 }
 
 impl Validator {
-    pub fn new(kernel: &mut Kernel, id: u8, coordinator_queue: QueueHandle) -> Result<Self, &'static str> {
+    pub fn new(
+        kernel: &mut Kernel,
+        id: u8,
+        coordinator_queue: QueueHandle,
+    ) -> Result<Self, &'static str> {
         let task = kernel.spawn_task(
-            CapabilityRights::QUEUE_RECV | CapabilityRights::QUEUE_SEND | CapabilityRights::PROOF_EMIT,
+            CapabilityRights::QUEUE_RECV
+                | CapabilityRights::QUEUE_SEND
+                | CapabilityRights::PROOF_EMIT,
             8, // Medium-high priority
         )?;
 
@@ -267,17 +295,25 @@ impl Validator {
 
     /// Process incoming proposals and vote
     pub fn process(&mut self, kernel: &mut Kernel) -> Result<(), &'static str> {
-        if let SyscallResult::MessageReceived { data, .. } = kernel.dispatch(Syscall::QueueRecv {
-            queue: self.inbox,
-            timeout_ns: Some(10_000_000), // 10ms timeout
-        })? {
-            if let Some(SwarmMessage::Propose { proposal_id, task_hash, .. }) = deserialize_message(&data) {
+        if let SyscallResult::MessageReceived { data, .. } =
+            kernel.dispatch(Syscall::QueueRecv {
+                queue: self.inbox,
+                timeout_ns: Some(10_000_000), // 10ms timeout
+            })?
+        {
+            if let Some(SwarmMessage::Propose {
+                proposal_id,
+                task_hash,
+                ..
+            }) = deserialize_message(&data)
+            {
                 // Validate the proposal (simplified)
                 let valid = self.validate_proposal(&task_hash);
 
                 // Create vote with proof
                 let vote_hash = [self.id; 32]; // Simplified
-                let proof = kernel.create_proof(vote_hash, ProofTier::Reflex, proposal_id as u32)?;
+                let proof =
+                    kernel.create_proof(vote_hash, ProofTier::Reflex, proposal_id as u32)?;
 
                 let signature = [self.id; 64]; // Would be real Ed25519 signature
 
@@ -294,7 +330,10 @@ impl Validator {
                     proof: Some(proof),
                 })?;
 
-                println!("[Validator {}] Voted {} on proposal {}", self.id, valid, proposal_id);
+                println!(
+                    "[Validator {}] Voted {} on proposal {}",
+                    self.id, valid, proposal_id
+                );
             }
         }
 
@@ -324,7 +363,9 @@ impl Worker {
         vector_store: ruvix_nucleus::VectorStoreHandle,
     ) -> Result<Self, &'static str> {
         let task = kernel.spawn_task(
-            CapabilityRights::QUEUE_RECV | CapabilityRights::VECTOR_READ | CapabilityRights::VECTOR_WRITE,
+            CapabilityRights::QUEUE_RECV
+                | CapabilityRights::VECTOR_READ
+                | CapabilityRights::VECTOR_WRITE,
             5, // Normal priority
         )?;
 
@@ -341,12 +382,17 @@ impl Worker {
 
     /// Execute assigned task
     pub fn execute(&mut self, kernel: &mut Kernel) -> Result<(), &'static str> {
-        if let SyscallResult::MessageReceived { data, .. } = kernel.dispatch(Syscall::QueueRecv {
-            queue: self.inbox,
-            timeout_ns: Some(100_000_000), // 100ms timeout
-        })? {
-            if let Some(SwarmMessage::Execute { task_id, input_vector_key, output_vector_key }) =
-                deserialize_message(&data)
+        if let SyscallResult::MessageReceived { data, .. } =
+            kernel.dispatch(Syscall::QueueRecv {
+                queue: self.inbox,
+                timeout_ns: Some(100_000_000), // 100ms timeout
+            })?
+        {
+            if let Some(SwarmMessage::Execute {
+                task_id,
+                input_vector_key,
+                output_vector_key,
+            }) = deserialize_message(&data)
             {
                 println!("[Worker {}] Executing task {}", self.id, task_id);
 
@@ -361,7 +407,8 @@ impl Worker {
 
                 // Create proof for output
                 let output_hash = [0u8; 32]; // Would be hash of output
-                let proof = kernel.create_proof(output_hash, ProofTier::Standard, task_id as u32)?;
+                let proof =
+                    kernel.create_proof(output_hash, ProofTier::Standard, task_id as u32)?;
 
                 // Store result vector
                 kernel.dispatch(Syscall::VectorPutProved {
@@ -423,12 +470,14 @@ pub fn swarm_main() {
     println!("[Kernel] Booted successfully\n");
 
     // Create shared vector store
-    let vector_store = kernel.create_vector_store(
-        ruvix_nucleus::VectorStoreConfig::new(128, 10000)
-    ).expect("Failed to create vector store");
+    let vector_store = kernel
+        .create_vector_store(ruvix_nucleus::VectorStoreConfig::new(128, 10000))
+        .expect("Failed to create vector store");
 
     // Create result collection queue
-    let result_queue = kernel.create_queue(1024).expect("Failed to create result queue");
+    let result_queue = kernel
+        .create_queue(1024)
+        .expect("Failed to create result queue");
 
     // Spawn coordinator
     let mut coordinator = Coordinator::new(&mut kernel).expect("Failed to spawn coordinator");
@@ -436,13 +485,19 @@ pub fn swarm_main() {
 
     // Spawn validators (3 for BFT with f=1)
     let mut validators: Vec<Validator> = (0..3)
-        .map(|i| Validator::new(&mut kernel, i as u8, coordinator.inbox).expect("Failed to spawn validator"))
+        .map(|i| {
+            Validator::new(&mut kernel, i as u8, coordinator.inbox)
+                .expect("Failed to spawn validator")
+        })
         .collect();
     println!("[Swarm] {} validators spawned", validators.len());
 
     // Spawn workers
     let mut workers: Vec<Worker> = (0..4)
-        .map(|i| Worker::new(&mut kernel, i as u8, result_queue, vector_store).expect("Failed to spawn worker"))
+        .map(|i| {
+            Worker::new(&mut kernel, i as u8, result_queue, vector_store)
+                .expect("Failed to spawn worker")
+        })
         .collect();
     println!("[Swarm] {} workers spawned\n", workers.len());
 
@@ -453,20 +508,29 @@ pub fn swarm_main() {
     let worker_ids: Vec<u8> = workers.iter().map(|w| w.id).collect();
 
     // 1. Coordinator proposes
-    let proposal_id = coordinator.propose(&mut kernel, task_hash, &worker_ids)
+    let proposal_id = coordinator
+        .propose(&mut kernel, task_hash, &worker_ids)
         .expect("Proposal failed");
 
     // 2. Validators vote
     for validator in &mut validators {
-        validator.process(&mut kernel).expect("Validator processing failed");
+        validator
+            .process(&mut kernel)
+            .expect("Validator processing failed");
     }
 
     // 3. Coordinator collects votes and commits
-    let committed = coordinator.process_votes(&mut kernel).expect("Vote processing failed");
+    let committed = coordinator
+        .process_votes(&mut kernel)
+        .expect("Vote processing failed");
 
     if committed {
         println!("\n--- Consensus Achieved! ---");
-        println!("Proposal {} committed with {} validator votes", proposal_id, validators.len());
+        println!(
+            "Proposal {} committed with {} validator votes",
+            proposal_id,
+            validators.len()
+        );
 
         // 4. Workers would now execute their assigned tasks
         println!("\n--- Workers Executing ---");

@@ -321,7 +321,7 @@ mod tests {
     fn test_btsp_one_shot_large_update() {
         let btsp = BtspBackend::new();
         let gradient = vec![0.8f32; 10]; // Above plateau threshold
-        let delta = btsp.compute_delta(0, &vec![0.0; 10], &gradient, 0.01);
+        let delta = btsp.compute_delta(0, &[0.0; 10], &gradient, 0.01);
         // BTSP lr (0.3) should dominate over standard lr (0.01)
         assert!(
             delta.delta[0].abs() > 0.1,
