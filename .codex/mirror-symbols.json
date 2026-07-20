@@ -2,14 +2,14 @@
   "generatedBy": "codex-env",
   "sourceRoot": ".claude",
   "rawMirrorRoot": ".codex/mirror/.claude",
-  "sourceFileCount": 381,
+  "sourceFileCount": 396,
   "kindCounts": {
     "agent": 124,
     "command": 130,
-    "helper": 44,
+    "helper": 46,
     "hook": 5,
     "identity": 1,
-    "intelligence": 23,
+    "intelligence": 36,
     "other": 10,
     "setting": 1,
     "skill": 43
@@ -4994,6 +4994,21 @@
       }
     },
     {
+      "source": ".claude/helpers/swarm-orchestrator.sh",
+      "mirror": ".codex/mirror/.claude/helpers/swarm-orchestrator.sh",
+      "kind": "helper",
+      "executable": true,
+      "bytes": 8517,
+      "sourceSha256": "3bcd86fd4baa562dbba7ac8140f447c3340d897bef6a48980cc8f08265893b2f",
+      "mirrorSha256": "3bcd86fd4baa562dbba7ac8140f447c3340d897bef6a48980cc8f08265893b2f",
+      "symbols": {
+        "extension": "sh",
+        "fileName": "swarm-orchestrator.sh",
+        "firstHeading": "Claude Flow V3 - Swarm Orchestrator",
+        "pathSlug": "helpers-swarm-orchestrator-sh"
+      }
+    },
+    {
       "source": ".claude/helpers/sync-v3-metrics.sh",
       "mirror": ".codex/mirror/.claude/helpers/sync-v3-metrics.sh",
       "kind": "helper",
@@ -5066,6 +5081,21 @@
         "fileName": "validate-v3-config.sh",
         "firstHeading": "V3 Configuration Validation Script",
         "pathSlug": "helpers-validate-v3-config-sh"
+      }
+    },
+    {
+      "source": ".claude/helpers/verify.sh",
+      "mirror": ".codex/mirror/.claude/helpers/verify.sh",
+      "kind": "helper",
+      "executable": true,
+      "bytes": 3271,
+      "sourceSha256": "b381664488a3f90c9ac73bb2c54b4121da9585ef70335087a74b5af7d3fdec8b",
+      "mirrorSha256": "b381664488a3f90c9ac73bb2c54b4121da9585ef70335087a74b5af7d3fdec8b",
+      "symbols": {
+        "extension": "sh",
+        "fileName": "verify.sh",
+        "firstHeading": "verify.sh — .claude harness verification & quality gate",
+        "pathSlug": "helpers-verify-sh"
       }
     },
     {
@@ -5574,6 +5604,133 @@
       }
     },
     {
+      "source": ".claude/intelligence/domains/README.md",
+      "mirror": ".codex/mirror/.claude/intelligence/domains/README.md",
+      "kind": "intelligence",
+      "executable": false,
+      "bytes": 2023,
+      "sourceSha256": "b68ff91eb91a78ecc6692375dc142ab7d4aca6f97b31410449db738eb180467f",
+      "mirrorSha256": "b68ff91eb91a78ecc6692375dc142ab7d4aca6f97b31410449db738eb180467f",
+      "symbols": {
+        "extension": "md",
+        "fileName": "README.md",
+        "firstHeading": "Intelligence — Bounded Contexts (DDD)",
+        "pathSlug": "intelligence-domains-readme-md"
+      }
+    },
+    {
+      "source": ".claude/intelligence/domains/calibration-tracker.js",
+      "mirror": ".codex/mirror/.claude/intelligence/domains/calibration-tracker.js",
+      "kind": "intelligence",
+      "executable": false,
+      "bytes": 2074,
+      "sourceSha256": "e0d6b11206427d528863e165cc398d51d3354470e65b1ab13f042860a8233369",
+      "mirrorSha256": "e0d6b11206427d528863e165cc398d51d3354470e65b1ab13f042860a8233369",
+      "symbols": {
+        "extension": "js",
+        "fileName": "calibration-tracker.js",
+        "pathSlug": "intelligence-domains-calibration-tracker-js"
+      }
+    },
+    {
+      "source": ".claude/intelligence/domains/error-pattern-tracker.js",
+      "mirror": ".codex/mirror/.claude/intelligence/domains/error-pattern-tracker.js",
+      "kind": "intelligence",
+      "executable": false,
+      "bytes": 4696,
+      "sourceSha256": "a7a312f4497384d5c44439b72a260706c7ae621ce071f4cd3cfaa051a07ec215",
+      "mirrorSha256": "a7a312f4497384d5c44439b72a260706c7ae621ce071f4cd3cfaa051a07ec215",
+      "symbols": {
+        "extension": "js",
+        "fileName": "error-pattern-tracker.js",
+        "pathSlug": "intelligence-domains-error-pattern-tracker-js"
+      }
+    },
+    {
+      "source": ".claude/intelligence/domains/feedback-loop.js",
+      "mirror": ".codex/mirror/.claude/intelligence/domains/feedback-loop.js",
+      "kind": "intelligence",
+      "executable": false,
+      "bytes": 2320,
+      "sourceSha256": "aa00f3db2d0a094931e97152e254832a01cd69b27d7f49a0ea67d9c6c8a16e3e",
+      "mirrorSha256": "aa00f3db2d0a094931e97152e254832a01cd69b27d7f49a0ea67d9c6c8a16e3e",
+      "symbols": {
+        "extension": "js",
+        "fileName": "feedback-loop.js",
+        "pathSlug": "intelligence-domains-feedback-loop-js"
+      }
+    },
+    {
+      "source": ".claude/intelligence/domains/memory-patterns.js",
+      "mirror": ".codex/mirror/.claude/intelligence/domains/memory-patterns.js",
+      "kind": "intelligence",
+      "executable": false,
+      "bytes": 8203,
+      "sourceSha256": "e29bc132a20c3a36e1fe185b2f5d5dc1ff66472257a8f01e69517f20051f6769",
+      "mirrorSha256": "e29bc132a20c3a36e1fe185b2f5d5dc1ff66472257a8f01e69517f20051f6769",
+      "symbols": {
+        "extension": "js",
+        "fileName": "memory-patterns.js",
+        "pathSlug": "intelligence-domains-memory-patterns-js"
+      }
+    },
+    {
+      "source": ".claude/intelligence/domains/neural-router.js",
+      "mirror": ".codex/mirror/.claude/intelligence/domains/neural-router.js",
+      "kind": "intelligence",
+      "executable": false,
+      "bytes": 3176,
+      "sourceSha256": "281772dbb3070a8748e6683cc457c4ae84fdcd6b96b8deaa27e8af3869671cb7",
+      "mirrorSha256": "281772dbb3070a8748e6683cc457c4ae84fdcd6b96b8deaa27e8af3869671cb7",
+      "symbols": {
+        "extension": "js",
+        "fileName": "neural-router.js",
+        "pathSlug": "intelligence-domains-neural-router-js"
+      }
+    },
+    {
+      "source": ".claude/intelligence/domains/reasoning-bank.js",
+      "mirror": ".codex/mirror/.claude/intelligence/domains/reasoning-bank.js",
+      "kind": "intelligence",
+      "executable": false,
+      "bytes": 9941,
+      "sourceSha256": "17fd3153079fe0cc81f8339ac039aaf7e1528df7006eaf057a746c33e7ebcdd4",
+      "mirrorSha256": "17fd3153079fe0cc81f8339ac039aaf7e1528df7006eaf057a746c33e7ebcdd4",
+      "symbols": {
+        "extension": "js",
+        "fileName": "reasoning-bank.js",
+        "pathSlug": "intelligence-domains-reasoning-bank-js"
+      }
+    },
+    {
+      "source": ".claude/intelligence/domains/sequence-tracker.js",
+      "mirror": ".codex/mirror/.claude/intelligence/domains/sequence-tracker.js",
+      "kind": "intelligence",
+      "executable": false,
+      "bytes": 6242,
+      "sourceSha256": "820177a2813e13749cf9adc97f78d744f4d58cc4a28ed1f9e1295a62b4abc885",
+      "mirrorSha256": "820177a2813e13749cf9adc97f78d744f4d58cc4a28ed1f9e1295a62b4abc885",
+      "symbols": {
+        "extension": "js",
+        "fileName": "sequence-tracker.js",
+        "pathSlug": "intelligence-domains-sequence-tracker-js"
+      }
+    },
+    {
+      "source": ".claude/intelligence/domains/vector-memory.js",
+      "mirror": ".codex/mirror/.claude/intelligence/domains/vector-memory.js",
+      "kind": "intelligence",
+      "executable": false,
+      "bytes": 4012,
+      "sourceSha256": "70b4a53d54b22d849cc9d54ef5aab5bc17b58234cf0ccc407a2a0d48782f4df4",
+      "mirrorSha256": "70b4a53d54b22d849cc9d54ef5aab5bc17b58234cf0ccc407a2a0d48782f4df4",
+      "symbols": {
+        "extension": "js",
+        "fileName": "vector-memory.js",
+        "pathSlug": "intelligence-domains-vector-memory-js"
+      }
+    },
+    {
       "source": ".claude/intelligence/index.js",
       "mirror": ".codex/mirror/.claude/intelligence/index.js",
       "kind": "intelligence",
@@ -5655,6 +5812,20 @@
       }
     },
     {
+      "source": ".claude/intelligence/shared-kernel.js",
+      "mirror": ".codex/mirror/.claude/intelligence/shared-kernel.js",
+      "kind": "intelligence",
+      "executable": false,
+      "bytes": 5469,
+      "sourceSha256": "1ddb3f0ce66176f4d0584aebe154139148c2359b8a0efb05432ab7e09cb0cfb8",
+      "mirrorSha256": "1ddb3f0ce66176f4d0584aebe154139148c2359b8a0efb05432ab7e09cb0cfb8",
+      "symbols": {
+        "extension": "js",
+        "fileName": "shared-kernel.js",
+        "pathSlug": "intelligence-shared-kernel-js"
+      }
+    },
+    {
       "source": ".claude/intelligence/storage.js",
       "mirror": ".codex/mirror/.claude/intelligence/storage.js",
       "kind": "intelligence",
@@ -5680,6 +5851,48 @@
         "extension": "js",
         "fileName": "swarm.js",
         "pathSlug": "intelligence-swarm-js"
+      }
+    },
+    {
+      "source": ".claude/intelligence/test/characterization.test.mjs",
+      "mirror": ".codex/mirror/.claude/intelligence/test/characterization.test.mjs",
+      "kind": "intelligence",
+      "executable": false,
+      "bytes": 2840,
+      "sourceSha256": "ef52c4f339790af2a2251836f52c46e638e036b0cd8dcaba70e87dca04eaac62",
+      "mirrorSha256": "ef52c4f339790af2a2251836f52c46e638e036b0cd8dcaba70e87dca04eaac62",
+      "symbols": {
+        "extension": "mjs",
+        "fileName": "characterization.test.mjs",
+        "pathSlug": "intelligence-test-characterization-test-mjs"
+      }
+    },
+    {
+      "source": ".claude/intelligence/test/memory-patterns.test.mjs",
+      "mirror": ".codex/mirror/.claude/intelligence/test/memory-patterns.test.mjs",
+      "kind": "intelligence",
+      "executable": false,
+      "bytes": 9469,
+      "sourceSha256": "a6e26b3e763a85fcecd83d84bfc8ef34960bed5e00d2754625aaa6345ac3835b",
+      "mirrorSha256": "a6e26b3e763a85fcecd83d84bfc8ef34960bed5e00d2754625aaa6345ac3835b",
+      "symbols": {
+        "extension": "mjs",
+        "fileName": "memory-patterns.test.mjs",
+        "pathSlug": "intelligence-test-memory-patterns-test-mjs"
+      }
+    },
+    {
+      "source": ".claude/intelligence/test/reasoning-bank.test.mjs",
+      "mirror": ".codex/mirror/.claude/intelligence/test/reasoning-bank.test.mjs",
+      "kind": "intelligence",
+      "executable": false,
+      "bytes": 3887,
+      "sourceSha256": "d212732595741a446a8ee3396a468dc9e9b55eb8d43fc4fde28ca2108a1fa904",
+      "mirrorSha256": "d212732595741a446a8ee3396a468dc9e9b55eb8d43fc4fde28ca2108a1fa904",
+      "symbols": {
+        "extension": "mjs",
+        "fileName": "reasoning-bank.test.mjs",
+        "pathSlug": "intelligence-test-reasoning-bank-test-mjs"
       }
     },
     {
