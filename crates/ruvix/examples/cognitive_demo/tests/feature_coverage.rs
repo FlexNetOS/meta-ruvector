@@ -5,9 +5,8 @@
 
 use ruvix_demo::{
     config,
-    manifest::{ComponentType, DemoManifest, DemoRegionType, ProofPolicyConfig},
+    manifest::{ComponentType, DemoManifest, DemoRegionType},
     pipeline::{CognitivePipeline, PipelineConfig},
-    stats::{FeatureCoverage, SyscallStats},
 };
 use ruvix_types::ProofTier;
 

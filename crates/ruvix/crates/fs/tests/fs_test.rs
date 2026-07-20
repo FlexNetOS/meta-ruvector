@@ -3,10 +3,10 @@
 #![cfg(feature = "alloc")]
 
 use ruvix_fs::{
-    BlockDevice, DirEntry, Fat32BootSector, Fat32DirEntry, FileSystem, FileType, FsError, Inode, InodeId,
-    MemoryBlockDevice, MemoryBlockDeviceMut, MountId, NullBlockDevice, OpenFile, OpenFileTable, OpenFlags,
-    Path, PathBuf, PathComponent, RamFs, RamInode, RamInodeType, SeekFrom, VfsMountPoint,
-    VfsMountTable, MAX_NAME_LEN, MAX_PATH_LEN, ROOT_INODE_ID,
+    BlockDevice, DirEntry, Fat32BootSector, Fat32DirEntry, FileSystem, FileType, FsError, Inode,
+    InodeId, MemoryBlockDevice, MemoryBlockDeviceMut, MountId, NullBlockDevice, OpenFile,
+    OpenFileTable, OpenFlags, Path, PathBuf, PathComponent, RamFs, RamInode, RamInodeType,
+    SeekFrom, VfsMountPoint, VfsMountTable, MAX_NAME_LEN, MAX_PATH_LEN, ROOT_INODE_ID,
 };
 
 // ============================================================================
@@ -179,8 +179,12 @@ fn test_open_file_seek() {
 fn test_open_file_table() {
     let mut table = OpenFileTable::new();
 
-    let fd1 = table.alloc(OpenFile::new(MountId(0), InodeId(1), OpenFlags::READ)).unwrap();
-    let fd2 = table.alloc(OpenFile::new(MountId(0), InodeId(2), OpenFlags::WRITE)).unwrap();
+    let fd1 = table
+        .alloc(OpenFile::new(MountId(0), InodeId(1), OpenFlags::READ))
+        .unwrap();
+    let fd2 = table
+        .alloc(OpenFile::new(MountId(0), InodeId(2), OpenFlags::WRITE))
+        .unwrap();
 
     assert_eq!(fd1, 0);
     assert_eq!(fd2, 1);
@@ -286,8 +290,14 @@ fn test_null_block_device() {
 
     // Invalid LBA
     let mut buf = [0u8; 512];
-    assert_eq!(dev.read_block(100, &mut buf), Err(FsError::BlockDeviceError));
-    assert_eq!(dev.read_block(101, &mut buf), Err(FsError::BlockDeviceError));
+    assert_eq!(
+        dev.read_block(100, &mut buf),
+        Err(FsError::BlockDeviceError)
+    );
+    assert_eq!(
+        dev.read_block(101, &mut buf),
+        Err(FsError::BlockDeviceError)
+    );
 }
 
 #[test]
@@ -377,7 +387,9 @@ fn test_ramfs_create_file() {
     fs.mount().unwrap();
 
     let root = fs.root().unwrap();
-    let file_id = fs.create(root, "test.txt", FileType::Regular, 0o644).unwrap();
+    let file_id = fs
+        .create(root, "test.txt", FileType::Regular, 0o644)
+        .unwrap();
 
     assert!(file_id.is_valid());
     assert_ne!(file_id, root);
@@ -394,14 +406,18 @@ fn test_ramfs_create_directory() {
     fs.mount().unwrap();
 
     let root = fs.root().unwrap();
-    let dir_id = fs.create(root, "subdir", FileType::Directory, 0o755).unwrap();
+    let dir_id = fs
+        .create(root, "subdir", FileType::Directory, 0o755)
+        .unwrap();
 
     let stat = fs.stat(dir_id).unwrap();
     assert_eq!(stat.file_type, FileType::Directory);
     assert_eq!(stat.nlink, 2); // . and parent
 
     // Create nested file
-    let file_id = fs.create(dir_id, "nested.txt", FileType::Regular, 0o644).unwrap();
+    let file_id = fs
+        .create(dir_id, "nested.txt", FileType::Regular, 0o644)
+        .unwrap();
     assert!(file_id.is_valid());
 
     // Lookup should work
@@ -414,7 +430,9 @@ fn test_ramfs_write_read() {
     fs.mount().unwrap();
 
     let root = fs.root().unwrap();
-    let file_id = fs.create(root, "data.bin", FileType::Regular, 0o644).unwrap();
+    let file_id = fs
+        .create(root, "data.bin", FileType::Regular, 0o644)
+        .unwrap();
 
     // Write data
     let data = b"Hello, RamFS!";
@@ -438,7 +456,9 @@ fn test_ramfs_write_at_offset() {
     fs.mount().unwrap();
 
     let root = fs.root().unwrap();
-    let file_id = fs.create(root, "offset.txt", FileType::Regular, 0o644).unwrap();
+    let file_id = fs
+        .create(root, "offset.txt", FileType::Regular, 0o644)
+        .unwrap();
 
     // Write at offset
     fs.write(file_id, 10, b"World").unwrap();
@@ -459,7 +479,9 @@ fn test_ramfs_truncate() {
     fs.mount().unwrap();
 
     let root = fs.root().unwrap();
-    let file_id = fs.create(root, "trunc.txt", FileType::Regular, 0o644).unwrap();
+    let file_id = fs
+        .create(root, "trunc.txt", FileType::Regular, 0o644)
+        .unwrap();
 
     fs.write(file_id, 0, b"Hello, World!").unwrap();
     assert_eq!(fs.stat(file_id).unwrap().size, 13);
@@ -484,7 +506,9 @@ fn test_ramfs_lookup() {
     fs.mount().unwrap();
 
     let root = fs.root().unwrap();
-    let file_id = fs.create(root, "lookup_test.txt", FileType::Regular, 0o644).unwrap();
+    let file_id = fs
+        .create(root, "lookup_test.txt", FileType::Regular, 0o644)
+        .unwrap();
 
     assert_eq!(fs.lookup(root, "lookup_test.txt").unwrap(), file_id);
     assert_eq!(fs.lookup(root, "nonexistent.txt"), Err(FsError::NotFound));
@@ -501,7 +525,9 @@ fn test_ramfs_lookup_path() {
     let root = fs.root().unwrap();
     let dir_id = fs.create(root, "a", FileType::Directory, 0o755).unwrap();
     let subdir_id = fs.create(dir_id, "b", FileType::Directory, 0o755).unwrap();
-    let file_id = fs.create(subdir_id, "c.txt", FileType::Regular, 0o644).unwrap();
+    let file_id = fs
+        .create(subdir_id, "c.txt", FileType::Regular, 0o644)
+        .unwrap();
 
     assert_eq!(fs.lookup_path(Path::new("/")).unwrap(), root);
     assert_eq!(fs.lookup_path(Path::new("/a")).unwrap(), dir_id);
@@ -509,10 +535,16 @@ fn test_ramfs_lookup_path() {
     assert_eq!(fs.lookup_path(Path::new("/a/b/c.txt")).unwrap(), file_id);
 
     // Nonexistent
-    assert_eq!(fs.lookup_path(Path::new("/a/nonexistent")), Err(FsError::NotFound));
+    assert_eq!(
+        fs.lookup_path(Path::new("/a/nonexistent")),
+        Err(FsError::NotFound)
+    );
 
     // Through non-directory
-    assert_eq!(fs.lookup_path(Path::new("/a/b/c.txt/invalid")), Err(FsError::NotADirectory));
+    assert_eq!(
+        fs.lookup_path(Path::new("/a/b/c.txt/invalid")),
+        Err(FsError::NotADirectory)
+    );
 }
 
 #[test]
@@ -521,7 +553,9 @@ fn test_ramfs_unlink_file() {
     fs.mount().unwrap();
 
     let root = fs.root().unwrap();
-    let file_id = fs.create(root, "delete_me.txt", FileType::Regular, 0o644).unwrap();
+    let file_id = fs
+        .create(root, "delete_me.txt", FileType::Regular, 0o644)
+        .unwrap();
 
     fs.unlink(root, "delete_me.txt").unwrap();
 
@@ -538,7 +572,9 @@ fn test_ramfs_unlink_empty_directory() {
     fs.mount().unwrap();
 
     let root = fs.root().unwrap();
-    let dir_id = fs.create(root, "empty_dir", FileType::Directory, 0o755).unwrap();
+    let dir_id = fs
+        .create(root, "empty_dir", FileType::Directory, 0o755)
+        .unwrap();
 
     fs.unlink(root, "empty_dir").unwrap();
     assert_eq!(fs.lookup(root, "empty_dir"), Err(FsError::NotFound));
@@ -551,8 +587,11 @@ fn test_ramfs_unlink_nonempty_directory() {
     fs.mount().unwrap();
 
     let root = fs.root().unwrap();
-    let dir_id = fs.create(root, "nonempty", FileType::Directory, 0o755).unwrap();
-    fs.create(dir_id, "child.txt", FileType::Regular, 0o644).unwrap();
+    let dir_id = fs
+        .create(root, "nonempty", FileType::Directory, 0o755)
+        .unwrap();
+    fs.create(dir_id, "child.txt", FileType::Regular, 0o644)
+        .unwrap();
 
     assert_eq!(fs.unlink(root, "nonempty"), Err(FsError::DirectoryNotEmpty));
 }
@@ -574,9 +613,12 @@ fn test_ramfs_readdir() {
     fs.mount().unwrap();
 
     let root = fs.root().unwrap();
-    fs.create(root, "file1.txt", FileType::Regular, 0o644).unwrap();
-    fs.create(root, "file2.txt", FileType::Regular, 0o644).unwrap();
-    fs.create(root, "subdir", FileType::Directory, 0o755).unwrap();
+    fs.create(root, "file1.txt", FileType::Regular, 0o644)
+        .unwrap();
+    fs.create(root, "file2.txt", FileType::Regular, 0o644)
+        .unwrap();
+    fs.create(root, "subdir", FileType::Directory, 0o755)
+        .unwrap();
 
     let entries = fs.readdir(root, 0).unwrap();
 
@@ -597,7 +639,8 @@ fn test_ramfs_duplicate_name() {
     fs.mount().unwrap();
 
     let root = fs.root().unwrap();
-    fs.create(root, "exists.txt", FileType::Regular, 0o644).unwrap();
+    fs.create(root, "exists.txt", FileType::Regular, 0o644)
+        .unwrap();
 
     assert_eq!(
         fs.create(root, "exists.txt", FileType::Regular, 0o644),

@@ -325,7 +325,10 @@ impl<T: core::fmt::Debug> core::fmt::Debug for SpinLock<T> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self.try_lock() {
             Some(guard) => f.debug_struct("SpinLock").field("data", &*guard).finish(),
-            None => f.debug_struct("SpinLock").field("data", &"<locked>").finish(),
+            None => f
+                .debug_struct("SpinLock")
+                .field("data", &"<locked>")
+                .finish(),
         }
     }
 }

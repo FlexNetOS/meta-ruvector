@@ -34,7 +34,7 @@ fn bench_reflex_tier(c: &mut Criterion) {
 
             kernel.dispatch(black_box(Syscall::VectorPutProved {
                 store,
-                key: VectorKey::new((nonce % 100) as u64),
+                key: VectorKey::new(nonce % 100),
                 data: vec![1.0, 2.0, 3.0, 4.0],
                 proof,
             }))
@@ -76,7 +76,7 @@ fn bench_deep_tier(c: &mut Criterion) {
 
             kernel.dispatch(black_box(Syscall::VectorPutProved {
                 store,
-                key: VectorKey::new((nonce % 100) as u64),
+                key: VectorKey::new(nonce % 100),
                 data: vec![1.0, 2.0, 3.0, 4.0],
                 proof,
             }))
@@ -112,7 +112,7 @@ fn bench_proof_tiers_vector(c: &mut Criterion) {
 
                 kernel.dispatch(black_box(Syscall::VectorPutProved {
                     store,
-                    key: VectorKey::new((nonce % 100) as u64),
+                    key: VectorKey::new(nonce % 100),
                     data: vec![1.0, 2.0, 3.0, 4.0],
                     proof,
                 }))
@@ -218,7 +218,7 @@ fn bench_proof_with_vector_sizes(c: &mut Criterion) {
 
                 kernel.dispatch(black_box(Syscall::VectorPutProved {
                     store,
-                    key: VectorKey::new((nonce % 100) as u64),
+                    key: VectorKey::new(nonce % 100),
                     data: data.clone(),
                     proof,
                 }))
@@ -251,7 +251,7 @@ fn bench_linux_security_overhead(c: &mut Criterion) {
 
             kernel.dispatch(black_box(Syscall::VectorPutProved {
                 store,
-                key: VectorKey::new((nonce % 100) as u64),
+                key: VectorKey::new(nonce % 100),
                 data: vec![1.0, 2.0, 3.0, 4.0],
                 proof,
             }))

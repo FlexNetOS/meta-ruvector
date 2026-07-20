@@ -569,7 +569,7 @@ mod tests {
         let mut field = MorphogeneticField::new(32, 32);
 
         // Initial complexity should be low
-        let initial_complexity = field.measure_complexity();
+        let _initial_complexity = field.measure_complexity();
 
         // After simulation, patterns should form
         field.simulate(100);
@@ -613,7 +613,7 @@ mod tests {
         embryo.full_development();
 
         // Should have different structure types
-        let types: Vec<_> = embryo
+        let _types: Vec<_> = embryo
             .structures()
             .iter()
             .map(|s| &s.structure_type)

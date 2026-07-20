@@ -59,11 +59,41 @@ pub(super) fn claude_source_files(repo_root: &Path, claude_dir: &Path) -> Result
 }
 
 fn git_tracked_paths(repo_root: &Path, files: &[PathBuf]) -> Result<BTreeSet<PathBuf>> {
-    git_filter_paths(repo_root, files, &["ls-files", "--"])
+    // Passing every discovered path to `git ls-files` can exceed exec's argument
+    // limit in repositories with large managed `.claude` surfaces. List tracked
+    // paths once and intersect them locally instead.
+    let output = Command::new("git")
+        .args(["ls-files", "-z"])
+        .current_dir(repo_root)
+        .stdout(Stdio::piped())
+        .stderr(Stdio::null())
+        .output()
+        .with_context(|| format!("failed to run git ls-files in {}", repo_root.display()))?;
+    if !output.status.success() {
+        return Ok(BTreeSet::new());
+    }
+
+    let candidates = files.iter().collect::<BTreeSet<_>>();
+    Ok(String::from_utf8_lossy(&output.stdout)
+        .split('\0')
+        .filter(|path| !path.is_empty())
+        .map(PathBuf::from)
+        .filter(|path| candidates.contains(path))
+        .collect())
 }
 
 fn git_ignored_paths(repo_root: &Path, files: &[PathBuf]) -> Result<BTreeSet<PathBuf>> {
-    git_filter_paths(repo_root, files, &["check-ignore", "--stdin"])
+    const BATCH_SIZE: usize = 128;
+
+    let mut ignored = BTreeSet::new();
+    for batch in files.chunks(BATCH_SIZE) {
+        ignored.extend(git_filter_paths(
+            repo_root,
+            batch,
+            &["check-ignore", "--stdin"],
+        )?);
+    }
+    Ok(ignored)
 }
 
 fn git_filter_paths(
@@ -78,9 +108,6 @@ fn git_filter_paths(
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::null());
-    if args.first() == Some(&"ls-files") {
-        command.args(files);
-    }
     let mut child = command.spawn().with_context(|| {
         format!(
             "failed to run git {} in {}",

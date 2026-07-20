@@ -185,6 +185,9 @@ impl<B: MemoryBacking, const N: usize> OptimizedSlabAllocator<B, N> {
 
         // Initialize free bitmap with all slots free (all bits set to 1)
         let mut free_bitmap = [0u64; MAX_BITMAP_CHUNKS];
+        // `i` is used in arithmetic (`i * BITS_PER_CHUNK`) to compute the slot
+        // offset for each chunk, so the index loop is required here.
+        #[allow(clippy::needless_range_loop)]
         for i in 0..MAX_BITMAP_CHUNKS {
             let remaining = N.saturating_sub(i * BITS_PER_CHUNK);
             if remaining >= BITS_PER_CHUNK {

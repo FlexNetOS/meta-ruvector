@@ -31,6 +31,12 @@ pub struct WasmDag {
     edges: Vec<(u32, u32)>,
 }
 
+impl Default for WasmDag {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[wasm_bindgen]
 impl WasmDag {
     /// Create new empty DAG

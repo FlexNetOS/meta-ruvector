@@ -764,6 +764,232 @@ export class HuggingFaceEmbeddings extends EmbeddingProvider {
 }
 
 // ============================================================================
+// Lattice WASM Embeddings Provider
+// ============================================================================
+
+/**
+ * Configuration for lattice-embed-wasm local embeddings
+ */
+export interface LatticeWasmEmbeddingsConfig {
+  /** Model name (default: 'minilm'). See the supported-model list in the class doc. */
+  model?: string;
+  /** Retry configuration */
+  retryConfig?: Partial<RetryConfig>;
+}
+
+/**
+ * Known lattice-embed-wasm models and their output dimensionality.
+ *
+ * `bge-small` is an asymmetric retriever (see
+ * {@link LATTICE_WASM_QUERY_INSTRUCTIONS} below); `minilm` is genuinely
+ * symmetric (contrastive training on raw text, no prefix on either side).
+ */
+const LATTICE_WASM_MODEL_DIMENSIONS: Record<string, number> = {
+  minilm: 384,
+  'bge-small': 384,
+};
+
+/**
+ * Query-side retrieval-instruction prefixes, keyed by the canonical model
+ * name from {@link LATTICE_WASM_MODEL_DIMENSIONS}. Mirrors
+ * `lattice_embed::EmbeddingModel::query_instruction()` for
+ * `BgeSmallEnV15` (`crates/embed/src/model.rs` in ohdearquant/lattice) and
+ * `LatticeEmbedding::embed_query` in `ruvector-core`'s own Lattice provider
+ * (`crates/ruvector-core/src/embeddings.rs`) -- BGE-v1.5 is an asymmetric
+ * retriever: the query side gets this instruction prefix, the passage side
+ * stays raw. `minilm` has no entry here (symmetric, no prefix).
+ */
+const LATTICE_WASM_QUERY_INSTRUCTIONS: Record<string, string> = {
+  'bge-small': 'Represent this sentence for searching relevant passages: ',
+};
+
+/**
+ * Applies the model's query-side retrieval-instruction prefix, if it has
+ * one. A pure function (exported, in addition to being used internally by
+ * {@link LatticeWasmEmbeddings.embedQuery}) so the query/passage asymmetry
+ * is unit-testable without depending on the optional
+ * `@khive-ai/lattice-embed-wasm` peer package.
+ *
+ * @param model - A canonical model name from
+ *   {@link LATTICE_WASM_MODEL_DIMENSIONS} (e.g. as returned by
+ *   {@link LatticeWasmEmbeddings.getModel}), not a raw user-supplied alias.
+ */
+export function applyLatticeWasmQueryPrefix(model: string, text: string): string {
+  const prefix = LATTICE_WASM_QUERY_INSTRUCTIONS[model];
+  return prefix ? `${prefix}${text}` : text;
+}
+
+/**
+ * Normalizes a user-supplied lattice-embed-wasm model identifier to one of
+ * the canonical keys in {@link LATTICE_WASM_MODEL_DIMENSIONS} ('minilm' or
+ * 'bge-small'). Accepts the same alias surface lattice-embed's own
+ * `EmbeddingModel::from_str` accepts for these two model families --
+ * case/underscore-insensitive, HuggingFace ids, short names (see
+ * `crates/embed/src/model.rs` in ohdearquant/lattice) -- so a model id
+ * valid for the Rust `LatticeEmbedding` provider in `ruvector-core` is also
+ * valid here (#662). Returns `undefined` for anything else.
+ */
+export function normalizeLatticeWasmModel(model: string): string | undefined {
+  const normalized = model.toLowerCase().trim().replace(/_/g, '-').replace('baai/', '');
+
+  switch (normalized) {
+    case 'bge-small-en-v1.5':
+    case 'bge-small-en':
+    case 'bge-small':
+    case 'small':
+      return 'bge-small';
+    case 'all-minilm-l6-v2':
+    case 'minilm':
+    case 'all-minilm':
+    case 'sentence-transformers/all-minilm-l6-v2':
+      return 'minilm';
+    default:
+      return undefined;
+  }
+}
+
+/**
+ * Local embeddings provider backed by `@khive-ai/lattice-embed-wasm`, a
+ * pure-Rust BERT-family text embedder compiled to WebAssembly.
+ *
+ * Node-only: the wasm adapter resolves model weights via `node:fs`, so this
+ * provider does not run in a browser. Single-text only: the wasm package
+ * exposes no batch API, so {@link getMaxBatchSize} honestly reports `1`
+ * rather than simulating a larger batch. Output embeddings are
+ * L2-normalized (matching the `native` lattice-embed path's guarantee --
+ * `BertModel::encode`/`encode_batch` call `l2_normalize` unconditionally,
+ * see `crates/inference/src/model/bert.rs` in ohdearquant/lattice).
+ *
+ * `bge-small` is an asymmetric retriever: {@link embedQuery} applies the
+ * BGE-v1.5 retrieval-instruction prefix, {@link embedText}/{@link embedTexts}
+ * do not (passage side, matching `LatticeEmbedding::embed`/`embed_query` in
+ * ruvector-core's Rust provider and `lattice-embed`'s own
+ * `query_instruction()`/`document_instruction()` split). `minilm` is
+ * genuinely symmetric, so its query and passage embeddings are identical.
+ *
+ * This is a convenience local-embedder option at parity with the existing
+ * `HuggingFaceEmbeddings` (transformers.js) local path above, not a faster
+ * or higher-quality alternative to it.
+ */
+export class LatticeWasmEmbeddings extends EmbeddingProvider {
+  private model: string;
+  private dimension: number;
+
+  /**
+   * Creates a new lattice-embed-wasm local embeddings provider
+   * @param config - Configuration options
+   * @throws Error if the configured model is not one lattice-embed-wasm supports
+   */
+  constructor(config: LatticeWasmEmbeddingsConfig = {}) {
+    super(config.retryConfig);
+
+    const requested = config.model || 'minilm';
+    const model = normalizeLatticeWasmModel(requested);
+
+    if (model === undefined) {
+      throw new Error(
+        `Unknown lattice-embed-wasm model "${requested}". Supported models: ${Object.keys(
+          LATTICE_WASM_MODEL_DIMENSIONS
+        ).join(', ')} (aliases accepted, e.g. "bge-small-en-v1.5", "BAAI/bge-small-en-v1.5").`
+      );
+    }
+
+    this.model = model;
+    this.dimension = LATTICE_WASM_MODEL_DIMENSIONS[model];
+  }
+
+  getMaxBatchSize(): number {
+    // lattice-embed-wasm embeds one text per call; there is no batch API to
+    // wrap, so this honestly reports 1 rather than faking a larger batch.
+    return 1;
+  }
+
+  getDimension(): number {
+    return this.dimension;
+  }
+
+  /**
+   * The canonical model name this provider resolved to ('minilm' or
+   * 'bge-small'), regardless of which accepted alias the caller passed to
+   * the constructor.
+   */
+  getModel(): string {
+    return this.model;
+  }
+
+  /**
+   * Embed **query** text, applying the model's retrieval-instruction prefix
+   * if it uses one (currently only `bge-small`; `minilm` is symmetric and
+   * this passes the text through unchanged). Mirrors
+   * `LatticeEmbedding::embed_query` in ruvector-core's Rust provider and
+   * `lattice-embed`'s own `EmbeddingModel::query_instruction()`. Use
+   * {@link embedText}/{@link embedTexts} for the passage/document side (no
+   * prefix applied there).
+   */
+  async embedQuery(text: string): Promise<number[]> {
+    const prefixed = applyLatticeWasmQueryPrefix(this.model, text);
+    const result = await this.embedTexts([prefixed]);
+    return result.embeddings[0].embedding;
+  }
+
+  async embedTexts(texts: string[]): Promise<BatchEmbeddingResult> {
+    if (texts.length === 0) {
+      return { embeddings: [] };
+    }
+
+    let lattice: any;
+    try {
+      // Dynamic import to support optional peer dependency. The specifier is
+      // read from a variable (rather than passed as a literal) so
+      // TypeScript does not attempt to statically resolve module types for
+      // a peer that may not be installed.
+      const specifier = '@khive-ai/lattice-embed-wasm';
+      lattice = await import(specifier);
+    } catch (error) {
+      throw new Error(
+        'lattice-embed-wasm not found. Install it with: npm install @khive-ai/lattice-embed-wasm'
+      );
+    }
+
+    // No batch API: embed one text at a time. Node caches the dynamic
+    // import above by specifier, so repeated calls do not re-import.
+    const allResults: EmbeddingResult[] = [];
+
+    for (let i = 0; i < texts.length; i++) {
+      const text = texts[i];
+
+      const vector = await this.withRetry(async () => {
+        const result = await lattice.embed(text, this.model);
+
+        if (result === null) {
+          // For an explicitly-selected provider, a null result is a real
+          // failure (unknown model, unsupported over wasm, or weights that
+          // could not be resolved/verified) -- never a silent skip.
+          throw new Error(
+            `lattice-embed-wasm returned null embedding for model "${this.model}": the model is unknown, unsupported over wasm, or its weights could not be resolved`
+          );
+        }
+
+        return result as Float32Array;
+      }, `lattice-embed-wasm embedding for text ${i + 1}/${texts.length}`);
+
+      allResults.push({
+        embedding: Array.from(vector),
+        index: i,
+      });
+    }
+
+    return {
+      embeddings: allResults,
+      metadata: {
+        model: this.model,
+        provider: 'lattice-wasm',
+      },
+    };
+  }
+}
+
+// ============================================================================
 // Helper Functions
 // ============================================================================
 
@@ -919,6 +1145,7 @@ export default {
   CohereEmbeddings,
   AnthropicEmbeddings,
   HuggingFaceEmbeddings,
+  LatticeWasmEmbeddings,
 
   // Helper functions
   embedAndInsert,

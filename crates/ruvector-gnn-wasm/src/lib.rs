@@ -143,6 +143,12 @@ pub struct JsTensorCompress {
     inner: TensorCompress,
 }
 
+impl Default for JsTensorCompress {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[wasm_bindgen]
 impl JsTensorCompress {
     /// Create a new tensor compressor

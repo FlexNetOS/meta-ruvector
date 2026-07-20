@@ -50,7 +50,7 @@ fn main() {
         "  Participation ratio:    {:.4}",
         collapsed_state.participation_ratio()
     );
-    let (idx, prob, label) = collapsed_state.most_likely();
+    let (_idx, prob, label) = collapsed_state.most_likely();
     println!("  Most likely state:      {} (P = {:.4})", label, prob);
     println!(
         "\n  ⇒ Entropy reduced by {:.4} bits",

@@ -14,7 +14,7 @@ readme = "README.md"
 
 [dependencies]
 # Internal dependencies
-exo-core = "0.1"
+exo-core = { path = "../exo-core" }
 ruvector-domain-expansion = "2.0"
 
 # Async runtime

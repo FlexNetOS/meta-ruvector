@@ -10,8 +10,6 @@ keywords = ["consciousness", "llm", "neuromorphic", "spiking-neural-networks", "
 categories = ["science", "simulation"]
 
 # Standalone workspace
-[workspace]
-
 [dependencies]
 
 [dev-dependencies]

@@ -1,4 +1,5 @@
 //! SIMD-accelerated operations for RuVector benchmarks
+#![allow(dead_code)]
 //!
 //! Provides highly optimized vector operations using:
 //! - AVX2/AVX-512 on x86_64
@@ -18,7 +19,8 @@ pub enum SimdCapability {
     Avx2,
     /// AVX-512 (512-bit)
     Avx512,
-    /// ARM NEON (128-bit)
+    /// ARM NEON (128-bit) — kept for future detection
+    #[allow(dead_code)]
     Neon,
 }
 
@@ -36,15 +38,19 @@ impl SimdCapability {
             if is_x86_feature_detected!("sse4.1") {
                 return SimdCapability::Sse4;
             }
+            SimdCapability::Scalar
         }
 
         #[cfg(target_arch = "aarch64")]
         {
             // NEON is always available on AArch64
-            return SimdCapability::Neon;
+            SimdCapability::Neon
         }
 
-        SimdCapability::Scalar
+        #[cfg(not(any(target_arch = "x86_64", target_arch = "aarch64")))]
+        {
+            SimdCapability::Scalar
+        }
     }
 
     /// Get the vector width in floats

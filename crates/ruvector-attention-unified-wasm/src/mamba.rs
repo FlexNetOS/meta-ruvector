@@ -388,9 +388,8 @@ impl MambaSSMAttention {
                 let x_d = if d < input[t].len() { input[t][d] } else { 0.0 };
 
                 // Update hidden state: h_t = A_bar * h_{t-1} + B_bar * x_t
-                for n in 0..state_dim {
-                    hidden[d][n] =
-                        params.a_bar[t][d][n] * hidden[d][n] + params.b_bar[t][d][n] * x_d;
+                for (n, h) in hidden[d].iter_mut().enumerate() {
+                    *h = params.a_bar[t][d][n] * *h + params.b_bar[t][d][n] * x_d;
                 }
 
                 // Compute output: y_t = C * h_t
@@ -535,9 +534,9 @@ mod tests {
         let s = scores.unwrap();
         assert_eq!(s.len(), 9); // 3x3 attention matrix
 
-        // Causal: upper triangle should be 0
-        assert_eq!(s[0 * 3 + 1], 0.0); // t=0 cannot attend to t=1
-        assert_eq!(s[0 * 3 + 2], 0.0); // t=0 cannot attend to t=2
+        // Causal: upper triangle should be 0 (row 0 = token t=0, 3 columns per row)
+        assert_eq!(s[1], 0.0); // s[0*3 + 1]: t=0 cannot attend to t=1
+        assert_eq!(s[2], 0.0); // s[0*3 + 2]: t=0 cannot attend to t=2
     }
 
     #[wasm_bindgen_test]

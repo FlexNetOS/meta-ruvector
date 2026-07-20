@@ -16,7 +16,6 @@
 //! Run: cargo run --example self_booting
 
 use rvf_crypto::{create_witness_chain, shake256_256, verify_witness_chain, WitnessEntry};
-use rvf_kernel;
 use rvf_runtime::options::DistanceMetric;
 use rvf_runtime::{QueryOptions, RvfOptions, RvfStore};
 use rvf_types::kernel::{KernelArch, KernelHeader, KernelType, KERNEL_MAGIC};

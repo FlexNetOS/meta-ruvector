@@ -210,8 +210,7 @@ impl OscillatorySynchronizer {
         let sum_cos: f32 = self.phases.values().map(|&p| p.cos()).sum();
         let sum_sin: f32 = self.phases.values().map(|&p| p.sin()).sum();
 
-        let r = ((sum_cos / n as f32).powi(2) + (sum_sin / n as f32).powi(2)).sqrt();
-        r
+        ((sum_cos / n as f32).powi(2) + (sum_sin / n as f32).powi(2)).sqrt()
     }
 
     /// Get coherence between two agents (0-1)
@@ -675,7 +674,7 @@ mod tests {
 
         let coherence = nao.agent_coherence("agent_1", "agent_2");
         assert!(
-            coherence >= 0.0 && coherence <= 1.0,
+            (0.0..=1.0).contains(&coherence),
             "Coherence should be in [0,1]: {}",
             coherence
         );

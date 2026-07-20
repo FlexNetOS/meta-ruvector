@@ -419,9 +419,12 @@ mod tests {
 
     #[test]
     fn test_technology_profiles() {
-        // Verify reversible computing is most efficient
-        assert!(technology_profiles::REVERSIBLE_IDEAL < technology_profiles::BIOLOGICAL);
-        assert!(technology_profiles::BIOLOGICAL < technology_profiles::NEUROMORPHIC_PROJECTED);
-        assert!(technology_profiles::NEUROMORPHIC_PROJECTED < technology_profiles::CMOS_2024);
+        // Verify reversible computing is most efficient (compile-time invariant).
+        const _: () =
+            assert!(technology_profiles::REVERSIBLE_IDEAL < technology_profiles::BIOLOGICAL);
+        const _: () =
+            assert!(technology_profiles::BIOLOGICAL < technology_profiles::NEUROMORPHIC_PROJECTED);
+        const _: () =
+            assert!(technology_profiles::NEUROMORPHIC_PROJECTED < technology_profiles::CMOS_2024);
     }
 }

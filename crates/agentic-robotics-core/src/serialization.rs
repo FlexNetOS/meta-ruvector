@@ -25,8 +25,7 @@ pub fn serialize_cdr<T: Serialize>(msg: &T) -> Result<Vec<u8>> {
 
 /// Deserialize a message using CDR format
 pub fn deserialize_cdr<T: for<'de> Deserialize<'de>>(data: &[u8]) -> Result<T> {
-    cdr::deserialize::<T>(data)
-        .map_err(|e| Error::Serialization(e.to_string()))
+    cdr::deserialize::<T>(data).map_err(|e| Error::Serialization(e.to_string()))
 }
 
 /// Serialize a message using rkyv (zero-copy)
@@ -36,19 +35,19 @@ where
 {
     // Simplified implementation for compatibility
     // In production, use proper rkyv serialization
-    Err(Error::Serialization("rkyv serialization not fully implemented".to_string()))
+    Err(Error::Serialization(
+        "rkyv serialization not fully implemented".to_string(),
+    ))
 }
 
 /// Serialize a message to JSON
 pub fn serialize_json<T: Serialize>(msg: &T) -> Result<String> {
-    serde_json::to_string(msg)
-        .map_err(|e| Error::Serialization(e.to_string()))
+    serde_json::to_string(msg).map_err(|e| Error::Serialization(e.to_string()))
 }
 
 /// Deserialize a message from JSON
 pub fn deserialize_json<T: for<'de> Deserialize<'de>>(data: &str) -> Result<T> {
-    serde_json::from_str(data)
-        .map_err(|e| Error::Serialization(e.to_string()))
+    serde_json::from_str(data).map_err(|e| Error::Serialization(e.to_string()))
 }
 
 /// Serializer wrapper

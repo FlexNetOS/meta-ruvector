@@ -92,9 +92,7 @@ pub mod sse {
     async fn handle_mcp_stream(
         State(_server): State<Arc<McpServer>>,
     ) -> Sse<impl tokio_stream::Stream<Item = Result<Event, std::convert::Infallible>>> {
-        let stream = tokio_stream::iter(vec![
-            Ok(Event::default().data("connected")),
-        ]);
+        let stream = tokio_stream::iter(vec![Ok(Event::default().data("connected"))]);
 
         Sse::new(stream).keep_alive(KeepAlive::default())
     }
