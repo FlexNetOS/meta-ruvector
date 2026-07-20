@@ -110,7 +110,7 @@ pub enum CpuState {
 
 /// Per-CPU state tracking.
 static CPU_STATES: [AtomicU64; TOTAL_CPUS] = [
-    AtomicU64::new(CpuState::Online as u64),   // CPU 0 (primary) starts online
+    AtomicU64::new(CpuState::Online as u64), // CPU 0 (primary) starts online
     AtomicU64::new(CpuState::Offline as u64),
     AtomicU64::new(CpuState::Offline as u64),
     AtomicU64::new(CpuState::Offline as u64),

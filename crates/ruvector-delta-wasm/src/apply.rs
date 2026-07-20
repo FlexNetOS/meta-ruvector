@@ -2,7 +2,7 @@
 //!
 //! Provides optimized routines for applying deltas to vectors.
 
-use ruvector_delta_core::{Delta, DeltaValue, VectorDelta};
+use ruvector_delta_core::{DeltaValue, VectorDelta};
 
 /// Apply delta to a vector in-place
 pub fn apply_delta(base: &mut [f32], delta: &VectorDelta) -> Result<(), &'static str> {
@@ -145,7 +145,7 @@ pub fn apply_scaled(base: &mut [f32], delta: &VectorDelta, scale: f32) -> Result
 /// Batch apply to multiple vectors
 pub fn apply_batch(bases: &mut [&mut [f32]], delta: &VectorDelta) -> Result<(), &'static str> {
     for base in bases {
-        apply_delta(*base, delta)?;
+        apply_delta(base, delta)?;
     }
     Ok(())
 }

@@ -5,7 +5,7 @@ use super::protocol::*;
 use crate::config::Config;
 use anyhow::{Context, Result};
 use ruvector_core::{
-    types::{DbOptions, DistanceMetric, SearchQuery, VectorEntry},
+    types::{DistanceMetric, SearchQuery, VectorEntry},
     VectorDB,
 };
 use ruvector_gnn::{compress::TensorCompress, search::differentiable_search};
@@ -46,6 +46,8 @@ impl McpHandler {
     }
 
     /// Initialize with preloaded GNN layers for optimal performance
+    // Retained warm-start constructor; the default path uses `new()` without preloading.
+    #[allow(dead_code)]
     pub async fn with_preload(config: Config) -> Self {
         let handler = Self::new(config);
         handler.gnn_cache.preload_common_layers().await;
@@ -919,8 +921,8 @@ mod tests {
         let dir = tempdir().unwrap();
         let handler = handler_with_data_dir(dir.path());
 
-        let result = handler.validate_path("~/.ssh/id_rsa");
-        // This is a relative path so it won't expand ~, but test the principle
+        // This is a relative path so it won't expand ~, but exercise the principle
+        let _result = handler.validate_path("~/.ssh/id_rsa");
         let result2 = handler.validate_path("/root/.ssh/id_rsa");
         assert!(result2.is_err(), "Should block /root/.ssh/id_rsa");
     }

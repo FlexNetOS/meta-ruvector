@@ -1,0 +1,35 @@
+# agent-env.yaml — agent environment for the meta-ruvector workspace.
+# Provisions the locked skill set into the Claude Code environment via the
+# absorbed engine `envctl agent` (same subsystem as envctl's own agent-env.yaml).
+#
+# Source of truth for skills: ./agent-skills (curated source directory).
+# .claude/skills/ is the SYNC-GENERATED output — after adoption, edit skills in
+# ./agent-skills and re-sync; do not hand-edit .claude/skills.
+# Lock-of-record: agent-env.lock (project scope; commit yaml + lock together).
+#
+# Stabilize/refresh — `envctl agent` must run from the envctl checkout (the CLI
+# requires the envctl manifest at cwd); target this config with --config:
+#   cd /home/flexnetos/lifeos/src/envctl
+#   envctl agent lock  --config /home/flexnetos/lifeos/src/meta-ruvector/agent-env.yaml --check --locked  # read-only, zero-network drift audit
+#   envctl agent sync  --config /home/flexnetos/lifeos/src/meta-ruvector/agent-env.yaml --json            # preview; writes nothing
+#   envctl agent sync  --config /home/flexnetos/lifeos/src/meta-ruvector/agent-env.yaml --apply           # only after review/approval
+#
+# Not managed here (agent-env is tracked-only; it never touches assets it did
+# not install): .claude/commands, .claude/agents, .claude/hooks, .claude/helpers,
+# .claude/settings*.json — those remain hand-maintained.
+#
+# MCP policy (operator invariant, mirrors envctl agent-env.yaml): only MCP
+# entries that do not launch non-profile local binaries may be generated here.
+# meta-ruvector's MCP servers (claude-flow, agentic-flow, …) launch local
+# binaries, so no mcps are managed by this config.
+
+scope: project
+
+agent:
+  - claude-code
+
+skills:
+  # The full meta-ruvector skill set, sourced from the curated directory.
+  # Wildcard is frozen to the locked set on plain sync; refresh via `lock`.
+  - source: ./agent-skills
+    skills: "*"

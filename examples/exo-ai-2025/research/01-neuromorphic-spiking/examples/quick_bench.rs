@@ -17,7 +17,11 @@ fn main() {
 
         // Scalar benchmark
         let results_scalar = network.benchmark(1000, false);
-        println!("Scalar  [{:4} neurons]: {}", neurons, results_scalar.format());
+        println!(
+            "Scalar  [{:4} neurons]: {}",
+            neurons,
+            results_scalar.format()
+        );
 
         // SIMD benchmark
         #[cfg(target_arch = "x86_64")]
@@ -63,8 +67,12 @@ fn main() {
         let elapsed = start.elapsed();
         let avg_time = elapsed.as_nanos() / iterations;
 
-        println!("[{:4} neurons] Φ calculation: {:6} ns ({:.2} μs)",
-            neurons, avg_time, avg_time as f64 / 1000.0);
+        println!(
+            "[{:4} neurons] Φ calculation: {:6} ns ({:.2} μs)",
+            neurons,
+            avg_time,
+            avg_time as f64 / 1000.0
+        );
     }
 
     // Benchmark 3: Polychronous group detection
@@ -85,10 +93,7 @@ fn main() {
         // Create repeating pattern
         for step in 0..20 {
             for i in 0..10 {
-                engine.add_spike(TemporalSpike::new(
-                    i,
-                    (step * 100_000 + i * 10_000) as u64,
-                ));
+                engine.add_spike(TemporalSpike::new(i, (step * 100_000 + i * 10_000) as u64));
             }
             engine.step();
         }
@@ -97,8 +102,12 @@ fn main() {
         let groups = engine.extract_qualia(10);
         let elapsed = start.elapsed();
 
-        println!("[{:4} neurons] Found {} groups in {} μs",
-            neurons, groups.len(), elapsed.as_micros());
+        println!(
+            "[{:4} neurons] Found {} groups in {} μs",
+            neurons,
+            groups.len(),
+            elapsed.as_micros()
+        );
     }
 
     // Benchmark 4: Bit operations
@@ -114,7 +123,10 @@ fn main() {
         let _ = vec1.hamming_distance(&vec2);
     }
     let elapsed = start.elapsed();
-    println!("Hamming distance: {:.3} ns/op", elapsed.as_nanos() as f64 / 1_000_000.0);
+    println!(
+        "Hamming distance: {:.3} ns/op",
+        elapsed.as_nanos() as f64 / 1_000_000.0
+    );
 
     // Spike propagation
     let start = Instant::now();
@@ -122,7 +134,10 @@ fn main() {
         let _ = vec1.propagate(&weights);
     }
     let elapsed = start.elapsed();
-    println!("Spike propagate:  {:.3} ns/op", elapsed.as_nanos() as f64 / 1_000_000.0);
+    println!(
+        "Spike propagate:  {:.3} ns/op",
+        elapsed.as_nanos() as f64 / 1_000_000.0
+    );
 
     // Count active
     let start = Instant::now();
@@ -130,7 +145,10 @@ fn main() {
         let _ = vec1.count_active();
     }
     let elapsed = start.elapsed();
-    println!("Count active:     {:.3} ns/op", elapsed.as_nanos() as f64 / 1_000_000.0);
+    println!(
+        "Count active:     {:.3} ns/op",
+        elapsed.as_nanos() as f64 / 1_000_000.0
+    );
 
     // Benchmark 5: Consciousness detection
     println!("\n5. CONSCIOUSNESS DETECTION SIMULATION\n");

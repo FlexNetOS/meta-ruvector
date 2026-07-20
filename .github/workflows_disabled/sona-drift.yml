@@ -63,7 +63,6 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
-      # Gate 1: static no-op seam detector (cheapest; fail before building).
       - name: Stub tripwire (static no-op seam detector)
         run: node scripts/sona-drift/stub-tripwire.mjs
 

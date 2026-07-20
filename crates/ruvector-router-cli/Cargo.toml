@@ -9,7 +9,7 @@ readme = "README.md"
 description = "CLI for testing and benchmarking ruvector-router-core"
 
 [[bin]]
-name = "ruvector"
+name = "ruvector-router"
 path = "src/main.rs"
 
 [dependencies]

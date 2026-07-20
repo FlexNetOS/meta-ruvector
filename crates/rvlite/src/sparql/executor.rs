@@ -57,20 +57,20 @@ pub fn execute_sparql(store: &TripleStore, query: &SparqlQuery) -> SparqlResult<
             Ok(QueryResult::Select(solutions))
         }
         QueryBody::Construct(construct) => {
-            let triples = execute_construct(&mut ctx, construct)?;
+            let triples = execute_construct(&ctx, construct)?;
             Ok(QueryResult::Construct(triples))
         }
         QueryBody::Ask(ask) => {
-            let result = execute_ask(&mut ctx, ask)?;
+            let result = execute_ask(&ctx, ask)?;
             Ok(QueryResult::Ask(result))
         }
         QueryBody::Describe(describe) => {
-            let triples = execute_describe(&mut ctx, describe)?;
+            let triples = execute_describe(&ctx, describe)?;
             Ok(QueryResult::Describe(triples))
         }
         QueryBody::Update(ops) => {
             for op in ops {
-                execute_update(&mut ctx, op)?;
+                execute_update(&ctx, op)?;
             }
             Ok(QueryResult::Update)
         }

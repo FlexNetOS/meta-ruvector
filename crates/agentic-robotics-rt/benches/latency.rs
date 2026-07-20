@@ -1,5 +1,5 @@
+use agentic_robotics_rt::{LatencyTracker, ROS3Executor};
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use ros3_rt::{LatencyTracker, ROS3Executor, Priority, Deadline};
 use std::time::Duration;
 
 fn benchmark_latency_tracking(c: &mut Criterion) {
@@ -8,7 +8,7 @@ fn benchmark_latency_tracking(c: &mut Criterion) {
         let duration = Duration::from_micros(100);
 
         b.iter(|| {
-            black_box(tracker.record(duration));
+            tracker.record(black_box(duration));
         });
     });
 }
@@ -25,5 +25,9 @@ fn benchmark_executor_spawn(c: &mut Criterion) {
     });
 }
 
-criterion_group!(benches, benchmark_latency_tracking, benchmark_executor_spawn);
+criterion_group!(
+    benches,
+    benchmark_latency_tracking,
+    benchmark_executor_spawn
+);
 criterion_main!(benches);

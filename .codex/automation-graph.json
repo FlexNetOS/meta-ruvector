@@ -101,8 +101,6 @@
   },
   "environment": {
     "envKeys": [
-      "BRAIN_API_KEY",
-      "BRAIN_URL",
       "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS",
       "CLAUDE_FLOW_HOOKS_ENABLED",
       "CLAUDE_FLOW_V3_ENABLED"
@@ -111,10 +109,20 @@
   "generatedBy": "codex-env",
   "hooks": {
     "absoluteWorkspacePathPolicy": "generated runtime hooks must resolve repo root dynamically",
-    "events": [],
-    "policy": "Codex lifecycle hook products from this pre-clean-room generator are purged; rebuild clean-room hooks in a later design.",
-    "runtime": null,
-    "scriptRoot": null,
+    "events": [
+      "Notification",
+      "PostToolUse",
+      "PreCompact",
+      "PreToolUse",
+      "SessionEnd",
+      "SessionStart",
+      "Stop",
+      "SubagentStart",
+      "SubagentStop",
+      "UserPromptSubmit"
+    ],
+    "runtime": ".codex/hooks.json",
+    "scriptRoot": ".codex/hooks",
     "source": ".claude/settings.json"
   },
   "mcp": {
@@ -146,10 +154,10 @@
   "sourceCounts": {
     "agent": 124,
     "command": 130,
-    "helper": 41,
+    "helper": 44,
     "hook": 5,
     "intelligence": 23,
-    "other": 9,
+    "other": 11,
     "setting": 1,
     "skill": 43
   },

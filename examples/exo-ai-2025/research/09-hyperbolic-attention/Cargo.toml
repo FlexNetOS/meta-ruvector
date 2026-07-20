@@ -12,9 +12,6 @@ keywords = ["hyperbolic", "attention", "geometry", "neural", "transformer"]
 categories = ["science", "algorithms", "mathematics"]
 readme = "README.md"
 
-[workspace]
-# This package is not part of the parent workspace
-
 [lib]
 name = "hyperbolic_attention"
 path = "src/lib.rs"

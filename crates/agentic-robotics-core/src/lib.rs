@@ -11,20 +11,20 @@
 //! `Publisher`/`Subscriber` are in-process channels rather than a live network
 //! transport. Internal message type names use the `ros3_msgs/` prefix.
 
-pub mod middleware;
-pub mod serialization;
-pub mod message;
-pub mod publisher;
-pub mod subscriber;
-pub mod service;
 pub mod error;
+pub mod message;
+pub mod middleware;
+pub mod publisher;
+pub mod serialization;
+pub mod service;
+pub mod subscriber;
 
+pub use error::{Error, Result};
+pub use message::{Message, PointCloud, RobotState};
 pub use middleware::Zenoh;
-pub use message::{Message, RobotState, PointCloud};
 pub use publisher::Publisher;
+pub use service::{Queryable, Service};
 pub use subscriber::Subscriber;
-pub use service::{Service, Queryable};
-pub use error::{Result, Error};
 
 /// ROS3 Core version
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");

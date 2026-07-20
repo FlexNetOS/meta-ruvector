@@ -31,7 +31,7 @@
 //! early_print("\n");
 //! ```
 
-use ruvix_bcm2711::{AUX_BASE, MINI_UART_BASE, GPIO_BASE};
+use ruvix_bcm2711::{AUX_BASE, GPIO_BASE, MINI_UART_BASE};
 
 // =============================================================================
 // Register Offsets (duplicated for early boot independence)
@@ -267,12 +267,16 @@ pub fn early_print_dec(mut value: u64) {
 /// Print boot banner.
 pub fn early_print_banner() {
     early_print("\n");
-    early_print("================================================================================\n");
+    early_print(
+        "================================================================================\n",
+    );
     early_print("  RuVix Cognition Kernel - Phase D (Raspberry Pi 4/5)\n");
     early_print("  Version: ");
     early_print(env!("CARGO_PKG_VERSION"));
     early_print("\n");
-    early_print("================================================================================\n");
+    early_print(
+        "================================================================================\n",
+    );
     early_print("\n");
 }
 

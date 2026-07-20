@@ -52,7 +52,6 @@ pub fn simd_probabilities(amplitudes: &[Complex64]) -> Vec<f64> {
 pub fn simd_inner_product(amplitudes1: &[Complex64], amplitudes2: &[Complex64]) -> Complex64 {
     assert_eq!(amplitudes1.len(), amplitudes2.len());
 
-    let len = amplitudes1.len();
     let mut real_sum = 0.0;
     let mut imag_sum = 0.0;
 
@@ -185,8 +184,6 @@ pub fn simd_weighted_sample(weights: &[f64], random_value: f64) -> usize {
     let mut index = 0;
 
     for (chunk_idx, chunk) in chunks.enumerate() {
-        let start_cumulative = cumulative;
-
         // Vectorized cumulative sum
         cumulative += chunk[0];
         if random_value < cumulative {

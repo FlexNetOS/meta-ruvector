@@ -1,41 +1,32 @@
-//! Pattern-recognition demo.
-//!
-//! Uses population coding to represent a scalar stimulus across a bank of
-//! neurons, then shows how spike-timing-dependent plasticity ([`STDPLearning`])
-//! strengthens a synapse for a causal spike pairing and weakens it for an
-//! acausal one.
-
-use spiking_network::{encoding::SpikeEncoder, learning::STDPLearning};
+//! Pattern-recognition example: build a network, encode a feature, and adapt synapses with STDP.
+use spiking_network::{STDPConfig, STDPLearning, SpikeEncoder, SpikingNetwork};
 
 fn main() {
-    // Population-code three stimuli across 16 tuning-curve neurons.
-    let neurons = 16;
-    let sigma = 0.12;
-    for stimulus in [0.2_f32, 0.5, 0.8] {
-        let activity = SpikeEncoder::population_encode(stimulus, neurons, sigma);
-        let peak = activity
-            .iter()
-            .enumerate()
-            .max_by(|(_, a), (_, b)| a.total_cmp(b))
-            .map(|(i, _)| i)
-            .unwrap_or(0);
-        println!("stimulus {stimulus:.1} -> peak neuron {peak}/{neurons}");
-    }
+    // A network whose synapses we will adapt with spike-timing-dependent plasticity.
+    let mut net = SpikingNetwork::with_neurons(200)
+        .expect("network construction should succeed for 200 neurons");
 
-    // Demonstrate STDP weight adaptation.
-    let stdp = STDPLearning::with_defaults();
-    let mut weight = 0.5_f32;
-    println!("\nSTDP adaptation (initial weight {weight:.3}):");
+    // Encode one analog feature into a spike train: (value, duration_ms, dt, max_rate_hz).
+    let feature = 0.8;
+    let train = SpikeEncoder::rate_encode(feature, 100.0, 1.0, 200.0);
+    println!(
+        "Encoded feature into {} active spike timesteps",
+        train.count_ones()
+    );
 
-    // Repeated causal pairings (pre at t=0, post at t=4) potentiate the synapse.
-    for epoch in 0..5 {
-        weight = stdp.update_weight(weight, 0.0, 4.0);
-        println!("  epoch {epoch}: causal pairing -> weight {weight:.3}");
-    }
+    // Configure STDP and adapt a synapse for causal vs. anti-causal spike pairings.
+    let learner = STDPLearning::new(STDPConfig::default());
+    let initial_weight = 0.5;
+    let potentiated = learner.apply(initial_weight, 5.0); // post fires 5 ms after pre
+    let depressed = learner.apply(initial_weight, -5.0); // post fires 5 ms before pre
+    println!(
+        "STDP: weight {initial_weight:.3} -> {potentiated:.3} (potentiation), {depressed:.3} (depression)"
+    );
 
-    // A burst of acausal pairings (post before pre) then depresses it.
-    for epoch in 0..5 {
-        weight = stdp.update_weight(weight, 4.0, 0.0);
-        println!("  epoch {epoch}: acausal pairing -> weight {weight:.3}");
-    }
+    // Run the network so the example exercises the event-driven simulation path.
+    let stats = net.run(100.0);
+    println!(
+        "Pattern recognition complete: {} total spikes over {:.0} ms",
+        stats.total_spikes, stats.simulation_time
+    );
 }

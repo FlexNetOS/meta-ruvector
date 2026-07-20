@@ -482,11 +482,15 @@ fn test_flash_attention_memory_efficiency() {
 
     println!("FlashAttention 1024 seq_len: {:?}", elapsed);
 
-    // Should complete without OOM and in reasonable time
+    // Should complete without OOM and in reasonable time. The required CI path
+    // runs debug test binaries on shared self-hosted runners, so preserve the
+    // 1s release expectation while allowing debug instrumentation overhead.
+    let max_duration_ms = if cfg!(debug_assertions) { 5_000 } else { 1_000 };
     assert!(
-        elapsed.as_millis() < 1000,
-        "FlashAttention too slow: {:?}",
-        elapsed
+        elapsed.as_millis() < max_duration_ms,
+        "FlashAttention too slow: {:?} >= {}ms",
+        elapsed,
+        max_duration_ms
     );
 }
 

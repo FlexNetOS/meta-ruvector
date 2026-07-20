@@ -4,8 +4,8 @@ use super::{handlers::McpHandler, protocol::*};
 use anyhow::Result;
 use axum::{
     extract::State,
-    http::{header, StatusCode},
-    response::{sse::Event, IntoResponse, Sse},
+    http::header,
+    response::{sse::Event, Sse},
     routing::{get, post},
     Json, Router,
 };
@@ -144,7 +144,7 @@ async fn mcp_handler(
 }
 
 async fn mcp_sse_handler(
-    State(handler): State<Arc<McpHandler>>,
+    State(_handler): State<Arc<McpHandler>>,
 ) -> Sse<impl Stream<Item = Result<Event, std::convert::Infallible>>> {
     let stream = async_stream::stream! {
         // Send initial connection event

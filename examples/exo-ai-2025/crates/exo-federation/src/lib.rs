@@ -256,9 +256,6 @@ fn current_timestamp() -> u64 {
         .as_millis() as u64
 }
 
-// Re-export hex for PeerId
-use hex;
-
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -3,7 +3,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
-use serde_json::json;
+use serde_json::{json, Map};
 use walkdir::WalkDir;
 
 use super::agent_roles::CodexAgentRole;
@@ -293,6 +293,12 @@ pub(super) fn codex_automation_graph_json(
         &fs::read(&settings_path)
             .with_context(|| format!("failed to read {}", settings_path.display()))?,
     )?;
+    let mut hook_events = settings
+        .get("hooks")
+        .and_then(serde_json::Value::as_object)
+        .map(|hooks| hooks.keys().cloned().collect::<Vec<_>>())
+        .unwrap_or_default();
+    hook_events.sort();
     let mut env_keys = settings
         .get("env")
         .and_then(serde_json::Value::as_object)
@@ -365,10 +371,10 @@ pub(super) fn codex_automation_graph_json(
         },
         "hooks": {
             "source": ".claude/settings.json",
-            "runtime": null,
-            "scriptRoot": null,
-            "events": [],
-            "policy": "Codex lifecycle hook products from this pre-clean-room generator are purged; rebuild clean-room hooks in a later design."
+            "runtime": ".codex/hooks.json",
+            "scriptRoot": ".codex/hooks",
+            "events": hook_events,
+            "absoluteWorkspacePathPolicy": "generated runtime hooks must resolve repo root dynamically"
         },
         "mcp": {
             "source": ".claude/settings.json and .codex/config.toml",
@@ -671,8 +677,8 @@ repository, not a vendor harness and not a user-global prompt dump.
 evidence/debug material. The crate-owned runtime target is the compact,
 deterministic automation layer generated under `.codex`, especially
 `.codex/automation-graph.json`, `.codex/agent-teams.json`,
-`.codex/prompts/`, and `.codex/agents/`. Codex lifecycle hooks from the
-pre-clean-room generator are deliberately not emitted.
+`.codex/hooks.json`, `.codex/hooks/`, `.codex/prompts/`, and
+`.codex/agents/`.
 
 ## Refresh
 
@@ -692,8 +698,8 @@ cargo run -p codex-env -- doctor
 - `.claude/**` -> `.codex/mirror/.claude/**` byte-for-byte
 - `.claude/**` -> `.codex/mirror-symbols.json` deterministic file/symbol evidence inventory
 - `.claude/**` -> `.codex/automation-graph.json` compact crate-owned capability graph
-- `.claude/settings.json` -> `.codex/config.toml` and shell environment defaults
-- legacy `.claude/hooks/` inputs remain evidence only until clean-room hooks are rebuilt
+- `.claude/settings.json` -> `.codex/hooks.json` and shell environment defaults
+- `.claude/hooks/` -> normalized `.codex/hooks/` runtime scripts
 - `.claude/skills/` -> `.agents/skills/`
 - `.claude/commands/**/*.md` -> `.agents/skills/source-command-*`
 - `.claude/commands/**/*.md` -> repo-local `.codex/prompts/*.md` for `/prompts:*`,
@@ -726,9 +732,9 @@ appear as Codex prompt commands such as `/prompts:sparc-code`,
 Use `.codex/automation-graph.json` as the low-token routing and capability
 index before loading bulk mirrored Markdown. Agent teams are generated from
 actual configured Codex agent roles and expose both `agents` and `members` for
-runtime consumers. Lifecycle hooks are mandatory for the eventual clean-room
-gate, but this pre-clean-room generator must not emit Codex hook products. Do
-not move this automation into a vendor harness.
+runtime consumers. Generated runtime hooks must resolve the repository root
+dynamically; stale absolute paths such as `/workspaces/ruvector` are rejected by
+doctor checks. Do not move this automation into a vendor harness.
 
 ## Run Actual Work
 
@@ -882,7 +888,7 @@ Compare the actual repo state against Codex-native behavior, not Claude assumpti
 
 - commands and prompts: .claude/commands, .agents/skills/source-command-*, repo-local .codex/prompts
 - agents and teams: .claude/agents, .codex/agents, custom-agent schema, explicit subagent workflows
-- hooks and helpers: .claude/settings.json, .codex/helpers, and the explicit zero-runtime-hook policy until clean-room hooks are rebuilt
+- hooks and helpers: .claude/settings.json, .codex/hooks.json, .codex/hooks, .codex/helpers, supported Codex hook events
 - settings and MCP: .codex/config.toml, active MCP servers, features, model and sandbox defaults
 - auto loop: AGENTS.md, ICM recall/store, verification gates, commit/push/PR workflow
 
@@ -1007,15 +1013,15 @@ stops early only when parent consolidation emits
         ),
         (
             "codex-gap-hunt",
-            "Use when auditing Codex parity gaps across helpers, prompts, skills, custom agents, subagents, settings, MCP, auto-loop workflows, and the zero-runtime-hook policy.",
+            "Use when auditing Codex parity gaps across hooks, helpers, prompts, skills, custom agents, subagents, settings, MCP, and auto-loop workflows.",
             String::from(r#"# Codex Gap Hunt
 
 Audit from current evidence, not memory. Start from `.codex/automation-graph.json`, then compare source and generated surfaces only as needed:
 
 - .claude/commands -> .agents/skills/source-command-* and repo-local .codex/prompts
 - .claude/agents -> .codex/agents custom-agent TOML schema and explicit subagent workflows
-- .claude/settings.json -> .codex/config.toml while legacy hook inputs remain evidence only
-- .claude/helpers -> .codex/helpers
+- .claude/settings.json -> .codex/config.toml and .codex/hooks.json using supported Codex hook events
+- .claude/hooks and helpers -> .codex/hooks and .codex/helpers
 - AGENTS.md, ICM, verification, commit/push/PR workflow
 
 Rank gaps by user impact, then implement upgrades only. Verify with commands that prove the touched surface works.
@@ -1136,6 +1142,149 @@ pub(super) fn codex_agent_profiles(codex_dir: &Path) -> Vec<PlannedFile> {
     .collect()
 }
 
+pub(super) fn codex_hooks_json(claude_dir: &Path) -> Result<String> {
+    let settings_path = claude_dir.join("settings.json");
+    let settings: serde_json::Value = serde_json::from_slice(
+        &fs::read(&settings_path)
+            .with_context(|| format!("failed to read {}", settings_path.display()))?,
+    )?;
+
+    let hooks = normalize_codex_hooks(settings.get("hooks"));
+    let output = json!({
+        "hooks": hooks,
+    });
+    Ok(format!("{}\n", serde_json::to_string_pretty(&output)?))
+}
+
+fn normalize_codex_hooks(source: Option<&serde_json::Value>) -> serde_json::Value {
+    let Some(source) = source.and_then(serde_json::Value::as_object) else {
+        return json!({});
+    };
+
+    let mut normalized = Map::new();
+    for (source_event, groups) in source {
+        let Some(codex_event) = codex_hook_event(source_event) else {
+            continue;
+        };
+        let Some(groups) = groups.as_array() else {
+            continue;
+        };
+
+        let target_groups = normalized
+            .entry(codex_event.to_owned())
+            .or_insert_with(|| json!([]))
+            .as_array_mut()
+            .expect("hook event value is initialized as array");
+
+        for group in groups {
+            let Some(group_object) = group.as_object() else {
+                continue;
+            };
+            let Some(source_hooks) = group_object
+                .get("hooks")
+                .and_then(serde_json::Value::as_array)
+            else {
+                continue;
+            };
+
+            let hooks = source_hooks
+                .iter()
+                .filter_map(normalize_codex_hook_handler)
+                .collect::<Vec<_>>();
+            if hooks.is_empty() {
+                continue;
+            }
+
+            let mut target_group = Map::new();
+            if let Some(matcher) = group_object
+                .get("matcher")
+                .and_then(serde_json::Value::as_str)
+            {
+                target_group.insert("matcher".to_owned(), json!(matcher));
+            }
+            target_group.insert("hooks".to_owned(), json!(hooks));
+            target_groups.push(serde_json::Value::Object(target_group));
+        }
+    }
+
+    serde_json::Value::Object(normalized)
+}
+
+fn codex_hook_event(source_event: &str) -> Option<&'static str> {
+    match source_event {
+        "SessionStart" => Some("SessionStart"),
+        "PreToolUse" => Some("PreToolUse"),
+        "PermissionRequest" => Some("PermissionRequest"),
+        "PostToolUse" => Some("PostToolUse"),
+        "PreCompact" => Some("PreCompact"),
+        "PostCompact" => Some("PostCompact"),
+        "UserPromptSubmit" => Some("UserPromptSubmit"),
+        "SubagentStart" => Some("SubagentStart"),
+        "SubagentStop" => Some("SubagentStop"),
+        "Stop" | "SessionEnd" => Some("Stop"),
+        _ => None,
+    }
+}
+
+fn normalize_codex_hook_handler(handler: &serde_json::Value) -> Option<serde_json::Value> {
+    let handler = handler.as_object()?;
+    if handler.get("async").and_then(serde_json::Value::as_bool) == Some(true) {
+        return None;
+    }
+    if handler.get("type").and_then(serde_json::Value::as_str) != Some("command") {
+        return None;
+    }
+
+    let command = handler.get("command").and_then(serde_json::Value::as_str)?;
+    let mut normalized = Map::new();
+    normalized.insert("type".to_owned(), json!("command"));
+    normalized.insert("command".to_owned(), json!(codex_hook_command(command)));
+    if let Some(timeout) = handler.get("timeout").and_then(serde_json::Value::as_u64) {
+        normalized.insert(
+            "timeout".to_owned(),
+            json!(codex_hook_timeout_seconds(timeout)),
+        );
+    }
+    if let Some(status) = handler
+        .get("statusMessage")
+        .and_then(serde_json::Value::as_str)
+    {
+        normalized.insert("statusMessage".to_owned(), json!(status));
+    }
+    Some(serde_json::Value::Object(normalized))
+}
+
+fn codex_hook_command(command: &str) -> String {
+    let hook_handler = r#"node "${CLAUDE_PROJECT_DIR:-.}/.claude/helpers/hook-handler.cjs" "#;
+    if let Some(args) = command.strip_prefix(hook_handler) {
+        return format!(
+            r#""$(git rev-parse --show-toplevel)/.codex/helpers/run-claude-hook.sh" hook-handler.cjs {}"#,
+            args.trim()
+        );
+    }
+
+    let auto_memory = r#"node "${CLAUDE_PROJECT_DIR:-.}/.claude/helpers/auto-memory-hook.mjs" "#;
+    if let Some(args) = command.strip_prefix(auto_memory) {
+        return format!(
+            r#""$(git rev-parse --show-toplevel)/.codex/helpers/run-claude-hook.sh" auto-memory-hook.mjs {}"#,
+            args.trim()
+        );
+    }
+
+    command.replace(
+        "${CLAUDE_PROJECT_DIR:-.}",
+        "$(git rev-parse --show-toplevel)",
+    )
+}
+
+fn codex_hook_timeout_seconds(timeout: u64) -> u64 {
+    if timeout > 600 {
+        timeout.div_ceil(1000)
+    } else {
+        timeout
+    }
+}
+
 pub(super) fn copy_tree_plan(source: &Path, target: &Path) -> Result<Vec<PlannedFile>> {
     if !source.exists() {
         return Ok(Vec::new());
@@ -1160,6 +1309,42 @@ pub(super) fn copy_tree_plan(source: &Path, target: &Path) -> Result<Vec<Planned
     }
     files.sort_by(|a, b| a.path.cmp(&b.path));
     Ok(files)
+}
+
+pub(super) fn codex_runtime_hook_plan(source: &Path, target: &Path) -> Result<Vec<PlannedFile>> {
+    let mut files = copy_tree_plan(source, target)?;
+    for file in &mut files {
+        let Ok(text) = String::from_utf8(file.bytes.clone()) else {
+            continue;
+        };
+        file.bytes = normalize_generated_text(&normalize_runtime_hook_paths(&text)).into_bytes();
+    }
+    Ok(files)
+}
+
+fn normalize_runtime_hook_paths(text: &str) -> String {
+    if !text.contains("/workspaces/ruvector") {
+        return text.to_owned();
+    }
+
+    let mut output = String::with_capacity(text.len() + 160);
+    let mut inserted_repo_root = false;
+    for line in text.lines() {
+        output.push_str(line);
+        output.push('\n');
+        if !inserted_repo_root && line.trim_start().starts_with("set -e") {
+            output.push_str(
+                "repo_root=\"${CODEX_REPO_ROOT:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}\"\n",
+            );
+            inserted_repo_root = true;
+        }
+    }
+    if !inserted_repo_root {
+        output = format!(
+            "repo_root=\"${{CODEX_REPO_ROOT:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}}\"\n{output}"
+        );
+    }
+    output.replace("/workspaces/ruvector", "${repo_root}")
 }
 
 pub(super) fn command_skill_plan(

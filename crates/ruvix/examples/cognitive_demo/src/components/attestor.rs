@@ -25,7 +25,7 @@
 
 use super::{Component, ComponentTickResult, KernelInterface};
 use crate::{config, Result};
-use ruvix_types::{CapHandle, ProofAttestation, ProofPayload, ProofTier, ProofToken, RegionHandle};
+use ruvix_types::{CapHandle, ProofAttestation, ProofTier, RegionHandle};
 use sha2::{Digest, Sha256};
 
 /// Attestation request from pipeline components.
@@ -199,10 +199,10 @@ impl Attestor {
     /// Computes the hash chain for the attestation.
     fn compute_hash_chain(&self, attestation: &ProofAttestation) -> [u8; 32] {
         let mut hasher = Sha256::new();
-        hasher.update(&self.previous_hash);
-        hasher.update(&attestation.proof_term_hash);
-        hasher.update(&attestation.verification_timestamp_ns.to_le_bytes());
-        hasher.update(&attestation.reduction_steps.to_le_bytes());
+        hasher.update(self.previous_hash);
+        hasher.update(attestation.proof_term_hash);
+        hasher.update(attestation.verification_timestamp_ns.to_le_bytes());
+        hasher.update(attestation.reduction_steps.to_le_bytes());
         hasher.finalize().into()
     }
 
@@ -289,7 +289,7 @@ impl Component for Attestor {
         // Initialize hash chain with boot attestation
         let mut hasher = Sha256::new();
         hasher.update(b"RUVIX_WITNESS_LOG_INIT");
-        hasher.update(&self.environment_hash);
+        hasher.update(self.environment_hash);
         self.previous_hash = hasher.finalize().into();
 
         self.initialized = true;

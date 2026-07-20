@@ -544,7 +544,9 @@ impl SeedClient {
                     match dispatch_status_outcome(status) {
                         StatusOutcome::Cycle => {
                             peers_tried += 1;
-                            last_err = Some(seed_err::from_response_with_headers(status, &headers, &body_text, path));
+                            last_err = Some(seed_err::from_response_with_headers(
+                                status, &headers, &body_text, path,
+                            ));
                             if peers_tried >= total_peers {
                                 // All peers tried at least once — fall
                                 // through to ADR-0005 retry on the
@@ -556,7 +558,9 @@ impl SeedClient {
                                     let delay = delay_for(attempt, hint);
                                     if started.elapsed() + delay > self.inner.timeouts.total {
                                         return Err(last_err.take().unwrap_or_else(|| {
-                                            seed_err::from_response_with_headers(status, &headers, &body_text, path)
+                                            seed_err::from_response_with_headers(
+                                                status, &headers, &body_text, path,
+                                            )
                                         }));
                                     }
                                     tokio::time::sleep(delay).await;
@@ -564,7 +568,9 @@ impl SeedClient {
                                     continue;
                                 }
                                 return Err(last_err.take().unwrap_or_else(|| {
-                                    seed_err::from_response_with_headers(status, &headers, &body_text, path)
+                                    seed_err::from_response_with_headers(
+                                        status, &headers, &body_text, path,
+                                    )
                                 }));
                             }
                             match self.next_peer(&peer_key) {
@@ -573,7 +579,9 @@ impl SeedClient {
                                     continue;
                                 }
                                 None => {
-                                    return Err(seed_err::from_response_with_headers(status, &headers, &body_text, path));
+                                    return Err(seed_err::from_response_with_headers(
+                                        status, &headers, &body_text, path,
+                                    ));
                                 }
                             }
                         }
@@ -586,18 +594,24 @@ impl SeedClient {
                                 let hint = retry::parse_retry_after(&headers, &body_text);
                                 let delay = delay_for(attempt, hint);
                                 if started.elapsed() + delay > self.inner.timeouts.total {
-                                    return Err(seed_err::from_response_with_headers(status, &headers, &body_text, path));
+                                    return Err(seed_err::from_response_with_headers(
+                                        status, &headers, &body_text, path,
+                                    ));
                                 }
                                 tokio::time::sleep(delay).await;
                                 attempt += 1;
                                 continue;
                             }
-                            return Err(seed_err::from_response_with_headers(status, &headers, &body_text, path));
+                            return Err(seed_err::from_response_with_headers(
+                                status, &headers, &body_text, path,
+                            ));
                         }
                         StatusOutcome::Surface => {
                             // 4xx (auth/validation/not-found) or non-cyclable
                             // 5xx (501). Surface; don't touch peer state.
-                            return Err(seed_err::from_response_with_headers(status, &headers, &body_text, path));
+                            return Err(seed_err::from_response_with_headers(
+                                status, &headers, &body_text, path,
+                            ));
                         }
                     }
                 }

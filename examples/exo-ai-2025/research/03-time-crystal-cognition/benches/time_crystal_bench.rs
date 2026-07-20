@@ -13,8 +13,10 @@ fn bench_discrete_time_crystal(c: &mut Criterion) {
             n_oscillators,
             |b, &n| {
                 b.iter(|| {
-                    let mut config = DTCConfig::default();
-                    config.n_oscillators = n;
+                    let config = DTCConfig {
+                        n_oscillators: n,
+                        ..Default::default()
+                    };
                     let mut dtc = DiscreteTimeCrystal::new(config);
                     let trajectory = dtc.run(black_box(1.0)); // 1 second
                     black_box(trajectory)
@@ -27,8 +29,10 @@ fn bench_discrete_time_crystal(c: &mut Criterion) {
 }
 
 fn bench_period_doubling_detection(c: &mut Criterion) {
-    let mut config = DTCConfig::default();
-    config.n_oscillators = 100;
+    let config = DTCConfig {
+        n_oscillators: 100,
+        ..Default::default()
+    };
     let mut dtc = DiscreteTimeCrystal::new(config);
     let trajectory = dtc.run(2.0);
 
@@ -49,8 +53,10 @@ fn bench_floquet_system(c: &mut Criterion) {
             n_neurons,
             |b, &n| {
                 b.iter(|| {
-                    let mut config = FloquetConfig::default();
-                    config.n_neurons = n;
+                    let config = FloquetConfig {
+                        n_neurons: n,
+                        ..Default::default()
+                    };
                     let weights = FloquetCognitiveSystem::generate_asymmetric_weights(n, 0.2, 1.0);
                     let mut system = FloquetCognitiveSystem::new(config, weights);
                     let trajectory = system.run(black_box(10)); // 10 periods
@@ -86,7 +92,7 @@ fn bench_temporal_memory(c: &mut Criterion) {
             for _ in 0..1000 {
                 memory.step();
             }
-            black_box(&memory)
+            black_box(&memory);
         });
     });
 

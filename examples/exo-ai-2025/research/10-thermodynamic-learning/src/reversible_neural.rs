@@ -39,13 +39,21 @@ pub trait ReversibleLayer {
 /// Invertible activation functions
 #[derive(Debug, Clone)]
 pub enum InvertibleActivation {
-    LeakyReLU { alpha: f64 },
+    /// Leaky ReLU with negative-slope `alpha`; invertible for `alpha > 0`.
+    LeakyReLU {
+        /// Negative-region slope.
+        alpha: f64,
+    },
+    /// Hyperbolic tangent, inverted via `arctanh`.
     Tanh,
+    /// Logistic sigmoid, inverted via the logit function.
     Sigmoid,
+    /// Identity (no-op) activation.
     Identity,
 }
 
 impl InvertibleActivation {
+    /// Apply the activation function to `x`.
     pub fn activate(&self, x: f64) -> f64 {
         match self {
             InvertibleActivation::LeakyReLU { alpha } => {
@@ -61,6 +69,7 @@ impl InvertibleActivation {
         }
     }
 
+    /// Apply the inverse of the activation function to `y`.
     pub fn inverse(&self, y: f64) -> f64 {
         match self {
             InvertibleActivation::LeakyReLU { alpha } => {
@@ -82,6 +91,7 @@ impl InvertibleActivation {
         }
     }
 
+    /// Compute the derivative of the activation function at `x`.
     pub fn derivative(&self, x: f64) -> f64 {
         match self {
             InvertibleActivation::LeakyReLU { alpha } => {
@@ -115,14 +125,20 @@ pub struct CouplingLayer {
 
     /// Scale network: two layers [layer1, layer2]
     pub scale_weights_1: Vec<Vec<f64>>,
+    /// Scale network layer-1 biases.
     pub scale_bias_1: Vec<f64>,
+    /// Scale network layer-2 weights.
     pub scale_weights_2: Vec<Vec<f64>>,
+    /// Scale network layer-2 biases.
     pub scale_bias_2: Vec<f64>,
 
     /// Translation network: two layers [layer1, layer2]
     pub translate_weights_1: Vec<Vec<f64>>,
+    /// Translation network layer-1 biases.
     pub translate_bias_1: Vec<f64>,
+    /// Translation network layer-2 weights.
     pub translate_weights_2: Vec<Vec<f64>>,
+    /// Translation network layer-2 biases.
     pub translate_bias_2: Vec<f64>,
 
     /// Activation function
@@ -130,6 +146,8 @@ pub struct CouplingLayer {
 }
 
 impl CouplingLayer {
+    /// Create a RealNVP coupling layer for inputs of size `dim` split at `split`,
+    /// with scale/translation sub-networks of width `hidden_dim`.
     pub fn new(dim: usize, hidden_dim: usize, split: usize) -> Self {
         assert!(split < dim);
 
@@ -138,20 +156,20 @@ impl CouplingLayer {
 
         // Initialize scale network: dim1 -> hidden -> dim2
         // Layer 1: dim1 -> hidden_dim
-        let scale_weights_1 = vec![vec![(rand::random::<f64>() - 0.5) * 0.1; dim1]; hidden_dim];
+        let scale_weights_1 = vec![vec![(rand::random() - 0.5) * 0.1; dim1]; hidden_dim];
         let scale_bias_1 = vec![0.0; hidden_dim];
 
         // Layer 2: hidden_dim -> dim2
-        let scale_weights_2 = vec![vec![(rand::random::<f64>() - 0.5) * 0.1; hidden_dim]; dim2];
+        let scale_weights_2 = vec![vec![(rand::random() - 0.5) * 0.1; hidden_dim]; dim2];
         let scale_bias_2 = vec![0.0; dim2];
 
         // Initialize translation network
         // Layer 1: dim1 -> hidden_dim
-        let translate_weights_1 = vec![vec![(rand::random::<f64>() - 0.5) * 0.1; dim1]; hidden_dim];
+        let translate_weights_1 = vec![vec![(rand::random() - 0.5) * 0.1; dim1]; hidden_dim];
         let translate_bias_1 = vec![0.0; hidden_dim];
 
         // Layer 2: hidden_dim -> dim2
-        let translate_weights_2 = vec![vec![(rand::random::<f64>() - 0.5) * 0.1; hidden_dim]; dim2];
+        let translate_weights_2 = vec![vec![(rand::random() - 0.5) * 0.1; hidden_dim]; dim2];
         let translate_bias_2 = vec![0.0; dim2];
 
         Self {
@@ -171,20 +189,28 @@ impl CouplingLayer {
     fn scale_network(&self, x1: &[f64]) -> Vec<f64> {
         // Two-layer network
         let mut hidden = vec![0.0; self.scale_bias_1.len()];
-        for i in 0..hidden.len() {
-            for j in 0..x1.len() {
-                hidden[i] += self.scale_weights_1[i][j] * x1[j];
+        for ((h, w_row), &b) in hidden
+            .iter_mut()
+            .zip(&self.scale_weights_1)
+            .zip(&self.scale_bias_1)
+        {
+            for (&w, &xj) in w_row.iter().zip(x1) {
+                *h += w * xj;
             }
-            hidden[i] += self.scale_bias_1[i];
-            hidden[i] = self.activation.activate(hidden[i]);
+            *h += b;
+            *h = self.activation.activate(*h);
         }
 
         let mut output = vec![0.0; self.scale_bias_2.len()];
-        for i in 0..output.len() {
-            for j in 0..hidden.len() {
-                output[i] += self.scale_weights_2[i][j] * hidden[j];
+        for ((o, w_row), &b) in output
+            .iter_mut()
+            .zip(&self.scale_weights_2)
+            .zip(&self.scale_bias_2)
+        {
+            for (&w, &h) in w_row.iter().zip(&hidden) {
+                *o += w * h;
             }
-            output[i] += self.scale_bias_2[i];
+            *o += b;
         }
 
         output
@@ -192,20 +218,28 @@ impl CouplingLayer {
 
     fn translate_network(&self, x1: &[f64]) -> Vec<f64> {
         let mut hidden = vec![0.0; self.translate_bias_1.len()];
-        for i in 0..hidden.len() {
-            for j in 0..x1.len() {
-                hidden[i] += self.translate_weights_1[i][j] * x1[j];
+        for ((h, w_row), &b) in hidden
+            .iter_mut()
+            .zip(&self.translate_weights_1)
+            .zip(&self.translate_bias_1)
+        {
+            for (&w, &xj) in w_row.iter().zip(x1) {
+                *h += w * xj;
             }
-            hidden[i] += self.translate_bias_1[i];
-            hidden[i] = self.activation.activate(hidden[i]);
+            *h += b;
+            *h = self.activation.activate(*h);
         }
 
         let mut output = vec![0.0; self.translate_bias_2.len()];
-        for i in 0..output.len() {
-            for j in 0..hidden.len() {
-                output[i] += self.translate_weights_2[i][j] * hidden[j];
+        for ((o, w_row), &b) in output
+            .iter_mut()
+            .zip(&self.translate_weights_2)
+            .zip(&self.translate_bias_2)
+        {
+            for (&w, &h) in w_row.iter().zip(&hidden) {
+                *o += w * h;
             }
-            output[i] += self.translate_bias_2[i];
+            *o += b;
         }
 
         output
@@ -266,15 +300,18 @@ impl ReversibleLayer for CouplingLayer {
 pub struct OrthogonalLayer {
     /// Orthogonal weight matrix (stored as rotation angles)
     pub rotation_angles: Vec<f64>,
+    /// Dimensionality of the square orthogonal transform.
     pub dim: usize,
 }
 
 impl OrthogonalLayer {
+    /// Create a `dim`×`dim` orthogonal layer parameterized by randomly-initialized
+    /// Givens rotation angles.
     pub fn new(dim: usize) -> Self {
         // Number of rotation angles for dim × dim orthogonal matrix
         let n_rotations = dim * (dim - 1) / 2;
         let rotation_angles = (0..n_rotations)
-            .map(|_| (rand::random::<f64>() - 0.5) * 2.0 * PI)
+            .map(|_| (rand::random() - 0.5) * 2.0 * PI)
             .collect();
 
         Self {
@@ -288,8 +325,8 @@ impl OrthogonalLayer {
         let mut matrix = vec![vec![0.0; self.dim]; self.dim];
 
         // Start with identity
-        for i in 0..self.dim {
-            matrix[i][i] = 1.0;
+        for (i, row) in matrix.iter_mut().enumerate() {
+            row[i] = 1.0;
         }
 
         // Apply Givens rotations
@@ -359,11 +396,14 @@ impl ReversibleLayer for OrthogonalLayer {
 
 /// Reversible neural network (stack of reversible layers)
 pub struct ReversibleNetwork {
+    /// Ordered stack of reversible layers applied during the forward pass.
     pub layers: Vec<Box<dyn ReversibleLayer>>,
+    /// Input/output dimensionality shared by all layers.
     pub dim: usize,
 }
 
 impl ReversibleNetwork {
+    /// Create an empty reversible network operating on vectors of size `dim`.
     pub fn new(dim: usize) -> Self {
         Self {
             layers: Vec::new(),
@@ -371,11 +411,13 @@ impl ReversibleNetwork {
         }
     }
 
+    /// Append a RealNVP coupling layer with the given hidden width and split point.
     pub fn add_coupling_layer(&mut self, hidden_dim: usize, split: usize) {
         self.layers
             .push(Box::new(CouplingLayer::new(self.dim, hidden_dim, split)));
     }
 
+    /// Append an energy-preserving orthogonal layer.
     pub fn add_orthogonal_layer(&mut self) {
         self.layers.push(Box::new(OrthogonalLayer::new(self.dim)));
     }
@@ -442,6 +484,8 @@ pub struct ReversibleEnergyTracker {
 }
 
 impl ReversibleEnergyTracker {
+    /// Create an energy tracker at the given `temperature` (Kelvin) with zeroed
+    /// dissipation and operation counters.
     pub fn new(temperature: f64) -> Self {
         Self {
             temperature,
@@ -475,6 +519,7 @@ impl ReversibleEnergyTracker {
         irreversible_cost - self.energy_dissipated
     }
 
+    /// Render a human-readable summary of energy use and operation counts.
     pub fn report(&self) -> String {
         format!(
             "Reversible Computation Energy Report:\n\
@@ -495,9 +540,68 @@ impl ReversibleEnergyTracker {
 
 // Mock rand
 mod rand {
-    pub fn random<T>() -> f64 {
+    /// Deterministic stand-in for `rand::random()` returning a constant.
+    pub fn random() -> f64 {
         0.5
     }
+}
+
+/// Example: Reversible autoencoder
+pub fn example_reversible_autoencoder() {
+    println!("=== Reversible Neural Network Example ===\n");
+
+    let mut network = ReversibleNetwork::new(8);
+
+    // Build network: coupling + orthogonal + coupling
+    network.add_coupling_layer(16, 4);
+    network.add_orthogonal_layer();
+    network.add_coupling_layer(16, 4);
+    network.add_orthogonal_layer();
+
+    println!("Network architecture:");
+    println!("  - Coupling layer (split at 4, hidden dim 16)");
+    println!("  - Orthogonal layer (8x8)");
+    println!("  - Coupling layer (split at 4, hidden dim 16)");
+    println!("  - Orthogonal layer (8x8)\n");
+
+    // Test reversibility
+    let input = vec![1.0, -0.5, 0.3, 0.7, -0.2, 0.9, 0.1, -0.4];
+    println!("Input: {:?}\n", input);
+
+    let output = network.forward(&input);
+    println!("Encoded: {:?}\n", output);
+
+    let reconstructed = network.inverse(&output);
+    println!("Reconstructed: {:?}\n", reconstructed);
+
+    // Check reconstruction error
+    let mut error = 0.0;
+    for (x, x_recon) in input.iter().zip(reconstructed.iter()) {
+        error += (x - x_recon).abs();
+    }
+    println!("Reconstruction error: {:.2e}\n", error);
+
+    // Energy tracking
+    let mut tracker = ReversibleEnergyTracker::new(300.0);
+
+    // Forward pass (reversible)
+    for _ in 0..network.layers.len() {
+        tracker.record_reversible(100.0);
+    }
+
+    // Readout (irreversible)
+    tracker.record_irreversible(8.0 * 32.0); // 8 values × 32 bits
+
+    println!("{}", tracker.report());
+
+    // Compare to fully irreversible computation
+    let total_bits = 8.0 * 32.0 * network.layers.len() as f64;
+    let savings = tracker.energy_savings(total_bits);
+    println!(
+        "Energy savings vs irreversible: {:.3e} J ({:.1}%)",
+        savings,
+        100.0 * savings / (tracker.energy_dissipated + savings)
+    );
 }
 
 #[cfg(test)]
@@ -584,62 +688,4 @@ mod tests {
         assert!(tracker.energy_dissipated > expected_irreversible);
         assert!(tracker.energy_dissipated < expected_irreversible * 2.0);
     }
-}
-
-/// Example: Reversible autoencoder
-pub fn example_reversible_autoencoder() {
-    println!("=== Reversible Neural Network Example ===\n");
-
-    let mut network = ReversibleNetwork::new(8);
-
-    // Build network: coupling + orthogonal + coupling
-    network.add_coupling_layer(16, 4);
-    network.add_orthogonal_layer();
-    network.add_coupling_layer(16, 4);
-    network.add_orthogonal_layer();
-
-    println!("Network architecture:");
-    println!("  - Coupling layer (split at 4, hidden dim 16)");
-    println!("  - Orthogonal layer (8x8)");
-    println!("  - Coupling layer (split at 4, hidden dim 16)");
-    println!("  - Orthogonal layer (8x8)\n");
-
-    // Test reversibility
-    let input = vec![1.0, -0.5, 0.3, 0.7, -0.2, 0.9, 0.1, -0.4];
-    println!("Input: {:?}\n", input);
-
-    let output = network.forward(&input);
-    println!("Encoded: {:?}\n", output);
-
-    let reconstructed = network.inverse(&output);
-    println!("Reconstructed: {:?}\n", reconstructed);
-
-    // Check reconstruction error
-    let mut error = 0.0;
-    for (x, x_recon) in input.iter().zip(reconstructed.iter()) {
-        error += (x - x_recon).abs();
-    }
-    println!("Reconstruction error: {:.2e}\n", error);
-
-    // Energy tracking
-    let mut tracker = ReversibleEnergyTracker::new(300.0);
-
-    // Forward pass (reversible)
-    for _ in 0..network.layers.len() {
-        tracker.record_reversible(100.0);
-    }
-
-    // Readout (irreversible)
-    tracker.record_irreversible(8.0 * 32.0); // 8 values × 32 bits
-
-    println!("{}", tracker.report());
-
-    // Compare to fully irreversible computation
-    let total_bits = 8.0 * 32.0 * network.layers.len() as f64;
-    let savings = tracker.energy_savings(total_bits);
-    println!(
-        "Energy savings vs irreversible: {:.3e} J ({:.1}%)",
-        savings,
-        100.0 * savings / (tracker.energy_dissipated + savings)
-    );
 }

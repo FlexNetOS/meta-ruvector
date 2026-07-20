@@ -168,7 +168,7 @@ impl Default for AskQuery {
 }
 
 /// DESCRIBE query
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct DescribeQuery {
     /// Resources to describe
     pub resources: Vec<VarOrIri>,
@@ -176,16 +176,6 @@ pub struct DescribeQuery {
     pub dataset: Vec<DatasetClause>,
     /// Optional WHERE clause
     pub where_clause: Option<GraphPattern>,
-}
-
-impl Default for DescribeQuery {
-    fn default() -> Self {
-        Self {
-            resources: Vec::new(),
-            dataset: Vec::new(),
-            where_clause: None,
-        }
-    }
 }
 
 /// Dataset clause (FROM / FROM NAMED)
@@ -873,8 +863,12 @@ mod tests {
         let int_lit = Literal::integer(42);
         assert_eq!(int_lit.as_integer(), Some(42));
 
+        // 3.14 is an arbitrary double literal exercising round-tripping, not PI.
+        #[allow(clippy::approx_constant)]
         let double_lit = Literal::double(3.14);
-        assert!((double_lit.as_double().unwrap() - 3.14).abs() < 0.001);
+        #[allow(clippy::approx_constant)]
+        let expected = 3.14;
+        assert!((double_lit.as_double().unwrap() - expected).abs() < 0.001);
 
         let bool_lit = Literal::boolean(true);
         assert_eq!(bool_lit.as_boolean(), Some(true));

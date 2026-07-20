@@ -567,8 +567,6 @@ config_file = "agents/claude/claude-v3-v3-security-architect.toml"
 inherit = "core"
 
 [shell_environment_policy.set]
-BRAIN_API_KEY = "ruvector-crawl-2026"
-BRAIN_URL = "https://pi.ruv.io"
 CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS = "1"
 CLAUDE_FLOW_HOOKS_ENABLED = "true"
 CLAUDE_FLOW_V3_ENABLED = "true"

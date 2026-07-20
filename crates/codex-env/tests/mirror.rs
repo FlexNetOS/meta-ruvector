@@ -227,14 +227,38 @@ fn mirror_generates_codex_and_skill_files() {
             .unwrap();
     toml::from_str::<toml::Value>(&browser_role).unwrap();
     assert!(browser_role.contains("description = \"Automates browsers\""));
-    assert!(!root.join(".codex/hooks.json").exists());
-    assert!(!root.join(".codex/hooks").exists());
+    assert!(root.join(".codex/hooks/rust-check.sh").exists());
     assert!(root.join(".codex/helpers/run-claude-hook.sh").exists());
     assert!(root.join(".codex/helpers/hook-handler.cjs").exists());
     assert!(root.join(".codex/helpers/auto-memory-hook.mjs").exists());
     let hook_shim = fs::read_to_string(root.join(".codex/helpers/run-claude-hook.sh")).unwrap();
     assert!(hook_shim.contains(".codex/helpers/${helper}"));
     assert!(!hook_shim.contains(".claude/helpers/${helper}"));
+    let hooks: serde_json::Value =
+        serde_json::from_slice(&fs::read(root.join(".codex/hooks.json")).unwrap()).unwrap();
+    assert!(hooks["hooks"]["Notification"].is_null());
+    let pre_tool = &hooks["hooks"]["PreToolUse"][0]["hooks"][0];
+    assert_eq!(pre_tool["timeout"], 5);
+    assert!(pre_tool["command"]
+        .as_str()
+        .unwrap()
+        .contains(".codex/helpers/run-claude-hook.sh\" hook-handler.cjs pre-bash"));
+    let post_tool_hooks = hooks["hooks"]["PostToolUse"][0]["hooks"]
+        .as_array()
+        .unwrap();
+    assert_eq!(post_tool_hooks.len(), 1);
+    assert_eq!(post_tool_hooks[0]["command"], "echo done");
+    assert_eq!(post_tool_hooks[0]["timeout"], 5);
+    let stop_hooks = hooks["hooks"]["Stop"].as_array().unwrap();
+    assert_eq!(stop_hooks.len(), 2);
+    assert!(stop_hooks.iter().any(|group| group["hooks"][0]["command"]
+        .as_str()
+        .unwrap()
+        .contains("hook-handler.cjs session-end")));
+    assert!(stop_hooks.iter().any(|group| group["hooks"][0]["command"]
+        .as_str()
+        .unwrap()
+        .contains("auto-memory-hook.mjs sync")));
     assert_eq!(
         fs::read(root.join(".codex/mirror/.claude/hooks/rust-check.sh")).unwrap(),
         fs::read(root.join(".claude/hooks/rust-check.sh")).unwrap()
@@ -275,6 +299,9 @@ fn mirror_generates_codex_and_skill_files() {
     for team in teams["teams"].as_array().unwrap() {
         assert!(team["members"].as_array().unwrap().len() >= 2);
     }
+    let runtime_hook = fs::read_to_string(root.join(".codex/hooks/rust-check.sh")).unwrap();
+    assert!(runtime_hook.contains("CODEX_REPO_ROOT"));
+    assert!(!runtime_hook.contains("/workspaces/ruvector"));
     assert!(root.join(".codex/helpers/install-prompts.sh").exists());
     let install_helper =
         fs::read_to_string(root.join(".codex/helpers/install-prompts.sh")).unwrap();
@@ -385,9 +412,8 @@ fn mirror_generates_codex_and_skill_files() {
     assert!(doctor.codex_helper_files >= doctor.claude_helper_files);
     assert!(doctor.agent_models.contains_key("gpt-5.5"));
     assert!(doctor.agent_models.contains_key("gpt-5.4-mini"));
-    assert!(doctor.hook_events.is_empty());
-    assert_eq!(doctor.hook_handlers, 0);
-    assert_eq!(doctor.hook_shim_handlers, 0);
+    assert!(doctor.hook_events.contains(&"Stop".to_owned()));
+    assert_eq!(doctor.hook_shim_handlers, 3);
 
     let codex_inventory = inventory_codex_surface(CodexInventoryOptions {
         repo_root: root.to_path_buf(),
@@ -408,8 +434,6 @@ fn mirror_generates_codex_and_skill_files() {
         codex_inventory.expected.claude_agent_profiles,
         codex_inventory.codex.claude_agent_profiles
     );
-    assert_eq!(codex_inventory.codex.hook_files, 0);
-    assert_eq!(codex_inventory.expected.hook_files, 0);
 }
 
 #[test]
@@ -1820,6 +1844,37 @@ fn mirror_skips_ignored_untracked_claude_local_files() {
         .exists());
     let manifest = fs::read_to_string(root.join(".codex/mirror-manifest.json")).unwrap();
     assert!(!manifest.contains("settings.local.json"));
+}
+
+#[test]
+fn mirror_skips_large_ignored_claude_surface() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path();
+    Command::new("git")
+        .arg("init")
+        .current_dir(root)
+        .status()
+        .unwrap();
+    fs::write(root.join(".gitignore"), ".claude/local/\n").unwrap();
+    fs::create_dir_all(root.join(".claude/local")).unwrap();
+    fs::write(root.join(".claude/settings.json"), r#"{"env":{}}"#).unwrap();
+    for index in 0..300 {
+        fs::write(
+            root.join(format!(".claude/local/{index}.json")),
+            r#"{"local":true}"#,
+        )
+        .unwrap();
+    }
+
+    mirror_codex_surface(MirrorOptions {
+        repo_root: root.to_path_buf(),
+        lua_policy: None,
+        check: false,
+    })
+    .unwrap();
+
+    assert!(root.join(".codex/mirror/.claude/settings.json").exists());
+    assert!(!root.join(".codex/mirror/.claude/local").exists());
 }
 
 #[test]

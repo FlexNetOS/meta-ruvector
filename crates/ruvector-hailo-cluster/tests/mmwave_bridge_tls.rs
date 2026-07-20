@@ -19,9 +19,7 @@ use std::time::{Duration, Instant};
 use rcgen::{generate_simple_self_signed, CertifiedKey};
 
 mod common;
-use common::{free_port, FAKEWORKER};
-
-const BRIDGE: &str = env!("CARGO_BIN_EXE_ruvector-mmwave-bridge");
+use common::{cargo_bin, fakeworker_bin, free_port};
 
 /// Stage cert + key PEMs to a unique temp dir so parallel test cases
 /// don't fight over the same files. Returns (dir, cert_path, key_path).
@@ -61,7 +59,7 @@ fn spawn_tls_fakeworker(
     fingerprint: &str,
 ) -> std::process::Child {
     let bind = format!("127.0.0.1:{}", port);
-    let mut cmd = Command::new(FAKEWORKER);
+    let mut cmd = Command::new(fakeworker_bin());
     cmd.env("RUVECTOR_FAKE_BIND", &bind)
         .env("RUVECTOR_FAKE_DIM", "4")
         .env("RUVECTOR_TLS_CERT", cert_path)
@@ -97,7 +95,7 @@ fn bridge_posts_via_tls_to_tls_fakeworker() {
     // The same self-signed cert is its own CA — bridge trusts it via
     // --tls-ca. SNI must match a SAN on the cert (we issued for both
     // localhost and 127.0.0.1).
-    let mut child = Command::new(BRIDGE)
+    let mut child = Command::new(cargo_bin("ruvector-mmwave-bridge"))
         .args([
             "--simulator",
             "--rate",
@@ -145,7 +143,7 @@ fn bridge_partial_mtls_config_refused() {
     // --tls-client-cert without --tls-client-key (or vice versa) must
     // refuse before any RPC is attempted (ADR-172 §1b parity gate).
     let (tmpdir, cert_path, _) = stage_self_signed_cert();
-    let out = Command::new(BRIDGE)
+    let out = Command::new(cargo_bin("ruvector-mmwave-bridge"))
         .args([
             "--simulator",
             "--workers",
@@ -177,7 +175,7 @@ fn bridge_partial_mtls_config_refused() {
 fn bridge_tls_flags_without_ca_refused() {
     // Any --tls-* flag must fail without --tls-ca (the rest of the
     // TLS settings are meaningless without a CA bundle).
-    let out = Command::new(BRIDGE)
+    let out = Command::new(cargo_bin("ruvector-mmwave-bridge"))
         .args([
             "--simulator",
             "--workers",

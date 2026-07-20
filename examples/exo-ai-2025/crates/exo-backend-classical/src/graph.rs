@@ -69,7 +69,7 @@ impl GraphWrapper {
 
     /// Get a node by ID
     pub fn get_node(&self, id: &EntityId) -> Option<Node> {
-        self.db.get_node(&id.0.to_string())
+        self.db.get_node(id.0.to_string())
     }
 
     /// Get a hyperedge by ID
@@ -101,9 +101,9 @@ impl GraphWrapper {
                 // For higher dimensions, we'd need proper TDA implementation
                 // Return placeholder values for now
                 let mut betti = vec![betti_0];
-                for _ in 1..=*max_dimension {
-                    betti.push(0); // Placeholder
-                }
+                // Higher Betti numbers are placeholders (0) until a full TDA
+                // implementation exists.
+                betti.resize(*max_dimension + 1, 0);
 
                 Ok(HyperedgeResult::BettiNumbers(betti))
             }
@@ -143,7 +143,6 @@ impl Default for GraphWrapper {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::collections::HashMap;
 
     #[test]
     fn test_graph_creation() {
