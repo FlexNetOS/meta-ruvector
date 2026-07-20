@@ -1,5 +1,5 @@
 {
-  "fileCount": 1019,
+  "fileCount": 1020,
   "files": [
     ".codex/mirror/.claude/.proven-config-version",
     ".codex/mirror/.claude/agentic-flow-fast.sh",
@@ -841,6 +841,7 @@
     ".codex/hooks/post-rust-edit.sh",
     ".codex/hooks/rust-check.sh",
     ".codex/hooks/wasm-size-check.sh",
+    ".agents/skills/.claude-flow/data/pending-insights.jsonl",
     ".agents/skills/agentdb-advanced/SKILL.md",
     ".agents/skills/agentdb-learning/SKILL.md",
     ".agents/skills/agentdb-memory-patterns/SKILL.md",
