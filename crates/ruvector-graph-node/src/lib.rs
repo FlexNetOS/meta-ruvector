@@ -200,7 +200,11 @@ impl GraphDatabase {
 
         tokio::task::spawn_blocking(move || {
             let mut hg = hypergraph.write().expect("RwLock poisoned");
-            let mut gdb = graph_db.write().expect("RwLock poisoned");
+            hg.add_entity(id.clone(), embedding);
+
+            // Add to property graph
+            let gdb = graph_db.write().expect("RwLock poisoned");
+            let mut builder = NodeBuilder::new().id(&id);
 
             register_node(
                 &mut hg,

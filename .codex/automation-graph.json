@@ -101,6 +101,8 @@
   },
   "environment": {
     "envKeys": [
+      "BRAIN_API_KEY",
+      "BRAIN_URL",
       "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS",
       "CLAUDE_FLOW_HOOKS_ENABLED",
       "CLAUDE_FLOW_V3_ENABLED"
@@ -154,10 +156,10 @@
   "sourceCounts": {
     "agent": 124,
     "command": 130,
-    "helper": 44,
+    "helper": 41,
     "hook": 5,
     "intelligence": 23,
-    "other": 11,
+    "other": 9,
     "setting": 1,
     "skill": 43
   },

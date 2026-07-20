@@ -1,363 +1,358 @@
-# RuVector
-
-[![RuVector](https://repository-images.githubusercontent.com/1099547803/948d2495-1db9-47f6-9ea1-f7f977343e5f)](https://cognitum.one/ruvector)
-
-[![Crates.io](https://img.shields.io/crates/v/ruvector-core.svg)](https://crates.io/crates/ruvector-core)
-[![npm](https://img.shields.io/npm/v/ruvector.svg)](https://www.npmjs.com/package/ruvector)
-[![npm monthly downloads](https://img.shields.io/npm/dm/ruvector.svg?label=monthly%20downloads)](https://www.npmjs.com/package/ruvector)
-[![npm all-time downloads](https://img.shields.io/npm/dt/ruvector.svg?label=all-time%20downloads)](https://www.npmjs.com/package/ruvector)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
-
-## Persistent, adaptive memory for AI agents
-
-RuVector is a Rust native memory substrate for agents that need to remember across sessions. It combines local semantic embeddings, persistent vector retrieval, graph relationships, explicit feedback learning, memory lifecycle controls, and optional shared memory.
-
-The default retrieval path runs locally. Learning happens from recorded outcomes and feedback, not from reads alone. Hosted services remain optional and create a separate data boundary.
-
-## Remember and recall in 30 seconds
-
-No database server or API key is required.
-
-```bash
-npx ruvector hooks remember --semantic --type decision \
-  "The customer requires all inference to remain in Canada."
-
-npx ruvector hooks recall --semantic --top-k 3 \
-  "Where may customer data be processed?"
-```
-
-Memory is stored under the current project and remains available to later processes. The first semantic command downloads and caches the local `all-MiniLM-L6-v2` model. Keep one embedding model and dimension per store; use `npx ruvector hooks reembed` before changing an existing store from hash to semantic embeddings. Use `npx ruvector hooks stats` to inspect the store.
-
-## Embed persistent memory in Node.js
-
-```bash
-npm install ruvector
-```
-
-```javascript
-const { OnnxEmbedder, VectorDB } = require('ruvector');
-
-async function main() {
-  const embedder = new OnnxEmbedder();
-  await embedder.init();
-
-  const db = new VectorDB({
-    dimensions: 384,
-    distanceMetric: 'cosine',
-    storagePath: './agent-memory.db',
-  });
-
-  const memories = [
-    {
-      id: 'decision-1',
-      text: 'The customer requires all inference to remain in Canada.',
-      kind: 'decision',
-    },
-    {
-      id: 'episode-1',
-      text: 'The Toronto pilot passed its privacy review on Tuesday.',
-      kind: 'episode',
-    },
-    {
-      id: 'procedure-1',
-      text: 'Escalate production access through the security owner.',
-      kind: 'procedure',
-    },
-  ];
-
-  for (const memory of memories) {
-    const vector = await embedder.embedPassage(memory.text);
-    await db.insert({
-      id: memory.id,
-      vector,
-      metadata: {
-        text: memory.text,
-        kind: memory.kind,
-        tenant: 'acme',
-        createdAt: Date.now(),
-      },
-    });
-  }
-
-  const query = await embedder.embedQuery(
-    'Where may the customer data be processed?',
-  );
-
-  const results = await db.search({
-    vector: query,
-    k: 3,
-    filter: { tenant: 'acme' },
-  });
-
-  console.log(results.map(({ score, metadata }) => ({ score, ...metadata })));
-}
-
-main().catch(console.error);
-```
-
-Reopen the same `storagePath` in another process to recover the stored vectors, metadata, configuration, and searchability. Search `score` is a distance, so lower values are closer. See the [Node.js API](./docs/api/NODEJS_API.md) and [Rust API](./docs/api/RUST_API.md) for the complete interfaces.
-
-## The memory loop
-
-```mermaid
-flowchart TD
-    A[Capture an event, fact, or outcome] --> B[Create a local or external embedding]
-    B --> C[Persist vectors, metadata, and relationships]
-    C --> D[Recall by similarity, filters, time, or graph]
-    D --> E[Use memory in an agent decision]
-    E --> F[Record outcome and feedback]
-    F --> G[Adapt ranking or learning state]
-    G --> C
-    C --> H[Compact, snapshot, branch, or replicate]
-```
-
-RuVector provides primitives for this loop. Your application remains responsible for deciding what is worth remembering, which evidence is trusted, when a memory expires, and which actions recalled context may influence.
-
-## What memory means in RuVector
-
-Memory classes are application semantics over vectors, metadata, and graphs. The core store is general purpose. RuVector currently exposes two typed layers:
-
-1. [`ruvllm::context::AgenticMemory`](./crates/ruvllm/src/context/agentic_memory.rs) combines working, episodic, semantic, and procedural memory behind one runtime API. It is implemented, but its unified manager is currently in memory and its cross type consolidation method is not complete.
-
-2. [`ruvector-core::AgenticDB`](./crates/ruvector-core/src/agenticdb.rs) persists Reflexion episodes, skills, causal edges, learning sessions, policy state, session turns, and a hash linked witness log. Its typed memory APIs support ONNX, Candle, and API embedding providers for semantic retrieval.
-
-| Memory class | Representation | RuVector surface |
-| --- | --- | --- |
-| Working and session | Current task, scratchpad, tool cache, turns, namespace, TTL | [`WorkingMemory`](./crates/ruvllm/src/context/working_memory.rs), [`SessionStateIndex`](./crates/ruvector-core/src/agenticdb.rs) |
-| Episodic and Reflexion | Trajectory, task, action, observation, critique, outcome | [`EpisodicMemory`](./crates/ruvllm/src/context/episodic_memory.rs), [`ReflexionEpisode`](./crates/ruvector-core/src/agenticdb.rs) |
-| Semantic | Facts, confidence, source, tags, relations, collection | [`VectorDB`](./crates/ruvector-core), [`SemanticFact`](./crates/ruvllm/src/context/agentic_memory.rs) |
-| Procedural | Skills, actions, triggers, examples, policies, Q values | [`ProceduralSkill`](./crates/ruvllm/src/context/agentic_memory.rs), [`PolicyMemoryStore`](./crates/ruvector-core/src/agenticdb.rs) |
-| Causal and relational | Nodes, edges, hyperedges, Cypher paths | [`ruvector-graph`](./crates/ruvector-graph) |
-| Learning | Trajectories, rewards, adapters, EWC state | [`SONA`](./crates/sona) |
-| Shared | Contributions, provenance, voting, transfer | [`mcp-brain`](./crates/mcp-brain) |
-| Auditable | Hash linked entries, snapshots, RVF witnesses | [`WitnessLog`](./crates/ruvector-core/src/agenticdb.rs), [`ruvector-snapshot`](./crates/ruvector-snapshot), [RVF](./crates/rvf) |
-
-## Capability map
-
-### Capture and encode
-
-| Capability | What it enables | Surface |
-| --- | --- | --- |
-| Local semantic embeddings | Text memory without a per query API fee | [`OnnxEmbedder`](./docs/adr/ADR-210-default-on-semantic-embeddings-minilm.md) |
-| External embeddings | Bring an existing embedding model or provider | [`EmbeddingProvider`](./crates/ruvector-core/src/embeddings.rs) |
-| Embedding provenance | Track model, dimension, normalization, and query or passage role | [ADR 210](./docs/adr/ADR-210-default-on-semantic-embeddings-minilm.md) |
-| Batch and parallel embedding | Higher throughput during memory ingestion | [ONNX implementation](./docs/adr/ADR-210-default-on-semantic-embeddings-minilm.md) |
-
-### Persist and organize
-
-| Capability | What it enables | Surface |
-| --- | --- | --- |
-| Durable vector storage | Vectors, metadata, deletes, and restart recovery | [`ruvector-core`](./crates/ruvector-core) |
-| Unified four type runtime memory | Working, episodic, semantic, and procedural recall | [`AgenticMemory`](./crates/ruvllm/src/context/agentic_memory.rs) |
-| Typed persistent agent records | Reflexion episodes, skills, causal edges, policy state, sessions, and witness logs | [`AgenticDB`](./crates/ruvector-core/src/agenticdb.rs) |
-| HNSW and flat indexes | Approximate or exact local similarity search | [`ruvector-core`](./crates/ruvector-core/src/index) |
-| Collections and aliases | Separate schemas and namespaces by workload | [`ruvector-collections`](./crates/ruvector-collections) |
-| Graph and hypergraph storage | Explicit relationships and multi-hop memory | [`ruvector-graph`](./crates/ruvector-graph) |
-| High write ingestion | Mutable L0 memory plus background L1 and L2 compaction | [`ruvector-lsm-ann`](./crates/ruvector-lsm-ann) |
-| Edge and embedded persistence | Lightweight local vector storage through the RVF Core Profile | [`rvlite`](./crates/rvf/rvf-adapters/rvlite) |
-| PostgreSQL extension | Keep vector memory beside relational data | [`ruvector-postgres`](./crates/ruvector-postgres) |
-
-### Recall and reconstruct
-
-| Capability | Best use | Surface |
-| --- | --- | --- |
-| Dense similarity | General semantic recall | [`VectorDB::search`](./crates/ruvector-core/src/vector_db.rs) |
-| Metadata filtering | Simple structured narrowing | [`SearchQuery`](./crates/ruvector-core/src/types.rs) |
-| Sparse and dense fusion | Exact terms plus semantic meaning | [`ruvector-hybrid`](./crates/ruvector-hybrid), [ADR 256](./docs/adr/ADR-256-hybrid-sparse-dense-search.md) |
-| Predicate aware ANN | Selective filters without post filter recall collapse | [`ruvector-acorn`](./crates/ruvector-acorn) |
-| Temporal decay | Prefer recent memories when the domain changes | [`ruvector-temporal-coherence`](./crates/ruvector-temporal-coherence), [ADR 211](./docs/adr/ADR-211-temporal-coherence-agent-memory.md) |
-| Coherence gating | Prefer memories supported by related observations | [`ruvector-temporal-coherence`](./crates/ruvector-temporal-coherence) |
-| Graph reconstruction | Follow Cue, Tag, and Content associations instead of retrieving one flat chunk | [MRAgent example](./examples/mragent), [ADR 269](./docs/adr/ADR-269-mragent-graph-memory-darwin-optimization.md) |
-| Multi-vector MaxSim | Late interaction over token or passage vectors | [`ruvector-maxsim`](./crates/ruvector-maxsim), [ADR 252](./docs/adr/ADR-252-multi-vector-maxsim.md) |
-| GNN reranking | Rerank a noisy candidate graph | [`ruvector-gnn-rerank`](./crates/ruvector-gnn-rerank), [ADR 194](./docs/adr/ADR-194-gnn-rerank.md) |
-| Matryoshka funnel | Coarse to fine search for truncatable embeddings | [`ruvector-matryoshka`](./crates/ruvector-matryoshka) |
-| Disk backed ANN | Move read heavy indexes toward SSD scale | [`ruvector-diskann`](./crates/ruvector-diskann) |
-
-### Learn and adapt
-
-| Capability | What changes | Trigger |
-| --- | --- | --- |
-| SONA MicroLoRA | Small adapter weights | Recorded trajectory and reward |
-| EWC++ consolidation | Protects important learned weights from catastrophic forgetting | Explicit consolidation |
-| Outcome aware routing | Policy and routing preferences | Success, failure, or quality signal |
-| GNN reranking | Candidate ordering | Training data or configured reranker |
-| Self reconstructing graph memory | Shortcut edges after successful reconstruction | Successful graph traversal |
-| Darwin optimization | Retrieval and reconstruction configuration | External benchmark and promotion gate |
-
-Reading or searching memory does not, by itself, mutate learned weights or guarantee better future results.
-
-### Consolidate, compress, and recover
-
-| Capability | What it controls | Surface |
-| --- | --- | --- |
-| LRU, LFU, and coherence compaction | Which memories survive a capacity limit | [`ruvector-agent-memory`](./crates/ruvector-agent-memory), [ADR 252](./docs/adr/ADR-252-agent-memory-compaction.md) |
-| Temporal tensor codecs | Low bit storage and temporal segment reuse | [`ruvector-temporal-tensor`](./crates/ruvector-temporal-tensor) |
-| Product quantization | Compressed candidate search with exact query vectors | [`ruvector-pq-search`](./crates/ruvector-pq-search) |
-| RaBitQ | Deterministic one bit candidate encoding and optional reranking | [`ruvector-rabitq`](./crates/ruvector-rabitq) |
-| Graph condensation | Smaller graph memory while retaining original member provenance | [`ruvector-graph-condense`](./crates/ruvector-graph-condense) |
-| Full snapshots | Serialized recovery data with compression and checksums | [`ruvector-snapshot`](./crates/ruvector-snapshot) |
-| Copy on write branches | Isolated memory experiments without full copies | [RVF](./crates/rvf) |
-| Cache consistency modes | Fresh, eventual, or frozen reads across data sources | [`ruvector-rulake`](./crates/ruvector-rulake) |
-
-The `DbOptions.quantization` field in `ruvector-core` is persisted but is not currently applied to core storage or indexes. Use a specialized compression crate when physical compression is required. See the source note in [`types.rs`](./crates/ruvector-core/src/types.rs).
-
-### Govern and distribute
-
-| Capability | What it provides | Surface |
-| --- | --- | --- |
-| Namespace isolation | Separate collections and schemas | [`ruvector-collections`](./crates/ruvector-collections) |
-| Capability gated retrieval | Per vector 64 bit read masks inside search | [`ruvector-capgated`](./crates/ruvector-capgated), [ADR 268](./docs/adr/ADR-268-capability-gated-ann.md) |
-| Tamper evident lineage | Hash linked records and witness verification | [RVF](./crates/rvf) |
-| Replication primitives | Vector clocks, local change propagation, and conflict strategies | [`ruvector-replication`](./crates/ruvector-replication) |
-| Raft primitives | Election, log, and metadata state machine components | [`ruvector-raft`](./crates/ruvector-raft) |
-| Shared collective memory | Remote contributions, search, provenance, and voting | [`mcp-brain`](./crates/mcp-brain) |
-
-## Choose a memory path
-
-| Requirement | Start with | Add when needed |
-| --- | --- | --- |
-| Local agent or coding memory | `npx ruvector hooks` | ONNX semantic mode, MCP |
-| Embedded Node.js service | `ruvector` and `VectorDB` | Graph, SONA, snapshots |
-| Embedded Rust service | `ruvector-core` | Specialized retrieval crates |
-| Typed in-process agent memory | `ruvllm::context::AgenticMemory` | External persistence and consolidation policy |
-| High write event stream | `ruvector-lsm-ann` | Snapshot and compaction policy |
-| Multi-hop enterprise knowledge | `ruvector-graph` | Hybrid cue search and reconstruction harness |
-| Recency sensitive memory | `ruvector-temporal-coherence` | Learned half-life after domain evaluation |
-| Memory constrained edge node | `ruvector-pq-search` or `ruvector-rabitq` | Exact reranking for critical recalls |
-| Existing lake or warehouse | `ruvector-rulake` | RVF witness bundles |
-| PostgreSQL estate | `ruvector-postgres` | Build and operate with `pgrx` separately |
-| Cross-agent shared memory | `mcp-brain` | Explicit hosted data policy and trust controls |
-
-## Agent integration
-
-For automated agent integration, install and pin the package locally:
-
-```bash
-npm install --save-exact ruvector
-RUVECTOR_MCP_PROFILE=readonly ./node_modules/.bin/ruvector mcp start
-```
-
-List the currently available tools instead of relying on a hardcoded count:
-
-```bash
-./node_modules/.bin/ruvector mcp tools
-```
-
-Use `RUVECTOR_MCP_ALLOW` and `RUVECTOR_MCP_DENY` for an explicit tool policy. No policy preserves the broader compatibility surface, so production deployments should set one deliberately.
-
-If you enable editor or coding hooks, inspect the generated configuration, keep the package local and pinned, and run `./node_modules/.bin/ruvector hooks verify`. Do not depend on a fresh `@latest` download inside each hook invocation.
-
-## Deployment surfaces
-
-| Surface | Package or crate | Data boundary |
-| --- | --- | --- |
-| Node.js and TypeScript | [`ruvector`](https://www.npmjs.com/package/ruvector) | Local process and local files |
-| Rust | [`ruvector-core`](https://crates.io/crates/ruvector-core) | Local process and local files |
-| Browser | [`@ruvector/wasm`](https://www.npmjs.com/package/@ruvector/wasm) | Browser memory and browser storage |
-| HTTP service | [`ruvector-server`](./crates/ruvector-server) | Your service boundary |
-| PostgreSQL | [`ruvector-postgres`](./crates/ruvector-postgres) | Your database boundary |
-| RVF cognitive container | [`crates/rvf`](./crates/rvf) | Portable signed artifact |
-| Shared Brain | [`mcp-brain`](./crates/mcp-brain) | Optional hosted service |
-
-Native npm binaries cover glibc Linux on x64 and arm64, macOS on x64 and arm64, and Windows on x64. Browser and other environments use separate packages. The root package's fallback mode is limited when neither the native core nor RVF can load; use `@ruvector/wasm` explicitly for browser vector operations. Validate the selected backend with:
-
-```bash
-npx ruvector info
-```
-
-## Security and governance
-
-1. Treat embeddings as sensitive derivatives of source data. Apply the same classification, residency, access, and retention policy as the original content.
-
-2. Collections and metadata filters organize memory; they are not a complete authorization boundary. Enforce identity and authorization in the application. Capability gated ANN is currently a research component with a 64 capability mask and documented side channel and recall limitations.
-
-3. RVF witnesses and hash linked logs are tamper evident. They do not encrypt memory content or prevent an authorized process from reading it.
-
-4. A delete from the live store does not automatically remove copies in snapshots, branches, replicas, exports, or hosted memory. Define retention and erasure across every copy.
-
-5. Shared Brain is a hosted plane. Review its network, identity, provenance, poisoning, and data residency controls before sending enterprise memory.
-
-6. Pin and prepopulate embedding models for offline or regulated deployments. The default npm semantic path downloads its model on first use.
-
-7. Keep tool execution separate from memory retrieval. Retrieved context is untrusted input until policy checks and action authorization pass.
-
-See [SECURITY.md](./SECURITY.md) for reporting and project security guidance.
-
-## Known boundaries
-
-1. The repository is a monorepo. Installing `ruvector` does not activate every crate in this capability map.
-
-2. The unified four type `ruvllm::AgenticMemory` manager does not yet have native save and load support, and its episodic to semantic or procedural consolidation method currently returns no changes. Durable `VectorDB` storage and typed runtime memory are not yet one facade.
-
-3. Core metadata filtering currently narrows the retrieved candidate set. Highly selective filters may return fewer than `k` relevant results. Evaluate ACORN or an application level prefilter for selective workloads.
-
-4. Opening a persisted HNSW database currently enumerates stored vectors and rebuilds the index. Measure cold start time against the intended memory size.
-
-5. Temporal coherence currently builds an exact pairwise coherence graph and is a proof of concept for moderate memory sets. The planned production path is an approximate neighbor graph.
-
-6. Agent memory compaction is not yet wired into the default core, MCP, or RVF persistence path.
-
-7. Full snapshot serialization exists, but incremental snapshots, scheduling, cloud backends, and direct `VectorDB` restoration are not complete on the current main branch.
-
-8. Replication exposes local primitives and simulated transport behavior. Raft still has incomplete response transport and snapshot installation paths. These are not a complete production network replication plane.
-
-9. GNN reranking, MRAgent reconstruction, and Darwin optimization are implemented research surfaces, not automatic behavior in `VectorDB::search`.
-
-10. RVF and PostgreSQL are separate build surfaces and are excluded from the default workspace build because they require their own toolchains.
-
-11. Performance depends on vector dimension, index parameters, filter selectivity, recall target, hardware, and backend. Run the included benchmark for the component and workload you intend to deploy.
-
-## Reproduce the evidence
-
-RuVector keeps benchmark code beside the implementation. These commands exercise memory relevant components without relying on unscoped cross product comparisons.
-
-```bash
-# Core vector search
-cargo bench -p ruvector-core
-
-# High write LSM memory
-cargo run --release -p ruvector-lsm-ann --bin benchmark
-
-# Temporal and coherence weighted recall
-cargo run --release -p ruvector-temporal-coherence --bin tcd-benchmark
-
-# Capability gated retrieval
-cargo run --release -p ruvector-capgated --bin benchmark
-
-# Matryoshka coarse to fine retrieval
-cargo run --release -p ruvector-matryoshka --bin benchmark
-```
-
-Record dataset size, dimension, index configuration, hardware, latency percentiles, throughput, and recall together. A latency number without its recall target is not a useful retrieval benchmark. See the [benchmarking guide](./docs/benchmarks/BENCHMARKING_GUIDE.md).
-
-## Build from source
-
-```bash
-git clone https://github.com/ruvnet/RuVector.git
-cd RuVector
-cargo test --workspace
-```
-
-The workspace requires Rust 1.77 or newer. RVF and PostgreSQL have separate build instructions in their component documentation.
-
-## Documentation
-
-| Topic | Link |
-| --- | --- |
-| Documentation index | [docs/INDEX.md](./docs/INDEX.md) |
-| Node.js API | [docs/api/NODEJS_API.md](./docs/api/NODEJS_API.md) |
-| Rust API | [docs/api/RUST_API.md](./docs/api/RUST_API.md) |
-| Cypher reference | [docs/api/CYPHER_REFERENCE.md](./docs/api/CYPHER_REFERENCE.md) |
-| Architecture decisions | [docs/adr](./docs/adr) |
-| Benchmarks | [docs/benchmarks](./docs/benchmarks) |
-| Repository structure | [docs/REPO_STRUCTURE.md](./docs/REPO_STRUCTURE.md) |
+<div class="title-block" style="text-align: center;" align="center">
+
+# Jujutsu—a version control system
+
+<p><img title="jj logo" src="docs/images/jj-logo.svg" width="320" height="320"></p>
+
+[![Release](https://img.shields.io/github/v/release/martinvonz/jj)](https://github.com/jj-vcs/jj/releases)
+[![Release date](https://img.shields.io/github/release-date/martinvonz/jj)](https://github.com/jj-vcs/jj/releases)
+<br/>
+[![License](https://img.shields.io/github/license/martinvonz/jj)](https://github.com/jj-vcs/jj/blob/main/LICENSE)
+[![Discord](https://img.shields.io/discord/968932220549103686.svg?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2)](https://discord.gg/dkmfj3aGQN)
+[![IRC](https://img.shields.io/badge/irc-%23jujutsu-blue.svg)](https://web.libera.chat/?channel=#jujutsu)
+
+**[Homepage] &nbsp;&nbsp;&bull;&nbsp;&nbsp;**
+**[Installation] &nbsp;&nbsp;&bull;&nbsp;&nbsp;**
+**[Getting Started] &nbsp;&nbsp;&bull;&nbsp;&nbsp;**
+**[Development Roadmap] &nbsp;&nbsp;&bull;&nbsp;&nbsp;**
+**[Contributing](#contributing)**
+
+[Homepage]: https://www.jj-vcs.dev
+[Installation]: https://docs.jj-vcs.dev/latest/install-and-setup
+[Getting Started]: https://docs.jj-vcs.dev/latest/tutorial
+[Development Roadmap]: https://docs.jj-vcs.dev/latest/roadmap
+
+</div>
+
+## Introduction
+
+Jujutsu is a powerful [version control system](https://en.wikipedia.org/wiki/Version_control)
+for software projects. You use it to get a copy of your code, track changes
+to the code, and finally publish those changes for others to see and use.
+It is designed from the ground up to be easy to use—whether you're new or
+experienced, working on brand new projects alone, or large scale software
+projects with large histories and teams.
+
+Jujutsu is unlike most other systems, because internally it abstracts the user
+interface and version control algorithms from the *storage systems* used to
+serve your content. This allows it to serve as a VCS with many possible physical
+backends, that may have their own data or networking models—like [Mercurial] or
+[Breezy], or hybrid systems like Google's cloud-based design, [Piper/CitC].
+
+[Mercurial]: https://www.mercurial-scm.org/
+[Breezy]: https://www.breezy-vcs.org/
+[Piper/CitC]: https://youtu.be/W71BTkUbdqE?t=645
+
+Today, we use Git repositories as a storage layer to serve and track content,
+making it **compatible with many of your favorite Git-based tools, right now!**
+However, note that only commits and files are stored in Git; bookmarks
+(branches) and other higher-level metadata are stored in custom storage outside
+of Git. All core developers use Jujutsu to develop Jujutsu, right here on
+GitHub. But it should hopefully work with your favorite Git forges, too.
+
+We combine many distinct design choices and concepts from other version control
+systems into a single tool. Some of those sources of inspiration include:
+
+- **Git**: We make an effort to [be fast][perf]—with a snappy UX, efficient
+  algorithms, correct data structures, and good-old-fashioned attention to
+  detail. The default storage backend uses Git repositories for "physical
+  storage", for wide interoperability and ease of onboarding.
+
+- **Mercurial & Sapling**: There are many Mercurial-inspired features, such as
+  the [revset] language to select commits. There is [no explicit index][no-index]
+  or staging area. Branches are "anonymous" like Mercurial, so you don't need
+  to make up a name for each small change. Primitives for rewriting history are
+  powerful and simple. Formatting output is done with a robust template language
+  that can be configured by the user.
+
+- **Darcs**: Jujutsu keeps track of conflicts as [first-class
+  objects][conflicts] in its model; they are first-class in the same way commits
+  are, while alternatives like Git simply think of conflicts as textual diffs.
+  While not as rigorous as systems like Darcs (which is based on a formalized
+  theory of patches, as opposed to snapshots), the effect is that many forms of
+  conflict resolution can be performed and propagated automatically.
+
+[perf]: https://github.com/jj-vcs/jj/discussions/49
+[revset]: https://docs.jj-vcs.dev/latest/revsets/
+[no-index]: https://docs.jj-vcs.dev/latest/git-comparison/#the-index
+[conflicts]: https://docs.jj-vcs.dev/latest/conflicts/
+
+And it adds several innovative, useful features of its own:
+
+- **Working-copy-as-a-commit**: Changes to files are [recorded automatically][wcc]
+  as normal commits, and amended on every subsequent change. This "snapshot"
+  design simplifies the user-facing data model (commits are the only visible
+  object), simplifies internal algorithms, and completely subsumes features like
+  Git's stashes or the index/staging-area.
+
+- **Operation log & undo**: Jujutsu records every operation that is performed on the
+  repository, from commits, to pulls, to pushes. This makes debugging problems like
+  "what just happened?" or "how did I end up here?" easier, *especially* when
+  you're helping your coworker answer those questions about their repository!
+  And because everything is recorded, you can undo that mistake you just made
+  with ease. Version control has finally entered [the 1960s][undo-history]!
+
+- **Automatic rebase and conflict resolution**: When you modify a commit, every
+  descendent is automatically rebased on top of the freshly-modified one. This
+  makes "patch-based" workflows a breeze. If you resolve a conflict in a commit,
+  the _resolution_ of that conflict is also propagated through descendants as
+  well. In effect, this is a completely transparent version of `git rebase
+  --update-refs` combined with `git rerere`, supported by design.
+
+> [!WARNING]
+> The following features are available for use, but experimental; they may have
+> bugs, backwards incompatible storage changes, and user-interface changes!
+
+- **Safe, concurrent replication**: Have you ever wanted to store your version
+  controlled repositories inside a Dropbox folder? Or continuously backup
+  repositories to S3? No? Well, now you can!
+
+  The fundamental problem with using filesystems like Dropbox and backup tools
+  like `rsync` on your typical Git/Mercurial repositories is that they rely
+  on *local filesystem operations* being atomic, serialized, and non-concurrent
+  with respect to other reads and writes—which is _not_ true when operating on
+  distributed file systems, or when operations like concurrent file copies (for
+  backup) happen while lock files are being held.
+
+  Jujutsu is instead designed to be [safe under concurrent scenarios][conc-safety];
+  simply using rsync or Dropbox and then using that resulting repository
+  should never result in a repository in a *corrupt state*. The worst that
+  _should_ happen is that it will expose conflicts between the local and remote
+  state, leaving you to resolve them.
+
+[wcc]: https://docs.jj-vcs.dev/latest/working-copy/
+[undo-history]: https://en.wikipedia.org/wiki/Undo#History
+[conc-safety]: https://docs.jj-vcs.dev/latest/technical/concurrency/
+
+The command-line tool is called `jj` for now because it's easy to type and easy
+to replace (rare in English). The project is called "Jujutsu" because it matches
+"jj".
+
+Jujutsu is relatively young, with lots of work to still be done. If you have any
+questions, or want to talk about future plans, please join us on Discord
+[![Discord](https://img.shields.io/discord/968932220549103686.svg?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2)](https://discord.gg/dkmfj3aGQN),
+start a [GitHub Discussion](https://github.com/jj-vcs/jj/discussions), or
+send an IRC message to [`#jujutsu` on Libera
+Chat](https://web.libera.chat/?channel=#jujutsu). The developers monitor all of
+these channels[^bridge].
+
+[^bridge]: To be more precise, the `#jujutsu` Libera IRC channel is bridged to
+one of the channels on jj's Discord. Some of the developers stay on Discord and
+use the bridge to follow IRC.
+
+### News and Updates 📣
+
+- **December 2024**: The `jj` Repository has moved to the `jj-vcs` GitHub
+  organization.
+- **November 2024**: Version 0.24 is released which adds `jj file annotate`,
+  which is equivalent to `git blame` or `hg annotate`.
+- **September 2024**: Martin gave a [presentation about Jujutsu][merge-vid-2024] at
+  Git Merge 2024.
+- **Feb 2024**: Version 0.14 is released, which deprecates ["jj checkout" and "jj merge"](CHANGELOG.md#0140---2024-02-07),
+  as well as `jj init --git`, which is now just called `jj git init`.
+- **Oct 2023**: Version 0.10.0 is released! Now includes a bundled merge and
+  diff editor for all platforms, "immutable revsets" to avoid accidentally
+  `edit`-ing the wrong revisions, and lots of polish.
+- **Jan 2023**: Martin gave a presentation about Google's plans for Jujutsu at
+  Git Merge 2022!
+  See the [slides][merge-slides] or the [recording][merge-talk].
+
+### Related Media
+
+- **Mar 2024**: Chris Krycho started [a YouTube series about Jujutsu][krycho-yt].
+- **Feb 2024**: Chris Krycho published an article about Jujutsu called [jj init][krycho]
+  and Steve Klabnik followed up with the [Jujutsu Tutorial][klabnik].
+- **Jan 2024**: Jujutsu was featured in an LWN.net article called
+  [Jujutsu: a new, Git-compatible version control system][lwn].
+- **Jan 2023**: Martin's Talk about Jujutsu at Git Merge 2022, [video][merge-talk]
+  and the associated [slides][merge-slides].
+
+The wiki also contains a more extensive list of [media references][wiki-media].
+
+[krycho-yt]: https://www.youtube.com/playlist?list=PLelyiwKWHHAq01Pvmpf6x7J0y-yQpmtxp
+[krycho]: https://v5.chriskrycho.com/essays/jj-init/
+[klabnik]: https://steveklabnik.github.io/jujutsu-tutorial/
+[lwn]: https://lwn.net/Articles/958468/
+[merge-talk]: https://www.youtube.com/watch?v=bx_LGilOuE4
+[merge-slides]: https://docs.google.com/presentation/d/1F8j9_UOOSGUN9MvHxPZX_L4bQ9NMcYOp1isn17kTC_M/view
+[merge-vid-2024]: https://www.youtube.com/watch?v=LV0JzI8IcCY
+[wiki-media]: https://github.com/jj-vcs/jj/wiki/Media
+
+## Getting started
+
+> [!IMPORTANT]
+> Jujutsu is an **experimental version control system**. While Git compatibility
+> is stable, and most developers use it daily for all their needs, there may
+> still be work-in-progress features, suboptimal UX, and workflow gaps that make
+> it unusable for your particular use.
+
+Follow the [installation
+instructions](https://docs.jj-vcs.dev/latest/install-and-setup) to
+obtain and configure `jj`.
+
+The best way to get started is probably to go through [the
+tutorial](https://docs.jj-vcs.dev/latest/tutorial). Also see the [Git
+comparison](https://docs.jj-vcs.dev/latest/git-comparison), which
+includes a table of `jj` vs. `git` commands.
+
+As you become more familiar with Jujutsu, the following resources may be helpful:
+
+- The [FAQ](https://docs.jj-vcs.dev/latest/FAQ).
+- The [Glossary](https://docs.jj-vcs.dev/latest/glossary).
+- The `jj help` command (e.g. `jj help rebase`).
+- The `jj help -k <keyword>` command (e.g. `jj help -k config`). Use `jj help --help`
+  to see what keywords are available.
+
+If you are using a **prerelease** version of `jj`, you would want to consult
+[the docs for the prerelease (main branch)
+version](https://docs.jj-vcs.dev/prerelease/). You can also get there
+from the docs for the latest release by using the website's version switcher. The version switcher is visible in
+the header of the website when you scroll to the top of any page.
+
+## Features
+
+### Compatible with Git
+
+Jujutsu is designed so that the underlying data and storage model is abstract.
+Today, only the Git backend is production-ready. The Git backend uses the
+[gitoxide](https://github.com/Byron/gitoxide) Rust library.
+
+[backends]: https://docs.jj-vcs.dev/latest/glossary#backend
+
+The Git backend is fully featured and maintained, and allows you to use Jujutsu
+with any Git remote. The commits you create will look like regular Git commits.
+You can fetch branches from a regular Git remote and push branches to the
+remote. You can always switch back to Git.
+
+Here is how you can explore a GitHub repository with `jj`.
+
+<img src="demos/git_compat.png" />
+
+You can even have a [colocated local
+workspace](https://docs.jj-vcs.dev/latest/git-compatibility#colocated-jujutsugit-repos)
+where you can use both `jj` and `git` commands interchangeably.
+
+### The working copy is automatically committed
+
+Jujutsu uses a real commit to represent the working copy. Checking out a commit
+results in a new working-copy commit on top of the target commit. Almost all
+commands automatically amend the working-copy commit.
+
+The working-copy being a commit means that commands never fail because the
+working copy is dirty (no "error: Your local changes to the following
+files..."), and there is no need for `git stash`. Also, because the working copy
+is a commit, commands work the same way on the working-copy commit as on any
+other commit, so you can set the commit message before you're done with the
+changes.
+
+<img src="demos/working_copy.png" />
+
+### The repo is the source of truth
+
+With Jujutsu, the working copy plays a smaller role than with Git. Commands
+snapshot the working copy before they start, then they update the repo, and then
+the working copy is updated (if the working-copy commit was modified). Almost
+all commands (even checkout!) operate on the commits in the repo, leaving the
+common functionality of snapshotting and updating of the working copy to
+centralized code. For example, `jj restore` (similar to `git restore`) can
+restore from any commit and into any commit, and `jj describe` can set the
+commit message of any commit (defaults to the working-copy commit).
+
+### Entire repo is under version control
+
+All operations you perform in the repo are recorded, along with a snapshot of
+the repo state after the operation. This means that you can easily restore to
+an earlier repo state, simply undo your operations one-by-one or even _revert_ a
+particular operation which does not have to be the most recent one.
+
+<img src="demos/operation_log.png" />
+
+### Conflicts can be recorded in commits
+
+If an operation results in
+[conflicts](https://docs.jj-vcs.dev/latest/glossary#conflict),
+information about those conflicts will be recorded in the commit(s). The
+operation will succeed. You can then resolve the conflicts later. One
+consequence of this design is that there's no need to continue interrupted
+operations. Instead, you get a single workflow for resolving conflicts,
+regardless of which command caused them. This design also lets Jujutsu rebase
+merge commits correctly (unlike both Git and Mercurial).
+
+Basic conflict resolution:
+
+<img src="demos/resolve_conflicts.png" />
+
+Juggling conflicts:
+
+<img src="demos/juggle_conflicts.png" />
+
+### Automatic rebase
+
+Whenever you modify a commit, any descendants of the old commit will be rebased
+onto the new commit. Thanks to the conflict design described above, that can be
+done even if there are conflicts. Bookmarks pointing to rebased commits will be
+updated. So will the working copy if it points to a rebased commit.
+
+### Comprehensive support for rewriting history
+
+Besides the usual rebase command, there's `jj describe` for editing the
+description (commit message) of an arbitrary commit. There's also `jj diffedit`,
+which lets you edit the changes in a commit without checking it out. To split
+a commit into two, use `jj split`. You can even move part of the changes in a
+commit to any other commit using `jj squash -i --from X --into Y`.
+
+## Status
+
+The tool is fairly feature-complete, but some important features like support
+for Git submodules are not yet completed. There
+are also several performance bugs. It's likely that workflows and setups
+different from what the core developers use are not well supported, e.g. there
+is no native support for email-based workflows.
+
+Today, all core developers use `jj` to work on `jj`. I (Martin von Zweigbergk)
+have almost exclusively used `jj` to develop the project itself since early
+January 2021. I haven't had to re-clone from source (I don't think I've even had
+to restore from backup).
+
+There *will* be changes to workflows and backward-incompatible changes to the
+on-disk formats before version 1.0.0. For any format changes, we'll try to
+implement transparent upgrades (as we've done with recent changes), or provide
+upgrade commands or scripts if requested.
+
+## Related work
+
+There are several tools trying to solve similar problems as Jujutsu. See
+[related work](https://docs.jj-vcs.dev/latest/related-work) for details.
 
 ## Contributing
 
-Contributions are welcome. Start with the [contribution guide](./docs/development/CONTRIBUTING.md). New capability claims should include an implementation link and reproducible evidence.
+We welcome outside contributions, and there's plenty of things to do, so
+don't be shy. Please ask if you want a pointer on something you can help with,
+and hopefully we can all figure something out.
+
+We do have [a few policies and
+suggestions](https://docs.jj-vcs.dev/prerelease/contributing/)
+for contributors. The broad TL;DR:
+
+- Bug reports are very welcome!
+- Every commit that lands in the `main` branch is code reviewed.
+- Please behave yourself, and obey the Community Guidelines.
+- There **is** a mandatory CLA you must agree to. Importantly, it **does not**
+  transfer copyright ownership to Google or anyone else; it simply gives us the
+  right to safely redistribute and use your changes.
+
+### Mandatory Google Disclaimer
+
+I (Martin von Zweigbergk, <martinvonz@google.com>) started Jujutsu as a hobby
+project in late 2019, and it has evolved into my full-time project at Google,
+with several other Googlers (now) assisting development in various capacities.
+That said, while Google is one of the main contributors, **this is not a
+supported Google product**, i.e. support is provided by the community.
 
 ## License
 
-RuVector is available under the [MIT License](./LICENSE).
+Jujutsu is available as Open Source Software, under the Apache 2.0 license. See
+[`LICENSE`](./LICENSE) for details about copyright and redistribution.
 
-Built by [rUv](https://ruv.io) and powering [Cognitum](https://cognitum.one).
+The `jj` logo was contributed by J. Jennings and is licensed under a Creative
+Commons License, see [`docs/images/LICENSE`](docs/images/LICENSE).

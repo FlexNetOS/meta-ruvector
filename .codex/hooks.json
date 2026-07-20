@@ -4,7 +4,7 @@
       {
         "hooks": [
           {
-            "command": "rtk run 'node \"$(git rev-parse --show-toplevel)/.claude/helpers/hook-handler.cjs\" post-edit'",
+            "command": "\"$(git rev-parse --show-toplevel)/.codex/helpers/run-claude-hook.sh\" hook-handler.cjs post-edit",
             "timeout": 10,
             "type": "command"
           }
@@ -14,7 +14,7 @@
       {
         "hooks": [
           {
-            "command": "rtk run 'node \"$(git rev-parse --show-toplevel)/.claude/helpers/hook-handler.cjs\" post-bash'",
+            "command": "\"$(git rev-parse --show-toplevel)/.codex/helpers/run-claude-hook.sh\" hook-handler.cjs post-bash",
             "timeout": 5,
             "type": "command"
           }
@@ -26,11 +26,11 @@
       {
         "hooks": [
           {
-            "command": "rtk run 'node \"$(git rev-parse --show-toplevel)/.claude/helpers/hook-handler.cjs\" compact-manual'",
+            "command": "\"$(git rev-parse --show-toplevel)/.codex/helpers/run-claude-hook.sh\" hook-handler.cjs compact-manual",
             "type": "command"
           },
           {
-            "command": "rtk run 'node \"$(git rev-parse --show-toplevel)/.claude/helpers/hook-handler.cjs\" session-end'",
+            "command": "\"$(git rev-parse --show-toplevel)/.codex/helpers/run-claude-hook.sh\" hook-handler.cjs session-end",
             "timeout": 5,
             "type": "command"
           }
@@ -40,11 +40,11 @@
       {
         "hooks": [
           {
-            "command": "rtk run 'node \"$(git rev-parse --show-toplevel)/.claude/helpers/hook-handler.cjs\" compact-auto'",
+            "command": "\"$(git rev-parse --show-toplevel)/.codex/helpers/run-claude-hook.sh\" hook-handler.cjs compact-auto",
             "type": "command"
           },
           {
-            "command": "rtk run 'node \"$(git rev-parse --show-toplevel)/.claude/helpers/hook-handler.cjs\" session-end'",
+            "command": "\"$(git rev-parse --show-toplevel)/.codex/helpers/run-claude-hook.sh\" hook-handler.cjs session-end",
             "timeout": 6,
             "type": "command"
           }
@@ -56,7 +56,7 @@
       {
         "hooks": [
           {
-            "command": "rtk run 'node \"$(git rev-parse --show-toplevel)/.claude/helpers/hook-handler.cjs\" pre-bash'",
+            "command": "\"$(git rev-parse --show-toplevel)/.codex/helpers/run-claude-hook.sh\" hook-handler.cjs pre-bash",
             "timeout": 5,
             "type": "command"
           }
@@ -66,7 +66,7 @@
       {
         "hooks": [
           {
-            "command": "rtk run 'node \"$(git rev-parse --show-toplevel)/.claude/helpers/hook-handler.cjs\" pre-edit'",
+            "command": "\"$(git rev-parse --show-toplevel)/.codex/helpers/run-claude-hook.sh\" hook-handler.cjs pre-edit",
             "timeout": 5,
             "type": "command"
           }
@@ -78,12 +78,12 @@
       {
         "hooks": [
           {
-            "command": "rtk run 'node \"$(git rev-parse --show-toplevel)/.claude/helpers/hook-handler.cjs\" session-restore'",
+            "command": "\"$(git rev-parse --show-toplevel)/.codex/helpers/run-claude-hook.sh\" hook-handler.cjs session-restore",
             "timeout": 15,
             "type": "command"
           },
           {
-            "command": "rtk run 'node \"$(git rev-parse --show-toplevel)/.claude/helpers/auto-memory-hook.mjs\" import'",
+            "command": "\"$(git rev-parse --show-toplevel)/.codex/helpers/run-claude-hook.sh\" auto-memory-hook.mjs import",
             "timeout": 8,
             "type": "command"
           }
@@ -92,7 +92,7 @@
       {
         "hooks": [
           {
-            "command": "\"./.claude/helpers/run-rtk-command.sh\" sh -lc 'root=\"$(git rev-parse --show-toplevel)\"; exec rusty-idd next --base \"$root\"'",
+            "command": "sh -lc 'root=\"$(git rev-parse --show-toplevel)\"; exec rusty-idd next --base \"$root\"'",
             "statusMessage": "Rusty IDD front door: computing the next step",
             "timeout": 180,
             "type": "command"
@@ -104,7 +104,7 @@
       {
         "hooks": [
           {
-            "command": "rtk run 'node \"$(git rev-parse --show-toplevel)/.claude/helpers/hook-handler.cjs\" session-end'",
+            "command": "\"$(git rev-parse --show-toplevel)/.codex/helpers/run-claude-hook.sh\" hook-handler.cjs session-end",
             "timeout": 10,
             "type": "command"
           }
@@ -113,7 +113,7 @@
       {
         "hooks": [
           {
-            "command": "rtk run 'node \"$(git rev-parse --show-toplevel)/.claude/helpers/auto-memory-hook.mjs\" sync'",
+            "command": "\"$(git rev-parse --show-toplevel)/.codex/helpers/run-claude-hook.sh\" auto-memory-hook.mjs sync",
             "timeout": 10,
             "type": "command"
           }
@@ -124,7 +124,7 @@
       {
         "hooks": [
           {
-            "command": "rtk run 'node \"$(git rev-parse --show-toplevel)/.claude/helpers/hook-handler.cjs\" status'",
+            "command": "\"$(git rev-parse --show-toplevel)/.codex/helpers/run-claude-hook.sh\" hook-handler.cjs status",
             "timeout": 3,
             "type": "command"
           }
@@ -135,7 +135,7 @@
       {
         "hooks": [
           {
-            "command": "rtk run 'node \"$(git rev-parse --show-toplevel)/.claude/helpers/hook-handler.cjs\" post-task'",
+            "command": "\"$(git rev-parse --show-toplevel)/.codex/helpers/run-claude-hook.sh\" hook-handler.cjs post-task",
             "timeout": 5,
             "type": "command"
           }
@@ -146,7 +146,7 @@
       {
         "hooks": [
           {
-            "command": "rtk run 'node \"$(git rev-parse --show-toplevel)/.claude/helpers/hook-handler.cjs\" route'",
+            "command": "\"$(git rev-parse --show-toplevel)/.codex/helpers/run-claude-hook.sh\" hook-handler.cjs route",
             "timeout": 10,
             "type": "command"
           }
