@@ -168,10 +168,43 @@ impl RvLiteConfig {
         DbOptions {
             dimensions: self.dimensions,
             distance_metric: metric,
-            storage_path: "memory://".to_string(),
+            storage_path: transient_storage_path("rvlite"),
             hnsw_config: None,
             quantization: None,
         }
+    }
+}
+
+pub(crate) fn transient_storage_path(label: &str) -> String {
+    #[cfg(target_arch = "wasm32")]
+    {
+        let _ = label;
+        "memory://".to_string()
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        let safe_label: String = label
+            .chars()
+            .map(|ch| {
+                if ch.is_ascii_alphanumeric() || ch == '-' || ch == '_' {
+                    ch
+                } else {
+                    '-'
+                }
+            })
+            .collect();
+        let nanos = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|duration| duration.as_nanos())
+            .unwrap_or_default();
+        std::env::temp_dir()
+            .join(format!(
+                "rvlite-{safe_label}-{}-{nanos}.redb",
+                std::process::id()
+            ))
+            .to_string_lossy()
+            .into_owned()
     }
 }
 
@@ -205,8 +238,6 @@ impl RvLite {
     }
 
     /// Create with default configuration (384 dimensions, cosine similarity)
-    // Cannot implement `Default` here: the constructor is fallible (returns a
-    // `Result`/`JsValue`) and is part of the wasm-bindgen public surface.
     #[allow(clippy::should_implement_trait)]
     pub fn default() -> Result<RvLite, JsValue> {
         Self::new(RvLiteConfig::new(384))
@@ -826,8 +857,8 @@ fn parse_rdf_term(s: &str) -> Result<sparql::RdfTerm, JsValue> {
     let s = s.trim();
     if s.starts_with('<') && s.ends_with('>') {
         Ok(sparql::RdfTerm::iri(&s[1..s.len() - 1]))
-    } else if let Some(rest) = s.strip_prefix("_:") {
-        Ok(sparql::RdfTerm::blank(rest))
+    } else if let Some(stripped) = s.strip_prefix("_:") {
+        Ok(sparql::RdfTerm::blank(stripped))
     } else if s.starts_with('"') {
         let end = s.rfind('"').unwrap_or(s.len() - 1);
         let value = &s[1..end];

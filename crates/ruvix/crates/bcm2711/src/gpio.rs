@@ -273,6 +273,7 @@ impl Gpio {
             reg.modify(|val| {
                 // Clear the 3-bit field for this pin
                 let mask = !(0b111_u32 << bit_offset);
+
                 (val & mask) | ((function as u32) << bit_offset)
             });
         }
@@ -343,6 +344,7 @@ impl Gpio {
             reg.modify(|val| {
                 // Clear the 2-bit field for this pin
                 let mask = !(0b11_u32 << bit_offset);
+
                 (val & mask) | ((pull as u32) << bit_offset)
             });
         }

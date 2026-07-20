@@ -13,8 +13,8 @@ categories = ["science", "algorithms", "simulation"]
 readme = "README.md"
 
 [dependencies]
-exo-core = "0.1"
-exo-temporal = "0.1"
+exo-core = { path = "../exo-core" }
+exo-temporal = { path = "../exo-temporal" }
 ruvector-domain-expansion = "2.0"
 
 # Serialization

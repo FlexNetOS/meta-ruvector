@@ -589,7 +589,7 @@ impl<B: BlockDevice> Fat32Fs<B> {
         for i in 0..sectors_per_cluster {
             let offset = i * FAT32_SECTOR_SIZE;
             self.device.read_block(
-                (start_sector + i as u32) as u64,
+                u64::from(start_sector + i as u32),
                 &mut buf[offset..offset + FAT32_SECTOR_SIZE],
             )?;
         }
@@ -622,7 +622,7 @@ impl<B: BlockDevice> Fat32Fs<B> {
         // Read sector
         let mut sector_data = vec![0u8; FAT32_SECTOR_SIZE];
         self.device
-            .read_block(fat_sector as u64, &mut sector_data)?;
+            .read_block(u64::from(fat_sector), &mut sector_data)?;
 
         let entry = u32::from_le_bytes([
             sector_data[offset],
@@ -646,8 +646,8 @@ impl<B: BlockDevice> Fat32Fs<B> {
         let mut current = start;
 
         // Safety limit to prevent infinite loops
-        let max_clusters =
-            (self.boot_sector.total_sectors / self.boot_sector.sectors_per_cluster as u32) as usize;
+        let max_clusters = (self.boot_sector.total_sectors
+            / u32::from(self.boot_sector.sectors_per_cluster)) as usize;
 
         while (2..FAT32_EOC_MIN).contains(&current) && clusters.len() < max_clusters {
             clusters.push(current);
@@ -782,7 +782,7 @@ impl<B: BlockDevice> Fat32Fs<B> {
         }
 
         let clusters = self.follow_cluster_chain(inode.first_cluster)?;
-        let bytes_per_cluster = self.boot_sector.bytes_per_cluster() as u64;
+        let bytes_per_cluster = u64::from(self.boot_sector.bytes_per_cluster());
         let mut cluster_data = vec![0u8; bytes_per_cluster as usize];
 
         let mut bytes_read = 0usize;
@@ -901,7 +901,7 @@ impl<B: BlockDevice> FileSystem for Fat32Fs<B> {
             }
         }
 
-        Ok(InodeId(current_cluster as u64))
+        Ok(InodeId(u64::from(current_cluster)))
     }
 
     fn stat(&self, inode_id: InodeId) -> FsResult<Inode> {
@@ -964,7 +964,7 @@ impl<B: BlockDevice> FileSystem for Fat32Fs<B> {
         };
 
         let entry = self.find_entry(cluster, name)?;
-        Ok(InodeId(entry.first_cluster() as u64))
+        Ok(InodeId(u64::from(entry.first_cluster())))
     }
 
     fn create(
@@ -1003,7 +1003,7 @@ impl<B: BlockDevice> FileSystem for Fat32Fs<B> {
 
             entries.push(DirEntry::new(
                 &name,
-                InodeId(fat_entry.first_cluster() as u64),
+                InodeId(u64::from(fat_entry.first_cluster())),
                 fat_entry.file_type(),
             ));
         }

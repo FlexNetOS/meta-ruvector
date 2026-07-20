@@ -45,6 +45,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          submodules: recursive
           # Self-learning needs full history so identify.sh can sample
           # recent commits for trend analysis later. Keep this until
           # identify.sh evolves past stub.

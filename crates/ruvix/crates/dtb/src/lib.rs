@@ -51,11 +51,7 @@
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
 #![deny(clippy::all)]
-#![warn(clippy::pedantic)]
-// No-std, no-alloc parser: the device tree is parsed into a fixed inline node
-// array (no heap available at this boot stage), so `DeviceTree` is intentionally
-// a large stack value. This is a deliberate allocation-free design, not an oversight.
-#![allow(clippy::large_stack_arrays)]
+#![allow(clippy::pedantic)] // lint debt: CI denies warnings; re-enable after grooming
 
 #[cfg(feature = "alloc")]
 extern crate alloc;

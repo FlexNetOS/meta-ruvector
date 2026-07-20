@@ -677,13 +677,6 @@ pub trait FileSystem {
     fn lookup(&self, dir_inode: InodeId, name: &str) -> FsResult<InodeId>;
 
     /// Create a new file or directory.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`FsError::AlreadyExists`] if an entry named `name` already exists
-    /// in `dir_inode`, [`FsError::NotADirectory`] if `dir_inode` is not a
-    /// directory, or [`FsError::NoSpace`] if there is insufficient space for the
-    /// new inode or directory entry.
     fn create(
         &self,
         dir_inode: InodeId,

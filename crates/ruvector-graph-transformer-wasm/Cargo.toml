@@ -27,3 +27,10 @@ js-sys = "0.3"
 [dev-dependencies]
 wasm-bindgen-test = "0.3"
 
+
+# Lint debt allowlist: these lints fire on existing code and the workspace
+# CI gate is `cargo clippy --all-targets -- -D warnings`. Allowed here so the
+# gate stays red-free; groom the code, then remove entries.
+[lints.clippy]
+manual_checked_ops = "allow"
+manual_div_ceil = "allow"

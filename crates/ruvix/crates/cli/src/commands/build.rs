@@ -128,7 +128,7 @@ pub fn execute(args: BuildArgs, verbose: bool) -> Result<()> {
     Ok(())
 }
 
-fn clean_build_dir(output: &Path) -> Result<()> {
+fn clean_build_dir(output: &PathBuf) -> Result<()> {
     println!("  {} Would remove: {}", "[stub]".yellow(), output.display());
     Ok(())
 }

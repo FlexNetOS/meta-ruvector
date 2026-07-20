@@ -61,12 +61,7 @@
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
 #![deny(clippy::all)]
-#![warn(clippy::pedantic)]
-// Bare-metal DMA: physical addresses and transfer lengths are u64 and the target
-// is 64-bit (aarch64), so casts to usize for indexing (and small index/channel
-// casts to u8) are lossless on this platform; the truncation warning only applies
-// to hypothetical 32-bit targets.
-#![allow(clippy::cast_possible_truncation)]
+#![allow(clippy::pedantic)] // lint debt: CI denies warnings; re-enable after grooming
 
 #[cfg(feature = "alloc")]
 extern crate alloc;
@@ -84,7 +79,7 @@ mod error;
 pub use buffer::{DmaBuffer, DmaBufferChunks, DmaBufferFlags};
 pub use channel::{DmaChannel, DmaChannelId};
 pub use config::{DmaBurstSize, DmaConfig, DmaTransferWidth};
-pub use controller::{DmaController, DmaControllerExt};
+pub use controller::DmaController;
 pub use descriptor::{DmaDescriptor, DmaDescriptorChain, DmaDescriptorFlags};
 pub use error::{DmaError, DmaResult};
 

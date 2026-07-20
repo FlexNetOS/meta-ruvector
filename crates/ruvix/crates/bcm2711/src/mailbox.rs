@@ -437,7 +437,7 @@ impl Mailbox {
         // Send buffer address on property channel
         self.send(CHANNEL_PROPERTY, bus_addr)?;
 
-        // Wait for response (drain the channel; the result is read back from the buffer)
+        // Wait for response
         let _response = self.receive(CHANNEL_PROPERTY)?;
 
         // Check response code in buffer

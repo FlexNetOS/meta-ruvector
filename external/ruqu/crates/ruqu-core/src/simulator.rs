@@ -8,7 +8,7 @@ use crate::types::*;
 
 use rand::Rng;
 use std::collections::HashMap;
-use web_time::Instant;
+use std::time::Instant;
 
 /// Configuration for a simulation run.
 pub struct SimConfig {

@@ -287,8 +287,9 @@ impl<'a> DeviceTree<'a> {
                         return Ok(value);
                     }
                 }
-                Some(FdtToken::BeginNode | FdtToken::EndNode | FdtToken::End) => break,
-                Some(FdtToken::Nop) => {}
+                Some(FdtToken::BeginNode) => break,
+                Some(FdtToken::EndNode | FdtToken::End) => break,
+                Some(FdtToken::Nop) => continue,
                 None => return Err(DtbError::InvalidToken { value: token_val }),
             }
         }

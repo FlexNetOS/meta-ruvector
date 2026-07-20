@@ -180,7 +180,7 @@ impl<'a> FilterEvaluator<'a> {
 }
 ```
 
-`FilterExpression` derives `Serialize` / `Deserialize`, so expressions round-trip
+`FilterExpression` implements `Serialize` / `Deserialize`, so expressions round-trip
 through JSON via `serde_json`.
 
 ## Performance Tips

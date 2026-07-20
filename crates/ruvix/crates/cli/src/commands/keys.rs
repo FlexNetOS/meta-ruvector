@@ -13,7 +13,8 @@ use ed25519_dalek::{
 };
 use rand::rngs::OsRng;
 use sha2::{Digest, Sha256, Sha384, Sha512};
-use std::fs;
+use std::fs::{self};
+use std::io::Write;
 use std::path::PathBuf;
 
 /// Key management actions

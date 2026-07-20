@@ -193,7 +193,7 @@ fn validate_inputs(args: &FlashArgs) -> Result<()> {
     Ok(())
 }
 
-fn check_device(device: &Path) -> Result<()> {
+fn check_device(device: &PathBuf) -> Result<()> {
     println!(
         "  {} Checking device: {}",
         "[stub]".yellow(),

@@ -307,7 +307,7 @@ impl core::ops::Deref for PathBuf {
 #[cfg(feature = "alloc")]
 impl fmt::Display for PathBuf {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", &self.inner)
+        write!(f, "{}", self.inner)
     }
 }
 
