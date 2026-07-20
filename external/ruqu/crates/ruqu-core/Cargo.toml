@@ -18,7 +18,6 @@ parallel = ["rayon"]
 simd = []
 
 [dependencies]
-web-time = "1.1"
 rand = { workspace = true }
 thiserror = { workspace = true }
 serde = { workspace = true, optional = true }
