@@ -112,15 +112,10 @@ async function main() {
     try { hookInput = JSON.parse(stdinData); } catch (e) { /* ignore parse errors */ }
   }
 
-  // Normalize snake_case/camelCase: Claude Code sends tool_input/tool_name (snake_case)
-  const toolInput = hookInput.toolInput || hookInput.tool_input || {};
-  const toolName = hookInput.toolName || hookInput.tool_name || '';
-
   // Merge stdin data into prompt resolution: prefer stdin fields, then env, then argv.
-  // `toolInput` is an object (e.g. {command:"ls"}) — it's truthy but not a string,
-  // so falling back to it directly bound `prompt` to the object and tripped
-  // `.toLowerCase()` / `.substring()` on every Bash hook (#1944). Use the
-  // `.command` field instead, which is the actual string the hook needs.
+  // Claude Code delivers tool payloads snake_cased (tool_input.command); older
+  // callers used camelCase toolInput — accept both.
+  const toolInput = hookInput.tool_input || hookInput.toolInput || {};
   const prompt = hookInput.prompt || hookInput.command || toolInput.command
     || process.env.PROMPT || process.env.TOOL_INPUT_command || args.join(' ') || '';
 
@@ -203,7 +198,26 @@ const handlers = {
     console.log(toolFailed ? '[LEARN] Edit FAILURE recorded' : '[OK] Edit recorded');
   },
 
-  'session-restore': async () => {
+  'post-bash': () => {
+    // Record command outcome for intelligence consolidation
+    if (session && session.metric) {
+      try { session.metric('commands'); } catch (e) { /* no active session */ }
+    }
+    if (intelligence && intelligence.recordCommand) {
+      try {
+        const cmd = hookInput.command || toolInput.command
+          || process.env.TOOL_INPUT_command || args.join(' ') || '';
+        const resp = hookInput.tool_response || hookInput.toolResponse || {};
+        const failed = resp.success === false || resp.is_error === true
+          || (typeof resp.exitCode === 'number' && resp.exitCode !== 0)
+          || (typeof resp.exit_code === 'number' && resp.exit_code !== 0);
+        intelligence.recordCommand(cmd, !failed);
+      } catch (e) { /* non-fatal */ }
+    }
+    console.log('[OK] Command recorded');
+  },
+
+  'session-restore': () => {
     if (session) {
       // Try restore first, fall back to start
       const existing = session.restore && session.restore();
