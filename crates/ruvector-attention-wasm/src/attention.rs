@@ -50,7 +50,7 @@ impl WasmMultiHeadAttention {
     /// * `num_heads` - Number of attention heads
     #[wasm_bindgen(constructor)]
     pub fn new(dim: usize, num_heads: usize) -> Result<WasmMultiHeadAttention, JsError> {
-        if dim % num_heads != 0 {
+        if !dim.is_multiple_of(num_heads) {
             return Err(JsError::new(&format!(
                 "Dimension {} must be divisible by number of heads {}",
                 dim, num_heads

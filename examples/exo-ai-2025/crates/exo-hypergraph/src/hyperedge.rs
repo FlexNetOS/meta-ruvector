@@ -82,14 +82,14 @@ impl HyperedgeIndex {
         for entity in entities {
             self.entity_index
                 .entry(*entity)
-                .or_insert_with(Vec::new)
+                .or_default()
                 .push(hyperedge_id);
         }
 
         // Update relation type index
         self.relation_index
             .entry(relation.relation_type.clone())
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(hyperedge_id);
 
         hyperedge_id

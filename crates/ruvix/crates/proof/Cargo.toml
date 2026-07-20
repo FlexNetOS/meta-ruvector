@@ -36,3 +36,8 @@ metrics = ["alloc"]
 # Enable audit logging for proof operations
 audit-log = ["alloc"]
 
+# Enable integration with the ruvector-verified formal verification layer.
+# Gates the `VerifiedProofBridge` and the `verified_integration` module that
+# bridge ruvix-proof to ruvector-verified's ProofEnvironment (see integration.rs).
+verified = []
+

@@ -759,9 +759,28 @@ mod performance_tests {
         println!("Scalar distance: {:?} for 100k ops", scalar_duration);
         println!("Binary distance: {:?} for 100k ops", binary_duration);
 
-        // Binary should be faster (just XOR and popcount)
-        // But both should be fast
-        assert!(scalar_duration.as_millis() < 1000);
-        assert!(binary_duration.as_millis() < 1000);
+        // Binary should be faster (just XOR and popcount). Keep the absolute
+        // limit debug-aware because the required CI path runs unoptimized test
+        // binaries on shared self-hosted runners.
+        assert!(
+            binary_duration < scalar_duration,
+            "binary distance should be faster than scalar: scalar={:?}, binary={:?}",
+            scalar_duration,
+            binary_duration
+        );
+
+        let max_duration_ms = if cfg!(debug_assertions) { 5_000 } else { 1_000 };
+        assert!(
+            scalar_duration.as_millis() < max_duration_ms,
+            "scalar distance too slow: {:?} >= {}ms",
+            scalar_duration,
+            max_duration_ms
+        );
+        assert!(
+            binary_duration.as_millis() < max_duration_ms,
+            "binary distance too slow: {:?} >= {}ms",
+            binary_duration,
+            max_duration_ms
+        );
     }
 }

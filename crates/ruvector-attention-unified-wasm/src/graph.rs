@@ -100,6 +100,12 @@ pub struct WasmTensorCompress {
     inner: TensorCompress,
 }
 
+impl Default for WasmTensorCompress {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[wasm_bindgen]
 impl WasmTensorCompress {
     /// Create a new tensor compressor

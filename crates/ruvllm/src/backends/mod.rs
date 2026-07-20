@@ -73,6 +73,16 @@ mod candle_backend;
 #[cfg(feature = "candle")]
 pub use candle_backend::*;
 
+// Lattice backend (pure-Rust Qwen3.5 Metal inference). macOS-only today: the
+// `metal`/`objc` FFI deps and `MetalQwen35State`'s raw Metal object handles
+// don't exist off Apple platforms, so both this module and its dependency
+// (Cargo.toml) are target-gated — `--all-features` on Linux CI never
+// attempts to compile Metal FFI bindings.
+#[cfg(all(feature = "lattice", target_os = "macos"))]
+mod lattice_backend;
+#[cfg(all(feature = "lattice", target_os = "macos"))]
+pub use lattice_backend::*;
+
 // Recurrent-depth (OpenMythos) backend
 #[cfg(feature = "candle")]
 mod recurrent_backend;
@@ -945,23 +955,36 @@ impl LlmBackend for NoopBackend {
     fn unload_model(&mut self) {}
 }
 
-/// Create a backend instance based on available features
+/// Create a backend instance based on available features.
+///
+/// Precedence (O2, ruvllm_design_note.md §7): an explicit `lattice` opt-in
+/// wins over `candle` over `NoopBackend`. `lattice` is macOS-only and
+/// default-OFF, so enabling it is always a deliberate choice; `candle` stays
+/// the default-on, cross-platform fallback.
 pub fn create_backend() -> Box<dyn LlmBackend> {
-    #[cfg(feature = "candle")]
+    #[cfg(all(feature = "lattice", target_os = "macos"))]
     {
-        Box::new(CandleBackend::new().unwrap_or_else(|e| {
-            // Don't swallow the init error silently — surface WHY we fell back.
-            // `default()` now resolves the same device as `new()` (incl. the
-            // `RUVLLM_DEVICE`/CUDA preference), so this is no longer a silent
-            // downgrade to CPU, but the operator still needs to see the cause.
-            tracing::error!(error = %e, "CandleBackend::new() failed; falling back to default backend");
-            CandleBackend::default()
-        }))
+        Box::new(LatticeBackend::new().unwrap_or_else(|_| LatticeBackend::default()))
     }
 
-    #[cfg(not(feature = "candle"))]
+    #[cfg(not(all(feature = "lattice", target_os = "macos")))]
     {
-        Box::new(NoopBackend)
+        #[cfg(feature = "candle")]
+        {
+            Box::new(CandleBackend::new().unwrap_or_else(|e| {
+                // Don't swallow the init error silently — surface WHY we fell back.
+                // `default()` resolves the same device as `new()` (incl. the
+                // `RUVLLM_DEVICE`/CUDA preference), so this is no longer a silent
+                // downgrade to CPU, but the operator still needs to see the cause.
+                tracing::error!(error = %e, "CandleBackend::new() failed; falling back to default backend");
+                CandleBackend::default()
+            }))
+        }
+
+        #[cfg(not(feature = "candle"))]
+        {
+            Box::new(NoopBackend)
+        }
     }
 }
 

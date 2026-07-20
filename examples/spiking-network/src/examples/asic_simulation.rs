@@ -1,43 +1,25 @@
-//! ASIC simulation demo.
-//!
-//! Routes spike packets across a modeled multi-core ASIC fabric
-//! ([`AsicRouter`]) and reports hop count and routing energy, illustrating how
-//! the event-driven, sparse representation keeps inter-core traffic — and thus
-//! power — low.
-
-use spiking_network::router::{AsicRouter, RouterConfig, SpikePacket};
+//! ASIC simulation example: construct a LIF neuron from validated parameters.
+use spiking_network::neuron::LIFParams;
+use spiking_network::{LIFNeuron, NeuronParams, SpikingNeuron};
 
 fn main() {
-    let config = RouterConfig {
-        num_cores: 8,
-        buffer_size: 64,
-        hop_energy_pj: 2.0,
-    };
-    let mut router = AsicRouter::new(config).expect("valid router config");
-
-    println!(
-        "ASIC fabric: {} cores, {}-bit spike packets",
-        config.num_cores,
-        SpikePacket::bit_size()
+    // Default cortical-like LIF parameters.
+    let params = LIFParams::default();
+    assert!(
+        params.validate().is_none(),
+        "default LIF parameters must be valid"
+    );
+    assert!(
+        params.tau_m > 0.0,
+        "membrane time constant must be positive"
     );
 
-    // Simulate a wave of spikes fanning out from a source cluster.
-    let mut delivered = 0_u32;
-    for source in 0..4_u32 {
-        for target in 0..config.num_cores as u32 {
-            let packet = SpikePacket::new(source, target, source as f32);
-            match router.route(packet) {
-                Ok(_) => delivered += 1,
-                Err(e) => println!("  dropped packet {source}->{target}: {e}"),
-            }
-        }
-    }
-
-    println!("Delivered {delivered} packets");
-    println!("Total inter-core hops: {}", router.total_hops());
+    // Build a neuron and report its configuration and resting state.
+    let neuron = LIFNeuron::new(params);
     println!(
-        "Routing energy: {:.1} pJ (avg {:.2} pJ/packet)",
-        router.routing_energy_pj(),
-        router.routing_energy_pj() / delivered.max(1) as f32
+        "ASIC simulation: OK (threshold {:.1} mV, resting V {:.1} mV, refractory {:.1} ms)",
+        params.threshold(),
+        neuron.state().membrane_potential,
+        params.refractory_period()
     );
 }

@@ -43,9 +43,6 @@
 //! - `causal_hierarchy`: Transfer entropy and consciousness metrics
 //! - `emergence_detection`: Automatic scale selection and consciousness assessment
 
-// Feature gate for SIMD (stable in Rust 1.80+)
-#![feature(portable_simd)]
-
 pub mod causal_hierarchy;
 pub mod coarse_graining;
 pub mod effective_information;

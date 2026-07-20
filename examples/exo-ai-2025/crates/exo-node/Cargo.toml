@@ -18,8 +18,8 @@ crate-type = ["cdylib"]
 
 [dependencies]
 # EXO-AI core
-exo-core = "0.1"
-exo-backend-classical = "0.1"
+exo-core = { path = "../exo-core" }
+exo-backend-classical = { path = "../exo-backend-classical" }
 
 # Node.js bindings
 napi = { version = "2.16", features = ["napi9", "async", "tokio_rt"] }

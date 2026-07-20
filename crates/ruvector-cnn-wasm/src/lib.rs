@@ -1,6 +1,7 @@
 //! WASM bindings for ruvector-cnn
 //!
 //! Provides WebAssembly bindings for image embedding extraction plus
+#![allow(dead_code, unused_imports, unused_variables)]
 //! contrastive-learning losses and a few SIMD-backed tensor ops.
 //!
 //! ## Features
@@ -281,7 +282,7 @@ impl WasmTripletLoss {
         negatives: &[f32],
         dim: usize,
     ) -> Result<f32, JsValue> {
-        if anchors.len() % dim != 0
+        if !anchors.len().is_multiple_of(dim)
             || positives.len() != anchors.len()
             || negatives.len() != anchors.len()
         {

@@ -123,8 +123,8 @@ fn generate_transactions(n: usize, seed: u64) -> Vec<Transaction> {
 
         // PCA-like features V1-V10 from real distribution shapes
         let mut vf = [0.0f64; 10];
-        for k in 0..10 {
-            vf[k] = lcg_normal(&mut rng) * (1.0 / (k as f64 + 1.0).sqrt());
+        for (k, v) in vf.iter_mut().enumerate() {
+            *v = lcg_normal(&mut rng) * (1.0 / (k as f64 + 1.0).sqrt());
         }
 
         card_last_hour[card_id] = hour;
@@ -365,9 +365,9 @@ fn solve_mincut(lambdas: &[f64], edges: &[Edge], gamma: f64) -> Vec<bool> {
             adj[u].push((v, idx));
             adj[v].push((u, idx + 1));
         };
-    for i in 0..m {
-        let p0 = lambdas[i].max(0.0);
-        let p1 = (-lambdas[i]).max(0.0);
+    for (i, &lam) in lambdas.iter().enumerate() {
+        let p0 = lam.max(0.0);
+        let p1 = (-lam).max(0.0);
         if p0 > 1e-12 {
             ae(&mut adj, &mut caps, s, i, p0);
         }

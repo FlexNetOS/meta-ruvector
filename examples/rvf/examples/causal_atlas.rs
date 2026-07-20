@@ -184,7 +184,7 @@ fn compute_coherence(edges: &[InteractionEdge], num_nodes: usize) -> CoherenceFi
     let mut entropy = 0.0;
     if total_degree > 0.0 {
         // Compute entropy of degree distribution across partitions
-        let partition_size = (num_nodes + num_partitions - 1) / num_partitions;
+        let partition_size = num_nodes.div_ceil(num_partitions);
         for p in 0..num_partitions {
             let start = p * partition_size;
             let end = (start + partition_size).min(num_nodes);
