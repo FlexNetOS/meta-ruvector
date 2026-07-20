@@ -168,6 +168,11 @@ impl<D: NetworkDevice> NetworkStack<D> {
     ///
     /// If the destination is local, resolves via ARP.
     /// If remote, returns the gateway's MAC.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`NetError`](crate::NetError) if sending the ARP request fails
+    /// when the next hop is not yet cached.
     pub fn resolve_next_hop(&mut self, dest: Ipv4Addr) -> NetResult<Option<MacAddress>> {
         let next_hop = if self.is_local(dest) {
             dest
@@ -187,6 +192,11 @@ impl<D: NetworkDevice> NetworkStack<D> {
     }
 
     /// Sends an ARP request for the given IP.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`NetError`](crate::NetError) if frame serialization, device
+    /// transmission, or the cache update fails.
     pub fn send_arp_request(&mut self, target_ip: Ipv4Addr) -> NetResult<()> {
         let arp = ArpPacket::request(self.device.mac_address(), self.config.ip_addr, target_ip);
 
@@ -221,6 +231,12 @@ impl<D: NetworkDevice> NetworkStack<D> {
     ///
     /// Returns `NetError::ArpNotFound` if the destination MAC is not cached.
     /// In this case, an ARP request has been sent and the caller should retry.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`NetError::PacketTooLarge`] if the payload exceeds the MTU,
+    /// [`NetError::ArpNotFound`] if the destination MAC must still be resolved,
+    /// or another [`NetError`](crate::NetError) if serialization/transmission fails.
     pub fn send_udp(
         &mut self,
         src_port: u16,
@@ -235,9 +251,8 @@ impl<D: NetworkDevice> NetworkStack<D> {
         }
 
         // Resolve destination MAC
-        let dst_mac = match self.resolve_next_hop(dst_ip)? {
-            Some(mac) => mac,
-            None => return Err(NetError::ArpNotFound),
+        let Some(dst_mac) = self.resolve_next_hop(dst_ip)? else {
+            return Err(NetError::ArpNotFound);
         };
 
         let mut buf = [0u8; 1536];
@@ -248,8 +263,12 @@ impl<D: NetworkDevice> NetworkStack<D> {
 
         // Build IPv4 header
         let ip_payload_len = UDP_HEADER_SIZE + payload.len();
-        let mut ip_header =
-            Ipv4Header::new(self.config.ip_addr, dst_ip, Protocol::Udp, ip_payload_len as u16);
+        let mut ip_header = Ipv4Header::new(
+            self.config.ip_addr,
+            dst_ip,
+            Protocol::Udp,
+            ip_payload_len as u16,
+        );
         ip_header.identification = self.next_ip_id();
         ip_header.ttl = self.config.default_ttl;
 
@@ -264,12 +283,8 @@ impl<D: NetworkDevice> NetworkStack<D> {
         buf[offset + udp_len..offset + udp_len + payload.len()].copy_from_slice(payload);
 
         // Compute and fill UDP checksum
-        let checksum = UdpHeader::compute_checksum(
-            self.config.ip_addr,
-            dst_ip,
-            &udp_header,
-            payload,
-        );
+        let checksum =
+            UdpHeader::compute_checksum(self.config.ip_addr, dst_ip, &udp_header, payload);
         buf[offset + 6..offset + 8].copy_from_slice(&checksum.to_be_bytes());
 
         offset += udp_len + payload.len();
@@ -285,6 +300,12 @@ impl<D: NetworkDevice> NetworkStack<D> {
     }
 
     /// Sends an ICMP echo request (ping).
+    ///
+    /// # Errors
+    ///
+    /// Returns [`NetError::ArpNotFound`] if the destination MAC must still be
+    /// resolved, or another [`NetError`](crate::NetError) if serialization or
+    /// transmission fails.
     pub fn send_ping(
         &mut self,
         dst_ip: Ipv4Addr,
@@ -293,9 +314,8 @@ impl<D: NetworkDevice> NetworkStack<D> {
         data: &[u8],
     ) -> NetResult<()> {
         // Resolve destination MAC
-        let dst_mac = match self.resolve_next_hop(dst_ip)? {
-            Some(mac) => mac,
-            None => return Err(NetError::ArpNotFound),
+        let Some(dst_mac) = self.resolve_next_hop(dst_ip)? else {
+            return Err(NetError::ArpNotFound);
         };
 
         let mut buf = [0u8; 1536];
@@ -336,11 +356,15 @@ impl<D: NetworkDevice> NetworkStack<D> {
     ///
     /// Returns information about the received packet if it contains
     /// application-layer data (e.g., UDP payload).
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`NetError`](crate::NetError) if the device read or subsequent
+    /// packet parsing fails.
     pub fn receive(&mut self, buf: &mut [u8]) -> NetResult<Option<ReceivedPacket>> {
         // Try to receive a frame
-        let frame_len = match self.device.receive(buf)? {
-            Some(len) => len,
-            None => return Ok(None),
+        let Some(frame_len) = self.device.receive(buf)? else {
+            return Ok(None);
         };
 
         if frame_len < ETHERNET_HEADER_SIZE {
@@ -354,10 +378,7 @@ impl<D: NetworkDevice> NetworkStack<D> {
 
         // Check if it's for us
         let our_mac = self.device.mac_address();
-        if !dest_mac.is_broadcast()
-            && dest_mac != our_mac
-            && !dest_mac.is_multicast()
-        {
+        if !dest_mac.is_broadcast() && dest_mac != our_mac && !dest_mac.is_multicast() {
             return Ok(None);
         }
 
@@ -381,8 +402,12 @@ impl<D: NetworkDevice> NetworkStack<D> {
 
         // If this is a request for our IP, send a reply
         if arp.is_request() && arp.target_ip == self.config.ip_addr {
-            let reply =
-                ArpPacket::reply(self.device.mac_address(), self.config.ip_addr, arp.sender_mac, arp.sender_ip);
+            let reply = ArpPacket::reply(
+                self.device.mac_address(),
+                self.config.ip_addr,
+                arp.sender_mac,
+                arp.sender_ip,
+            );
 
             let mut buf = [0u8; 64];
 
@@ -431,7 +456,7 @@ impl<D: NetworkDevice> NetworkStack<D> {
                 self.handle_icmp(src_mac, &ip_header, ip_payload)?;
                 Ok(None)
             }
-            Protocol::Udp => self.handle_udp(src_mac, &ip_header, ip_payload),
+            Protocol::Udp => Self::handle_udp(src_mac, &ip_header, ip_payload),
             _ => Ok(None),
         }
     }
@@ -455,7 +480,12 @@ impl<D: NetworkDevice> NetworkStack<D> {
             let echo = IcmpEcho::parse(&icmp_header, icmp_payload)?;
 
             // Send echo reply
-            self.send_icmp_echo_reply(ip_header.src_addr, echo.identifier, echo.sequence, echo.data)?;
+            self.send_icmp_echo_reply(
+                ip_header.src_addr,
+                echo.identifier,
+                echo.sequence,
+                echo.data,
+            )?;
         }
 
         Ok(())
@@ -470,9 +500,8 @@ impl<D: NetworkDevice> NetworkStack<D> {
         data: &[u8],
     ) -> NetResult<()> {
         // Resolve destination MAC
-        let dst_mac = match self.arp_cache.resolve(dst_ip, self.current_time) {
-            Some(mac) => mac,
-            None => return Ok(()), // Don't have MAC, silently drop
+        let Some(dst_mac) = self.arp_cache.resolve(dst_ip, self.current_time) else {
+            return Ok(()); // Don't have MAC, silently drop
         };
 
         let mut buf = [0u8; 1536];
@@ -511,7 +540,6 @@ impl<D: NetworkDevice> NetworkStack<D> {
 
     /// Handles a UDP packet.
     fn handle_udp(
-        &mut self,
         src_mac: MacAddress,
         ip_header: &Ipv4Header,
         payload: &[u8],
@@ -519,15 +547,15 @@ impl<D: NetworkDevice> NetworkStack<D> {
         let (udp_header, udp_payload) = UdpHeader::parse(payload)?;
 
         // Verify checksum if present
-        if udp_header.checksum != 0 {
-            if !UdpHeader::verify_checksum(
+        if udp_header.checksum != 0
+            && !UdpHeader::verify_checksum(
                 ip_header.src_addr,
                 ip_header.dst_addr,
                 &udp_header,
                 udp_payload,
-            ) {
-                return Err(NetError::UdpChecksumError);
-            }
+            )
+        {
+            return Err(NetError::UdpChecksumError);
         }
 
         Ok(Some(ReceivedPacket {
@@ -536,9 +564,7 @@ impl<D: NetworkDevice> NetworkStack<D> {
             src_port: udp_header.src_port,
             dst_port: udp_header.dst_port,
             protocol: Protocol::Udp,
-            payload_offset: ETHERNET_HEADER_SIZE
-                + ip_header.header_len()
-                + UDP_HEADER_SIZE,
+            payload_offset: ETHERNET_HEADER_SIZE + ip_header.header_len() + UDP_HEADER_SIZE,
             payload_len: udp_payload.len(),
         }))
     }

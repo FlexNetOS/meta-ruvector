@@ -170,10 +170,10 @@ pub fn benchmark_analytical_phi() -> BenchmarkResults {
     for n in sizes {
         // Generate random network
         let mut adj = vec![vec![0.0; n]; n];
-        for i in 0..n {
-            for j in 0..n {
+        for (i, row) in adj.iter_mut().enumerate() {
+            for (j, cell) in row.iter_mut().enumerate() {
                 if i != j && simple_rand() < 0.3 {
-                    adj[i][j] = 1.0;
+                    *cell = 1.0;
                 }
             }
         }
@@ -244,7 +244,7 @@ pub struct BenchmarkPoint {
 fn simple_rand() -> f64 {
     use std::cell::RefCell;
     thread_local! {
-        static SEED: RefCell<u64> = RefCell::new(0x853c49e6748fea9b);
+        static SEED: RefCell<u64> = const { RefCell::new(0x853c49e6748fea9b) };
     }
 
     SEED.with(|s| {

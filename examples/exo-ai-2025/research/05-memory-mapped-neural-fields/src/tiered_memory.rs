@@ -142,10 +142,6 @@ impl TierStorage {
         self.pages.get(&page_id)
     }
 
-    fn get_mut(&mut self, page_id: u64) -> Option<&mut Page> {
-        self.pages.get_mut(&page_id)
-    }
-
     fn available_bytes(&self) -> u64 {
         self.capacity_bytes - self.used_bytes
     }
@@ -192,6 +188,12 @@ pub struct MigrationEvent {
     pub trigger: String,
     pub timestamp: Instant,
     pub success: bool,
+}
+
+impl Default for TieredMemory {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl TieredMemory {

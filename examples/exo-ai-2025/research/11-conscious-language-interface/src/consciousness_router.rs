@@ -3,7 +3,7 @@
 //! Extends ruvLLM's FastGRNN router with consciousness metrics (Φ)
 //! to make routing decisions based on the current conscious state.
 
-use super::{ConsciousnessMode, CLIConfig};
+use super::{CLIConfig, ConsciousnessMode};
 
 /// Model size options (matching ruvLLM)
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -139,7 +139,8 @@ impl ConsciousnessState {
 
         let recent = &self.phi_history[self.phi_history.len() - 5..];
         let mean: f64 = recent.iter().sum::<f64>() / recent.len() as f64;
-        let variance: f64 = recent.iter().map(|x| (x - mean).powi(2)).sum::<f64>() / recent.len() as f64;
+        let variance: f64 =
+            recent.iter().map(|x| (x - mean).powi(2)).sum::<f64>() / recent.len() as f64;
         let cv = variance.sqrt() / mean.max(1.0); // Coefficient of variation
 
         cv < 0.2 // Stable if CV < 20%
@@ -185,7 +186,8 @@ pub struct ConsciousnessRouter {
     state: ConsciousnessState,
     /// Routing rules based on Φ
     rules: PhiRoutingRules,
-    /// Configuration
+    /// Configuration (retained for router state completeness)
+    #[allow(dead_code)]
     config: CLIConfig,
     /// Routing statistics
     stats: RouterStats,
@@ -244,9 +246,10 @@ impl ConsciousnessRouter {
                 } else {
                     self.rules.min_model_full
                 };
-                let context = self.rules.min_context_full.max(
-                    (query_complexity * 4096.0) as usize
-                );
+                let context = self
+                    .rules
+                    .min_context_full
+                    .max((query_complexity * 4096.0) as usize);
                 let temp = 0.7 * self.rules.temp_multiplier_high_phi;
                 (model, context, temp)
             }
@@ -259,9 +262,7 @@ impl ConsciousnessRouter {
                 let context = (query_complexity * 2048.0) as usize;
                 (model, context.max(512), 0.5)
             }
-            ConsciousnessMode::Reflex => {
-                (ModelSize::M350, 256, 0.1)
-            }
+            ConsciousnessMode::Reflex => (ModelSize::M350, 256, 0.1),
         };
 
         // Adjust for phi trend (if consciousness increasing, prepare for deeper thought)
@@ -288,7 +289,8 @@ impl ConsciousnessRouter {
             ConsciousnessMode::Reflex => self.stats.reflex_routes += 1,
         }
         self.stats.avg_phi = (self.stats.avg_phi * (self.stats.total_routes - 1) as f64
-            + current_phi) / self.stats.total_routes as f64;
+            + current_phi)
+            / self.stats.total_routes as f64;
 
         RoutingDecision {
             model_size,

@@ -103,7 +103,7 @@ impl MultiCurvature {
     pub fn from_values(curvature_values: Vec<f32>) -> Self {
         let curvatures = curvature_values
             .into_iter()
-            .map(|k| LearnableCurvature::new(k))
+            .map(LearnableCurvature::new)
             .collect::<Vec<_>>();
 
         let num = curvatures.len();

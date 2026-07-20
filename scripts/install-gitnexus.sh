@@ -94,8 +94,13 @@ else
   fail "need one of: gitnexus on PATH, npx, or bun. On the nix foundation toolchain, run under 'bash -lc' so bun resolves."
 fi
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
+
+if [[ "$GITNEXUS_MODE" == "launcher" ]]; then
+  log "launcher-only repair complete: ${GN[*]}"
+  "${GN[@]}" --version
+  exit 0
+fi
 
 # ── Index ────────────────────────────────────────────────────────────
 # `analyze` is idempotent: it checks git HEAD against the indexed

@@ -1,19 +1,19 @@
-/// Free Energy Agent: Implementation of Karl Friston's Free Energy Principle
-///
-/// The Free Energy Principle (FEP) states that biological systems minimize
-/// variational free energy, which upper-bounds surprise (negative log probability
-/// of sensory observations).
-///
-/// F = E_q[log q(x|s) - log p(x,s)]
-///   = -log p(s) + D_KL[q(x|s) || p(x|s)]
-///
-/// Where:
-/// - x = hidden states (beliefs about the world)
-/// - s = sensory observations
-/// - q(x|s) = approximate posterior (recognition model)
-/// - p(x,s) = generative model
-///
-/// Active inference extends this: agents act to minimize *expected* free energy.
+//! Free Energy Agent: Implementation of Karl Friston's Free Energy Principle
+//!
+//! The Free Energy Principle (FEP) states that biological systems minimize
+//! variational free energy, which upper-bounds surprise (negative log probability
+//! of sensory observations).
+//!
+//! F = E_q[log q(x|s) - log p(x,s)]
+//!   = -log p(s) + D_KL[q(x|s) || p(x|s)]
+//!
+//! Where:
+//! - x = hidden states (beliefs about the world)
+//! - s = sensory observations
+//! - q(x|s) = approximate posterior (recognition model)
+//! - p(x,s) = generative model
+//!
+//! Active inference extends this: agents act to minimize *expected* free energy.
 
 /// Generative model: p(x, s) = p(s|x) p(x)
 #[derive(Debug, Clone)]
@@ -34,11 +34,14 @@ pub struct GenerativeModel {
 /// Distribution representation (Gaussian for simplicity)
 #[derive(Debug, Clone)]
 pub struct Distribution {
+    /// Per-dimension mean vector.
     pub mean: Vec<f64>,
+    /// Per-dimension variance vector (diagonal covariance).
     pub variance: Vec<f64>,
 }
 
 impl Distribution {
+    /// Create a diagonal Gaussian from `mean` and `variance` (must be equal length).
     pub fn new(mean: Vec<f64>, variance: Vec<f64>) -> Self {
         assert_eq!(mean.len(), variance.len());
         Self { mean, variance }
@@ -56,8 +59,8 @@ impl Distribution {
     pub fn sample(&self) -> Vec<f64> {
         let mut samples = Vec::new();
         for i in 0..self.mean.len() {
-            let u1 = rand::random::<f64>();
-            let u2 = rand::random::<f64>();
+            let u1 = rand::random();
+            let u2 = rand::random();
             let z = (-2.0 * u1.ln()).sqrt() * (2.0 * std::f64::consts::PI * u2).cos();
             samples.push(self.mean[i] + z * self.variance[i].sqrt());
         }
@@ -67,10 +70,10 @@ impl Distribution {
     /// Log probability density
     pub fn log_prob(&self, x: &[f64]) -> f64 {
         let mut log_p = 0.0;
-        for i in 0..self.mean.len() {
-            let diff = x[i] - self.mean[i];
-            log_p -= 0.5 * (2.0 * std::f64::consts::PI * self.variance[i]).ln();
-            log_p -= 0.5 * diff * diff / self.variance[i];
+        for ((&xi, &m), &var) in x.iter().zip(&self.mean).zip(&self.variance) {
+            let diff = xi - m;
+            log_p -= 0.5 * (2.0 * std::f64::consts::PI * var).ln();
+            log_p -= 0.5 * diff * diff / var;
         }
         log_p
     }
@@ -103,10 +106,13 @@ impl Distribution {
 pub struct Likelihood {
     /// Linear: s = Wx + ε where ε ~ N(0, σ²)
     pub weight_matrix: Vec<Vec<f64>>,
+    /// Per-observation-dimension noise variance σ².
     pub noise_variance: Vec<f64>,
 }
 
 impl Likelihood {
+    /// Build a linear-Gaussian likelihood from a `weight_matrix` and per-output
+    /// `noise_variance`.
     pub fn new(weight_matrix: Vec<Vec<f64>>, noise_variance: Vec<f64>) -> Self {
         Self {
             weight_matrix,
@@ -117,9 +123,9 @@ impl Likelihood {
     /// Compute p(s|x)
     pub fn predict(&self, x: &[f64]) -> Distribution {
         let mut mean = vec![0.0; self.weight_matrix.len()];
-        for i in 0..self.weight_matrix.len() {
-            for j in 0..x.len() {
-                mean[i] += self.weight_matrix[i][j] * x[j];
+        for (mean_i, row) in mean.iter_mut().zip(&self.weight_matrix) {
+            for (&w, &xj) in row.iter().zip(x) {
+                *mean_i += w * xj;
             }
         }
         Distribution::new(mean, self.noise_variance.clone())
@@ -133,12 +139,15 @@ impl Likelihood {
 }
 
 impl GenerativeModel {
+    /// Create a generative model with a standard-normal prior over `dim_x` hidden
+    /// states and a randomly-initialized linear-Gaussian likelihood for `dim_s`
+    /// observations.
     pub fn new(dim_x: usize, dim_s: usize) -> Self {
         // Random weight matrix
         let mut weight_matrix = vec![vec![0.0; dim_x]; dim_s];
-        for i in 0..dim_s {
-            for j in 0..dim_x {
-                weight_matrix[i][j] = (rand::random::<f64>() - 0.5) * 0.2;
+        for row in weight_matrix.iter_mut() {
+            for w in row.iter_mut() {
+                *w = (rand::random() - 0.5) * 0.2;
             }
         }
 
@@ -171,15 +180,18 @@ impl GenerativeModel {
 pub struct RecognitionModel {
     /// Parameters of q(x|s)
     pub mean_params: Vec<Vec<f64>>, // s -> mean(x)
+    /// Per-hidden-dimension variance of the approximate posterior q(x|s).
     pub var_params: Vec<f64>, // variance(x)
 }
 
 impl RecognitionModel {
+    /// Create a recognition model mapping `dim_s` observations to a Gaussian over
+    /// `dim_x` hidden states, with randomly-initialized linear mean parameters.
     pub fn new(dim_s: usize, dim_x: usize) -> Self {
         let mut mean_params = vec![vec![0.0; dim_s]; dim_x];
-        for i in 0..dim_x {
-            for j in 0..dim_s {
-                mean_params[i][j] = (rand::random::<f64>() - 0.5) * 0.2;
+        for row in mean_params.iter_mut() {
+            for param in row.iter_mut() {
+                *param = (rand::random() - 0.5) * 0.2;
             }
         }
 
@@ -192,9 +204,9 @@ impl RecognitionModel {
     /// Compute q(x|s)
     pub fn infer(&self, s: &[f64]) -> Distribution {
         let mut mean = vec![0.0; self.mean_params.len()];
-        for i in 0..self.mean_params.len() {
-            for j in 0..s.len() {
-                mean[i] += self.mean_params[i][j] * s[j];
+        for (mean_i, row) in mean.iter_mut().zip(&self.mean_params) {
+            for (&w, &sj) in row.iter().zip(s) {
+                *mean_i += w * sj;
             }
         }
         Distribution::new(mean, self.var_params.clone())
@@ -221,6 +233,9 @@ pub struct FreeEnergyAgent {
 }
 
 impl FreeEnergyAgent {
+    /// Create a free-energy agent with fresh generative and recognition models
+    /// over `dim_x` hidden states and `dim_s` observations at the given
+    /// `temperature`.
     pub fn new(dim_x: usize, dim_s: usize, temperature: f64) -> Self {
         Self {
             generative: GenerativeModel::new(dim_x, dim_s),
@@ -364,11 +379,14 @@ impl FreeEnergyAgent {
 
 /// Active inference loop
 pub struct ActiveInferenceLoop {
+    /// The free-energy agent driving the perception-action cycle.
     pub agent: FreeEnergyAgent,
+    /// Number of perception-action steps taken so far.
     pub timestep: usize,
 }
 
 impl ActiveInferenceLoop {
+    /// Wrap an agent in an active-inference loop starting at timestep 0.
     pub fn new(agent: FreeEnergyAgent) -> Self {
         Self { agent, timestep: 0 }
     }
@@ -406,9 +424,46 @@ impl ActiveInferenceLoop {
 
 // Mock rand
 mod rand {
-    pub fn random<T>() -> f64 {
+    /// Deterministic stand-in for `rand::random()` returning a constant.
+    pub fn random() -> f64 {
         0.5
     }
+}
+
+/// Example: Free energy minimization for tracking a signal
+pub fn example_free_energy_tracking() {
+    println!("=== Free Energy Agent: Signal Tracking ===\n");
+
+    let mut agent = FreeEnergyAgent::new(2, 2, 300.0);
+
+    // Set goal: prefer observations near [1.0, 1.0]
+    agent.set_goal(vec![1.0, 1.0], vec![0.1, 0.1]);
+
+    let mut loop_executor = ActiveInferenceLoop::new(agent);
+
+    // Simulate trajectory
+    let observations = [
+        vec![0.0, 0.0],
+        vec![0.2, 0.3],
+        vec![0.5, 0.6],
+        vec![0.8, 0.9],
+        vec![1.0, 1.0],
+    ];
+
+    for (i, obs) in observations.iter().enumerate() {
+        println!("Step {}:", i);
+        println!("{}", loop_executor.report(obs));
+
+        let action = loop_executor.step(obs);
+        println!("Action: {:?}\n", action);
+    }
+
+    println!(
+        "Final free energy: {:.6}",
+        loop_executor
+            .agent
+            .free_energy_kl(observations.last().unwrap())
+    );
 }
 
 #[cfg(test)]
@@ -423,7 +478,7 @@ mod tests {
         let sample = dist.sample();
         assert_eq!(sample.len(), 2);
 
-        let log_p = dist.log_prob(&vec![0.0, 1.0]);
+        let log_p = dist.log_prob(&[0.0, 1.0]);
         assert!(log_p.is_finite());
 
         let entropy = dist.entropy();
@@ -448,7 +503,7 @@ mod tests {
 
         assert_eq!(predicted.mean.len(), 2);
 
-        let ll = likelihood.log_likelihood(&vec![0.5, -0.5], &x);
+        let ll = likelihood.log_likelihood(&[0.5, -0.5], &x);
         assert!(ll.is_finite());
     }
 
@@ -493,7 +548,7 @@ mod tests {
         let observation = vec![1.0, 0.5, 0.0];
 
         let initial_fe = agent.free_energy_kl(&observation);
-        let reduction = agent.perceive(&observation);
+        let _reduction = agent.perceive(&observation);
         let final_fe = agent.free_energy_kl(&observation);
 
         // Free energy should decrease (or stay same)
@@ -511,40 +566,4 @@ mod tests {
         assert_eq!(action.len(), 3);
         assert!(loop_executor.timestep == 1);
     }
-}
-
-/// Example: Free energy minimization for tracking a signal
-pub fn example_free_energy_tracking() {
-    println!("=== Free Energy Agent: Signal Tracking ===\n");
-
-    let mut agent = FreeEnergyAgent::new(2, 2, 300.0);
-
-    // Set goal: prefer observations near [1.0, 1.0]
-    agent.set_goal(vec![1.0, 1.0], vec![0.1, 0.1]);
-
-    let mut loop_executor = ActiveInferenceLoop::new(agent);
-
-    // Simulate trajectory
-    let observations = vec![
-        vec![0.0, 0.0],
-        vec![0.2, 0.3],
-        vec![0.5, 0.6],
-        vec![0.8, 0.9],
-        vec![1.0, 1.0],
-    ];
-
-    for (i, obs) in observations.iter().enumerate() {
-        println!("Step {}:", i);
-        println!("{}", loop_executor.report(obs));
-
-        let action = loop_executor.step(obs);
-        println!("Action: {:?}\n", action);
-    }
-
-    println!(
-        "Final free energy: {:.6}",
-        loop_executor
-            .agent
-            .free_energy_kl(&observations.last().unwrap())
-    );
 }

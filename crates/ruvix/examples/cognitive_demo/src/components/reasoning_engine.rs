@@ -31,7 +31,7 @@
 //! +--------------------+
 //! ```
 
-use super::{Component, ComponentTickResult, KernelInterface, PipelineMessage};
+use super::{Component, ComponentTickResult, KernelInterface};
 use crate::{config, ReasoningMutation, Result};
 use ruvix_types::{
     CapHandle, GraphHandle, GraphMutation, ProofTier, QueueHandle, VectorKey, VectorStoreHandle,

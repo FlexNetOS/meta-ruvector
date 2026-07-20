@@ -32,6 +32,26 @@ ignore = [
     # stays green pending a workspace-wide remediation.
     "RUSTSEC-2025-0141", # bincode 1.x unmaintained — workspace pin via rkyv etc.
     "RUSTSEC-2026-0097", # rand unsound w/ custom logger — workspace transitive
+    "RUSTSEC-2020-0016", # net2 deprecated; transitive, parent migration to socket2 pending
+    "RUSTSEC-2026-0041", # lz4_flex via zenoh transport; patched direct deps, upstream zenoh bump pending
+    "RUSTSEC-2026-0162", # pqcrypto-traits unmaintained; parent PQ migration pending
+    "RUSTSEC-2026-0163", # pqcrypto-internals unmaintained; parent PQ migration pending
+    "RUSTSEC-2026-0173", # proc-macro-error2 unmaintained; build-time proc-macro path
+    "RUSTSEC-2026-0192", # ttf-parser unmaintained; transitive font/rendering paths only
+    "RUSTSEC-2026-0194", # quick-xml DoS; benchmark-only pprof/inferno flamegraph path
+    "RUSTSEC-2026-0195", # quick-xml DoS; benchmark-only pprof/inferno flamegraph path
+    "RUSTSEC-2024-0411", # gtk-rs GTK3 gdkwayland-sys unmaintained; transitive desktop/UI path, not hailo runtime
+    "RUSTSEC-2024-0412", # gtk-rs GTK3 gdk unmaintained; transitive desktop/UI path, not hailo runtime
+    "RUSTSEC-2024-0413", # gtk-rs GTK3 atk unmaintained; transitive desktop/UI path, not hailo runtime
+    "RUSTSEC-2024-0414", # gtk-rs GTK3 gdkx11-sys unmaintained; transitive desktop/UI path, not hailo runtime
+    "RUSTSEC-2024-0415", # gtk-rs GTK3 gtk unmaintained; transitive desktop/UI path, not hailo runtime
+    "RUSTSEC-2024-0416", # gtk-rs GTK3 atk-sys unmaintained; transitive desktop/UI path, not hailo runtime
+    "RUSTSEC-2024-0417", # gtk-rs GTK3 gdkx11 unmaintained; transitive desktop/UI path, not hailo runtime
+    "RUSTSEC-2024-0418", # gtk-rs GTK3 gdk-sys unmaintained; transitive desktop/UI path, not hailo runtime
+    "RUSTSEC-2024-0419", # gtk-rs GTK3 gtk3-macros unmaintained; transitive desktop/UI path, not hailo runtime
+    "RUSTSEC-2024-0420", # gtk-rs GTK3 gtk-sys unmaintained; transitive desktop/UI path, not hailo runtime
+    "RUSTSEC-2024-0429", # glib iterator unsoundness; transitive desktop/UI path, not hailo runtime
+    "RUSTSEC-2025-0057", # fxhash unmaintained; transitive desktop/UI path, not hailo runtime
 ]
 
 [licenses]

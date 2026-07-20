@@ -55,6 +55,7 @@ pub fn synthetic_payloads(n: usize, dims: usize) -> Vec<WritePayload> {
 }
 
 #[cfg(test)]
+#[allow(clippy::items_after_test_module)]
 mod tests {
     use super::*;
     use crate::gate::{HashChainGate, MerkleGate, NullGate, WriteGate};

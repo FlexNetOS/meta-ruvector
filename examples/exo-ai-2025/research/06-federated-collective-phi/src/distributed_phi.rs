@@ -39,8 +39,6 @@ pub struct Partition {
 
 /// Main Φ calculator for distributed systems
 pub struct DistributedPhiCalculator {
-    /// Number of elements in the system
-    n_elements: usize,
     /// Transition probability matrix
     transition_matrix: Vec<Vec<f64>>,
     /// Agent assignments (which agent owns which elements)
@@ -58,7 +56,6 @@ impl DistributedPhiCalculator {
         assert_eq!(transition_matrix[0].len(), n_elements);
 
         Self {
-            n_elements,
             transition_matrix,
             agent_assignments,
         }
@@ -119,16 +116,14 @@ impl DistributedPhiCalculator {
         let size_scale = (n as f64).sqrt();
         let emergence_bonus = cross_coupling * (n as f64).ln().max(1.0);
 
-        let final_phi = if phi > 0.01 {
+        if phi > 0.01 {
             phi * size_scale * (1.0 + emergence_bonus)
         } else if total_information > 0.0 {
             // Fallback: use connectivity measure with emergence detection
             total_information * size_scale * (1.0 + emergence_bonus * 0.5)
         } else {
             0.0
-        };
-
-        final_phi
+        }
     }
 
     /// Compute cross-partition coupling strength (detects inter-agent connections)
@@ -145,9 +140,9 @@ impl DistributedPhiCalculator {
 
         // Simple balanced partition
         let mut coupling = 0.0;
-        for i in 0..mid {
-            for j in mid..n {
-                coupling += transition_matrix[i][j] + transition_matrix[j][i];
+        for (i, row_i) in transition_matrix.iter().enumerate().take(mid) {
+            for (j, row_j) in transition_matrix.iter().enumerate().skip(mid) {
+                coupling += row_i[j] + row_j[i];
             }
         }
 

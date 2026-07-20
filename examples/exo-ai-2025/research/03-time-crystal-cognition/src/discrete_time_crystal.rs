@@ -189,8 +189,7 @@ impl DiscreteTimeCrystal {
                 }
 
                 // Order parameter: |<e^(ik*omega*phi)>|
-                let m_k = ((sum_real / n as f64).powi(2) + (sum_imag / n as f64).powi(2)).sqrt();
-                m_k
+                ((sum_real / n as f64).powi(2) + (sum_imag / n as f64).powi(2)).sqrt()
             })
             .collect()
     }
@@ -362,10 +361,12 @@ mod tests {
 
     #[test]
     fn test_period_doubling() {
-        let mut config = DTCConfig::default();
-        config.drive_amplitude = 3.0; // Strong drive to induce period-doubling
-        config.coupling_strength = 0.8;
-        config.n_oscillators = 50;
+        let config = DTCConfig {
+            drive_amplitude: 3.0, // Strong drive to induce period-doubling
+            coupling_strength: 0.8,
+            n_oscillators: 50,
+            ..Default::default()
+        };
 
         let mut dtc = DiscreteTimeCrystal::new(config);
 
@@ -394,7 +395,7 @@ mod tests {
 
         // Order parameter should be between 0 and 1
         for &m in &m_2 {
-            assert!(m >= 0.0 && m <= 1.0);
+            assert!((0.0..=1.0).contains(&m));
         }
     }
 }

@@ -16,9 +16,7 @@ use std::process::{Command, Stdio};
 use std::time::Duration;
 
 mod common;
-use common::{free_port, spawn_fakeworker};
-
-const BRIDGE: &str = env!("CARGO_BIN_EXE_ruvector-mmwave-bridge");
+use common::{cargo_bin, free_port, spawn_fakeworker};
 
 #[test]
 fn bridge_simulator_emits_cycle_of_jsonl_events() {
@@ -26,7 +24,7 @@ fn bridge_simulator_emits_cycle_of_jsonl_events() {
     // distance → presence; assert at least one of each kind in the
     // window so a future state-machine bug that drops a frame type
     // surfaces.
-    let mut child = Command::new(BRIDGE)
+    let mut child = Command::new(cargo_bin("ruvector-mmwave-bridge"))
         .args(["--simulator", "--rate", "10", "--quiet"])
         .stdout(Stdio::piped())
         .stderr(Stdio::null())
@@ -74,7 +72,7 @@ fn bridge_simulator_with_workers_posts_to_cluster() {
     let port = free_port();
     let mut worker = spawn_fakeworker(port, 4, "fp:bridge-test");
 
-    let mut child = Command::new(BRIDGE)
+    let mut child = Command::new(cargo_bin("ruvector-mmwave-bridge"))
         .args([
             "--simulator",
             "--rate",
@@ -120,7 +118,7 @@ fn bridge_simulator_with_workers_posts_to_cluster() {
 fn bridge_workers_without_fingerprint_refused_by_default() {
     // ADR-172 §2a parity: --workers + empty --fingerprint must fail
     // before any RPC is attempted, just like embed/bench.
-    let out = Command::new(BRIDGE)
+    let out = Command::new(cargo_bin("ruvector-mmwave-bridge"))
         .args([
             "--simulator",
             "--workers",
@@ -146,7 +144,7 @@ fn bridge_workers_without_fingerprint_succeeds_with_opt_in() {
     let port = free_port();
     let mut worker = spawn_fakeworker(port, 4, ""); // fakeworker default fp
 
-    let mut child = Command::new(BRIDGE)
+    let mut child = Command::new(cargo_bin("ruvector-mmwave-bridge"))
         .args([
             "--simulator",
             "--rate",
@@ -180,7 +178,7 @@ fn bridge_workers_without_fingerprint_succeeds_with_opt_in() {
 
 #[test]
 fn bridge_no_mode_flag_errors_cleanly() {
-    let out = Command::new(BRIDGE)
+    let out = Command::new(cargo_bin("ruvector-mmwave-bridge"))
         .output()
         .expect("run bridge with no args");
     assert!(!out.status.success(), "expected non-zero exit");
@@ -194,7 +192,7 @@ fn bridge_no_mode_flag_errors_cleanly() {
 
 #[test]
 fn bridge_help_prints_synopsis() {
-    let out = Command::new(BRIDGE)
+    let out = Command::new(cargo_bin("ruvector-mmwave-bridge"))
         .arg("--help")
         .output()
         .expect("run bridge --help");
@@ -214,7 +212,7 @@ fn bridge_help_prints_synopsis() {
 /// test and iter-253's csi-bridge gate test.
 #[test]
 fn bridge_cache_without_fingerprint_refused() {
-    let out = Command::new(BRIDGE)
+    let out = Command::new(cargo_bin("ruvector-mmwave-bridge"))
         .args([
             "--simulator",
             "--workers",
@@ -240,7 +238,7 @@ fn bridge_cache_without_fingerprint_refused() {
 
 #[test]
 fn bridge_version_prints_pkg_name_and_version() {
-    let out = Command::new(BRIDGE)
+    let out = Command::new(cargo_bin("ruvector-mmwave-bridge"))
         .arg("--version")
         .output()
         .expect("run bridge --version");

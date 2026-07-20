@@ -5,7 +5,7 @@
 
 use crate::linux::LinuxBenchConfig;
 use crate::ruvix::BenchConfig;
-use crate::{BenchmarkResult, Comparison, MemoryComparison};
+use crate::{Comparison, MemoryComparison};
 
 /// Comparison mapping between RuVix and Linux operations.
 #[derive(Debug, Clone)]

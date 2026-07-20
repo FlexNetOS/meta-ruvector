@@ -2,7 +2,6 @@
 
 #[cfg(test)]
 mod hyperedge_creation_tests {
-    use super::*;
     // use exo_hypergraph::*;
 
     #[test]
@@ -59,7 +58,6 @@ mod hyperedge_creation_tests {
 
 #[cfg(test)]
 mod hyperedge_query_tests {
-    use super::*;
 
     #[test]
     fn test_query_hyperedges_by_entity() {
@@ -89,7 +87,6 @@ mod hyperedge_query_tests {
 
 #[cfg(test)]
 mod persistent_homology_tests {
-    use super::*;
 
     #[test]
     fn test_persistent_homology_0d() {
@@ -139,7 +136,6 @@ mod persistent_homology_tests {
 
 #[cfg(test)]
 mod betti_numbers_tests {
-    use super::*;
 
     #[test]
     fn test_betti_numbers_simple_complex() {
@@ -171,7 +167,6 @@ mod betti_numbers_tests {
 
 #[cfg(test)]
 mod sheaf_consistency_tests {
-    use super::*;
 
     #[test]
     #[cfg(feature = "sheaf-consistency")]
@@ -211,7 +206,6 @@ mod sheaf_consistency_tests {
 
 #[cfg(test)]
 mod simplicial_complex_tests {
-    use super::*;
 
     #[test]
     fn test_add_simplex_0d() {
@@ -241,7 +235,6 @@ mod simplicial_complex_tests {
 
 #[cfg(test)]
 mod hyperedge_index_tests {
-    use super::*;
 
     #[test]
     fn test_entity_index_update() {
@@ -268,7 +261,6 @@ mod hyperedge_index_tests {
 
 #[cfg(test)]
 mod integration_with_ruvector_graph_tests {
-    use super::*;
 
     #[test]
     fn test_ruvector_graph_integration() {
@@ -284,7 +276,6 @@ mod integration_with_ruvector_graph_tests {
 
 #[cfg(test)]
 mod edge_cases_tests {
-    use super::*;
 
     #[test]
     fn test_empty_hypergraph() {

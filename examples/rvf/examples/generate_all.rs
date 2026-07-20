@@ -763,7 +763,7 @@ fn main() {
     if let Ok(entries) = fs::read_dir(&dir) {
         for entry in entries.flatten() {
             let p = entry.path();
-            if p.extension().map_or(false, |e| e == "rvf" || e == "rvdna") {
+            if p.extension().is_some_and(|e| e == "rvf" || e == "rvdna") {
                 let _ = fs::remove_file(&p);
             }
         }
@@ -821,7 +821,7 @@ fn main() {
         .filter(|e| {
             let p = e.path();
             p.extension()
-                .map_or(false, |ext| ext == "rvf" || ext == "rvdna")
+                .is_some_and(|ext| ext == "rvf" || ext == "rvdna")
         })
         .count();
 
@@ -831,7 +831,7 @@ fn main() {
         .filter(|e| {
             let p = e.path();
             p.extension()
-                .map_or(false, |ext| ext == "rvf" || ext == "rvdna")
+                .is_some_and(|ext| ext == "rvf" || ext == "rvdna")
         })
         .map(|e| e.metadata().map(|m| m.len()).unwrap_or(0))
         .sum();

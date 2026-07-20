@@ -61,7 +61,6 @@ fn create_temporal_pattern(seed: u64) -> TemporalPattern {
 
 struct BenchmarkResult {
     name: String,
-    iterations: usize,
     total_time: Duration,
     per_op: Duration,
     ops_per_sec: f64,
@@ -73,7 +72,6 @@ impl BenchmarkResult {
         let ops_per_sec = iterations as f64 / total_time.as_secs_f64();
         Self {
             name: name.to_string(),
-            iterations,
             total_time,
             per_op,
             ops_per_sec,

@@ -6,9 +6,6 @@ authors = ["RuvAI Research Team"]
 description = "Nobel-level neuromorphic spiking neural networks with consciousness computation"
 license = "MIT"
 
-[workspace]
-# Standalone workspace for independent compilation
-
 [dependencies]
 rand = "0.8"
 
