@@ -262,6 +262,25 @@ mod tests {
                 || info.contains("scalar")
         );
     }
+
+    #[pg_test]
+    fn test_control_file_allows_schema_relocation() {
+        let relocatable = Spi::get_one::<bool>(
+            "SELECT versions.relocatable
+             FROM pg_available_extensions AS available
+             JOIN pg_available_extension_versions AS versions
+               ON versions.name = available.name
+              AND versions.version = available.default_version
+             WHERE available.name = 'ruvector'",
+        )
+        .expect("read ruvector control-file metadata through PostgreSQL")
+        .expect("ruvector default extension version is available");
+
+        assert!(
+            relocatable,
+            "ruvector must remain relocatable so architecture bootstrap can install it in schema extensions"
+        );
+    }
 }
 
 /// Bootstrap the extension (called by pgrx)

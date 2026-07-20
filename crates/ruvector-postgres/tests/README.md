@@ -231,6 +231,14 @@ cargo test --test stress_tests
 cargo pgrx test pg16
 ```
 
+### Extension Schema Relocation
+
+`extension_schema_relocation.sql` is the architecture regression gate for the
+namespace-isolated extension bootstrap. `docker/run-integration-tests.sh` runs
+it against a newly packaged PostgreSQL image. It creates a disposable database
+and proves that `pgcrypto`, `btree_gin`, and `ruvector` can all be installed in
+the required `extensions` schema with `CREATE EXTENSION ... WITH SCHEMA`.
+
 ### Run Specific Test
 ```bash
 cargo test test_l2_distance_basic -- --exact

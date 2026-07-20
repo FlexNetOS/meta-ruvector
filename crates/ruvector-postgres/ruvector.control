@@ -5,6 +5,9 @@
 comment = 'RuVector v0.3: SIMD-optimized vector similarity search with solver, math, TDA, and AI capabilities'
 default_version = '0.3.0'
 module_pathname = '$libdir/ruvector'
-relocatable = false
+# The architecture bootstrap installs all extensions in a dedicated schema.
+# Keep this true so `CREATE EXTENSION ruvector WITH SCHEMA extensions` is
+# supported by PostgreSQL and extension objects remain namespace-isolated.
+relocatable = true
 superuser = false
 trusted = true

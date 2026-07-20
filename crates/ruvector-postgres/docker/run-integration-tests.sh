@@ -105,6 +105,17 @@ verify_extension() {
     log_success "RuVector extension verified"
 }
 
+verify_extension_schema_relocation() {
+    log_info "Verifying extension-schema installation..."
+
+    docker exec -i "${POSTGRES_CONTAINER}" \
+        psql -v ON_ERROR_STOP=1 -U ruvector -d postgres \
+        < "${PROJECT_ROOT}/crates/ruvector-postgres/tests/extension_schema_relocation.sql" \
+        2>&1 | tee "${TEST_RESULTS_DIR}/extension_schema_relocation.log"
+
+    log_success "Extension-schema installation verified"
+}
+
 build_extension() {
     log_section "Building RuVector Extension"
 
@@ -524,6 +535,7 @@ main() {
 
     # Start PostgreSQL
     start_postgres
+    verify_extension_schema_relocation
     setup_test_schema
 
     # Run tests
