@@ -17,265 +17,250 @@
       "test": "crates/ruvector-core/tests/lib.test.rs",
       "editCount": 1
     },
-    "src/mrv-95-sync/crates/ruvllm/src/backends/mod.rs|src/mrv-95-sync/crates/ruvllm/tests/backends/mod.test.rs": {
-      "source": "src/mrv-95-sync/crates/ruvllm/src/backends/mod.rs",
-      "test": "src/mrv-95-sync/crates/ruvllm/tests/backends/mod.test.rs",
+    "src/envctl-ff-blueprint-tests-wt/scripts/src/blueprint/runtime/swarm-immune.mjs|src/envctl-ff-blueprint-tests-wt/scripts/tests/blueprint/runtime/swarm-immune.mjs": {
+      "source": "src/envctl-ff-blueprint-tests-wt/scripts/src/blueprint/runtime/swarm-immune.mjs",
+      "test": "src/envctl-ff-blueprint-tests-wt/scripts/tests/blueprint/runtime/swarm-immune.mjs",
       "editCount": 1
     },
-    "src/envctl-issue-414-wt/crates/engine/src/db.rs|src/envctl-issue-414-wt/crates/engine/tests/db.test.rs": {
-      "source": "src/envctl-issue-414-wt/crates/engine/src/db.rs",
-      "test": "src/envctl-issue-414-wt/crates/engine/tests/db.test.rs",
-      "editCount": 6
+    "src/envctl-ff-blueprint-tests-wt/scripts/src/blueprint/t1_swarm_immune.mjs|src/envctl-ff-blueprint-tests-wt/scripts/tests/blueprint/t1_swarm_immune.mjs": {
+      "source": "src/envctl-ff-blueprint-tests-wt/scripts/src/blueprint/t1_swarm_immune.mjs",
+      "test": "src/envctl-ff-blueprint-tests-wt/scripts/tests/blueprint/t1_swarm_immune.mjs",
+      "editCount": 1
     },
-    "src/envctl-issue-414-wt/crates/engine/src/db_index.rs|src/envctl-issue-414-wt/crates/engine/tests/db_index.test.rs": {
-      "source": "src/envctl-issue-414-wt/crates/engine/src/db_index.rs",
-      "test": "src/envctl-issue-414-wt/crates/engine/tests/db_index.test.rs",
-      "editCount": 6
+    "src/envctl-ff-blueprint-tests-wt/scripts/src/blueprint/fixtures/router_prompts.json|src/envctl-ff-blueprint-tests-wt/scripts/tests/blueprint/fixtures/router_prompts.json": {
+      "source": "src/envctl-ff-blueprint-tests-wt/scripts/src/blueprint/fixtures/router_prompts.json",
+      "test": "src/envctl-ff-blueprint-tests-wt/scripts/tests/blueprint/fixtures/router_prompts.json",
+      "editCount": 1
     },
-    "src/envctl-issue-414-wt/crates/engine/src/db_symbols.rs|src/envctl-issue-414-wt/crates/engine/tests/db_symbols.test.rs": {
-      "source": "src/envctl-issue-414-wt/crates/engine/src/db_symbols.rs",
-      "test": "src/envctl-issue-414-wt/crates/engine/tests/db_symbols.test.rs",
+    "src/envctl-ff-blueprint-tests-wt/scripts/src/blueprint/t4_router_discrimination.mjs|src/envctl-ff-blueprint-tests-wt/scripts/tests/blueprint/t4_router_discrimination.mjs": {
+      "source": "src/envctl-ff-blueprint-tests-wt/scripts/src/blueprint/t4_router_discrimination.mjs",
+      "test": "src/envctl-ff-blueprint-tests-wt/scripts/tests/blueprint/t4_router_discrimination.mjs",
+      "editCount": 1
+    },
+    "src/envctl-ff-blueprint-tests-wt/scripts/src/blueprint/t2_envctl_db_fresh.sh|src/envctl-ff-blueprint-tests-wt/scripts/tests/blueprint/t2_envctl_db_fresh.sh": {
+      "source": "src/envctl-ff-blueprint-tests-wt/scripts/src/blueprint/t2_envctl_db_fresh.sh",
+      "test": "src/envctl-ff-blueprint-tests-wt/scripts/tests/blueprint/t2_envctl_db_fresh.sh",
+      "editCount": 1
+    },
+    "src/envctl-ff-blueprint-tests-wt/scripts/src/blueprint/t3_embedder_wiring.sh|src/envctl-ff-blueprint-tests-wt/scripts/tests/blueprint/t3_embedder_wiring.sh": {
+      "source": "src/envctl-ff-blueprint-tests-wt/scripts/src/blueprint/t3_embedder_wiring.sh",
+      "test": "src/envctl-ff-blueprint-tests-wt/scripts/tests/blueprint/t3_embedder_wiring.sh",
+      "editCount": 1
+    },
+    "src/envctl-ff-blueprint-tests-wt/scripts/src/blueprint/t6_musl_static.sh|src/envctl-ff-blueprint-tests-wt/scripts/tests/blueprint/t6_musl_static.sh": {
+      "source": "src/envctl-ff-blueprint-tests-wt/scripts/src/blueprint/t6_musl_static.sh",
+      "test": "src/envctl-ff-blueprint-tests-wt/scripts/tests/blueprint/t6_musl_static.sh",
+      "editCount": 1
+    },
+    "src/envctl-ff-blueprint-tests-wt/scripts/src/blueprint/install.sh|src/envctl-ff-blueprint-tests-wt/scripts/tests/blueprint/install.sh": {
+      "source": "src/envctl-ff-blueprint-tests-wt/scripts/src/blueprint/install.sh",
+      "test": "src/envctl-ff-blueprint-tests-wt/scripts/tests/blueprint/install.sh",
+      "editCount": 1
+    },
+    "src/nu_plugin-t5-parity-wt/crates/codedb_store_pg/src/blobstore_parity.rs|src/nu_plugin-t5-parity-wt/crates/codedb_store_pg/tests/blobstore_parity.rs": {
+      "source": "src/nu_plugin-t5-parity-wt/crates/codedb_store_pg/src/blobstore_parity.rs",
+      "test": "src/nu_plugin-t5-parity-wt/crates/codedb_store_pg/tests/blobstore_parity.rs",
+      "editCount": 1
+    },
+    "src/agent/src/guard.rs|src/agent/tests/guard.test.rs": {
+      "source": "src/agent/src/guard.rs",
+      "test": "src/agent/tests/guard.test.rs",
+      "editCount": 1
+    },
+    "src/agent/src/score.rs|src/agent/tests/score.test.rs": {
+      "source": "src/agent/src/score.rs",
+      "test": "src/agent/tests/score.test.rs",
+      "editCount": 1
+    },
+    "src/envctl-redb4-wt/crates/engine/src/migration_db/store.rs|src/envctl-redb4-wt/crates/engine/tests/migration_db/store.test.rs": {
+      "source": "src/envctl-redb4-wt/crates/engine/src/migration_db/store.rs",
+      "test": "src/envctl-redb4-wt/crates/engine/tests/migration_db/store.test.rs",
+      "editCount": 1
+    },
+    "src/nu_plugin-redb4-wt/crates/codedb_store_redb/src/lib.rs|src/nu_plugin-redb4-wt/crates/codedb_store_redb/tests/lib.test.rs": {
+      "source": "src/nu_plugin-redb4-wt/crates/codedb_store_redb/src/lib.rs",
+      "test": "src/nu_plugin-redb4-wt/crates/codedb_store_redb/tests/lib.test.rs",
+      "editCount": 1
+    },
+    "src/envctl-forge-r2-wt/scripts/src/blueprint/t2_envctl_db_fresh.sh|src/envctl-forge-r2-wt/scripts/tests/blueprint/t2_envctl_db_fresh.sh": {
+      "source": "src/envctl-forge-r2-wt/scripts/src/blueprint/t2_envctl_db_fresh.sh",
+      "test": "src/envctl-forge-r2-wt/scripts/tests/blueprint/t2_envctl_db_fresh.sh",
+      "editCount": 1
+    },
+    "src/rusty-idd-reconcile-wt/crates/work-order/src/lib.rs|src/rusty-idd-reconcile-wt/crates/work-order/tests/lib.test.rs": {
+      "source": "src/rusty-idd-reconcile-wt/crates/work-order/src/lib.rs",
+      "test": "src/rusty-idd-reconcile-wt/crates/work-order/tests/lib.test.rs",
+      "editCount": 3
+    },
+    "src/rusty-idd-reconcile-wt/crates/work-order/src/handoff_card_consumer.rs|src/rusty-idd-reconcile-wt/crates/work-order/tests/handoff_card_consumer.rs": {
+      "source": "src/rusty-idd-reconcile-wt/crates/work-order/src/handoff_card_consumer.rs",
+      "test": "src/rusty-idd-reconcile-wt/crates/work-order/tests/handoff_card_consumer.rs",
+      "editCount": 2
+    },
+    "src/rusty-idd-reconcile-wt/work-order/src/lib.rs|src/rusty-idd-reconcile-wt/work-order/tests/lib.test.rs": {
+      "source": "src/rusty-idd-reconcile-wt/work-order/src/lib.rs",
+      "test": "src/rusty-idd-reconcile-wt/work-order/tests/lib.test.rs",
       "editCount": 4
     },
-    "src/envctl-issue-414-wt/crates/engine/src/db_query.rs|src/envctl-issue-414-wt/crates/engine/tests/db_query.test.rs": {
-      "source": "src/envctl-issue-414-wt/crates/engine/src/db_query.rs",
-      "test": "src/envctl-issue-414-wt/crates/engine/tests/db_query.test.rs",
-      "editCount": 3
-    },
-    "src/envctl-issue-414-wt/crates/engine/src/db_refactor.rs|src/envctl-issue-414-wt/crates/engine/tests/db_refactor.test.rs": {
-      "source": "src/envctl-issue-414-wt/crates/engine/src/db_refactor.rs",
-      "test": "src/envctl-issue-414-wt/crates/engine/tests/db_refactor.test.rs",
-      "editCount": 3
-    },
-    "src/envctl-issue-414-wt/crates/engine/src/db_deploy.rs|src/envctl-issue-414-wt/crates/engine/tests/db_deploy.test.rs": {
-      "source": "src/envctl-issue-414-wt/crates/engine/src/db_deploy.rs",
-      "test": "src/envctl-issue-414-wt/crates/engine/tests/db_deploy.test.rs",
-      "editCount": 2
-    },
-    "src/envctl-issue-414-wt/crates/engine/src/lib.rs|src/envctl-issue-414-wt/crates/engine/tests/lib.test.rs": {
-      "source": "src/envctl-issue-414-wt/crates/engine/src/lib.rs",
-      "test": "src/envctl-issue-414-wt/crates/engine/tests/lib.test.rs",
-      "editCount": 6
-    },
-    "crates/rvAgent/rvagent-engine/src/lib.rs|crates/rvAgent/rvagent-engine/tests/lib.test.rs": {
-      "source": "crates/rvAgent/rvagent-engine/src/lib.rs",
-      "test": "crates/rvAgent/rvagent-engine/tests/lib.test.rs",
-      "editCount": 18
-    },
-    "crates/rvAgent/rvagent-engine/src/workorder.rs|crates/rvAgent/rvagent-engine/tests/workorder.test.rs": {
-      "source": "crates/rvAgent/rvagent-engine/src/workorder.rs",
-      "test": "crates/rvAgent/rvagent-engine/tests/workorder.test.rs",
-      "editCount": 5
-    },
-    "src/envctl-issue-414-wt/crates/engine/src/db_watch.rs|src/envctl-issue-414-wt/crates/engine/tests/db_watch.test.rs": {
-      "source": "src/envctl-issue-414-wt/crates/engine/src/db_watch.rs",
-      "test": "src/envctl-issue-414-wt/crates/engine/tests/db_watch.test.rs",
+    "src/rusty-idd-reconcile-wt/handoff-core/src/lib.rs|src/rusty-idd-reconcile-wt/handoff-core/tests/lib.test.rs": {
+      "source": "src/rusty-idd-reconcile-wt/handoff-core/src/lib.rs",
+      "test": "src/rusty-idd-reconcile-wt/handoff-core/tests/lib.test.rs",
       "editCount": 1
     },
-    "crates/rvAgent/rvagent-engine/src/adapter.rs|crates/rvAgent/rvagent-engine/tests/adapter.test.rs": {
-      "source": "crates/rvAgent/rvagent-engine/src/adapter.rs",
-      "test": "crates/rvAgent/rvagent-engine/tests/adapter.test.rs",
+    "src/envctl-forge-r8-wt/crates/engine/src/semantic.rs|src/envctl-forge-r8-wt/crates/engine/tests/semantic.test.rs": {
+      "source": "src/envctl-forge-r8-wt/crates/engine/src/semantic.rs",
+      "test": "src/envctl-forge-r8-wt/crates/engine/tests/semantic.test.rs",
+      "editCount": 1
+    },
+    "src/envctl-forge-r10-wt/crates/engine/src/error.rs|src/envctl-forge-r10-wt/crates/engine/tests/error.test.rs": {
+      "source": "src/envctl-forge-r10-wt/crates/engine/src/error.rs",
+      "test": "src/envctl-forge-r10-wt/crates/engine/tests/error.test.rs",
+      "editCount": 1
+    },
+    "src/rusty-idd-reconcile-wt/third_party/upstream/repomix-rs/crates/core/src/file/collect.rs|src/rusty-idd-reconcile-wt/third_party/upstream/repomix-rs/crates/core/tests/file/collect.test.rs": {
+      "source": "src/rusty-idd-reconcile-wt/third_party/upstream/repomix-rs/crates/core/src/file/collect.rs",
+      "test": "src/rusty-idd-reconcile-wt/third_party/upstream/repomix-rs/crates/core/tests/file/collect.test.rs",
+      "editCount": 1
+    },
+    "src/yazelix-kitty-wt/rust_core/yazelix_core/src/launch_commands/launch.rs|src/yazelix-kitty-wt/rust_core/yazelix_core/tests/launch_commands/launch.test.rs": {
+      "source": "src/yazelix-kitty-wt/rust_core/yazelix_core/src/launch_commands/launch.rs",
+      "test": "src/yazelix-kitty-wt/rust_core/yazelix_core/tests/launch_commands/launch.test.rs",
+      "editCount": 5
+    },
+    "src/yazelix-kitty-wt/rust_core/yazelix_core/src/launch_commands/terminal.rs|src/yazelix-kitty-wt/rust_core/yazelix_core/tests/launch_commands/terminal.test.rs": {
+      "source": "src/yazelix-kitty-wt/rust_core/yazelix_core/src/launch_commands/terminal.rs",
+      "test": "src/yazelix-kitty-wt/rust_core/yazelix_core/tests/launch_commands/terminal.test.rs",
+      "editCount": 2
+    },
+    "src/yazelix-kitty-wt/rust_core/yazelix_core/src/runtime_contract.rs|src/yazelix-kitty-wt/rust_core/yazelix_core/tests/runtime_contract.test.rs": {
+      "source": "src/yazelix-kitty-wt/rust_core/yazelix_core/src/runtime_contract.rs",
+      "test": "src/yazelix-kitty-wt/rust_core/yazelix_core/tests/runtime_contract.test.rs",
+      "editCount": 1
+    },
+    "src/yazelix-kitty-wt/rust_core/yazelix_core/src/terminal_variant.rs|src/yazelix-kitty-wt/rust_core/yazelix_core/tests/terminal_variant.test.rs": {
+      "source": "src/yazelix-kitty-wt/rust_core/yazelix_core/src/terminal_variant.rs",
+      "test": "src/yazelix-kitty-wt/rust_core/yazelix_core/tests/terminal_variant.test.rs",
+      "editCount": 1
+    },
+    "src/yazelix-kitty-wt/rust_core/yazelix_core/src/config_ui/tests.rs|src/yazelix-kitty-wt/rust_core/yazelix_core/tests/config_ui/tests.test.rs": {
+      "source": "src/yazelix-kitty-wt/rust_core/yazelix_core/src/config_ui/tests.rs",
+      "test": "src/yazelix-kitty-wt/rust_core/yazelix_core/tests/config_ui/tests.test.rs",
+      "editCount": 1
+    },
+    "src/yazelix-kitty-wt/rust_core/yazelix_core/src/launch_commands.rs|src/yazelix-kitty-wt/rust_core/yazelix_core/tests/launch_commands.test.rs": {
+      "source": "src/yazelix-kitty-wt/rust_core/yazelix_core/src/launch_commands.rs",
+      "test": "src/yazelix-kitty-wt/rust_core/yazelix_core/tests/launch_commands.test.rs",
+      "editCount": 1
+    },
+    "src/yazelix/rust_core/yazelix_maintainer/src/repo_contract_validation/config_surface.rs|src/yazelix/rust_core/yazelix_maintainer/tests/repo_contract_validation/config_surface.test.rs": {
+      "source": "src/yazelix/rust_core/yazelix_maintainer/src/repo_contract_validation/config_surface.rs",
+      "test": "src/yazelix/rust_core/yazelix_maintainer/tests/repo_contract_validation/config_surface.test.rs",
+      "editCount": 9
+    },
+    "src/yazelix/rust_core/yazelix_core/src/terminal_materialization.rs|src/yazelix/rust_core/yazelix_core/tests/terminal_materialization.test.rs": {
+      "source": "src/yazelix/rust_core/yazelix_core/src/terminal_materialization.rs",
+      "test": "src/yazelix/rust_core/yazelix_core/tests/terminal_materialization.test.rs",
+      "editCount": 4
+    },
+    "src/yazelix/rust_core/yazelix_maintainer/src/repo_contract_validation/nix_package.rs|src/yazelix/rust_core/yazelix_maintainer/tests/repo_contract_validation/nix_package.test.rs": {
+      "source": "src/yazelix/rust_core/yazelix_maintainer/src/repo_contract_validation/nix_package.rs",
+      "test": "src/yazelix/rust_core/yazelix_maintainer/tests/repo_contract_validation/nix_package.test.rs",
       "editCount": 7
     },
-    "src/envctl-issue-414-wt/crates/engine/src/db_ops.rs|src/envctl-issue-414-wt/crates/engine/tests/db_ops.test.rs": {
-      "source": "src/envctl-issue-414-wt/crates/engine/src/db_ops.rs",
-      "test": "src/envctl-issue-414-wt/crates/engine/tests/db_ops.test.rs",
-      "editCount": 3
-    },
-    "src/envctl-issue-414-wt/crates/engine/src/db_parity.rs|src/envctl-issue-414-wt/crates/engine/tests/db_parity.rs": {
-      "source": "src/envctl-issue-414-wt/crates/engine/src/db_parity.rs",
-      "test": "src/envctl-issue-414-wt/crates/engine/tests/db_parity.rs",
-      "editCount": 1
-    },
-    "src/envctl-issue-414-wt/crates/cli/src/main.rs|src/envctl-issue-414-wt/crates/cli/tests/main.test.rs": {
-      "source": "src/envctl-issue-414-wt/crates/cli/src/main.rs",
-      "test": "src/envctl-issue-414-wt/crates/cli/tests/main.test.rs",
-      "editCount": 10
-    },
-    "src/nu_plugin-issue-414-wt/crates/nu_plugin_codedb/src/main.rs|src/nu_plugin-issue-414-wt/crates/nu_plugin_codedb/tests/main.test.rs": {
-      "source": "src/nu_plugin-issue-414-wt/crates/nu_plugin_codedb/src/main.rs",
-      "test": "src/nu_plugin-issue-414-wt/crates/nu_plugin_codedb/tests/main.test.rs",
-      "editCount": 3
-    },
-    "crates/rvAgent/rvagent-engine/src/proof.rs|crates/rvAgent/rvagent-engine/tests/proof.test.rs": {
-      "source": "crates/rvAgent/rvagent-engine/src/proof.rs",
-      "test": "crates/rvAgent/rvagent-engine/tests/proof.test.rs",
-      "editCount": 1
-    },
-    "crates/rvAgent/rvagent-engine/src/schema.rs|crates/rvAgent/rvagent-engine/tests/schema.test.rs": {
-      "source": "crates/rvAgent/rvagent-engine/src/schema.rs",
-      "test": "crates/rvAgent/rvagent-engine/tests/schema.test.rs",
-      "editCount": 3
-    },
-    "crates/rvAgent/rvagent-engine/src/csv.rs|crates/rvAgent/rvagent-engine/tests/csv.test.rs": {
-      "source": "crates/rvAgent/rvagent-engine/src/csv.rs",
-      "test": "crates/rvAgent/rvagent-engine/tests/csv.test.rs",
-      "editCount": 2
-    },
-    "src/envctl-issue-414-wt/crates/engine/src/executor.rs|src/envctl-issue-414-wt/crates/engine/tests/executor.test.rs": {
-      "source": "src/envctl-issue-414-wt/crates/engine/src/executor.rs",
-      "test": "src/envctl-issue-414-wt/crates/engine/tests/executor.test.rs",
-      "editCount": 1
-    },
-    "src/envctl-issue-414-wt/crates/engine/src/catalog.rs|src/envctl-issue-414-wt/crates/engine/tests/catalog.test.rs": {
-      "source": "src/envctl-issue-414-wt/crates/engine/src/catalog.rs",
-      "test": "src/envctl-issue-414-wt/crates/engine/tests/catalog.test.rs",
-      "editCount": 1
-    },
-    "crates/rvAgent/rvagent-engine/src/ledger.rs|crates/rvAgent/rvagent-engine/tests/ledger.test.rs": {
-      "source": "crates/rvAgent/rvagent-engine/src/ledger.rs",
-      "test": "crates/rvAgent/rvagent-engine/tests/ledger.test.rs",
-      "editCount": 2
-    },
-    "crates/rvAgent/rvagent-engine/src/selection.rs|crates/rvAgent/rvagent-engine/tests/selection.test.rs": {
-      "source": "crates/rvAgent/rvagent-engine/src/selection.rs",
-      "test": "crates/rvAgent/rvagent-engine/tests/selection.test.rs",
-      "editCount": 2
-    },
-    "crates/rvAgent/rvagent-engine/src/e2e_one_workorder.rs|crates/rvAgent/rvagent-engine/tests/e2e_one_workorder.rs": {
-      "source": "crates/rvAgent/rvagent-engine/src/e2e_one_workorder.rs",
-      "test": "crates/rvAgent/rvagent-engine/tests/e2e_one_workorder.rs",
-      "editCount": 1
-    },
-    "crates/rvAgent/rvagent-engine/src/learning.rs|crates/rvAgent/rvagent-engine/tests/learning.test.rs": {
-      "source": "crates/rvAgent/rvagent-engine/src/learning.rs",
-      "test": "crates/rvAgent/rvagent-engine/tests/learning.test.rs",
-      "editCount": 1
-    },
-    "crates/rvAgent/rvagent-mcp/src/teas.rs|crates/rvAgent/rvagent-mcp/tests/teas.test.rs": {
-      "source": "crates/rvAgent/rvagent-mcp/src/teas.rs",
-      "test": "crates/rvAgent/rvagent-mcp/tests/teas.test.rs",
-      "editCount": 1
-    },
-    "crates/rvAgent/rvagent-mcp/src/lib.rs|crates/rvAgent/rvagent-mcp/tests/lib.test.rs": {
-      "source": "crates/rvAgent/rvagent-mcp/src/lib.rs",
-      "test": "crates/rvAgent/rvagent-mcp/tests/lib.test.rs",
-      "editCount": 2
-    },
-    "crates/rvAgent/rvagent-engine/src/store.rs|crates/rvAgent/rvagent-engine/tests/store.test.rs": {
-      "source": "crates/rvAgent/rvagent-engine/src/store.rs",
-      "test": "crates/rvAgent/rvagent-engine/tests/store.test.rs",
-      "editCount": 1
-    },
-    "src/envctl-issue-414-wt/crates/engine/src/db_refactor_apply_proof.rs|src/envctl-issue-414-wt/crates/engine/tests/db_refactor_apply_proof.rs": {
-      "source": "src/envctl-issue-414-wt/crates/engine/src/db_refactor_apply_proof.rs",
-      "test": "src/envctl-issue-414-wt/crates/engine/tests/db_refactor_apply_proof.rs",
-      "editCount": 1
-    },
-    "src/nu_plugin-batched-capture-wt/crates/codedb_store_redb/src/lib.rs|src/nu_plugin-batched-capture-wt/crates/codedb_store_redb/tests/lib.test.rs": {
-      "source": "src/nu_plugin-batched-capture-wt/crates/codedb_store_redb/src/lib.rs",
-      "test": "src/nu_plugin-batched-capture-wt/crates/codedb_store_redb/tests/lib.test.rs",
-      "editCount": 2
-    },
-    "src/nu_plugin-batched-capture-wt/crates/codedb/src/main.rs|src/nu_plugin-batched-capture-wt/crates/codedb/tests/main.test.rs": {
-      "source": "src/nu_plugin-batched-capture-wt/crates/codedb/src/main.rs",
-      "test": "src/nu_plugin-batched-capture-wt/crates/codedb/tests/main.test.rs",
-      "editCount": 10
-    },
-    "crates/rvAgent/rvagent-engine/src/e2e_teri_compute_world.rs|crates/rvAgent/rvagent-engine/tests/e2e_teri_compute_world.rs": {
-      "source": "crates/rvAgent/rvagent-engine/src/e2e_teri_compute_world.rs",
-      "test": "crates/rvAgent/rvagent-engine/tests/e2e_teri_compute_world.rs",
-      "editCount": 1
-    },
-    "src/nu_plugin-merge-wt/crates/codedb_core/src/merge.rs|src/nu_plugin-merge-wt/crates/codedb_core/tests/merge.test.rs": {
-      "source": "src/nu_plugin-merge-wt/crates/codedb_core/src/merge.rs",
-      "test": "src/nu_plugin-merge-wt/crates/codedb_core/tests/merge.test.rs",
-      "editCount": 5
-    },
-    "src/nu_plugin-merge-wt/crates/codedb_core/src/lib.rs|src/nu_plugin-merge-wt/crates/codedb_core/tests/lib.test.rs": {
-      "source": "src/nu_plugin-merge-wt/crates/codedb_core/src/lib.rs",
-      "test": "src/nu_plugin-merge-wt/crates/codedb_core/tests/lib.test.rs",
-      "editCount": 1
-    },
-    "src/nu_plugin-merge-wt/crates/codedb/src/main.rs|src/nu_plugin-merge-wt/crates/codedb/tests/main.test.rs": {
-      "source": "src/nu_plugin-merge-wt/crates/codedb/src/main.rs",
-      "test": "src/nu_plugin-merge-wt/crates/codedb/tests/main.test.rs",
-      "editCount": 3
-    },
-    "crates/cli/src/commands/spec_status.rs|crates/cli/tests/commands/spec_status.test.rs": {
-      "source": "crates/cli/src/commands/spec_status.rs",
-      "test": "crates/cli/tests/commands/spec_status.test.rs",
-      "editCount": 1
-    },
-    "crates/runner/src/runner.rs|crates/runner/tests/runner.test.rs": {
-      "source": "crates/runner/src/runner.rs",
-      "test": "crates/runner/tests/runner.test.rs",
-      "editCount": 3
-    },
-    "crates/core/src/templates.rs|crates/core/tests/templates.test.rs": {
-      "source": "crates/core/src/templates.rs",
-      "test": "crates/core/tests/templates.test.rs",
-      "editCount": 1
-    },
-    "crates/runner/src/config.rs|crates/runner/tests/config.test.rs": {
-      "source": "crates/runner/src/config.rs",
-      "test": "crates/runner/tests/config.test.rs",
-      "editCount": 1
-    },
-    "crates/runner/src/data.rs|crates/runner/tests/data.test.rs": {
-      "source": "crates/runner/src/data.rs",
-      "test": "crates/runner/tests/data.test.rs",
-      "editCount": 1
-    },
-    "src/rusty-idd-unify-wt/handoff-gatekeeper/src/lib.rs|src/rusty-idd-unify-wt/handoff-gatekeeper/tests/lib.test.rs": {
-      "source": "src/rusty-idd-unify-wt/handoff-gatekeeper/src/lib.rs",
-      "test": "src/rusty-idd-unify-wt/handoff-gatekeeper/tests/lib.test.rs",
-      "editCount": 3
-    },
-    "src/rusty-idd-unify-wt/hf/src/main.rs|src/rusty-idd-unify-wt/hf/tests/main.test.rs": {
-      "source": "src/rusty-idd-unify-wt/hf/src/main.rs",
-      "test": "src/rusty-idd-unify-wt/hf/tests/main.test.rs",
-      "editCount": 1
-    },
-    "src/rusty-idd-unify-wt/crates/merge-tools/src/lib.rs|src/rusty-idd-unify-wt/crates/merge-tools/tests/lib.test.rs": {
-      "source": "src/rusty-idd-unify-wt/crates/merge-tools/src/lib.rs",
-      "test": "src/rusty-idd-unify-wt/crates/merge-tools/tests/lib.test.rs",
-      "editCount": 1
-    },
-    "src/rusty-idd-unify-wt/crates/external/codegraph-core/src/mmap.rs|src/rusty-idd-unify-wt/crates/external/codegraph-core/tests/mmap.test.rs": {
-      "source": "src/rusty-idd-unify-wt/crates/external/codegraph-core/src/mmap.rs",
-      "test": "src/rusty-idd-unify-wt/crates/external/codegraph-core/tests/mmap.test.rs",
-      "editCount": 1
-    },
-    "src/rusty-idd-unify-wt/crates/core/src/cli.rs|src/rusty-idd-unify-wt/crates/core/tests/cli.test.rs": {
-      "source": "src/rusty-idd-unify-wt/crates/core/src/cli.rs",
-      "test": "src/rusty-idd-unify-wt/crates/core/tests/cli.test.rs",
-      "editCount": 1
-    },
-    "src/rusty-idd-unify-wt/crates/core/src/fs_utils.rs|src/rusty-idd-unify-wt/crates/core/tests/fs_utils.test.rs": {
-      "source": "src/rusty-idd-unify-wt/crates/core/src/fs_utils.rs",
-      "test": "src/rusty-idd-unify-wt/crates/core/tests/fs_utils.test.rs",
-      "editCount": 1
-    },
-    "src/rusty-idd-unify-wt/crates/core/src/manifest.rs|src/rusty-idd-unify-wt/crates/core/tests/manifest.test.rs": {
-      "source": "src/rusty-idd-unify-wt/crates/core/src/manifest.rs",
-      "test": "src/rusty-idd-unify-wt/crates/core/tests/manifest.test.rs",
-      "editCount": 2
-    },
-    "src/nu_plugin-pgstore-wt/crates/codedb_core/src/store.rs|src/nu_plugin-pgstore-wt/crates/codedb_core/tests/store.test.rs": {
-      "source": "src/nu_plugin-pgstore-wt/crates/codedb_core/src/store.rs",
-      "test": "src/nu_plugin-pgstore-wt/crates/codedb_core/tests/store.test.rs",
-      "editCount": 1
-    },
-    "src/nu_plugin-pgstore-wt/crates/codedb_core/src/lib.rs|src/nu_plugin-pgstore-wt/crates/codedb_core/tests/lib.test.rs": {
-      "source": "src/nu_plugin-pgstore-wt/crates/codedb_core/src/lib.rs",
-      "test": "src/nu_plugin-pgstore-wt/crates/codedb_core/tests/lib.test.rs",
-      "editCount": 1
-    },
-    "src/nu_plugin-pgstore-wt/crates/codedb_store_redb/src/lib.rs|src/nu_plugin-pgstore-wt/crates/codedb_store_redb/tests/lib.test.rs": {
-      "source": "src/nu_plugin-pgstore-wt/crates/codedb_store_redb/src/lib.rs",
-      "test": "src/nu_plugin-pgstore-wt/crates/codedb_store_redb/tests/lib.test.rs",
+    "src/yazelix/rust_core/yazelix_core/src/config_state.rs|src/yazelix/rust_core/yazelix_core/tests/config_state.test.rs": {
+      "source": "src/yazelix/rust_core/yazelix_core/src/config_state.rs",
+      "test": "src/yazelix/rust_core/yazelix_core/tests/config_state.test.rs",
       "editCount": 6
     },
-    "src/nu_plugin-pgstore-wt/crates/codedb_store_pg/src/lib.rs|src/nu_plugin-pgstore-wt/crates/codedb_store_pg/tests/lib.test.rs": {
-      "source": "src/nu_plugin-pgstore-wt/crates/codedb_store_pg/src/lib.rs",
-      "test": "src/nu_plugin-pgstore-wt/crates/codedb_store_pg/tests/lib.test.rs",
+    "src/yazelix-terminal-support/src/lib.rs|src/yazelix-terminal-support/tests/lib.test.rs": {
+      "source": "src/yazelix-terminal-support/src/lib.rs",
+      "test": "src/yazelix-terminal-support/tests/lib.test.rs",
+      "editCount": 1
+    },
+    "src/yazelix/rust_core/yazelix_core/src/terminal_variant.rs|src/yazelix/rust_core/yazelix_core/tests/terminal_variant.test.rs": {
+      "source": "src/yazelix/rust_core/yazelix_core/src/terminal_variant.rs",
+      "test": "src/yazelix/rust_core/yazelix_core/tests/terminal_variant.test.rs",
+      "editCount": 4
+    },
+    "src/yazelix/rust_core/yazelix_core/src/install_ownership_report.rs|src/yazelix/rust_core/yazelix_core/tests/install_ownership_report.test.rs": {
+      "source": "src/yazelix/rust_core/yazelix_core/src/install_ownership_report.rs",
+      "test": "src/yazelix/rust_core/yazelix_core/tests/install_ownership_report.test.rs",
+      "editCount": 3
+    },
+    "src/yazelix/rust_core/yazelix_core/src/runtime_contract.rs|src/yazelix/rust_core/yazelix_core/tests/runtime_contract.test.rs": {
+      "source": "src/yazelix/rust_core/yazelix_core/src/runtime_contract.rs",
+      "test": "src/yazelix/rust_core/yazelix_core/tests/runtime_contract.test.rs",
+      "editCount": 8
+    },
+    "src/yazelix/rust_core/yazelix_core/src/launch_commands/launch.rs|src/yazelix/rust_core/yazelix_core/tests/launch_commands/launch.test.rs": {
+      "source": "src/yazelix/rust_core/yazelix_core/src/launch_commands/launch.rs",
+      "test": "src/yazelix/rust_core/yazelix_core/tests/launch_commands/launch.test.rs",
+      "editCount": 4
+    },
+    "src/yazelix/rust_core/yazelix_core/src/launch_commands/terminal.rs|src/yazelix/rust_core/yazelix_core/tests/launch_commands/terminal.test.rs": {
+      "source": "src/yazelix/rust_core/yazelix_core/src/launch_commands/terminal.rs",
+      "test": "src/yazelix/rust_core/yazelix_core/tests/launch_commands/terminal.test.rs",
+      "editCount": 1
+    },
+    "src/yazelix/rust_core/yazelix_core/src/launch_materialization.rs|src/yazelix/rust_core/yazelix_core/tests/launch_materialization.test.rs": {
+      "source": "src/yazelix/rust_core/yazelix_core/src/launch_materialization.rs",
+      "test": "src/yazelix/rust_core/yazelix_core/tests/launch_materialization.test.rs",
+      "editCount": 3
+    },
+    "src/yazelix/rust_core/yazelix_core/src/doctor_runtime_report.rs|src/yazelix/rust_core/yazelix_core/tests/doctor_runtime_report.test.rs": {
+      "source": "src/yazelix/rust_core/yazelix_core/src/doctor_runtime_report.rs",
+      "test": "src/yazelix/rust_core/yazelix_core/tests/doctor_runtime_report.test.rs",
+      "editCount": 1
+    },
+    "src/yazelix/rust_core/yazelix_core/src/startup_facts.rs|src/yazelix/rust_core/yazelix_core/tests/startup_facts.test.rs": {
+      "source": "src/yazelix/rust_core/yazelix_core/src/startup_facts.rs",
+      "test": "src/yazelix/rust_core/yazelix_core/tests/startup_facts.test.rs",
+      "editCount": 1
+    },
+    "src/yazelix/rust_core/yazelix_core/src/support/fixtures.rs|src/yazelix/rust_core/yazelix_core/tests/support/fixtures.rs": {
+      "source": "src/yazelix/rust_core/yazelix_core/src/support/fixtures.rs",
+      "test": "src/yazelix/rust_core/yazelix_core/tests/support/fixtures.rs",
       "editCount": 2
     },
-    "src/nu_plugin-pgstore-wt/crates/codedb/src/main.rs|src/nu_plugin-pgstore-wt/crates/codedb/tests/main.test.rs": {
-      "source": "src/nu_plugin-pgstore-wt/crates/codedb/src/main.rs",
-      "test": "src/nu_plugin-pgstore-wt/crates/codedb/tests/main.test.rs",
-      "editCount": 10
+    "src/yazelix/rust_core/yazelix_core/src/yzx_control_runtime_surface.rs|src/yazelix/rust_core/yazelix_core/tests/yzx_control_runtime_surface.rs": {
+      "source": "src/yazelix/rust_core/yazelix_core/src/yzx_control_runtime_surface.rs",
+      "test": "src/yazelix/rust_core/yazelix_core/tests/yzx_control_runtime_surface.rs",
+      "editCount": 4
+    },
+    "src/yazelix/rust_core/yazelix_core/src/config_normalize.rs|src/yazelix/rust_core/yazelix_core/tests/config_normalize.test.rs": {
+      "source": "src/yazelix/rust_core/yazelix_core/src/config_normalize.rs",
+      "test": "src/yazelix/rust_core/yazelix_core/tests/config_normalize.test.rs",
+      "editCount": 2
+    },
+    "src/yazelix/rust_core/yazelix_core/src/launch_commands/desktop.rs|src/yazelix/rust_core/yazelix_core/tests/launch_commands/desktop.test.rs": {
+      "source": "src/yazelix/rust_core/yazelix_core/src/launch_commands/desktop.rs",
+      "test": "src/yazelix/rust_core/yazelix_core/tests/launch_commands/desktop.test.rs",
+      "editCount": 2
+    },
+    "src/yazelix/rust_core/yazelix_core/src/helix_materialization/tests.rs|src/yazelix/rust_core/yazelix_core/tests/helix_materialization/tests.test.rs": {
+      "source": "src/yazelix/rust_core/yazelix_core/src/helix_materialization/tests.rs",
+      "test": "src/yazelix/rust_core/yazelix_core/tests/helix_materialization/tests.test.rs",
+      "editCount": 7
+    },
+    "src/yazelix/rust_core/yazelix_core/src/config_ui/tests.rs|src/yazelix/rust_core/yazelix_core/tests/config_ui/tests.test.rs": {
+      "source": "src/yazelix/rust_core/yazelix_core/src/config_ui/tests.rs",
+      "test": "src/yazelix/rust_core/yazelix_core/tests/config_ui/tests.test.rs",
+      "editCount": 4
+    },
+    "src/yazelix/rust_core/yazelix_core/src/settings_contract.rs|src/yazelix/rust_core/yazelix_core/tests/settings_contract.test.rs": {
+      "source": "src/yazelix/rust_core/yazelix_core/src/settings_contract.rs",
+      "test": "src/yazelix/rust_core/yazelix_core/tests/settings_contract.test.rs",
+      "editCount": 6
+    },
+    "src/yazelix/rust_core/yazelix_core/src/yzx_core_config_ui.rs|src/yazelix/rust_core/yazelix_core/tests/yzx_core_config_ui.rs": {
+      "source": "src/yazelix/rust_core/yazelix_core/src/yzx_core_config_ui.rs",
+      "test": "src/yazelix/rust_core/yazelix_core/tests/yzx_core_config_ui.rs",
+      "editCount": 1
+    },
+    "src/nu_plugin/crates/codedb_rust_static/src/lib.rs|src/nu_plugin/crates/codedb_rust_static/tests/lib.test.rs": {
+      "source": "src/nu_plugin/crates/codedb_rust_static/src/lib.rs",
+      "test": "src/nu_plugin/crates/codedb_rust_static/tests/lib.test.rs",
+      "editCount": 2
     }
   }
 }
