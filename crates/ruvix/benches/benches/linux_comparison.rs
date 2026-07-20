@@ -2,14 +2,12 @@
 //!
 //! Run with: cargo bench --bench linux_comparison
 
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
+use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use ruvix_nucleus::{
-    CapHandle, CapRights, GraphMutation, Kernel, KernelConfig, MsgPriority, ProofTier, QueueHandle,
-    RegionPolicy, RvfComponentId, RvfMountHandle, SensorDescriptor, Syscall, TaskPriority,
-    TimerSpec, VectorKey, VectorStoreConfig,
+    CapHandle, CapRights, Kernel, KernelConfig, MsgPriority, QueueHandle, RegionPolicy, Syscall,
+    TimerSpec,
 };
 use ruvix_types::{ObjectType, TaskHandle};
-use std::time::Duration;
 
 fn setup_kernel() -> Kernel {
     let mut kernel = Kernel::new(KernelConfig::default());

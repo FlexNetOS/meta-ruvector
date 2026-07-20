@@ -88,7 +88,7 @@ pub struct RegionStats {
 mod tests {
     #[test]
     fn test_module_compiles() {
-        // Basic compilation test
-        assert!(true);
+        // This test exists solely to verify the crate compiles and links
+        // under the test profile; reaching this point is the assertion.
     }
 }

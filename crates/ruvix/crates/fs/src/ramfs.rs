@@ -1,4 +1,4 @@
-//! In-memory filesystem (RamFS) implementation for RuVix.
+//! In-memory filesystem (`RamFS`) implementation for `RuVix`.
 //!
 //! This module provides a fully read-write in-memory filesystem suitable
 //! for `/tmp` and other temporary storage needs. All data is lost on unmount.
@@ -12,13 +12,13 @@ use core::cell::RefCell;
 #[cfg(feature = "alloc")]
 use alloc::{collections::BTreeMap, string::String, vec::Vec};
 
-/// Maximum file size in RamFS (64 MB default).
+/// Maximum file size in `RamFS` (64 MB default).
 const MAX_FILE_SIZE: u64 = 64 * 1024 * 1024;
 
-/// Maximum number of inodes in RamFS.
+/// Maximum number of inodes in `RamFS`.
 const MAX_INODES: usize = 65536;
 
-/// Type of RamFS inode.
+/// Type of `RamFS` inode.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RamInodeType {
     /// Regular file.
@@ -42,7 +42,6 @@ impl From<RamInodeType> for FileType {
 impl From<FileType> for RamInodeType {
     fn from(t: FileType) -> Self {
         match t {
-            FileType::Regular => RamInodeType::File,
             FileType::Directory => RamInodeType::Directory,
             FileType::Symlink => RamInodeType::Symlink,
             _ => RamInodeType::File,
@@ -50,7 +49,7 @@ impl From<FileType> for RamInodeType {
     }
 }
 
-/// A RamFS inode representing a file, directory, or symlink.
+/// A `RamFS` inode representing a file, directory, or symlink.
 #[cfg(feature = "alloc")]
 #[derive(Debug, Clone)]
 pub struct RamInode {
@@ -177,6 +176,10 @@ impl RamInode {
     }
 
     /// Read data from the inode.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`FsError::IsADirectory`] if this inode is a directory.
     pub fn read(&self, offset: u64, buf: &mut [u8]) -> FsResult<usize> {
         if self.inode_type == RamInodeType::Directory {
             return Err(FsError::IsADirectory);
@@ -195,6 +198,11 @@ impl RamInode {
     }
 
     /// Write data to the inode.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`FsError::IsADirectory`] if this inode is a directory.
+    /// Returns [`FsError::FileTooLarge`] if the write would exceed the maximum file size.
     pub fn write(&mut self, offset: u64, buf: &[u8]) -> FsResult<usize> {
         if self.inode_type == RamInodeType::Directory {
             return Err(FsError::IsADirectory);
@@ -217,6 +225,11 @@ impl RamInode {
     }
 
     /// Truncate the file to the specified size.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`FsError::IsADirectory`] if this inode is a directory.
+    /// Returns [`FsError::FileTooLarge`] if `size` exceeds the maximum file size.
     pub fn truncate(&mut self, size: u64) -> FsResult<()> {
         if self.inode_type == RamInodeType::Directory {
             return Err(FsError::IsADirectory);
@@ -356,13 +369,13 @@ pub struct RamFs {
 
 #[cfg(feature = "alloc")]
 impl RamFs {
-    /// Create a new RamFS with default settings.
+    /// Create a new `RamFS` with default settings.
     #[must_use]
     pub fn new() -> Self {
         Self::with_max_size(64 * 1024 * 1024) // 64 MB default
     }
 
-    /// Create a new RamFS with a specified maximum size.
+    /// Create a new `RamFS` with a specified maximum size.
     #[must_use]
     pub fn with_max_size(max_size: u64) -> Self {
         let root_inode = InodeId(1);
@@ -384,7 +397,11 @@ impl RamFs {
 
     /// Get the inode for a given ID.
     fn get_inode(&self, id: InodeId) -> FsResult<RamInode> {
-        self.inodes.borrow().get(&id).cloned().ok_or(FsError::InodeNotFound)
+        self.inodes
+            .borrow()
+            .get(&id)
+            .cloned()
+            .ok_or(FsError::InodeNotFound)
     }
 
     /// Get a mutable reference to an inode.
@@ -417,7 +434,11 @@ impl RamFs {
 
     /// Remove an inode from the table.
     fn remove_inode(&self, id: InodeId) -> FsResult<RamInode> {
-        let inode = self.inodes.borrow_mut().remove(&id).ok_or(FsError::InodeNotFound)?;
+        let inode = self
+            .inodes
+            .borrow_mut()
+            .remove(&id)
+            .ok_or(FsError::InodeNotFound)?;
         let size = inode.size();
         let current_used = *self.bytes_used.borrow();
         *self.bytes_used.borrow_mut() = current_used.saturating_sub(size);
@@ -468,7 +489,7 @@ impl FileSystem for RamFs {
         Ok(self.root_inode)
     }
 
-    fn name(&self) -> &str {
+    fn name(&self) -> &'static str {
         "ramfs"
     }
 
@@ -544,7 +565,7 @@ impl FileSystem for RamFs {
             mtime: ram_inode.mtime,
             ctime: ram_inode.ctime,
             blksize: 4096,
-            blocks: (ram_inode.size() + 511) / 512,
+            blocks: ram_inode.size().div_ceil(512),
         })
     }
 
@@ -776,7 +797,9 @@ mod tests {
         fs.mount().unwrap();
 
         let root = fs.root().unwrap();
-        let file_id = fs.create(root, "test.txt", FileType::Regular, 0o644).unwrap();
+        let file_id = fs
+            .create(root, "test.txt", FileType::Regular, 0o644)
+            .unwrap();
 
         let stat = fs.stat(file_id).unwrap();
         assert_eq!(stat.file_type, FileType::Regular);
@@ -789,7 +812,9 @@ mod tests {
         fs.mount().unwrap();
 
         let root = fs.root().unwrap();
-        let file_id = fs.create(root, "test.txt", FileType::Regular, 0o644).unwrap();
+        let file_id = fs
+            .create(root, "test.txt", FileType::Regular, 0o644)
+            .unwrap();
 
         // Write data
         let data = b"Hello, World!";
@@ -809,13 +834,17 @@ mod tests {
         fs.mount().unwrap();
 
         let root = fs.root().unwrap();
-        let dir_id = fs.create(root, "subdir", FileType::Directory, 0o755).unwrap();
+        let dir_id = fs
+            .create(root, "subdir", FileType::Directory, 0o755)
+            .unwrap();
 
         let stat = fs.stat(dir_id).unwrap();
         assert_eq!(stat.file_type, FileType::Directory);
 
         // Create file in subdirectory
-        let file_id = fs.create(dir_id, "nested.txt", FileType::Regular, 0o644).unwrap();
+        let file_id = fs
+            .create(dir_id, "nested.txt", FileType::Regular, 0o644)
+            .unwrap();
         assert!(file_id.is_valid());
     }
 
@@ -825,7 +854,9 @@ mod tests {
         fs.mount().unwrap();
 
         let root = fs.root().unwrap();
-        let file_id = fs.create(root, "test.txt", FileType::Regular, 0o644).unwrap();
+        let file_id = fs
+            .create(root, "test.txt", FileType::Regular, 0o644)
+            .unwrap();
 
         let found = fs.lookup(root, "test.txt").unwrap();
         assert_eq!(found, file_id);
@@ -839,7 +870,8 @@ mod tests {
         fs.mount().unwrap();
 
         let root = fs.root().unwrap();
-        fs.create(root, "test.txt", FileType::Regular, 0o644).unwrap();
+        fs.create(root, "test.txt", FileType::Regular, 0o644)
+            .unwrap();
 
         fs.unlink(root, "test.txt").unwrap();
 
@@ -852,8 +884,11 @@ mod tests {
         fs.mount().unwrap();
 
         let root = fs.root().unwrap();
-        let dir_id = fs.create(root, "subdir", FileType::Directory, 0o755).unwrap();
-        fs.create(dir_id, "file.txt", FileType::Regular, 0o644).unwrap();
+        let dir_id = fs
+            .create(root, "subdir", FileType::Directory, 0o755)
+            .unwrap();
+        fs.create(dir_id, "file.txt", FileType::Regular, 0o644)
+            .unwrap();
 
         assert_eq!(fs.unlink(root, "subdir"), Err(FsError::DirectoryNotEmpty));
     }
@@ -866,14 +901,15 @@ mod tests {
         let root = fs.root().unwrap();
         fs.create(root, "a.txt", FileType::Regular, 0o644).unwrap();
         fs.create(root, "b.txt", FileType::Regular, 0o644).unwrap();
-        fs.create(root, "c_dir", FileType::Directory, 0o755).unwrap();
+        fs.create(root, "c_dir", FileType::Directory, 0o755)
+            .unwrap();
 
         let entries = fs.readdir(root, 0).unwrap();
 
         // Should have . and .. plus our 3 entries
         assert!(entries.len() >= 5);
 
-        let names: Vec<_> = entries.iter().map(|e| e.name()).collect();
+        let names: Vec<_> = entries.iter().map(DirEntry::name).collect();
         assert!(names.contains(&"a.txt"));
         assert!(names.contains(&"b.txt"));
         assert!(names.contains(&"c_dir"));
@@ -885,7 +921,9 @@ mod tests {
         fs.mount().unwrap();
 
         let root = fs.root().unwrap();
-        let file_id = fs.create(root, "test.txt", FileType::Regular, 0o644).unwrap();
+        let file_id = fs
+            .create(root, "test.txt", FileType::Regular, 0o644)
+            .unwrap();
 
         fs.write(file_id, 0, b"Hello, World!").unwrap();
         assert_eq!(fs.stat(file_id).unwrap().size, 13);
@@ -905,8 +943,12 @@ mod tests {
         fs.mount().unwrap();
 
         let root = fs.root().unwrap();
-        let dir_id = fs.create(root, "subdir", FileType::Directory, 0o755).unwrap();
-        let file_id = fs.create(dir_id, "test.txt", FileType::Regular, 0o644).unwrap();
+        let dir_id = fs
+            .create(root, "subdir", FileType::Directory, 0o755)
+            .unwrap();
+        let file_id = fs
+            .create(dir_id, "test.txt", FileType::Regular, 0o644)
+            .unwrap();
 
         let found = fs.lookup_path(Path::new("/subdir/test.txt")).unwrap();
         assert_eq!(found, file_id);
@@ -928,7 +970,8 @@ mod tests {
         fs.mount().unwrap();
 
         let root = fs.root().unwrap();
-        fs.create(root, "test.txt", FileType::Regular, 0o644).unwrap();
+        fs.create(root, "test.txt", FileType::Regular, 0o644)
+            .unwrap();
 
         assert_eq!(
             fs.create(root, "test.txt", FileType::Regular, 0o644),

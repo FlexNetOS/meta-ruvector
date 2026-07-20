@@ -578,13 +578,15 @@ mod tests {
         let manifest = DemoManifest::cognitive_demo();
         let expected = manifest.expected_syscall_counts();
 
-        let mut stats = SyscallStats::default();
-        stats.task_spawn = 5;
-        stats.cap_grant = 20;
-        stats.region_map = 3;
-        stats.queue_send = 20000;
-        stats.queue_recv = 20000;
-        stats.timer_wait = 100;
+        let stats = SyscallStats {
+            task_spawn: 5,
+            cap_grant: 20,
+            region_map: 3,
+            queue_send: 20000,
+            queue_recv: 20000,
+            timer_wait: 100,
+            ..Default::default()
+        };
 
         let coverage = SyscallCoverage::from_stats(&stats, &expected);
         assert_eq!(coverage.covered, 6);
@@ -605,10 +607,12 @@ mod tests {
 
     #[test]
     fn test_proof_coverage() {
-        let mut stats = SyscallStats::default();
-        stats.vector_put_proved = 100;
-        stats.graph_apply_proved = 50;
-        stats.rvf_mount = 1;
+        let stats = SyscallStats {
+            vector_put_proved: 100,
+            graph_apply_proved: 50,
+            rvf_mount: 1,
+            ..Default::default()
+        };
 
         let coverage = ProofCoverage::from_stats(&stats);
         assert!(coverage.reflex);
@@ -619,13 +623,15 @@ mod tests {
 
     #[test]
     fn test_component_coverage() {
-        let mut stats = SyscallStats::default();
-        stats.sensor_subscribe = 1;
-        stats.vector_put_proved = 100;
-        stats.vector_get = 100;
-        stats.graph_apply_proved = 50;
-        stats.attest_emit = 100;
-        stats.task_spawn = 5;
+        let stats = SyscallStats {
+            sensor_subscribe: 1,
+            vector_put_proved: 100,
+            vector_get: 100,
+            graph_apply_proved: 50,
+            attest_emit: 100,
+            task_spawn: 5,
+            ..Default::default()
+        };
 
         let coverage = ComponentCoverage::from_stats(&stats, 5);
         assert!(coverage.sensor_adapter);

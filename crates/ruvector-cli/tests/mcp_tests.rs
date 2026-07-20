@@ -1,7 +1,6 @@
 //! Integration tests for Ruvector MCP Server
 
 use serde_json::json;
-use tempfile::tempdir;
 
 // Note: These are unit-style tests for MCP components
 // Full integration tests would require running the server

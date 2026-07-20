@@ -154,10 +154,11 @@ impl fmt::Display for CpuIdError {
 ///                    |            |
 ///                    +<-----------+ (can resume)
 /// ```
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[repr(u8)]
 pub enum CpuState {
     /// CPU is powered off or not present
+    #[default]
     Offline = 0,
     /// CPU is in the boot process
     Booting = 1,
@@ -187,12 +188,6 @@ impl CpuState {
     }
 }
 
-impl Default for CpuState {
-    fn default() -> Self {
-        CpuState::Offline
-    }
-}
-
 impl fmt::Display for CpuState {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -211,12 +206,12 @@ static mut CPU_COUNT: usize = 1;
 
 /// Get the current CPU's ID
 ///
-/// On ARM64, this reads the MPIDR_EL1 register and extracts the Aff0 field.
+/// On ARM64, this reads the `MPIDR_EL1` register and extracts the Aff0 field.
 /// In test mode, returns CPU 0.
 ///
 /// # Safety
 ///
-/// This function uses inline assembly on ARM64 to read MPIDR_EL1.
+/// This function uses inline assembly on ARM64 to read `MPIDR_EL1`.
 /// The read itself is safe, but the function assumes the system is
 /// properly initialized.
 ///
@@ -230,7 +225,11 @@ static mut CPU_COUNT: usize = 1;
 /// ```
 #[inline]
 pub fn current_cpu() -> CpuId {
-    #[cfg(all(target_arch = "aarch64", feature = "aarch64", not(feature = "test-mode")))]
+    #[cfg(all(
+        target_arch = "aarch64",
+        feature = "aarch64",
+        not(feature = "test-mode")
+    ))]
     {
         let mpidr: u64;
         // SAFETY: Reading MPIDR_EL1 is always safe
@@ -247,7 +246,11 @@ pub fn current_cpu() -> CpuId {
         unsafe { CpuId::new_unchecked(cpu_id) }
     }
 
-    #[cfg(any(not(target_arch = "aarch64"), not(feature = "aarch64"), feature = "test-mode"))]
+    #[cfg(any(
+        not(target_arch = "aarch64"),
+        not(feature = "aarch64"),
+        feature = "test-mode"
+    ))]
     {
         // In test mode or non-ARM64, return CPU 0
         CpuId::BOOT_CPU
@@ -274,10 +277,10 @@ pub fn current_cpu() -> CpuId {
 /// }
 /// ```
 #[inline]
-pub fn cpu_online(_id: CpuId) -> bool {
+pub fn cpu_online(id: CpuId) -> bool {
     // In a real implementation, this would check the topology
     // For now, only CPU 0 is considered online
-    _id.is_boot_cpu()
+    id.is_boot_cpu()
 }
 
 /// Get the total number of CPUs in the system

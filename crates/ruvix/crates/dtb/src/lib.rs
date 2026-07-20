@@ -1,7 +1,7 @@
-//! # RuVix Device Tree Blob Parser
+//! # `RuVix` Device Tree Blob Parser
 //!
 //! This crate provides a zero-copy parser for Flattened Device Tree (FDT) blobs.
-//! It is designed for the RuVix Cognition Kernel to discover hardware configuration
+//! It is designed for the `RuVix` Cognition Kernel to discover hardware configuration
 //! at boot time.
 //!
 //! ## Design Principles
@@ -52,6 +52,10 @@
 #![deny(missing_docs)]
 #![deny(clippy::all)]
 #![warn(clippy::pedantic)]
+// No-std, no-alloc parser: the device tree is parsed into a fixed inline node
+// array (no heap available at this boot stage), so `DeviceTree` is intentionally
+// a large stack value. This is a deliberate allocation-free design, not an oversight.
+#![allow(clippy::large_stack_arrays)]
 
 #[cfg(feature = "alloc")]
 extern crate alloc;
@@ -67,7 +71,7 @@ mod property;
 
 pub use error::{DtbError, DtbResult};
 pub use header::FdtHeader;
-pub use node::{Node, NodeIter, ParsedReg};
+pub use node::{Node, NodeIter, ParsedReg, PathBuilder};
 pub use parser::DeviceTree;
 pub use property::{Property, PropertyValue, RegEntry, RegIter};
 
@@ -84,15 +88,15 @@ pub const FDT_MIN_VERSION: u32 = 16;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u32)]
 pub enum FdtToken {
-    /// Begin node token (FDT_BEGIN_NODE)
+    /// Begin node token (`FDT_BEGIN_NODE`)
     BeginNode = 0x0000_0001,
-    /// End node token (FDT_END_NODE)
+    /// End node token (`FDT_END_NODE`)
     EndNode = 0x0000_0002,
-    /// Property token (FDT_PROP)
+    /// Property token (`FDT_PROP`)
     Prop = 0x0000_0003,
-    /// NOP token (FDT_NOP)
+    /// NOP token (`FDT_NOP`)
     Nop = 0x0000_0004,
-    /// End of structure block (FDT_END)
+    /// End of structure block (`FDT_END`)
     End = 0x0000_0009,
 }
 

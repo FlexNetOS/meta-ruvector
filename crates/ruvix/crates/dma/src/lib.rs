@@ -1,7 +1,7 @@
-//! # RuVix DMA Controller Abstraction
+//! # `RuVix` DMA Controller Abstraction
 //!
 //! This crate provides a hardware-agnostic DMA (Direct Memory Access) controller
-//! abstraction for the RuVix Cognition Kernel. It enables efficient zero-copy
+//! abstraction for the `RuVix` Cognition Kernel. It enables efficient zero-copy
 //! data transfers between memory regions and peripheral devices.
 //!
 //! ## Design Principles
@@ -10,16 +10,16 @@
 //! - **No std dependency** - `#![no_std]` only
 //! - **Cache coherent buffers** - Proper cache management for DMA operations
 //! - **Scatter-gather support** - Descriptor chains for non-contiguous transfers
-//! - **Platform-agnostic** - Works across ARM64, RISC-V, x86_64
+//! - **Platform-agnostic** - Works across ARM64, RISC-V, `x86_64`
 //!
 //! ## Architecture
 //!
 //! The DMA subsystem consists of:
 //!
-//! - **DmaChannel** - Represents a single DMA channel with its state
-//! - **DmaBuffer** - Cache-coherent memory buffer for DMA transfers
-//! - **DmaDescriptor** - Scatter-gather descriptor for linked transfers
-//! - **DmaController** - Trait defining the DMA controller interface
+//! - **`DmaChannel`** - Represents a single DMA channel with its state
+//! - **`DmaBuffer`** - Cache-coherent memory buffer for DMA transfers
+//! - **`DmaDescriptor`** - Scatter-gather descriptor for linked transfers
+//! - **`DmaController`** - Trait defining the DMA controller interface
 //!
 //! ## Example
 //!
@@ -62,6 +62,11 @@
 #![deny(missing_docs)]
 #![deny(clippy::all)]
 #![warn(clippy::pedantic)]
+// Bare-metal DMA: physical addresses and transfer lengths are u64 and the target
+// is 64-bit (aarch64), so casts to usize for indexing (and small index/channel
+// casts to u8) are lossless on this platform; the truncation warning only applies
+// to hypothetical 32-bit targets.
+#![allow(clippy::cast_possible_truncation)]
 
 #[cfg(feature = "alloc")]
 extern crate alloc;
@@ -76,10 +81,10 @@ mod controller;
 mod descriptor;
 mod error;
 
-pub use buffer::{DmaBuffer, DmaBufferFlags};
+pub use buffer::{DmaBuffer, DmaBufferChunks, DmaBufferFlags};
 pub use channel::{DmaChannel, DmaChannelId};
-pub use config::{DmaConfig, DmaBurstSize, DmaTransferWidth};
-pub use controller::DmaController;
+pub use config::{DmaBurstSize, DmaConfig, DmaTransferWidth};
+pub use controller::{DmaController, DmaControllerExt};
 pub use descriptor::{DmaDescriptor, DmaDescriptorChain, DmaDescriptorFlags};
 pub use error::{DmaError, DmaResult};
 

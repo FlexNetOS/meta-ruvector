@@ -13,8 +13,12 @@
 //! | timer_wait | clock_nanosleep |
 //! | vector_put_proved | write+fsync |
 
-use std::time::{Duration, Instant};
+#[allow(unused_imports)]
+use std::time::Duration;
+use std::time::Instant;
 
+// BenchmarkResult: kept for API compat
+#[allow(unused_imports)]
 use crate::BenchmarkResult;
 
 #[cfg(unix)]

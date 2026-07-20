@@ -31,6 +31,8 @@ impl ProgressTracker {
     }
 
     /// Create a spinner for indeterminate operations
+    // Retained progress API for indeterminate ops; not yet used by a long-running subcommand.
+    #[allow(dead_code)]
     pub fn create_spinner(&self, message: &str) -> ProgressBar {
         let pb = self.multi.add(ProgressBar::new_spinner());
         pb.set_style(
@@ -44,6 +46,8 @@ impl ProgressTracker {
     }
 
     /// Finish all progress bars
+    // Retained progress API; bars auto-finish on drop so callers may not need this explicitly.
+    #[allow(dead_code)]
     pub fn finish_all(&self) {
         // Progress bars auto-finish when dropped
     }

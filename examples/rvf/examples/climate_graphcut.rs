@@ -145,7 +145,7 @@ fn generate_stations(seed: u64, day: f64) -> Vec<Station> {
                 + lcg_normal(&mut rng) * 300.0
                 + 800.0 * ((r as f64 * 0.2).sin() * (c as f64 * 0.15).cos()).abs())
             .max(0.0);
-            let coastal = c < 3 || c >= COLS - 3 || r < 2 || r >= ROWS - 2;
+            let coastal = !(3..COLS - 3).contains(&c) || !(2..ROWS - 2).contains(&r);
             let tb = 30.0 - 0.6 * (lat - 25.0) + 12.0 * ss - elev * 0.006;
             let temp = tb + lcg_normal(&mut rng) * 3.0;
             let hum = (60.0 + 15.0 * sc + lcg_normal(&mut rng) * 10.0).clamp(10.0, 100.0);
@@ -428,7 +428,7 @@ fn build_graph(st: &[Station], embs: &[Vec<f32>], alpha: f64, beta: f64, k: usiz
             }
         }
     }
-    for i in 0..embs.len() {
+    for (i, emb_i) in embs.iter().enumerate() {
         let mut sims: Vec<(usize, f64)> = (0..embs.len())
             .filter(|&j| {
                 let (ri, ci) = (i / COLS, i % COLS);
@@ -437,7 +437,7 @@ fn build_graph(st: &[Station], embs: &[Vec<f32>], alpha: f64, beta: f64, k: usiz
                     + (ci as isize - cj as isize).unsigned_abs()
                     > 2
             })
-            .map(|j| (j, cosine(&embs[i], &embs[j]).max(0.0)))
+            .map(|j| (j, cosine(emb_i, &embs[j]).max(0.0)))
             .collect();
         sims.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
         for &(j, s) in sims.iter().take(k) {
@@ -466,8 +466,8 @@ fn solve_mincut(lam: &[f64], edges: &[Edge], gamma: f64) -> Vec<bool> {
             adj[u].push((v, i));
             adj[v].push((u, i + 1));
         };
-    for i in 0..m {
-        let (p0, p1) = (lam[i].max(0.0), (-lam[i]).max(0.0));
+    for (i, &lam_i) in lam.iter().enumerate() {
+        let (p0, p1) = (lam_i.max(0.0), (-lam_i).max(0.0));
         if p0 > 1e-12 {
             ae(&mut adj, &mut caps, s, i, p0);
         }

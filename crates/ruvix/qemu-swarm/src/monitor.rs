@@ -89,19 +89,17 @@ async fn main() -> Result<()> {
 }
 
 async fn run_simple(cli: Cli) -> Result<()> {
-    let socket_dir = cli.socket_dir.unwrap_or_else(|| {
-        std::env::temp_dir().join("ruvix-swarm")
-    });
+    let socket_dir = cli
+        .socket_dir
+        .unwrap_or_else(|| std::env::temp_dir().join("ruvix-swarm"));
 
-    let filter_nodes: Option<Vec<usize>> = cli.only_nodes.map(|s| {
-        s.split(',')
-            .filter_map(|n| n.trim().parse().ok())
-            .collect()
-    });
+    let filter_nodes: Option<Vec<usize>> = cli
+        .only_nodes
+        .map(|s| s.split(',').filter_map(|n| n.trim().parse().ok()).collect());
 
-    let mut output_file = cli.output.map(|p| {
-        std::fs::File::create(p).expect("Failed to create output file")
-    });
+    let mut output_file = cli
+        .output
+        .map(|p| std::fs::File::create(p).expect("Failed to create output file"));
 
     println!("RuVix Swarm Monitor");
     println!("==================");
@@ -153,7 +151,11 @@ async fn run_simple(cli: Cli) -> Result<()> {
                         let lower = line.to_lowercase();
                         let passes = match f.as_str() {
                             "error" => lower.contains("error") || lower.contains("panic"),
-                            "warn" => lower.contains("warn") || lower.contains("error") || lower.contains("panic"),
+                            "warn" => {
+                                lower.contains("warn")
+                                    || lower.contains("error")
+                                    || lower.contains("panic")
+                            }
                             "info" => !lower.contains("debug") && !lower.contains("trace"),
                             "debug" => !lower.contains("trace"),
                             _ => true,
@@ -215,11 +217,7 @@ async fn run_tui(cli: Cli) -> Result<()> {
     terminal::enable_raw_mode()?;
 
     let mut stdout = stdout();
-    execute!(
-        stdout,
-        terminal::EnterAlternateScreen,
-        cursor::Hide
-    )?;
+    execute!(stdout, terminal::EnterAlternateScreen, cursor::Hide)?;
 
     let mut state = MonitorState::new(cli.nodes);
     state.filter_pattern = cli.pattern.clone();
@@ -228,24 +226,17 @@ async fn run_tui(cli: Cli) -> Result<()> {
     let result = tui_loop(&mut stdout, &cli, &mut state).await;
 
     // Cleanup
-    execute!(
-        stdout,
-        cursor::Show,
-        terminal::LeaveAlternateScreen
-    )?;
+    execute!(stdout, cursor::Show, terminal::LeaveAlternateScreen)?;
     terminal::disable_raw_mode()?;
 
     result
 }
 
-async fn tui_loop(
-    stdout: &mut std::io::Stdout,
-    cli: &Cli,
-    state: &mut MonitorState,
-) -> Result<()> {
-    let socket_dir = cli.socket_dir.clone().unwrap_or_else(|| {
-        std::env::temp_dir().join("ruvix-swarm")
-    });
+async fn tui_loop(stdout: &mut std::io::Stdout, cli: &Cli, state: &mut MonitorState) -> Result<()> {
+    let socket_dir = cli
+        .socket_dir
+        .clone()
+        .unwrap_or_else(|| std::env::temp_dir().join("ruvix-swarm"));
 
     let (tx, mut rx) = tokio::sync::mpsc::channel::<(usize, String)>(1024);
 
@@ -333,10 +324,15 @@ fn render_tui(stdout: &mut std::io::Stdout, state: &MonitorState, nodes: usize) 
     execute!(
         stdout,
         SetForegroundColor(Color::Cyan),
-        Print(format!("RuVix Swarm Monitor - {} nodes - {} ", nodes, status)),
+        Print(format!(
+            "RuVix Swarm Monitor - {} nodes - {} ",
+            nodes, status
+        )),
         ResetColor,
-        Print(format!("| Lines: {} | Errors: {} | Panics: {}\n",
-            state.total_lines, state.error_count, state.panic_count)),
+        Print(format!(
+            "| Lines: {} | Errors: {} | Panics: {}\n",
+            state.total_lines, state.error_count, state.panic_count
+        )),
         Print(format!("{}\n", "=".repeat(cols as usize - 1)))
     )?;
 

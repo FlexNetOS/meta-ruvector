@@ -30,9 +30,7 @@ impl<T: Message> Subscriber<T> {
 
     /// Receive a message (blocking)
     pub fn recv(&self) -> Result<T> {
-        self.receiver
-            .recv()
-            .map_err(|e| Error::Other(e.into()))
+        self.receiver.recv().map_err(|e| Error::Other(e.into()))
     }
 
     /// Try to receive a message (non-blocking)
@@ -47,12 +45,10 @@ impl<T: Message> Subscriber<T> {
     /// Receive a message asynchronously
     pub async fn recv_async(&self) -> Result<T> {
         let receiver = self.receiver.clone();
-        tokio::task::spawn_blocking(move || {
-            receiver.recv()
-        })
-        .await
-        .map_err(|e| Error::Other(e.into()))?
-        .map_err(|e| Error::Other(e.into()))
+        tokio::task::spawn_blocking(move || receiver.recv())
+            .await
+            .map_err(|e| Error::Other(e.into()))?
+            .map_err(|e| Error::Other(e.into()))
     }
 
     /// Get topic name

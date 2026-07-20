@@ -19,6 +19,34 @@ ignore = [
     # Re-evaluate when the `rsa` crate ships a constant-time implementation.
     "RUSTSEC-2023-0071",
 
+    # lz4_flex 0.10.0 — decompressing invalid data can leak uninitialized
+    # memory. Pulled ONLY transitively: zenoh-transport 1.9.0 pins
+    # `lz4_flex = "^0.10.0"` (cannot resolve to the patched 0.11.6+), and
+    # zenoh 1.9.0 is the latest published release, so there is no upstream
+    # upgrade path. Our own direct lz4_flex deps are already on 0.11.6
+    # (patched). lz4_flex here is used solely by zenoh's transport-layer
+    # compression of our own pub/sub traffic between agentic-robotics nodes,
+    # not to decompress attacker-controlled input across a trust boundary.
+    # Re-evaluate when zenoh ships a release that bumps lz4_flex to >=0.11.6.
+    "RUSTSEC-2026-0041",
+
+    # rustls-webpki 0.101.7 — name-constraint acceptance (0098/0099) and a
+    # reachable panic in CRL parsing (0104). Pulled ONLY transitively, and
+    # only at the old 0.101.7 line: the EXO-AI example crates depend on the
+    # published `ruvector-core 0.1.31` (crates.io), whose `reqwest 0.11 →
+    # rustls 0.21 → rustls-webpki 0.101.7` chain has no upstream fix (the
+    # patch lives at >= 0.103.12, a different major; 0.101.x is EOL and the
+    # local workspace ruvector-core is 2.x, so the `^0.1` requirement cannot
+    # be [patch]ed to it). The vulnerable code paths are not exercised: these
+    # examples use ruvector-core's VectorDB/types, not TLS cert/CRL
+    # validation, and 0104 explicitly notes apps that do not use CRLs are
+    # unaffected. Our production TLS runs on the current rustls-webpki 0.103.13
+    # (already patched). Re-evaluate when published ruvector-core 0.1.x bumps
+    # reqwest, or the EXO examples migrate to the 2.x workspace crates.
+    "RUSTSEC-2026-0098",
+    "RUSTSEC-2026-0099",
+    "RUSTSEC-2026-0104",
+
     # ------------------------------------------------------------------
     # "Unmaintained" warnings (informational, not vulnerabilities)
     # ------------------------------------------------------------------
@@ -40,6 +68,24 @@ ignore = [
     "RUSTSEC-2025-0134",  # rustls-pemfile — transitive; rustls itself is current
     "RUSTSEC-2025-0141",  # bincode — unmaintained notice; we pin a known-good version
     "RUSTSEC-2026-0105",  # core2 — transitive, no_std fallback for std::io types
+    "RUSTSEC-2020-0016",  # net2 — deprecated, transitive via old mio in example deps
+    "RUSTSEC-2025-0057",  # fxhash — transitive via rendering/hash deps; pure in-memory hashing
+    "RUSTSEC-2026-0162",  # pqcrypto-traits — transitive PQC; upstream PQClean unmaintained notice
+    "RUSTSEC-2026-0163",  # pqcrypto-internals — transitive PQC; upstream PQClean unmaintained notice
+    "RUSTSEC-2026-0173",  # proc-macro-error2 — build-time proc-macro only, no runtime exposure
+    # GTK3 (gtk-rs) bindings — unmaintained. Pulled only by the examples/rvf-desktop
+    # native dashboard (wry/tao on Linux). Desktop-example UI only, never a
+    # production/server binary. Track the wry/tao migration to GTK4.
+    "RUSTSEC-2024-0411",  # gdkwayland-sys
+    "RUSTSEC-2024-0412",  # gdk
+    "RUSTSEC-2024-0413",  # atk
+    "RUSTSEC-2024-0414",  # gdkx11-sys
+    "RUSTSEC-2024-0415",  # gtk
+    "RUSTSEC-2024-0416",  # atk-sys
+    "RUSTSEC-2024-0417",  # gdkx11
+    "RUSTSEC-2024-0418",  # gdk-sys
+    "RUSTSEC-2024-0419",  # gtk3-macros
+    "RUSTSEC-2024-0420",  # gtk-sys
 
     # ------------------------------------------------------------------
     # Soundness/unsoundness notices in deps we do not directly control
@@ -65,4 +111,11 @@ ignore = [
     "RUSTSEC-2026-0115",
     "RUSTSEC-2026-0116",
     "RUSTSEC-2026-0117",
+
+    # glib — Iterator/DoubleEndedIterator unsoundness. Transitive via the
+    # examples/rvf-desktop GTK3 stack; we do not use the affected iterators.
+    "RUSTSEC-2024-0429",
+    # memmap2 — unchecked pointer offset. Transitive via candle-core mmap
+    # model loading; offsets are computed from trusted local model files.
+    "RUSTSEC-2026-0186",
 ]
