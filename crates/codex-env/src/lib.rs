@@ -25,8 +25,8 @@ use command_prompts::{clean_codex_prompts, command_prompt_plan, stale_codex_prom
 pub use doctor::{doctor_codex_surface, DoctorOptions, DoctorReport};
 use generated::{
     codex_agent_profiles, codex_agent_teams_json, codex_agents_md, codex_automation_graph_json,
-    codex_config, codex_hooks_json, codex_native_workflow_prompts, codex_native_workflow_skills,
-    codex_runtime_hook_plan, command_skill_plan, copy_tree_plan, read_claude_env,
+    codex_config, codex_native_workflow_prompts, codex_native_workflow_skills, command_skill_plan,
+    copy_tree_plan, read_claude_env,
 };
 use raw_mirror::{
     claude_source_files, clean_raw_mirror, mirror_symbol_inventory_json, raw_claude_mirror_plan,
@@ -652,15 +652,6 @@ pub fn mirror_codex_surface(options: MirrorOptions) -> Result<MirrorReport> {
         &codex_dir.join("helpers"),
     )?);
     planned.extend(codex_prompt_helpers(&codex_dir));
-    planned.push(PlannedFile {
-        path: codex_dir.join("hooks.json"),
-        bytes: codex_hooks_json(&claude_dir)?.into_bytes(),
-        executable: false,
-    });
-    planned.extend(codex_runtime_hook_plan(
-        &claude_dir.join("hooks"),
-        &codex_dir.join("hooks"),
-    )?);
     planned.extend(copy_tree_plan(
         &claude_dir.join("skills"),
         &repo_root.join(".agents/skills"),
@@ -694,6 +685,7 @@ pub fn mirror_codex_surface(options: MirrorOptions) -> Result<MirrorReport> {
     let stale_raw_mirror_files = stale_raw_mirror_files(&repo_root, &codex_dir, &claude_files)?;
     let stale_agent_role_files = stale_claude_agent_role_files(&repo_root, &codex_dir, &planned)?;
     let stale_prompt_files = stale_codex_prompt_files(&repo_root, &codex_dir, &planned)?;
+    let stale_hook_files = stale_codex_hook_files(&codex_dir)?;
 
     for file in &planned {
         let exists_with_same_content = fs::read(&file.path).is_ok_and(|bytes| bytes == file.bytes);
@@ -709,6 +701,7 @@ pub fn mirror_codex_surface(options: MirrorOptions) -> Result<MirrorReport> {
         clean_raw_mirror(&codex_dir)?;
         clean_claude_agent_roles(&codex_dir)?;
         clean_codex_prompts(&codex_dir)?;
+        clean_codex_hooks(&codex_dir)?;
     }
 
     for file in &planned {
@@ -756,6 +749,19 @@ pub fn mirror_codex_surface(options: MirrorOptions) -> Result<MirrorReport> {
         ));
     }
 
+    if options.check && !stale_hook_files.is_empty() {
+        return Err(anyhow!(
+            "Codex lifecycle hook products are purged but {} stale file(s) remain: {}",
+            stale_hook_files.len(),
+            stale_hook_files
+                .iter()
+                .take(5)
+                .map(|path| path.display().to_string())
+                .collect::<Vec<_>>()
+                .join(", ")
+        ));
+    }
+
     if options.check && changed_files > 0 {
         return Err(anyhow!(
             "Codex mirror is stale: {changed_files} generated file(s) differ"
@@ -771,6 +777,50 @@ pub fn mirror_codex_surface(options: MirrorOptions) -> Result<MirrorReport> {
         verified_files,
         generated,
     })
+}
+
+fn stale_codex_hook_files(codex_dir: &Path) -> Result<Vec<PathBuf>> {
+    let repo_root = codex_dir.parent().unwrap_or(codex_dir);
+    let mut files = Vec::new();
+    let hooks_json = codex_dir.join("hooks.json");
+    if hooks_json.exists() {
+        files.push(strip_repo_prefix(repo_root, &hooks_json));
+    }
+    let hooks_dir = codex_dir.join("hooks");
+    if hooks_dir.exists() {
+        for entry in walkdir::WalkDir::new(&hooks_dir) {
+            let entry = entry?;
+            if entry.file_type().is_file() {
+                files.push(strip_repo_prefix(repo_root, entry.path()));
+            }
+        }
+        if files.is_empty() {
+            files.push(strip_repo_prefix(repo_root, &hooks_dir));
+        }
+    }
+    files.sort();
+    Ok(files)
+}
+
+fn clean_codex_hooks(codex_dir: &Path) -> Result<()> {
+    let hooks_json = codex_dir.join("hooks.json");
+    match fs::remove_file(&hooks_json) {
+        Ok(()) => {}
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+        Err(error) => {
+            return Err(error)
+                .with_context(|| format!("failed to remove {}", hooks_json.display()));
+        }
+    }
+    let hooks_dir = codex_dir.join("hooks");
+    match fs::remove_dir_all(&hooks_dir) {
+        Ok(()) => {}
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+        Err(error) => {
+            return Err(error).with_context(|| format!("failed to remove {}", hooks_dir.display()));
+        }
+    }
+    Ok(())
 }
 
 pub fn install_codex_prompts(options: PromptInstallOptions) -> Result<PromptInstallReport> {
@@ -986,8 +1036,6 @@ pub fn inventory_codex_surface(options: CodexInventoryOptions) -> Result<CodexIn
     let copied_skill_plan = copy_tree_plan(&claude_dir.join("skills"), &skills_dir)?;
     let command_skill_plan = command_skill_plan(&claude_dir.join("commands"), &skills_dir, None)?;
     let workflow_skills = codex_native_workflow_skills(&skills_dir, &agent_role_plan.roles);
-    let source_hook_files = count_files_recursive(&claude_dir.join("hooks"))?;
-    let hook_plan = codex_runtime_hook_plan(&claude_dir.join("hooks"), &codex_dir.join("hooks"))?;
     let helper_plan = copy_tree_plan(&claude_dir.join("helpers"), &codex_dir.join("helpers"))?;
 
     let codex_home = options.codex_home;
@@ -1045,15 +1093,6 @@ pub fn inventory_codex_surface(options: CodexInventoryOptions) -> Result<CodexIn
         ));
     }
 
-    let hook_mismatches = mismatched_planned_files(&repo_root, &hook_plan)?;
-    if !hook_mismatches.is_empty() {
-        gaps.push(format!(
-            "hook mirror has {} missing or stale file(s); first: {}",
-            hook_mismatches.len(),
-            hook_mismatches[0].display()
-        ));
-    }
-
     let helper_mismatches = mismatched_planned_files(&repo_root, &helper_plan)?;
     if !helper_mismatches.is_empty() {
         gaps.push(format!(
@@ -1090,7 +1129,7 @@ pub fn inventory_codex_surface(options: CodexInventoryOptions) -> Result<CodexIn
         claude: CodexInventoryClaudeCounts {
             command_files: count_markdown_files(&claude_dir.join("commands"))?,
             agent_files: count_files_recursive(&claude_dir.join("agents"))?,
-            hook_files: source_hook_files,
+            hook_files: count_files_recursive(&claude_dir.join("hooks"))?,
             helper_files: helper_plan.len(),
         },
         codex: CodexInventoryCodexCounts {
@@ -1104,7 +1143,7 @@ pub fn inventory_codex_surface(options: CodexInventoryOptions) -> Result<CodexIn
                 "toml",
             )?,
             agent_profiles: doctor.agent_files,
-            hook_files: count_files_recursive(&codex_dir.join("hooks"))?,
+            hook_files: 0,
             helper_files: count_files_recursive(&codex_dir.join("helpers"))?,
             helper_mirror_files: doctor.claude_helper_files,
             agent_teams: doctor.agent_teams,
@@ -1122,7 +1161,7 @@ pub fn inventory_codex_surface(options: CodexInventoryOptions) -> Result<CodexIn
                 .saturating_sub(expected_source_command_skills)
                 .saturating_sub(4),
             claude_agent_profiles: agent_role_plan.files.len(),
-            hook_files: hook_plan.len(),
+            hook_files: 0,
             helper_mirror_files: helper_plan.len(),
         },
         gaps,
@@ -3094,7 +3133,7 @@ You are running inside the repo-owned Codex harness. Do real work, not a plan.
 Operating rules:
 - Start by recalling ICM project memory and reading the closest AGENTS.md.
 - Inspect git/branch/PR state before editing.
-- Use the repo's generated `.codex` surface, installed prompts, skills, agents, hooks, and MCP settings as the local execution environment.
+- Use the repo's generated `.codex` surface, installed prompts, skills, agents, MCP settings, and zero-runtime-hook policy as the local execution environment.
 - Keep edits scoped to the requested goal.
 - Run targeted verification plus `codex-env` mirror/doctor checks when the Codex surface changes.
 - Commit and push completed publishable work, then open or update the PR.
@@ -3905,7 +3944,7 @@ fn codex_tdd_workflow_steps(
         (
             "doctor",
             format!("{binary} --repo {repo} doctor --codex-home {codex_home}"),
-            "Validate model, MCP, hooks, teams, agents, and prompt runtime wiring before any agentic execution.",
+            "Validate model, MCP, teams, agents, prompt runtime wiring, and absence of legacy Codex hook products before any agentic execution.",
         ),
         (
             "inventory-check",
@@ -3962,7 +4001,7 @@ fn codex_tdd_step_semantics(name: &str, rationale: &str) -> (String, String, Str
         "build-codex-env" => "compiles the Rust-owned Codex automation binary before any generated surface is treated as executable",
         "mirror-check" => "recomputes the .claude to .codex extraction plan and rejects stale generated files",
         "install-prompts-check" => "verifies repo-local prompt commands stay inside this repository's .codex/prompts surface",
-        "doctor" => "validates runtime Codex config, MCP declarations, hooks, prompt installation, agent profiles, and nonempty teams",
+        "doctor" => "validates runtime Codex config, MCP declarations, prompt installation, agent profiles, nonempty teams, and absence of legacy hook products",
         "inventory-check" => "compares source Claude assets against generated Codex runtime assets and fails on parity gaps",
         "single-run-dry-run" => "materializes the parent-owned codex exec prompt and status artifacts without launching a nested writer",
         "team-run-dry-run" => "materializes parallel evidence-agent prompts and parent consolidation artifacts with read-only members",

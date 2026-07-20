@@ -304,7 +304,7 @@ documentation = "https://docs.rs/ruvector"
 cognitum-one = { path = "vendor/cognitum-one", default-features = false, features = ["rustls", "seed"] }
 
 # Core functionality
-redb = "2.1"
+redb = "4.1"
 memmap2 = "0.9"
 hnsw_rs = "0.3"
 simsimd = "5.9"

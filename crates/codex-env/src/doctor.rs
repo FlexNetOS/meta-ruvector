@@ -14,19 +14,6 @@ use super::{
     REQUIRED_CODEX_CONTEXT_WINDOW, REQUIRED_CODEX_MODEL, REQUIRED_CODEX_MODEL_CATALOG,
 };
 
-const SUPPORTED_HOOK_EVENTS: &[&str] = &[
-    "SessionStart",
-    "PreToolUse",
-    "PermissionRequest",
-    "PostToolUse",
-    "PreCompact",
-    "PostCompact",
-    "UserPromptSubmit",
-    "SubagentStart",
-    "SubagentStop",
-    "Stop",
-];
-
 const REQUIRED_WORKFLOW_PROMPTS: &[&str] = &[
     "codex-agent-team.md",
     "codex-auto-loop.md",
@@ -66,13 +53,6 @@ struct ConfigValidationReport {
     goals_enabled: bool,
     mcp_servers: Vec<String>,
     configured_agents: ConfiguredAgents,
-}
-
-#[derive(Debug, Clone)]
-struct HookValidationReport {
-    events: Vec<String>,
-    handlers: usize,
-    shim_handlers: usize,
 }
 
 #[derive(Debug, Deserialize)]
@@ -161,8 +141,7 @@ pub fn doctor_codex_surface(options: DoctorOptions) -> Result<DoctorReport> {
     let (agent_teams, agent_team_members) =
         validate_agent_teams(&codex_dir, &config_report.configured_agents)?;
     validate_automation_graph(&codex_dir, agent_teams, agent_team_members)?;
-    let hook_report = validate_hooks(&codex_dir)?;
-    validate_runtime_hook_scripts(&codex_dir)?;
+    validate_no_runtime_hooks(&codex_dir)?;
     let (claude_helper_files, codex_helper_files) = validate_helper_mirror(&repo_root, &codex_dir)?;
     let (prompt_files, prompt_alias_files, installed_prompt_files, workflow_prompts) =
         validate_prompts(&repo_root, &codex_dir, &codex_home)?;
@@ -188,9 +167,9 @@ pub fn doctor_codex_surface(options: DoctorOptions) -> Result<DoctorReport> {
         agent_efforts,
         agent_teams,
         agent_team_members,
-        hook_events: hook_report.events,
-        hook_handlers: hook_report.handlers,
-        hook_shim_handlers: hook_report.shim_handlers,
+        hook_events: Vec::new(),
+        hook_handlers: 0,
+        hook_shim_handlers: 0,
         claude_helper_files,
         codex_helper_files,
         prompt_files,
@@ -705,184 +684,22 @@ fn validate_automation_graph(
     Ok(())
 }
 
-fn validate_runtime_hook_scripts(codex_dir: &Path) -> Result<()> {
-    let hooks_dir = codex_dir.join("hooks");
-    if !hooks_dir.exists() {
-        return Ok(());
+fn validate_no_runtime_hooks(codex_dir: &Path) -> Result<()> {
+    let hooks_json = codex_dir.join("hooks.json");
+    if hooks_json.exists() {
+        bail!(
+            "{} is a purged pre-clean-room lifecycle hook product and must not be regenerated",
+            hooks_json.display()
+        );
     }
-    for entry in WalkDir::new(&hooks_dir) {
-        let entry = entry?;
-        if !entry.file_type().is_file() {
-            continue;
-        }
-        let path = entry.path();
-        if path.extension().and_then(|value| value.to_str()) != Some("sh") {
-            continue;
-        }
-        let text = fs::read_to_string(path)
-            .with_context(|| format!("failed to read generated hook {}", path.display()))?;
-        if text.contains("/workspaces/ruvector") {
-            bail!(
-                "{} contains stale absolute /workspaces/ruvector path",
-                path.display()
-            );
-        }
+    let hooks_dir = codex_dir.join("hooks");
+    if hooks_dir.exists() {
+        bail!(
+            "{} is a purged pre-clean-room lifecycle hook directory and must not be regenerated",
+            hooks_dir.display()
+        );
     }
     Ok(())
-}
-
-fn validate_hooks(codex_dir: &Path) -> Result<HookValidationReport> {
-    let path = codex_dir.join("hooks.json");
-    let hooks_root: serde_json::Value = serde_json::from_slice(
-        &fs::read(&path).with_context(|| format!("failed to read {}", path.display()))?,
-    )
-    .with_context(|| format!("failed to parse {}", path.display()))?;
-    let hooks = hooks_root
-        .get("hooks")
-        .and_then(serde_json::Value::as_object)
-        .ok_or_else(|| anyhow!("{} must contain an object at hooks", path.display()))?;
-    let supported: BTreeSet<_> = SUPPORTED_HOOK_EVENTS.iter().copied().collect();
-    let mut events = Vec::new();
-    let mut handlers = 0;
-    let mut shim_handlers = 0;
-
-    for (event, groups) in hooks {
-        if !supported.contains(event.as_str()) {
-            bail!(
-                "{} contains unsupported Codex hook event {event}",
-                path.display()
-            );
-        }
-        let groups = groups
-            .as_array()
-            .ok_or_else(|| anyhow!("{} hook event {event} must be an array", path.display()))?;
-        if groups.is_empty() {
-            continue;
-        }
-        events.push(event.clone());
-        for group in groups {
-            let entries = group
-                .get("hooks")
-                .and_then(serde_json::Value::as_array)
-                .ok_or_else(|| {
-                    anyhow!("{} hook event {event} has no hooks array", path.display())
-                })?;
-            for entry in entries {
-                if validate_hook_entry(codex_dir, &path, event, entry)? {
-                    shim_handlers += 1;
-                }
-                handlers += 1;
-            }
-        }
-    }
-
-    if handlers == 0 {
-        bail!("{} has no active Codex hook handlers", path.display());
-    }
-    events.sort();
-    Ok(HookValidationReport {
-        events,
-        handlers,
-        shim_handlers,
-    })
-}
-
-fn validate_hook_entry(
-    codex_dir: &Path,
-    path: &Path,
-    event: &str,
-    entry: &serde_json::Value,
-) -> Result<bool> {
-    if entry.get("type").and_then(serde_json::Value::as_str) != Some("command") {
-        bail!(
-            "{} hook event {event} contains a non-command hook",
-            path.display()
-        );
-    }
-    if entry.get("async").and_then(serde_json::Value::as_bool) == Some(true) {
-        bail!(
-            "{} hook event {event} still contains async=true",
-            path.display()
-        );
-    }
-    if let Some(timeout) = entry.get("timeout").and_then(serde_json::Value::as_u64) {
-        if timeout == 0 || timeout > 600 {
-            bail!(
-                "{} hook event {event} has invalid timeout {timeout}; Codex expects seconds",
-                path.display()
-            );
-        }
-    }
-    let command = entry
-        .get("command")
-        .and_then(serde_json::Value::as_str)
-        .ok_or_else(|| anyhow!("{} hook event {event} has no command", path.display()))?;
-    if command.contains(".claude/helpers") && !command.contains(".codex/helpers/run-claude-hook.sh")
-    {
-        bail!(
-            "{} hook event {event} calls .claude/helpers without the Codex helper shim",
-            path.display()
-        );
-    }
-    validate_hook_shim_command(codex_dir, path, event, command)
-}
-
-fn validate_hook_shim_command(
-    codex_dir: &Path,
-    path: &Path,
-    event: &str,
-    command: &str,
-) -> Result<bool> {
-    let shim_marker = ".codex/helpers/run-claude-hook.sh";
-    if !command.contains(shim_marker) {
-        return Ok(false);
-    }
-
-    let expected_prefix =
-        r#""$(git rev-parse --show-toplevel)/.codex/helpers/run-claude-hook.sh" "#;
-    let Some(args) = command.strip_prefix(expected_prefix) else {
-        bail!(
-            "{} hook event {event} has unsupported Codex hook shim command form: {command}",
-            path.display()
-        );
-    };
-    let helper = args.split_whitespace().next().ok_or_else(|| {
-        anyhow!(
-            "{} hook event {event} uses the Codex hook shim without a helper argument",
-            path.display()
-        )
-    })?;
-    match helper {
-        "hook-handler.cjs" | "auto-memory-hook.mjs" => {}
-        _ => {
-            bail!(
-                "{} hook event {event} references unsupported Claude helper {helper}",
-                path.display()
-            );
-        }
-    }
-
-    let shim_path = codex_dir.join("helpers/run-claude-hook.sh");
-    if !shim_path.is_file() {
-        bail!(
-            "{} is missing required Codex hook shim",
-            shim_path.display()
-        );
-    }
-    if !is_executable(&shim_path)? {
-        bail!("{} must be executable", shim_path.display());
-    }
-
-    let codex_helper = codex_dir.join("helpers").join(helper);
-    if !codex_helper.is_file() {
-        bail!(
-            "{} hook event {event} references missing Codex helper {}",
-            path.display(),
-            codex_helper.display()
-        );
-    }
-
-    Ok(true)
 }
 
 fn validate_helper_mirror(repo_root: &Path, codex_dir: &Path) -> Result<(usize, usize)> {

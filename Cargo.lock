@@ -10610,6 +10610,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "redb"
+version = "4.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8e925444704b5f17d32bf42f5b6e2df050bceebc3dcd6e71cc73dafe8092e839"
+dependencies = [
+ "libc",
+]
+
+[[package]]
 name = "redox_syscall"
 version = "0.2.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -11788,7 +11797,7 @@ dependencies = [
  "rand 0.8.6",
  "rand_distr 0.4.3",
  "rayon",
- "redb",
+ "redb 2.6.3",
  "reqwest 0.11.27",
  "rkyv",
  "serde",
@@ -11821,7 +11830,7 @@ dependencies = [
  "rand 0.8.6",
  "rand_distr 0.4.3",
  "rayon",
- "redb",
+ "redb 4.1.0",
  "reqwest 0.12.28",
  "rkyv",
  "serde",
@@ -11854,7 +11863,7 @@ dependencies = [
  "rand 0.8.6",
  "rand_distr 0.4.3",
  "rayon",
- "redb",
+ "redb 2.6.3",
  "rkyv",
  "serde",
  "serde_json",
@@ -12295,7 +12304,7 @@ dependencies = [
  "rand 0.8.6",
  "rand_distr 0.4.3",
  "rayon",
- "redb",
+ "redb 2.6.3",
  "rkyv",
  "roaring",
  "ruvector-core 0.1.31",
@@ -12347,7 +12356,7 @@ dependencies = [
  "rand 0.8.6",
  "rand_distr 0.4.3",
  "rayon",
- "redb",
+ "redb 4.1.0",
  "rkyv",
  "roaring",
  "ruvector-cluster",
@@ -12994,7 +13003,7 @@ dependencies = [
  "proptest",
  "rand 0.8.6",
  "rayon",
- "redb",
+ "redb 4.1.0",
  "rkyv",
  "serde",
  "serde_json",
@@ -13332,7 +13341,7 @@ dependencies = [
  "rand 0.8.6",
  "rand_distr 0.4.3",
  "rayon",
- "redb",
+ "redb 4.1.0",
  "rusqlite",
  "safetensors 0.4.5",
  "serde",
