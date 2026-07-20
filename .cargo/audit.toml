@@ -104,10 +104,19 @@ ignore = [
     "RUSTSEC-2026-0116",
     "RUSTSEC-2026-0117",
 
-    # glib — Iterator/DoubleEndedIterator unsoundness. Transitive via the
-    # examples/rvf-desktop GTK3 stack; we do not use the affected iterators.
-    "RUSTSEC-2024-0429",
-    # memmap2 — unchecked pointer offset. Transitive via candle-core mmap
-    # model loading; offsets are computed from trusted local model files.
-    "RUSTSEC-2026-0186",
+    # quick-xml 0.26.0 — two DoS advisories: unbounded namespace-declaration
+    # allocation (RUSTSEC-2026-0195) and quadratic run time on duplicate
+    # attribute-name checks (RUSTSEC-2026-0194). Both require quick-xml >=0.41,
+    # but quick-xml is pinned transitively through the benchmark-only profiling
+    # chain: ruvector-bench --(profiling feature)--> pprof 0.13 --> inferno
+    # 0.11.21 --> quick-xml ^0.26. pprof 0.13 has no in-major release that moves
+    # off inferno 0.11, so there is no compatible upgrade path without a pprof
+    # major bump (breaking ruvector-bench). quick-xml here parses only our own
+    # locally-generated flamegraph SVG during `cargo bench` profiling — it never
+    # touches attacker-controlled XML and is never compiled into a production
+    # binary (same benchmark-only basis as the pprof RUSTSEC-2026-0002 ignore).
+    # Re-evaluate when pprof ships a release that pulls inferno with quick-xml
+    # >=0.41.
+    "RUSTSEC-2026-0194",
+    "RUSTSEC-2026-0195",
 ]
