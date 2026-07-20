@@ -9,7 +9,7 @@ import type { EvidenceProvider, RuvnEvidenceDossier } from "./types.ts";
 import { CachedEvidenceProvider } from "./cachedProvider.ts";
 
 export type RuvnOptions = {
-  bin?: string; // default: npx -y @ruvnet/ruvn
+  bin?: string; // default: a pinned ruvn binary available on PATH
   timeoutMs?: number;
   fallback?: EvidenceProvider;
 };

@@ -4,7 +4,7 @@
 // graph + contradictions -> priors -> Darwin-selected fusion policy -> verifiable
 // run ledger -> safe UI packet. No real patient data, no diagnosis, no claims.
 //
-// Run: npm run benchmark   (node --experimental-strip-types)
+// Run: bun run benchmark
 
 import { labAdapter } from "./src/ingest/labAdapter.ts";
 import { imagingAdapter } from "./src/ingest/imagingAdapter.ts";

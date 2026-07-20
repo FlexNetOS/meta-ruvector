@@ -26,9 +26,9 @@ human review. Claims ship only on ruvn evidence grade **A or B** with citations.
 ## Run
 
 ```bash
-npm install
-npm test        # 14 tests (ingest, graph, contradictions, fusion, ledger, evidence gate)
-npm run benchmark   # acoustic-only vs evolved multimodal fusion + ledger verification
+bun install
+bun test        # ingest, graph, contradictions, fusion, ledger, and evidence gates
+bun run benchmark   # acoustic-only vs evolved multimodal fusion + ledger verification
 ```
 
 Representative benchmark: +10% reconstruction stability, ~37% uncertainty drop,

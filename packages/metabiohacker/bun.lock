@@ -1,0 +1,15 @@
+{
+  "lockfileVersion": 1,
+  "configVersion": 1,
+  "workspaces": {
+    "": {
+      "name": "@metabiohacker/core",
+      "devDependencies": {
+        "@metaharness/darwin": "^0.3.1",
+      },
+    },
+  },
+  "packages": {
+    "@metaharness/darwin": ["@metaharness/darwin@0.3.1", "", { "bin": { "metaharness-darwin": "dist/cli.js" } }, "sha512-gNQQQiSsbcsSXG9g1C7IJoX50Ozw1nIg6Nez40OVKo5PSvlGjDKElBjFng7M7O7bIrlBo0fS9lcP5hjEQXi+iQ=="],
+  }
+}

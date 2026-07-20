@@ -39,7 +39,7 @@ let scanned_files = policy_files
 let remote_cache_pattern = "(?i)(actions/cache|Swatinem/rust-cache|magic-nix-cache|cachix|type=gha|sccache|ccache)"
 let cache_key_pattern = "(?i)^\\s*(cache|cache-dependency-path|cache-from|cache-to)\\s*:"
 let rust_wrapper_pattern = "(?i)^\\s*(RUSTC_WRAPPER|RUSTC_WORKSPACE_WRAPPER)\\s*:"
-let forbidden_shell_pattern = "(?i)(shell\\s*:\\s*(bash|sh|zsh|pwsh|powershell|cmd)|\\b(bash|sh|zsh|pwsh|powershell)\\b|\\.(bash|sh|zsh)\\b)"
+let forbidden_shell_pattern = "(?i)(shell\\s*:\\s*(bash|sh|zsh|pwsh|powershell|cmd)|(^|\\s)(bash|sh|zsh|pwsh|powershell|cmd)(\\s|$)|\\.(bash|sh|zsh)\\b)"
 
 mut violations = []
 $violations = $violations | append (matching_lines $scanned_files $remote_cache_pattern "remote or non-Kache cache")
@@ -50,12 +50,15 @@ $violations = $violations | append (
 )
 
 let active_workflows = glob ".github/workflows/*.{yml,yaml}" | each {|file| $file | path relative-to $env.PWD }
-let unexpected_active = $active_workflows | where {|file| $file != $active_policy_workflow }
-$violations = $violations | append ($unexpected_active | each {|file| {
+let workflows_without_nushell = $active_workflows | where {|file|
+  let workflow = open $file --raw
+  not ($workflow | str contains "shell: nu {0}")
+}
+$violations = $violations | append ($workflows_without_nushell | each {|file| {
   file: $file
   line: 1
   rule: "workflow has not completed the Nushell port"
-  text: "move it back only after its run steps are native Nushell"
+  text: "defaults.run.shell must be nu {0} before workflow run steps are active"
 } })
 
 if ($active_policy_workflow | path exists) {
@@ -68,7 +71,8 @@ if ($active_policy_workflow | path exists) {
       text: "defaults.run.shell must be nu {0}"
     }
   }
-  $violations = $violations | append (matching_lines [($active_policy_workflow | path expand)] $forbidden_shell_pattern "automatic shell is not Nushell")
+  let active_workflow_paths = $active_workflows | each {|file| $file | path expand }
+  $violations = $violations | append (matching_lines $active_workflow_paths $forbidden_shell_pattern "automatic shell is not Nushell")
 } else {
   $violations = $violations | append {
     file: $active_policy_workflow
@@ -84,4 +88,4 @@ if ($violations | is-not-empty) {
   exit 1
 }
 
-print $"automation policy: PASS — (($scanned_files | length)) automation files contain no non-Kache cache directives; only the Nushell policy workflow is active"
+print $"automation policy: PASS — (($scanned_files | length)) automation files contain no non-Kache cache directives; (($active_workflows | length)) active workflows use Nushell defaults"
