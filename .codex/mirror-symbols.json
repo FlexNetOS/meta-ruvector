@@ -5799,9 +5799,9 @@
       "mirror": ".codex/mirror/.claude/settings.json",
       "kind": "setting",
       "executable": false,
-      "bytes": 8049,
-      "sourceSha256": "0ef4e89f333fabbd45a1ccfdfd37323fd130f9052e61e9419b44f462f99d5699",
-      "mirrorSha256": "0ef4e89f333fabbd45a1ccfdfd37323fd130f9052e61e9419b44f462f99d5699",
+      "bytes": 8025,
+      "sourceSha256": "04a10aeace342bd7a92d90ba8f5766e63e726ca0165cd3a8dd995959a4a7385c",
+      "mirrorSha256": "04a10aeace342bd7a92d90ba8f5766e63e726ca0165cd3a8dd995959a4a7385c",
       "symbols": {
         "envKeys": [
           "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS",

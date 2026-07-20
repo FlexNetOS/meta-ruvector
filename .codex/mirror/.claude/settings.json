@@ -257,7 +257,7 @@
       {
         "hooks": [
           {
-            "command": "\"./.claude/helpers/run-rtk-command.sh\" sh -lc 'root=\"$(git rev-parse --show-toplevel)\"; exec rusty-idd next --base \"$root\"'",
+            "command": "rtk run 'sh -lc '\\''root=\"$(git rev-parse --show-toplevel)\"; exec rusty-idd next --base \"$root\"'\\'''",
             "statusMessage": "Rusty IDD front door: computing the next step",
             "timeout": 180,
             "type": "command"
@@ -313,7 +313,7 @@
   "permissions": {
     "allow": [
       "Bash(node .claude/*)",
-      "mcp__claude-flow__:*",
+      "mcp__claude-flow__*",
       "Bash(rtk *)"
     ],
     "deny": [

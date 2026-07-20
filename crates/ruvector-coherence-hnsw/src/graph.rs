@@ -103,8 +103,7 @@ impl FlatGraph {
         if m_lj > 0 {
             let mut rng = StdRng::seed_from_u64(0xBAD_C0FFEEu64);
             let dist = Uniform::new(0usize, n);
-            #[allow(clippy::needless_range_loop)]
-            for i in 0..n {
+            for (i, node_neighbors) in neighbors.iter_mut().enumerate().take(n) {
                 let mut added = 0usize;
                 let mut attempts = 0usize;
                 while added < m_lj && attempts < m_lj * 8 {

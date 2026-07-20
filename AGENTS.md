@@ -55,5 +55,3 @@ cargo fmt -p codex-env
 cargo test -p codex-env
 cargo run -p codex-env -- mirror --check
 ```
-
-@RTK.md
