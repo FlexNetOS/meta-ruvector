@@ -25,7 +25,7 @@
 
 use super::{Component, ComponentTickResult, KernelInterface};
 use crate::{config, Result};
-use ruvix_types::{CapHandle, ProofAttestation, ProofPayload, ProofTier, ProofToken, RegionHandle};
+use ruvix_types::{CapHandle, ProofAttestation, ProofTier, RegionHandle};
 use sha2::{Digest, Sha256};
 
 /// Attestation request from pipeline components.

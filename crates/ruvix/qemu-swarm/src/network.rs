@@ -26,11 +26,7 @@ impl MacAddress {
     /// Create a MAC address from a node index.
     /// Uses the QEMU locally-administered unicast prefix (52:54:00).
     pub fn from_index(index: usize) -> Self {
-        Self([
-            0x52, 0x54, 0x00,
-            0x12, 0x34,
-            (index & 0xFF) as u8,
-        ])
+        Self([0x52, 0x54, 0x00, 0x12, 0x34, (index & 0xFF) as u8])
     }
 
     /// Parse a MAC address from string.
@@ -387,7 +383,10 @@ impl NetworkTopology {
     /// Print ASCII visualization of the topology.
     pub fn ascii_diagram(&self) -> String {
         let mut output = String::new();
-        output.push_str(&format!("Topology: {} ({} nodes)\n", self.topology_type, self.node_count));
+        output.push_str(&format!(
+            "Topology: {} ({} nodes)\n",
+            self.topology_type, self.node_count
+        ));
         output.push_str("Adjacency:\n");
 
         // Header

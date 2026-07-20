@@ -8,8 +8,6 @@ license = "MIT"
 readme = "README.md"
 
 # Enable standalone compilation
-[workspace]
-
 [lib]
 name = "thermodynamic_learning"
 path = "src/lib.rs"
@@ -17,6 +15,11 @@ path = "src/lib.rs"
 [[bench]]
 name = "thermodynamic_bench"
 harness = false
+
+[features]
+# Optional SIMD-accelerated kernels (referenced via `#[cfg(feature = "simd")]`);
+# off by default so the crate builds with the scalar reference implementation.
+simd = []
 
 [dependencies]
 # For random number generation (already used in existing code)

@@ -3,8 +3,8 @@
     "command-succeeded": 0.8,
     "command-failed": -0.07287493536618515,
     "_meta": {
-      "lastUpdate": "2025-12-29T18:24:18.698Z",
-      "updateCount": 5174
+      "lastUpdate": "2026-07-09T20:42:43.912Z",
+      "updateCount": 7701
     }
   },
   "test_in_general": {
@@ -53,11 +53,11 @@
     }
   },
   "git_in_general": {
-    "command-succeeded": 0.8,
+    "command-succeeded": 0.28955078162467823,
     "command-failed": -0.02941523307132153,
     "_meta": {
-      "lastUpdate": "2025-12-29T18:25:18.301Z",
-      "updateCount": 305
+      "lastUpdate": "2026-07-09T20:43:08.409Z",
+      "updateCount": 342
     }
   },
   "other_in_rvlite": {
@@ -124,11 +124,11 @@
     }
   },
   "cargo_in_general": {
-    "command-succeeded": 0.03282057241011145,
+    "command-succeeded": 0.010482848579471786,
     "command-failed": -0.005270462766947299,
     "_meta": {
-      "lastUpdate": "2025-12-29T18:16:12.025Z",
-      "updateCount": 90
+      "lastUpdate": "2026-07-08T02:01:43.134Z",
+      "updateCount": 91
     }
   },
   "build_in_mincut": {
@@ -367,51 +367,51 @@
   },
   "edit_json_in_project": {
     "_meta": {
-      "lastUpdate": "2025-12-25T21:47:48.596Z",
-      "updateCount": 81
+      "lastUpdate": "2026-07-09T20:04:49.694Z",
+      "updateCount": 94
     },
     "config-specialist": 0.75,
-    "successful-edit": 0.03316421614222487
+    "successful-edit": 0.11371534879280397
   },
   "edit_js_in_project": {
     "_meta": {
-      "lastUpdate": "2025-12-25T21:41:44.338Z",
-      "updateCount": 97
+      "lastUpdate": "2026-07-09T11:47:18.297Z",
+      "updateCount": 100
     },
     "javascript-developer": 0.75,
-    "successful-edit": 0.0601478273971287
+    "successful-edit": 0.029848407680038443
   },
   "edit_md_in_project": {
     "_meta": {
-      "lastUpdate": "2025-11-20T20:13:09.000Z",
-      "updateCount": 121,
-      "firstSeen": "2025-12-25T20:20:35.000Z"
+      "lastUpdate": "2026-07-09T20:43:14.865Z",
+      "updateCount": 151
     },
-    "technical-writer": 0.75
+    "technical-writer": 0.75,
+    "successful-edit": 0.23910769464486142
   },
   "edit_sh_in_project": {
     "_meta": {
-      "lastUpdate": "2025-12-29T18:22:21.441Z",
-      "updateCount": 17
+      "lastUpdate": "2026-07-09T20:27:36.060Z",
+      "updateCount": 42
     },
     "system-admin": 0.75,
-    "successful-edit": 0.024253562503633298
+    "successful-edit": 0.3433987484860673
   },
   "edit_toml_in_project": {
     "_meta": {
-      "lastUpdate": "2025-11-20T21:16:24.000Z",
-      "updateCount": 4,
-      "firstSeen": "2025-12-25T19:11:38.000Z"
+      "lastUpdate": "2026-07-09T12:54:57.759Z",
+      "updateCount": 16
     },
-    "general-developer": 0.45320426448880974
+    "general-developer": 0.45320426448880974,
+    "successful-edit": 0.307717811803321
   },
   "edit_rs_in_project": {
     "_meta": {
-      "lastUpdate": "2025-11-22T22:37:26.000Z",
-      "updateCount": 21,
-      "firstSeen": "2025-12-25T19:11:12.000Z"
+      "lastUpdate": "2026-07-09T12:06:18.697Z",
+      "updateCount": 65
     },
-    "rust-developer": 0.75
+    "rust-developer": 0.75,
+    "successful-edit": 0.45701354846044967
   },
   "edit_md_in_ruvector-mincut": {
     "_meta": {
@@ -551,11 +551,11 @@
   },
   "edit_txt_in_project": {
     "_meta": {
-      "lastUpdate": "2025-11-22T22:40:34.000Z",
-      "updateCount": 2,
-      "firstSeen": "2025-12-13T19:09:42.000Z"
+      "lastUpdate": "2026-07-08T12:41:39.656Z",
+      "updateCount": 13
     },
-    "general-developer": 0.3131370849898476
+    "general-developer": 0.3131370849898476,
+    "successful-edit": 0.34496276970446255
   },
   "edit_html_in_rvlite": {
     "_meta": {
@@ -599,11 +599,11 @@
   },
   "edit_py_in_project": {
     "_meta": {
-      "lastUpdate": "2025-12-10T23:17:56.000Z",
-      "updateCount": 1,
-      "firstSeen": "2025-12-10T23:17:56.000Z"
+      "lastUpdate": "2026-07-08T02:57:22.143Z",
+      "updateCount": 5
     },
-    "python-developer": 0.2
+    "python-developer": 0.2,
+    "successful-edit": 0.20515694766155035
   },
   "edit_csv_in_rvlite": {
     "_meta": {
@@ -727,19 +727,19 @@
   },
   "edit_mjs_in_project": {
     "_meta": {
-      "lastUpdate": "2025-11-21T03:09:21.000Z",
-      "updateCount": 15,
-      "firstSeen": "2025-11-23T00:06:52.000Z"
+      "lastUpdate": "2026-07-09T12:34:49.018Z",
+      "updateCount": 17
     },
-    "general-developer": 0.7421836978719482
+    "general-developer": 0.7421836978719482,
+    "successful-edit": 0.04864620261232441
   },
   "edit_yml_in_project": {
     "_meta": {
-      "lastUpdate": "2025-11-21T13:15:05.000Z",
-      "updateCount": 9,
-      "firstSeen": "2025-11-22T20:53:41.000Z"
+      "lastUpdate": "2026-07-09T11:39:50.278Z",
+      "updateCount": 33
     },
-    "devops-engineer": 0.6334005739406754
+    "devops-engineer": 0.6334005739406754,
+    "successful-edit": 0.40816675096835364
   },
   "edit_toml_in_ruvector-tiny-dancer-wasm": {
     "_meta": {
@@ -1079,5 +1079,138 @@
       "updateCount": 3
     },
     "successful-edit": 0.21190563708295282
+  },
+  "edit_rs_in_ruvllm": {
+    "_meta": {
+      "lastUpdate": "2026-07-07T21:03:56.714Z",
+      "updateCount": 1
+    },
+    "successful-edit": 0.1
+  },
+  "edit_rs_in_engine": {
+    "_meta": {
+      "lastUpdate": "2026-07-08T08:03:15.854Z",
+      "updateCount": 38
+    },
+    "successful-edit": 0.6607724329376969
+  },
+  "edit_toml_in_rvagent": {
+    "_meta": {
+      "lastUpdate": "2026-07-08T07:22:41.118Z",
+      "updateCount": 9
+    },
+    "successful-edit": 0.38075800197471343
+  },
+  "edit_rs_in_rvagent": {
+    "_meta": {
+      "lastUpdate": "2026-07-08T10:53:33.697Z",
+      "updateCount": 47
+    },
+    "successful-edit": 0.6980129820233167
+  },
+  "edit_msg_in_project": {
+    "_meta": {
+      "lastUpdate": "2026-07-08T07:24:12.923Z",
+      "updateCount": 7
+    },
+    "successful-edit": 0.3370148412367002
+  },
+  "edit_rs_in_cli": {
+    "_meta": {
+      "lastUpdate": "2026-07-09T09:51:07.650Z",
+      "updateCount": 11
+    },
+    "successful-edit": 0.3776242849713446
+  },
+  "edit_rs_in_nu_plugin_codedb": {
+    "_meta": {
+      "lastUpdate": "2026-07-08T03:55:30.472Z",
+      "updateCount": 3
+    },
+    "successful-edit": 0.2119116402516489
+  },
+  "edit_rs_in_codedb_store_redb": {
+    "_meta": {
+      "lastUpdate": "2026-07-09T12:53:23.617Z",
+      "updateCount": 8
+    },
+    "successful-edit": 0.3501442474998145
+  },
+  "edit_rs_in_codedb": {
+    "_meta": {
+      "lastUpdate": "2026-07-09T13:02:26.025Z",
+      "updateCount": 23
+    },
+    "successful-edit": 0.5323220302762267
+  },
+  "edit_rs_in_codedb_core": {
+    "_meta": {
+      "lastUpdate": "2026-07-09T12:51:36.214Z",
+      "updateCount": 8
+    },
+    "successful-edit": 0.33846678367545824
+  },
+  "edit_toml_in_engine": {
+    "_meta": {
+      "lastUpdate": "2026-07-09T09:03:57.034Z",
+      "updateCount": 3
+    },
+    "successful-edit": 0.2116215728531461
+  },
+  "edit_rs_in_runner": {
+    "_meta": {
+      "lastUpdate": "2026-07-09T09:57:14.528Z",
+      "updateCount": 5
+    },
+    "successful-edit": 0.284726364696201
+  },
+  "edit_rs_in_core": {
+    "_meta": {
+      "lastUpdate": "2026-07-09T12:36:11.882Z",
+      "updateCount": 5
+    },
+    "successful-edit": 0.2832733083815419
+  },
+  "edit_rs_in_merge-tools": {
+    "_meta": {
+      "lastUpdate": "2026-07-09T11:09:35.633Z",
+      "updateCount": 1
+    },
+    "successful-edit": 0.1
+  },
+  "edit_toml_in_external": {
+    "_meta": {
+      "lastUpdate": "2026-07-09T11:11:03.869Z",
+      "updateCount": 1
+    },
+    "successful-edit": 0.1
+  },
+  "edit_rs_in_external": {
+    "_meta": {
+      "lastUpdate": "2026-07-09T11:11:07.852Z",
+      "updateCount": 1
+    },
+    "successful-edit": 0.1
+  },
+  "edit_toml_in_codedb_store_pg": {
+    "_meta": {
+      "lastUpdate": "2026-07-09T12:53:55.792Z",
+      "updateCount": 1
+    },
+    "successful-edit": 0.1
+  },
+  "edit_rs_in_codedb_store_pg": {
+    "_meta": {
+      "lastUpdate": "2026-07-09T12:59:48.180Z",
+      "updateCount": 2
+    },
+    "successful-edit": 0.16360812527178098
+  },
+  "edit_toml_in_codedb": {
+    "_meta": {
+      "lastUpdate": "2026-07-09T12:55:06.127Z",
+      "updateCount": 1
+    },
+    "successful-edit": 0.1
   }
 }

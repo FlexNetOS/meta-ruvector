@@ -6,12 +6,15 @@
 
 use std::process::Command;
 
-const RUOS_THERMAL: &str = env!("CARGO_BIN_EXE_ruos-thermal");
+fn ruos_thermal_bin() -> String {
+    std::env::var("CARGO_BIN_EXE_ruos-thermal")
+        .expect("CARGO_BIN_EXE_ruos-thermal set by Cargo when tests run")
+}
 
 #[test]
 fn version_flag_prints_pkg_name_and_version() {
     for arg in &["--version", "-V"] {
-        let out = Command::new(RUOS_THERMAL).arg(arg).output().unwrap();
+        let out = Command::new(ruos_thermal_bin()).arg(arg).output().unwrap();
         assert!(out.status.success(), "exited {:?}", out.status);
         let line = String::from_utf8_lossy(&out.stdout).trim().to_string();
         assert!(line.starts_with("ruos-thermal "), "got: {:?}", line);
@@ -22,7 +25,10 @@ fn version_flag_prints_pkg_name_and_version() {
 
 #[test]
 fn show_profiles_lists_all_five_profiles() {
-    let out = Command::new(RUOS_THERMAL).arg("--show-profiles").output().unwrap();
+    let out = Command::new(ruos_thermal_bin())
+        .arg("--show-profiles")
+        .output()
+        .unwrap();
     assert!(out.status.success());
     let stdout = String::from_utf8_lossy(&out.stdout);
     let lines: Vec<&str> = stdout.lines().collect();
@@ -30,25 +36,34 @@ fn show_profiles_lists_all_five_profiles() {
     assert_eq!(lines.len(), 6, "expected 6 lines, got: {}", stdout);
     assert!(lines[0].starts_with("name\ttarget-mhz"));
     for name in &["eco", "default", "safe-overclock", "aggressive", "max"] {
-        assert!(stdout.contains(name), "missing profile {}: {}", name, stdout);
+        assert!(
+            stdout.contains(name),
+            "missing profile {}: {}",
+            name,
+            stdout
+        );
     }
 }
 
 #[test]
 fn set_profile_without_allow_cpufreq_write_refuses() {
-    let out = Command::new(RUOS_THERMAL)
+    let out = Command::new(ruos_thermal_bin())
         .args(["--set-profile", "eco"])
         .output()
         .unwrap();
     assert!(!out.status.success(), "expected non-zero exit");
     assert_eq!(out.status.code(), Some(1));
     let stderr = String::from_utf8_lossy(&out.stderr);
-    assert!(stderr.contains("--allow-cpufreq-write"), "stderr: {}", stderr);
+    assert!(
+        stderr.contains("--allow-cpufreq-write"),
+        "stderr: {}",
+        stderr
+    );
 }
 
 #[test]
 fn set_profile_unknown_name_errors_cleanly() {
-    let out = Command::new(RUOS_THERMAL)
+    let out = Command::new(ruos_thermal_bin())
         .args(["--set-profile", "ludicrous-speed"])
         .output()
         .unwrap();
@@ -59,7 +74,7 @@ fn set_profile_unknown_name_errors_cleanly() {
 
 #[test]
 fn json_and_prom_are_mutually_exclusive() {
-    let out = Command::new(RUOS_THERMAL)
+    let out = Command::new(ruos_thermal_bin())
         .args(["--json", "--prom"])
         .output()
         .unwrap();
@@ -70,9 +85,16 @@ fn json_and_prom_are_mutually_exclusive() {
 
 #[test]
 fn unknown_arg_exits_one_with_usage_hint() {
-    let out = Command::new(RUOS_THERMAL).arg("--bogus").output().unwrap();
+    let out = Command::new(ruos_thermal_bin())
+        .arg("--bogus")
+        .output()
+        .unwrap();
     assert_eq!(out.status.code(), Some(1));
     let stderr = String::from_utf8_lossy(&out.stderr);
     assert!(stderr.contains("unknown arg"), "stderr: {}", stderr);
-    assert!(stderr.contains("--help"), "stderr should hint at --help: {}", stderr);
+    assert!(
+        stderr.contains("--help"),
+        "stderr should hint at --help: {}",
+        stderr
+    );
 }

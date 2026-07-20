@@ -11,9 +11,6 @@
 //! - Fused operations for reduced memory traffic
 //! - Auto-vectorization hints for compiler
 
-#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-use std::arch::x86_64::*;
-
 /// Batch correlation matrix computation with SIMD
 ///
 /// Computes correlation matrix for multiple time series simultaneously
@@ -47,8 +44,8 @@ pub fn batch_correlation_matrix_simd(time_series: &[Vec<f32>]) -> Vec<Vec<f64>> 
     let mut corr_matrix = vec![vec![0.0; n]; n];
 
     // Diagonal is 1.0 (self-correlation)
-    for i in 0..n {
-        corr_matrix[i][i] = 1.0;
+    for (i, row) in corr_matrix.iter_mut().enumerate() {
+        row[i] = 1.0;
     }
 
     // Compute means and standard deviations

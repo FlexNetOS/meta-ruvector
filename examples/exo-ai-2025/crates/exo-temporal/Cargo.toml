@@ -14,7 +14,7 @@ readme = "README.md"
 
 [dependencies]
 # Core types from exo-core
-exo-core = "0.1"
+exo-core = { path = "../exo-core" }
 ruvector-domain-expansion = "2.0"
 
 # Concurrent data structures

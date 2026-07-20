@@ -20,10 +20,10 @@
 //! | SGI | Message | Purpose |
 //! |-----|---------|---------|
 //! | 0 | Reschedule | Wake idle CPU for scheduling |
-//! | 1 | TlbFlush | Invalidate TLB entries |
-//! | 2 | FunctionCall | Execute function on target |
+//! | 1 | `TlbFlush` | Invalidate TLB entries |
+//! | 2 | `FunctionCall` | Execute function on target |
 //! | 3 | Halt | Stop CPU (for debugging) |
-//! | 4 | CallFunction | Generic function call |
+//! | 4 | `CallFunction` | Generic function call |
 //!
 //! ## Example
 //!
@@ -137,9 +137,7 @@ impl IpiMessage {
     pub const fn requires_ack(&self) -> bool {
         matches!(
             self,
-            IpiMessage::TlbFlush { .. }
-                | IpiMessage::FunctionCall { .. }
-                | IpiMessage::Heartbeat
+            IpiMessage::TlbFlush { .. } | IpiMessage::FunctionCall { .. } | IpiMessage::Heartbeat
         )
     }
 
@@ -147,7 +145,7 @@ impl IpiMessage {
     #[inline]
     pub const fn priority(&self) -> u8 {
         match self {
-            IpiMessage::Halt => 0,        // Highest
+            IpiMessage::Halt => 0, // Highest
             IpiMessage::DebugBreak => 1,
             IpiMessage::TlbFlush { .. } => 2,
             IpiMessage::FunctionCall { .. } => 3,
@@ -167,16 +165,16 @@ impl fmt::Display for IpiMessage {
             IpiMessage::Reschedule => write!(f, "RESCHED"),
             IpiMessage::TlbFlush { asid } => {
                 if let Some(a) = asid {
-                    write!(f, "TLB_FLUSH(ASID={})", a)
+                    write!(f, "TLB_FLUSH(ASID={a})")
                 } else {
                     write!(f, "TLB_FLUSH(ALL)")
                 }
             }
-            IpiMessage::FunctionCall { func_id } => write!(f, "FUNC_CALL({})", func_id),
+            IpiMessage::FunctionCall { func_id } => write!(f, "FUNC_CALL({func_id})"),
             IpiMessage::Halt => write!(f, "HALT"),
             IpiMessage::WakeUp => write!(f, "WAKE"),
             IpiMessage::TimerSync => write!(f, "TIMER_SYNC"),
-            IpiMessage::Data { payload } => write!(f, "DATA({:#x})", payload),
+            IpiMessage::Data { payload } => write!(f, "DATA({payload:#x})"),
             IpiMessage::PerfSnapshot => write!(f, "PERF"),
             IpiMessage::DebugBreak => write!(f, "DEBUG"),
             IpiMessage::Heartbeat => write!(f, "HEARTBEAT"),
@@ -220,10 +218,10 @@ impl IpiTarget {
 impl fmt::Display for IpiTarget {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            IpiTarget::Cpu(cpu) => write!(f, "{}", cpu),
+            IpiTarget::Cpu(cpu) => write!(f, "{cpu}"),
             IpiTarget::All => write!(f, "ALL"),
             IpiTarget::AllOther => write!(f, "ALL_OTHER"),
-            IpiTarget::Mask(mask) => write!(f, "MASK({:#x})", mask),
+            IpiTarget::Mask(mask) => write!(f, "MASK({mask:#x})"),
         }
     }
 }
@@ -292,20 +290,28 @@ impl fmt::Display for IpiResult {
 ///
 /// # Platform Notes
 ///
-/// On ARM64 with GICv3:
-/// - Uses ICC_SGI1R_EL1 for SGI generation
+/// On ARM64 with `GICv3`:
+/// - Uses `ICC_SGI1R_EL1` for SGI generation
 /// - Target list encoded in affinity fields
 /// - SGI number from message type
 ///
 /// In test mode, this is a no-op that always succeeds.
 #[inline]
 pub fn send_ipi(target: IpiTarget, msg: IpiMessage) -> IpiResult {
-    #[cfg(all(target_arch = "aarch64", feature = "aarch64", not(feature = "test-mode")))]
+    #[cfg(all(
+        target_arch = "aarch64",
+        feature = "aarch64",
+        not(feature = "test-mode")
+    ))]
     {
         send_ipi_gicv3(target, msg)
     }
 
-    #[cfg(any(not(target_arch = "aarch64"), not(feature = "aarch64"), feature = "test-mode"))]
+    #[cfg(any(
+        not(target_arch = "aarch64"),
+        not(feature = "aarch64"),
+        feature = "test-mode"
+    ))]
     {
         // In test mode, just log and return success
         let _ = (target, msg);
@@ -314,7 +320,11 @@ pub fn send_ipi(target: IpiTarget, msg: IpiMessage) -> IpiResult {
 }
 
 /// Send IPI via GICv3 (ARM64 implementation)
-#[cfg(all(target_arch = "aarch64", feature = "aarch64", not(feature = "test-mode")))]
+#[cfg(all(
+    target_arch = "aarch64",
+    feature = "aarch64",
+    not(feature = "test-mode")
+))]
 fn send_ipi_gicv3(target: IpiTarget, msg: IpiMessage) -> IpiResult {
     use core::arch::asm;
 

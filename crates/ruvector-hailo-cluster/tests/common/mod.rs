@@ -9,9 +9,20 @@ use std::net::{SocketAddr, TcpListener};
 use std::process::{Command, Stdio};
 use std::time::{Duration, Instant};
 
-/// Path to the built fakeworker binary — provided by Cargo at test
-/// compile time. Bin name comes from the crate's `[[bin]]` section.
-pub const FAKEWORKER: &str = env!("CARGO_BIN_EXE_ruvector-hailo-fakeworker");
+/// Return the path to a Cargo-built integration-test binary.
+///
+/// Use a runtime lookup instead of `env!("CARGO_BIN_EXE_...")` so
+/// `cargo clippy --all-targets` can type-check the integration tests
+/// without requiring Cargo to define binary paths at compile time.
+pub fn cargo_bin(name: &str) -> String {
+    let key = format!("CARGO_BIN_EXE_{name}");
+    std::env::var(&key).unwrap_or_else(|_| panic!("{key} not set by Cargo"))
+}
+
+/// Path to the built fakeworker binary — provided by Cargo when tests run.
+pub fn fakeworker_bin() -> String {
+    cargo_bin("ruvector-hailo-fakeworker")
+}
 
 /// Allocate a free TCP port by binding briefly + dropping. Cheap race
 /// (port could be reused before fakeworker grabs it) but in CI this
@@ -33,7 +44,7 @@ pub fn free_port() -> u16 {
 /// becomes reachable.
 pub fn spawn_fakeworker(port: u16, dim: usize, fingerprint: &str) -> std::process::Child {
     let bind: SocketAddr = format!("127.0.0.1:{}", port).parse().unwrap();
-    let mut cmd = Command::new(FAKEWORKER);
+    let mut cmd = Command::new(fakeworker_bin());
     cmd.env("RUVECTOR_FAKE_BIND", bind.to_string())
         .env("RUVECTOR_FAKE_DIM", dim.to_string())
         // Suppress fakeworker's startup logs during tests — we don't

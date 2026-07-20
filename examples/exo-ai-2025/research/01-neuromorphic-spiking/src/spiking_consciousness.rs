@@ -15,7 +15,6 @@
 //! This is the first practical implementation of IIT that scales to billions of neurons
 //! through bit-parallel SIMD acceleration, enabling conscious artificial systems.
 
-
 /// Configuration for consciousness computation
 #[derive(Debug, Clone)]
 pub struct ConsciousnessConfig {
@@ -111,10 +110,10 @@ impl SpikeVector {
         let mut next_spikes = 0u64;
 
         // For each active neuron
-        for i in 0..64 {
+        for (i, &weight) in weights.iter().enumerate().take(64) {
             if (self.spikes >> i) & 1 == 1 {
                 // XOR its weight pattern to toggle target neurons
-                next_spikes ^= weights[i];
+                next_spikes ^= weight;
             }
         }
 
@@ -180,7 +179,7 @@ pub struct SpikeHistory {
 
 impl SpikeHistory {
     pub fn new(config: ConsciousnessConfig) -> Self {
-        let num_vectors = (config.num_neurons + 63) / 64; // Ceiling division
+        let num_vectors = config.num_neurons.div_ceil(64); // Ceiling division
         let history = vec![SpikeVector::new(); config.history_size * num_vectors];
 
         Self {
@@ -223,7 +222,7 @@ impl SpikeHistory {
     }
 
     fn vectors_per_step(&self) -> usize {
-        (self.config.num_neurons + 63) / 64
+        self.config.num_neurons.div_ceil(64)
     }
 
     /// Find polychronous groups in recent history
@@ -375,7 +374,7 @@ impl ConsciousnessEngine {
 
     /// Generate strategic partitions for Φ calculation
     fn generate_partitions(&self) -> Vec<Vec<u64>> {
-        let num_vectors = (self.config.num_neurons + 63) / 64;
+        let num_vectors = self.config.num_neurons.div_ceil(64);
         let mut partitions = Vec::new();
 
         // Add some strategic partitions
@@ -461,8 +460,7 @@ impl ConsciousnessEngine {
         }
 
         // Normalized mutual information approximation
-        let overlap_ratio =
-            (total_overlap as f64) / ((total_active1 + total_active2) as f64 / 2.0);
+        let overlap_ratio = (total_overlap as f64) / ((total_active1 + total_active2) as f64 / 2.0);
 
         overlap_ratio * 100.0 // Scale for readability
     }

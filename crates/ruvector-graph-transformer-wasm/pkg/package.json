@@ -4,7 +4,7 @@
   "collaborators": [
     "Ruvector Team"
   ],
-  "description": "WASM bindings for ruvector-graph-transformer: proof-gated graph attention in the browser",
+  "description": "Self-contained WASM graph-transformer implementation (proof-gated attention, verified training) for the browser",
   "version": "2.2.3",
   "license": "MIT",
   "repository": {
