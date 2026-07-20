@@ -119,7 +119,13 @@ fn git_filter_paths(
     if args.first() == Some(&"check-ignore") {
         if let Some(mut stdin) = child.stdin.take() {
             for file in files {
-                writeln!(stdin, "{}", file.display())?;
+                if let Err(error) = writeln!(stdin, "{}", file.display()) {
+                    // A non-repository exits `git check-ignore` before consuming stdin.
+                    if error.kind() == std::io::ErrorKind::BrokenPipe {
+                        break;
+                    }
+                    return Err(error.into());
+                }
             }
         }
     }

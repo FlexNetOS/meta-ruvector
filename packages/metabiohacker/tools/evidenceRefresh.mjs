@@ -3,7 +3,7 @@
 // a CANDIDATE cache. Promotion to the curated src/evidence/cache.json is a
 // reviewed step — refreshed evidence never auto-ships claims (ADR-0023).
 //
-// Run: OPENROUTER_API_KEY=... npm run evidence:refresh
+// Run: OPENROUTER_API_KEY=... bun run evidence:refresh
 
 import fs from "node:fs";
 import path from "node:path";

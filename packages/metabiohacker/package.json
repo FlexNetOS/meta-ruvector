@@ -5,10 +5,10 @@
   "type": "module",
   "description": "MetaBioHacker multimodal ingest, patient state graph, fusion harness, and reconstruction run ledger. Frozen physics engine; evolved harness; full provenance.",
   "scripts": {
-    "test": "node --test --experimental-strip-types \"test/**/*.test.ts\"",
-    "benchmark": "node --experimental-strip-types benchmark.mjs",
-    "optimize": "node --experimental-strip-types benchmark.mjs",
-    "evidence:refresh": "node tools/evidenceRefresh.mjs"
+    "test": "bun test",
+    "benchmark": "bun benchmark.mjs",
+    "optimize": "bun benchmark.mjs",
+    "evidence:refresh": "bun tools/evidenceRefresh.mjs"
   },
   "devDependencies": {
     "@metaharness/darwin": "^0.3.1"

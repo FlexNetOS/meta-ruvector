@@ -21,6 +21,10 @@ env:
   CARGO_TERM_COLOR: always
   CARGO_INCREMENTAL: 0
 
+defaults:
+  run:
+    shell: nu {0}
+
 jobs:
   sota-smoke:
     name: SOTA Smoke (Tier 1)
@@ -30,49 +34,34 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install Nushell
+        uses: hustcer/setup-nu@ccd5bb5426b05a32009c2ba967946231f3919c97 # v3.25
+        with:
+          version: 0.113.1
+
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Cache cargo
-        uses: Swatinem/rust-cache@v2
-        with:
-          key: sota-bench-v1
-
       - name: Build benchmark binary
-        run: >
-          cargo build --release
-          -p ruvector-sota-bench
-          --bin sota-all
-          --bin sota-streaming
+        run: cargo build --release -p ruvector-sota-bench --bin sota-all --bin sota-streaming
 
       - name: Run Tier 1 smoke test (all runners, synthetic data)
-        run: >
-          cargo run --release
-          -p ruvector-sota-bench
-          --bin sota-all
-          --
-          --smoke
-          --json /tmp/sota-smoke-report.json
+        run: cargo run --release -p ruvector-sota-bench --bin sota-all -- --smoke --json /tmp/sota-smoke-report.json
         env:
           RUST_LOG: warn
 
       - name: Verify SOTA claims present
         run: |
-          SOTA_COUNT=$(python3 -c "import json; r=json.load(open('/tmp/sota-smoke-report.json')); print(len(r['sota_claims']))")
-          echo "SOTA claims: $SOTA_COUNT"
-          if [ "$SOTA_COUNT" -lt 5 ]; then
-            echo "::error::Expected at least 5 SOTA claims, got $SOTA_COUNT"
-            exit 1
-          fi
-          echo "✓ $SOTA_COUNT SOTA claims — benchmark healthy"
+          let report = open /tmp/sota-smoke-report.json
+          let count = ($report.sota_claims | length)
+          print $"SOTA claims: ($count)"
+          if $count < 5 {
+            error make {msg: $"Expected at least 5 SOTA claims, got ($count)"}
+          }
+          print $"($count) SOTA claims — benchmark healthy"
 
       - name: Run BigANN Streaming track benchmark
-        run: >
-          cargo run --release
-          -p ruvector-sota-bench
-          --bin sota-streaming
-          --
-          --smoke
+        run: cargo run --release -p ruvector-sota-bench --bin sota-streaming -- --smoke
         env:
           RUST_LOG: warn
 
@@ -93,24 +82,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install Nushell
+        uses: hustcer/setup-nu@ccd5bb5426b05a32009c2ba967946231f3919c97 # v3.25
+        with:
+          version: 0.113.1
+
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
 
       - name: Install HDF5 (for real datasets)
-        run: sudo apt-get install -y libhdf5-dev
-
-      - name: Cache cargo
-        uses: Swatinem/rust-cache@v2
-        with:
-          key: sota-bench-full-v1
+        run: ^sudo apt-get install -y libhdf5-dev
 
       - name: Run full benchmark (synthetic ANN-Benchmarks scale)
-        run: >
-          cargo run --release
-          -p ruvector-sota-bench
-          --bin sota-all
-          --
-          --json /tmp/sota-full-report.json
+        run: cargo run --release -p ruvector-sota-bench --bin sota-all -- --json /tmp/sota-full-report.json
         env:
           RUST_LOG: warn
 
