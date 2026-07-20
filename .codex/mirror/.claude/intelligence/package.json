@@ -17,7 +17,7 @@
     "report": "node metrics.js effectiveness && node tests/validate.js"
   },
   "dependencies": {
-    "@ruvector/core": "file:../../npm/core",
+    "@ruvector/core": "^0.1.31",
     "better-sqlite3": "^12.5.0"
   },
   "devDependencies": {

@@ -2,19 +2,32 @@
   "generatedBy": "codex-env",
   "sourceRoot": ".claude",
   "rawMirrorRoot": ".codex/mirror/.claude",
-  "sourceFileCount": 376,
+  "sourceFileCount": 381,
   "kindCounts": {
     "agent": 124,
     "command": 130,
-    "helper": 41,
+    "helper": 44,
     "hook": 5,
     "identity": 1,
     "intelligence": 23,
-    "other": 8,
+    "other": 10,
     "setting": 1,
     "skill": 43
   },
   "entries": [
+    {
+      "source": ".claude/.proven-config-version",
+      "mirror": ".codex/mirror/.claude/.proven-config-version",
+      "kind": "other",
+      "executable": false,
+      "bytes": 71,
+      "sourceSha256": "0b8ad646c4959a4515bab9787993f826610556966f1a70ae5b3c806503f01ed4",
+      "mirrorSha256": "0b8ad646c4959a4515bab9787993f826610556966f1a70ae5b3c806503f01ed4",
+      "symbols": {
+        "fileName": ".proven-config-version",
+        "pathSlug": "proven-config-version"
+      }
+    },
     {
       "source": ".claude/agentic-flow-fast.sh",
       "mirror": ".codex/mirror/.claude/agentic-flow-fast.sh",
@@ -4422,6 +4435,19 @@
       }
     },
     {
+      "source": ".claude/helpers/.helpers-version",
+      "mirror": ".codex/mirror/.claude/helpers/.helpers-version",
+      "kind": "helper",
+      "executable": false,
+      "bytes": 6,
+      "sourceSha256": "dd8fc94c186a3b2b170e5e78a02f050be504758b64caa975d49c6a8e7c46ab39",
+      "mirrorSha256": "dd8fc94c186a3b2b170e5e78a02f050be504758b64caa975d49c6a8e7c46ab39",
+      "symbols": {
+        "fileName": ".helpers-version",
+        "pathSlug": "helpers-helpers-version"
+      }
+    },
+    {
       "source": ".claude/helpers/README.md",
       "mirror": ".codex/mirror/.claude/helpers/README.md",
       "kind": "helper",
@@ -4471,9 +4497,9 @@
       "mirror": ".codex/mirror/.claude/helpers/auto-memory-hook.mjs",
       "kind": "helper",
       "executable": true,
-      "bytes": 12900,
-      "sourceSha256": "51d54dd16329438200b9b9b0b908dc9a90a5aedbdd0dbe062fffed7019ec6354",
-      "mirrorSha256": "51d54dd16329438200b9b9b0b908dc9a90a5aedbdd0dbe062fffed7019ec6354",
+      "bytes": 16284,
+      "sourceSha256": "68be7e9a9eba7bf9c4e8a230db7bf61a243b965639f8504842799d6c6ca28762",
+      "mirrorSha256": "68be7e9a9eba7bf9c4e8a230db7bf61a243b965639f8504842799d6c6ca28762",
       "symbols": {
         "extension": "mjs",
         "fileName": "auto-memory-hook.mjs",
@@ -4600,13 +4626,32 @@
       }
     },
     {
+      "source": ".claude/helpers/helpers.manifest.json",
+      "mirror": ".codex/mirror/.claude/helpers/helpers.manifest.json",
+      "kind": "helper",
+      "executable": false,
+      "bytes": 488,
+      "sourceSha256": "e7a98b77135f1ad098e19fa23b5977160708260cc0b55fdd78ed8b96452b6520",
+      "mirrorSha256": "e7a98b77135f1ad098e19fa23b5977160708260cc0b55fdd78ed8b96452b6520",
+      "symbols": {
+        "extension": "json",
+        "fileName": "helpers.manifest.json",
+        "jsonTopLevelKeys": [
+          "algorithm",
+          "manifest",
+          "signature"
+        ],
+        "pathSlug": "helpers-helpers-manifest-json"
+      }
+    },
+    {
       "source": ".claude/helpers/hook-handler.cjs",
       "mirror": ".codex/mirror/.claude/helpers/hook-handler.cjs",
       "kind": "helper",
-      "executable": false,
-      "bytes": 9618,
-      "sourceSha256": "253f016e1f9980568aa72031f199b00c30b8f8b676e0bad9d9d995ea9e71e251",
-      "mirrorSha256": "253f016e1f9980568aa72031f199b00c30b8f8b676e0bad9d9d995ea9e71e251",
+      "executable": true,
+      "bytes": 12616,
+      "sourceSha256": "bc4d2d26823d49b3ab1dded2946b66369f1f67bd76b4c30dca9f3b6df3cca8f0",
+      "mirrorSha256": "bc4d2d26823d49b3ab1dded2946b66369f1f67bd76b4c30dca9f3b6df3cca8f0",
       "symbols": {
         "extension": "cjs",
         "fileName": "hook-handler.cjs",
@@ -4617,10 +4662,10 @@
       "source": ".claude/helpers/intelligence.cjs",
       "mirror": ".codex/mirror/.claude/helpers/intelligence.cjs",
       "kind": "helper",
-      "executable": false,
-      "bytes": 31333,
-      "sourceSha256": "9995af7d2d3695edd4bd5b20b044b9be8f6af7d2440ae91611a1555964aba2ce",
-      "mirrorSha256": "9995af7d2d3695edd4bd5b20b044b9be8f6af7d2440ae91611a1555964aba2ce",
+      "executable": true,
+      "bytes": 39680,
+      "sourceSha256": "c5939924a93535983b1eb1f16997475a94942de44ef5fa78521c0f4895b83f00",
+      "mirrorSha256": "c5939924a93535983b1eb1f16997475a94942de44ef5fa78521c0f4895b83f00",
       "symbols": {
         "extension": "cjs",
         "fileName": "intelligence.cjs",
@@ -4777,13 +4822,28 @@
       "mirror": ".codex/mirror/.claude/helpers/router.js",
       "kind": "helper",
       "executable": false,
-      "bytes": 2121,
-      "sourceSha256": "112b552867f6876945899fd5782b15ad5357ee31fc98f75c3d5c62393185c35e",
-      "mirrorSha256": "112b552867f6876945899fd5782b15ad5357ee31fc98f75c3d5c62393185c35e",
+      "bytes": 4360,
+      "sourceSha256": "1892fab81aed8b0bcadc5c8897d5bd14a937a01f8d721ed6401c929ec3714fc6",
+      "mirrorSha256": "1892fab81aed8b0bcadc5c8897d5bd14a937a01f8d721ed6401c929ec3714fc6",
       "symbols": {
         "extension": "js",
         "fileName": "router.js",
         "pathSlug": "helpers-router-js"
+      }
+    },
+    {
+      "source": ".claude/helpers/run-rtk-command.sh",
+      "mirror": ".codex/mirror/.claude/helpers/run-rtk-command.sh",
+      "kind": "helper",
+      "executable": true,
+      "bytes": 231,
+      "sourceSha256": "b0ac6e5da2d1dc08e281f16e7c3b1bc142da30a9f572565df4085bb330354537",
+      "mirrorSha256": "b0ac6e5da2d1dc08e281f16e7c3b1bc142da30a9f572565df4085bb330354537",
+      "symbols": {
+        "extension": "sh",
+        "fileName": "run-rtk-command.sh",
+        "firstHeading": "Route hook payload commands through the repository's required RTK frontdoor.",
+        "pathSlug": "helpers-run-rtk-command-sh"
       }
     },
     {
@@ -5244,9 +5304,9 @@
       "mirror": ".codex/mirror/.claude/intelligence/data/memory.json",
       "kind": "intelligence",
       "executable": false,
-      "bytes": 15996134,
-      "sourceSha256": "7e2ec459545431b5cec0a16516ce1d9ed0ac7e45c4c0c3e3105e2847a90fb905",
-      "mirrorSha256": "7e2ec459545431b5cec0a16516ce1d9ed0ac7e45c4c0c3e3105e2847a90fb905",
+      "bytes": 6100153,
+      "sourceSha256": "5eec55cd3224d3fbb3292d7e8898a723e7d59c964811518571e17a6761bb7ff6",
+      "mirrorSha256": "5eec55cd3224d3fbb3292d7e8898a723e7d59c964811518571e17a6761bb7ff6",
       "symbols": {
         "extension": "json",
         "fileName": "memory.json",
@@ -5281,9 +5341,9 @@
       "mirror": ".codex/mirror/.claude/intelligence/data/patterns.json",
       "kind": "intelligence",
       "executable": false,
-      "bytes": 27653,
-      "sourceSha256": "b7f6c0bd2d3302870207bd658890c1d110344a090897e9875b090d6c637a2322",
-      "mirrorSha256": "b7f6c0bd2d3302870207bd658890c1d110344a090897e9875b090d6c637a2322",
+      "bytes": 29991,
+      "sourceSha256": "90117259375c96c537576019346c4ac5993267aff40c6de9b0acc726884e937d",
+      "mirrorSha256": "90117259375c96c537576019346c4ac5993267aff40c6de9b0acc726884e937d",
       "symbols": {
         "extension": "json",
         "fileName": "patterns.json",
@@ -5311,11 +5371,13 @@
           "edit_csv_in_rvlite",
           "edit_example_in_project",
           "edit_html_in_rvlite",
+          "edit_in_project",
           "edit_js_in_project",
           "edit_js_in_ruvllm-wasm",
           "edit_js_in_rvlite",
           "edit_json_in_project",
           "edit_json_in_rvlite",
+          "edit_jsonc_in_project",
           "edit_md_in_project",
           "edit_md_in_router-cli",
           "edit_md_in_router-core",
@@ -5332,8 +5394,15 @@
           "edit_md_in_rvlite",
           "edit_mjs_in_project",
           "edit_mjs_in_rvlite",
+          "edit_nix_in_project",
           "edit_py_in_project",
           "edit_py_in_rvlite",
+          "edit_rs_in_codedb_rust_static",
+          "edit_rs_in_codedb_store_pg",
+          "edit_rs_in_codedb_store_redb",
+          "edit_rs_in_core",
+          "edit_rs_in_engine",
+          "edit_rs_in_external",
           "edit_rs_in_project",
           "edit_rs_in_router-core",
           "edit_rs_in_ruvector-bench",
@@ -5349,11 +5418,15 @@
           "edit_rs_in_ruvllm-wasm",
           "edit_rs_in_rvlite",
           "edit_rs_in_sona",
+          "edit_rs_in_work-order",
+          "edit_service_in_project",
           "edit_sh_in_project",
           "edit_sh_in_ruvllm-wasm",
           "edit_sh_in_rvlite",
           "edit_sql_in_project",
           "edit_sql_in_ruvector-postgres",
+          "edit_tmpl_in_project",
+          "edit_toml_in_codedb_store_pg",
           "edit_toml_in_project",
           "edit_toml_in_router-cli",
           "edit_toml_in_router-ffi",
@@ -5380,8 +5453,10 @@
           "edit_unknown_in_project",
           "edit_unknown_in_ruvector-postgres",
           "edit_unknown_in_rvlite",
+          "edit_yaml_in_project",
           "edit_yml_in_project",
           "edit_yml_in_rvlite",
+          "edit_zsh_in_project",
           "editing_js_in_project",
           "editing_json_in_project",
           "editing_md_in_project",
@@ -5429,9 +5504,9 @@
       "mirror": ".codex/mirror/.claude/intelligence/data/sequences.json",
       "kind": "intelligence",
       "executable": false,
-      "bytes": 676,
-      "sourceSha256": "ba41d9557a3aaf7e57ebcb4940ca9953e326eb68a1b25f3d443b0fc771155e11",
-      "mirrorSha256": "ba41d9557a3aaf7e57ebcb4940ca9953e326eb68a1b25f3d443b0fc771155e11",
+      "bytes": 17431,
+      "sourceSha256": "b15514f083e2d56fa7d7af4850f99819e9b27fd3050af3d3f7067c3a7dde1869",
+      "mirrorSha256": "b15514f083e2d56fa7d7af4850f99819e9b27fd3050af3d3f7067c3a7dde1869",
       "symbols": {
         "extension": "json",
         "fileName": "sequences.json",
@@ -5471,9 +5546,9 @@
       "mirror": ".codex/mirror/.claude/intelligence/data/trajectories.json",
       "kind": "intelligence",
       "executable": false,
-      "bytes": 231456,
-      "sourceSha256": "8e2084558512482d257b949d8771dff1d460a5ba6f63f301b11e8c0cb5c8bdb8",
-      "mirrorSha256": "8e2084558512482d257b949d8771dff1d460a5ba6f63f301b11e8c0cb5c8bdb8",
+      "bytes": 507487,
+      "sourceSha256": "f5425725ec805f735eef6bc885f7c34bf7a5cefbb94420fec7db58187ae0e808",
+      "mirrorSha256": "f5425725ec805f735eef6bc885f7c34bf7a5cefbb94420fec7db58187ae0e808",
       "symbols": {
         "extension": "json",
         "fileName": "trajectories.json",
@@ -5531,9 +5606,9 @@
       "mirror": ".codex/mirror/.claude/intelligence/package.json",
       "kind": "intelligence",
       "executable": false,
-      "bytes": 718,
-      "sourceSha256": "250ec489925da7f1dd7a14fede2e712264207a8a20f539ba7b60c459e5755bb7",
-      "mirrorSha256": "250ec489925da7f1dd7a14fede2e712264207a8a20f539ba7b60c459e5755bb7",
+      "bytes": 706,
+      "sourceSha256": "25b56aaab6b39f66e76b327fd29edb19c553cfe35184e427d226073e30b6515f",
+      "mirrorSha256": "25b56aaab6b39f66e76b327fd29edb19c553cfe35184e427d226073e30b6515f",
       "symbols": {
         "extension": "json",
         "fileName": "package.json",
@@ -5650,6 +5725,26 @@
       }
     },
     {
+      "source": ".claude/proven-config.json",
+      "mirror": ".codex/mirror/.claude/proven-config.json",
+      "kind": "other",
+      "executable": false,
+      "bytes": 1050,
+      "sourceSha256": "88c7bd31921a937c8185b6c6cd4fbf2acbd2894856d5839e79fd0f9fb685593f",
+      "mirrorSha256": "88c7bd31921a937c8185b6c6cd4fbf2acbd2894856d5839e79fd0f9fb685593f",
+      "symbols": {
+        "extension": "json",
+        "fileName": "proven-config.json",
+        "jsonTopLevelKeys": [
+          "adoptedAt",
+          "championId",
+          "manifest",
+          "previous"
+        ],
+        "pathSlug": "proven-config-json"
+      }
+    },
+    {
       "source": ".claude/rusty-idd-adapter.md",
       "mirror": ".codex/mirror/.claude/rusty-idd-adapter.md",
       "kind": "other",
@@ -5684,15 +5779,16 @@
       "mirror": ".codex/mirror/.claude/scheduled_tasks.lock",
       "kind": "other",
       "executable": false,
-      "bytes": 90,
-      "sourceSha256": "00ea63f774a60926bc9bf2c2aef1323fb230b8c5b6c054e961c4e6f7429a7c7b",
-      "mirrorSha256": "00ea63f774a60926bc9bf2c2aef1323fb230b8c5b6c054e961c4e6f7429a7c7b",
+      "bytes": 115,
+      "sourceSha256": "26e7aeb8db1930dcdbb2ca13756002c492375d078f238e820554e6ff0f31edb4",
+      "mirrorSha256": "26e7aeb8db1930dcdbb2ca13756002c492375d078f238e820554e6ff0f31edb4",
       "symbols": {
         "extension": "lock",
         "fileName": "scheduled_tasks.lock",
         "jsonTopLevelKeys": [
           "acquiredAt",
           "pid",
+          "procStart",
           "sessionId"
         ],
         "pathSlug": "scheduled-tasks-lock"
@@ -5703,13 +5799,11 @@
       "mirror": ".codex/mirror/.claude/settings.json",
       "kind": "setting",
       "executable": false,
-      "bytes": 9557,
-      "sourceSha256": "2e9c99e6200ce89eb68c7c85721d5b355b640f570dd47da3225f54fd9a103290",
-      "mirrorSha256": "2e9c99e6200ce89eb68c7c85721d5b355b640f570dd47da3225f54fd9a103290",
+      "bytes": 8049,
+      "sourceSha256": "0ef4e89f333fabbd45a1ccfdfd37323fd130f9052e61e9419b44f462f99d5699",
+      "mirrorSha256": "0ef4e89f333fabbd45a1ccfdfd37323fd130f9052e61e9419b44f462f99d5699",
       "symbols": {
         "envKeys": [
-          "BRAIN_API_KEY",
-          "BRAIN_URL",
           "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS",
           "CLAUDE_FLOW_HOOKS_ENABLED",
           "CLAUDE_FLOW_V3_ENABLED"

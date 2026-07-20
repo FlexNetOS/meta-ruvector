@@ -1847,6 +1847,37 @@ fn mirror_skips_ignored_untracked_claude_local_files() {
 }
 
 #[test]
+fn mirror_skips_large_ignored_claude_surface() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path();
+    Command::new("git")
+        .arg("init")
+        .current_dir(root)
+        .status()
+        .unwrap();
+    fs::write(root.join(".gitignore"), ".claude/local/\n").unwrap();
+    fs::create_dir_all(root.join(".claude/local")).unwrap();
+    fs::write(root.join(".claude/settings.json"), r#"{"env":{}}"#).unwrap();
+    for index in 0..300 {
+        fs::write(
+            root.join(format!(".claude/local/{index}.json")),
+            r#"{"local":true}"#,
+        )
+        .unwrap();
+    }
+
+    mirror_codex_surface(MirrorOptions {
+        repo_root: root.to_path_buf(),
+        lua_policy: None,
+        check: false,
+    })
+    .unwrap();
+
+    assert!(root.join(".codex/mirror/.claude/settings.json").exists());
+    assert!(!root.join(".codex/mirror/.claude/local").exists());
+}
+
+#[test]
 fn mirror_check_rejects_stale_raw_files() {
     let temp = tempfile::tempdir().unwrap();
     let root = temp.path();
