@@ -3200,7 +3200,7 @@ dependencies = [
 
 [[package]]
 name = "ruvector-attention"
-version = "2.2.2"
+version = "2.3.0"
 dependencies = [
  "rand 0.8.5",
  "rayon",
@@ -3210,7 +3210,7 @@ dependencies = [
 
 [[package]]
 name = "ruvector-domain-expansion"
-version = "2.2.2"
+version = "2.3.0"
 dependencies = [
  "rand 0.8.5",
  "serde",
@@ -3220,7 +3220,7 @@ dependencies = [
 
 [[package]]
 name = "ruvector-math"
-version = "2.2.2"
+version = "2.3.0"
 dependencies = [
  "nalgebra",
  "rand 0.8.5",
@@ -3279,7 +3279,7 @@ dependencies = [
 
 [[package]]
 name = "ruvector-solver"
-version = "2.2.2"
+version = "2.3.0"
 dependencies = [
  "crossbeam",
  "dashmap",
@@ -3295,7 +3295,7 @@ dependencies = [
 
 [[package]]
 name = "ruvector-sona"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "crossbeam",
  "getrandom 0.2.16",

@@ -1,3 +1,9 @@
+# Standalone workspace root: this pgrx extension is deliberately excluded from
+# the meta-ruvector workspace (see ../../Cargo.toml exclude list) and is meant to
+# build standalone. An explicit empty [workspace] stops cargo from walking up and
+# being captured by an unrelated ancestor workspace (e.g. the meta dev workspace).
+[workspace]
+
 [package]
 name = "ruvector-postgres"
 version = "2.0.1"
