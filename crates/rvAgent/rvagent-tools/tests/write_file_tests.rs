@@ -27,7 +27,7 @@ impl WriteMockBackend {
     }
 
     fn get_file(&self, path: &str) -> Option<String> {
-        self.files.lock().unwrap().get(path).cloned()
+        self.files.lock().unwrap_or_else(std::sync::PoisonError::into_inner).get(path).cloned()
     }
 }
 
@@ -49,7 +49,7 @@ impl Backend for WriteMockBackend {
                 ..Default::default()
             };
         }
-        let mut files = self.files.lock().unwrap();
+        let mut files = self.files.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
         if files.contains_key(path) {
             return WriteResult {
                 error: Some(format!(

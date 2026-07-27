@@ -157,7 +157,7 @@ impl RefragStore {
         }
 
         let id = entry.id.clone();
-        self.entries.write().unwrap().insert(id.clone(), entry);
+        self.entries.write().unwrap_or_else(std::sync::PoisonError::into_inner).insert(id.clone(), entry);
         Ok(id)
     }
 
@@ -194,7 +194,7 @@ impl RefragStore {
     pub fn get(&self, id: &str) -> Result<RefragEntry> {
         self.entries
             .read()
-            .unwrap()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
             .get(id)
             .cloned()
             .ok_or_else(|| StoreError::NotFound(id.to_string()))
@@ -202,7 +202,7 @@ impl RefragStore {
 
     /// Delete entry
     pub fn delete(&self, id: &str) -> Result<bool> {
-        Ok(self.entries.write().unwrap().remove(id).is_some())
+        Ok(self.entries.write().unwrap_or_else(std::sync::PoisonError::into_inner).remove(id).is_some())
     }
 
     /// Standard vector search (returns text only)
@@ -237,7 +237,7 @@ impl RefragStore {
             });
         }
 
-        let entries = self.entries.read().unwrap();
+        let entries = self.entries.read().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         // Compute similarities (brute force for this example)
         let mut scored: Vec<(&RefragEntry, f32)> = entries
@@ -361,12 +361,12 @@ impl RefragStore {
 
     /// Get entry count
     pub fn len(&self) -> usize {
-        self.entries.read().unwrap().len()
+        self.entries.read().unwrap_or_else(std::sync::PoisonError::into_inner).len()
     }
 
     /// Check if empty
     pub fn is_empty(&self) -> bool {
-        self.entries.read().unwrap().is_empty()
+        self.entries.read().unwrap_or_else(std::sync::PoisonError::into_inner).is_empty()
     }
 
     /// Get configuration

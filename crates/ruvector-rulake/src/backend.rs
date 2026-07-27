@@ -204,7 +204,7 @@ impl LocalBackend {
                 });
             }
         }
-        let mut inner = self.inner.write().unwrap();
+        let mut inner = self.inner.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         let entry = inner
             .collections
             .entry(name.into())
@@ -223,7 +223,7 @@ impl LocalBackend {
 
     /// Append a single vector. Bumps generation.
     pub fn append(&self, collection: impl Into<String>, id: u64, vector: Vec<f32>) -> Result<()> {
-        let mut inner = self.inner.write().unwrap();
+        let mut inner = self.inner.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         let name = collection.into();
         let entry =
             inner
@@ -258,7 +258,7 @@ impl BackendAdapter for LocalBackend {
         Ok(self
             .inner
             .read()
-            .unwrap()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
             .collections
             .keys()
             .cloned()
@@ -266,7 +266,7 @@ impl BackendAdapter for LocalBackend {
     }
 
     fn pull_vectors(&self, collection: &str) -> Result<PulledBatch> {
-        let inner = self.inner.read().unwrap();
+        let inner = self.inner.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         let c =
             inner
                 .collections
@@ -285,7 +285,7 @@ impl BackendAdapter for LocalBackend {
     }
 
     fn generation(&self, collection: &str) -> Result<u64> {
-        let inner = self.inner.read().unwrap();
+        let inner = self.inner.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         let c =
             inner
                 .collections
@@ -310,7 +310,7 @@ impl BackendAdapter for LocalBackend {
         rotation_seed: u64,
         rerank_factor: usize,
     ) -> Result<crate::RuLakeBundle> {
-        let inner = self.inner.read().unwrap();
+        let inner = self.inner.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         let c =
             inner
                 .collections

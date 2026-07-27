@@ -101,21 +101,21 @@ impl TripleStore {
 
         // Update statistics
         {
-            let mut subjects = self.subjects.write().unwrap();
+            let mut subjects = self.subjects.write().unwrap_or_else(std::sync::PoisonError::into_inner);
             subjects.insert(subject_key.clone());
         }
         {
-            let mut predicates = self.predicates.write().unwrap();
+            let mut predicates = self.predicates.write().unwrap_or_else(std::sync::PoisonError::into_inner);
             predicates.insert(predicate_key.clone());
         }
         {
-            let mut objects = self.objects.write().unwrap();
+            let mut objects = self.objects.write().unwrap_or_else(std::sync::PoisonError::into_inner);
             objects.insert(object_key.clone());
         }
 
         // Update SPO index
         {
-            let mut spo_index = self.spo_index.write().unwrap();
+            let mut spo_index = self.spo_index.write().unwrap_or_else(std::sync::PoisonError::into_inner);
             spo_index
                 .entry(subject_key.clone())
                 .or_default()
@@ -126,7 +126,7 @@ impl TripleStore {
 
         // Update POS index
         {
-            let mut pos_index = self.pos_index.write().unwrap();
+            let mut pos_index = self.pos_index.write().unwrap_or_else(std::sync::PoisonError::into_inner);
             pos_index
                 .entry(predicate_key.clone())
                 .or_default()
@@ -137,7 +137,7 @@ impl TripleStore {
 
         // Update OSP index
         {
-            let mut osp_index = self.osp_index.write().unwrap();
+            let mut osp_index = self.osp_index.write().unwrap_or_else(std::sync::PoisonError::into_inner);
             osp_index
                 .entry(object_key)
                 .or_default()
@@ -148,16 +148,16 @@ impl TripleStore {
 
         // Update graph membership
         if let Some(graph_iri) = graph {
-            let mut graphs = self.graphs.write().unwrap();
+            let mut graphs = self.graphs.write().unwrap_or_else(std::sync::PoisonError::into_inner);
             graphs.entry(graph_iri.to_string()).or_default().insert(id);
         } else {
-            let mut default_graph = self.default_graph.write().unwrap();
+            let mut default_graph = self.default_graph.write().unwrap_or_else(std::sync::PoisonError::into_inner);
             default_graph.insert(id);
         }
 
         // Store the triple
         {
-            let mut triples = self.triples.write().unwrap();
+            let mut triples = self.triples.write().unwrap_or_else(std::sync::PoisonError::into_inner);
             triples.insert(id, triple);
         }
 
@@ -166,7 +166,7 @@ impl TripleStore {
 
     /// Get a triple by ID
     pub fn get(&self, id: u64) -> Option<Triple> {
-        let triples = self.triples.read().unwrap();
+        let triples = self.triples.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         triples.get(&id).cloned()
     }
 
@@ -190,14 +190,14 @@ impl TripleStore {
     ) -> Vec<Triple> {
         // Filter by graph if specified
         let graph_filter: Option<HashSet<u64>> = graph.map(|g| {
-            let graphs = self.graphs.read().unwrap();
+            let graphs = self.graphs.read().unwrap_or_else(std::sync::PoisonError::into_inner);
             graphs.get(g).cloned().unwrap_or_default()
         });
 
-        let spo_index = self.spo_index.read().unwrap();
-        let pos_index = self.pos_index.read().unwrap();
-        let osp_index = self.osp_index.read().unwrap();
-        let triples = self.triples.read().unwrap();
+        let spo_index = self.spo_index.read().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let pos_index = self.pos_index.read().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let osp_index = self.osp_index.read().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let triples = self.triples.read().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         // Choose the best index based on bound variables
         let ids = match (subject, predicate, object) {
@@ -331,39 +331,39 @@ impl TripleStore {
 
     /// Get all triples in the store
     pub fn all_triples(&self) -> Vec<Triple> {
-        let triples = self.triples.read().unwrap();
+        let triples = self.triples.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         triples.values().cloned().collect()
     }
 
     /// Get triple count
     pub fn count(&self) -> usize {
-        let triples = self.triples.read().unwrap();
+        let triples = self.triples.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         triples.len()
     }
 
     /// Check if store is empty
     pub fn is_empty(&self) -> bool {
-        let triples = self.triples.read().unwrap();
+        let triples = self.triples.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         triples.is_empty()
     }
 
     /// Clear all triples
     pub fn clear(&self) {
-        self.triples.write().unwrap().clear();
-        self.spo_index.write().unwrap().clear();
-        self.pos_index.write().unwrap().clear();
-        self.osp_index.write().unwrap().clear();
-        self.graphs.write().unwrap().clear();
-        self.default_graph.write().unwrap().clear();
-        self.subjects.write().unwrap().clear();
-        self.predicates.write().unwrap().clear();
-        self.objects.write().unwrap().clear();
+        self.triples.write().unwrap_or_else(std::sync::PoisonError::into_inner).clear();
+        self.spo_index.write().unwrap_or_else(std::sync::PoisonError::into_inner).clear();
+        self.pos_index.write().unwrap_or_else(std::sync::PoisonError::into_inner).clear();
+        self.osp_index.write().unwrap_or_else(std::sync::PoisonError::into_inner).clear();
+        self.graphs.write().unwrap_or_else(std::sync::PoisonError::into_inner).clear();
+        self.default_graph.write().unwrap_or_else(std::sync::PoisonError::into_inner).clear();
+        self.subjects.write().unwrap_or_else(std::sync::PoisonError::into_inner).clear();
+        self.predicates.write().unwrap_or_else(std::sync::PoisonError::into_inner).clear();
+        self.objects.write().unwrap_or_else(std::sync::PoisonError::into_inner).clear();
     }
 
     /// Clear a specific graph
     pub fn clear_graph(&self, graph: Option<&str>) {
         let ids_to_remove: Vec<u64> = if let Some(graph_iri) = graph {
-            let graphs = self.graphs.read().unwrap();
+            let graphs = self.graphs.read().unwrap_or_else(std::sync::PoisonError::into_inner);
             graphs
                 .get(graph_iri)
                 .cloned()
@@ -371,7 +371,7 @@ impl TripleStore {
                 .into_iter()
                 .collect()
         } else {
-            let default_graph = self.default_graph.read().unwrap();
+            let default_graph = self.default_graph.read().unwrap_or_else(std::sync::PoisonError::into_inner);
             default_graph.iter().copied().collect()
         };
 
@@ -383,7 +383,7 @@ impl TripleStore {
     /// Remove a triple by ID
     pub fn remove(&self, id: u64) -> Option<Triple> {
         let triple = {
-            let mut triples = self.triples.write().unwrap();
+            let mut triples = self.triples.write().unwrap_or_else(std::sync::PoisonError::into_inner);
             triples.remove(&id)
         }?;
 
@@ -393,7 +393,7 @@ impl TripleStore {
 
         // Remove from SPO index
         {
-            let mut spo_index = self.spo_index.write().unwrap();
+            let mut spo_index = self.spo_index.write().unwrap_or_else(std::sync::PoisonError::into_inner);
             if let Some(pred_map) = spo_index.get_mut(&subject_key) {
                 if let Some(ids) = pred_map.get_mut(&predicate_key) {
                     ids.remove(&id);
@@ -403,7 +403,7 @@ impl TripleStore {
 
         // Remove from POS index
         {
-            let mut pos_index = self.pos_index.write().unwrap();
+            let mut pos_index = self.pos_index.write().unwrap_or_else(std::sync::PoisonError::into_inner);
             if let Some(obj_map) = pos_index.get_mut(&predicate_key) {
                 if let Some(ids) = obj_map.get_mut(&object_key) {
                     ids.remove(&id);
@@ -413,7 +413,7 @@ impl TripleStore {
 
         // Remove from OSP index
         {
-            let mut osp_index = self.osp_index.write().unwrap();
+            let mut osp_index = self.osp_index.write().unwrap_or_else(std::sync::PoisonError::into_inner);
             if let Some(subj_map) = osp_index.get_mut(&object_key) {
                 if let Some(ids) = subj_map.get_mut(&subject_key) {
                     ids.remove(&id);
@@ -423,11 +423,11 @@ impl TripleStore {
 
         // Remove from graphs
         {
-            let mut default_graph = self.default_graph.write().unwrap();
+            let mut default_graph = self.default_graph.write().unwrap_or_else(std::sync::PoisonError::into_inner);
             default_graph.remove(&id);
         }
         {
-            let mut graphs = self.graphs.write().unwrap();
+            let mut graphs = self.graphs.write().unwrap_or_else(std::sync::PoisonError::into_inner);
             for (_, ids) in graphs.iter_mut() {
                 ids.remove(&id);
             }
@@ -438,11 +438,11 @@ impl TripleStore {
 
     /// Get statistics about the store
     pub fn stats(&self) -> StoreStats {
-        let triples = self.triples.read().unwrap();
-        let subjects = self.subjects.read().unwrap();
-        let predicates = self.predicates.read().unwrap();
-        let objects = self.objects.read().unwrap();
-        let graphs = self.graphs.read().unwrap();
+        let triples = self.triples.read().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let subjects = self.subjects.read().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let predicates = self.predicates.read().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let objects = self.objects.read().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let graphs = self.graphs.read().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         StoreStats {
             triple_count: triples.len() as u64,
@@ -455,14 +455,14 @@ impl TripleStore {
 
     /// List all named graphs
     pub fn list_graphs(&self) -> Vec<String> {
-        let graphs = self.graphs.read().unwrap();
+        let graphs = self.graphs.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         graphs.keys().cloned().collect()
     }
 
     /// Get triples from a specific graph
     pub fn get_graph(&self, graph: &str) -> Vec<Triple> {
-        let graphs = self.graphs.read().unwrap();
-        let triples = self.triples.read().unwrap();
+        let graphs = self.graphs.read().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let triples = self.triples.read().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         graphs
             .get(graph)
@@ -476,8 +476,8 @@ impl TripleStore {
 
     /// Get triples from the default graph
     pub fn get_default_graph(&self) -> Vec<Triple> {
-        let default_graph = self.default_graph.read().unwrap();
-        let triples = self.triples.read().unwrap();
+        let default_graph = self.default_graph.read().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let triples = self.triples.read().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         default_graph
             .iter()

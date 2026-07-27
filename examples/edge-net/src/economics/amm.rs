@@ -176,8 +176,8 @@ impl ComputeAMM {
     /// Get current price in rUv per compute-second
     #[wasm_bindgen(js_name = getPrice)]
     pub fn get_price(&self) -> f64 {
-        let ruv = *self.reserve_ruv.read().unwrap();
-        let compute = *self.reserve_compute.read().unwrap();
+        let ruv = *self.reserve_ruv.read().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let compute = *self.reserve_compute.read().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         if compute == 0 {
             return f64::MAX;
@@ -189,38 +189,38 @@ impl ComputeAMM {
     /// Get current rUv reserve
     #[wasm_bindgen(js_name = getReserveRuv)]
     pub fn get_reserve_ruv(&self) -> u64 {
-        *self.reserve_ruv.read().unwrap()
+        *self.reserve_ruv.read().unwrap_or_else(std::sync::PoisonError::into_inner)
     }
 
     /// Get current compute reserve
     #[wasm_bindgen(js_name = getReserveCompute)]
     pub fn get_reserve_compute(&self) -> u64 {
-        *self.reserve_compute.read().unwrap()
+        *self.reserve_compute.read().unwrap_or_else(std::sync::PoisonError::into_inner)
     }
 
     /// Get k invariant
     #[wasm_bindgen(js_name = getKInvariant)]
     pub fn get_k_invariant(&self) -> f64 {
-        *self.k_invariant.read().unwrap() as f64
+        *self.k_invariant.read().unwrap_or_else(std::sync::PoisonError::into_inner) as f64
     }
 
     /// Get total LP tokens
     #[wasm_bindgen(js_name = getTotalLpTokens)]
     pub fn get_total_lp_tokens(&self) -> u64 {
-        *self.total_lp_tokens.read().unwrap()
+        *self.total_lp_tokens.read().unwrap_or_else(std::sync::PoisonError::into_inner)
     }
 
     /// Get total fees collected
     #[wasm_bindgen(js_name = getFeesCollected)]
     pub fn get_fees_collected(&self) -> u64 {
-        *self.fees_collected.read().unwrap()
+        *self.fees_collected.read().unwrap_or_else(std::sync::PoisonError::into_inner)
     }
 
     /// Dynamic fee based on pool utilization
     /// Fee increases as compute is depleted (high demand)
     #[wasm_bindgen(js_name = dynamicFee)]
     pub fn dynamic_fee(&self) -> f32 {
-        let reserve = *self.reserve_compute.read().unwrap();
+        let reserve = *self.reserve_compute.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         let utilization = 1.0 - (reserve as f32 / self.initial_compute as f32);
         let utilization_clamped = utilization.clamp(0.0, 1.0);
 
@@ -231,7 +231,7 @@ impl ComputeAMM {
     /// Get pool utilization (0.0 - 1.0)
     #[wasm_bindgen(js_name = getUtilization)]
     pub fn get_utilization(&self) -> f32 {
-        let reserve = *self.reserve_compute.read().unwrap();
+        let reserve = *self.reserve_compute.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         let utilization = 1.0 - (reserve as f32 / self.initial_compute as f32);
         utilization.clamp(0.0, 1.0)
     }
@@ -239,8 +239,8 @@ impl ComputeAMM {
     /// Calculate expected output for rUv to compute swap (quote)
     #[wasm_bindgen(js_name = quoteRuvForCompute)]
     pub fn quote_ruv_for_compute(&self, ruv_in: u64) -> u64 {
-        let reserve_ruv = *self.reserve_ruv.read().unwrap();
-        let reserve_compute = *self.reserve_compute.read().unwrap();
+        let reserve_ruv = *self.reserve_ruv.read().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let reserve_compute = *self.reserve_compute.read().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         let fee = (ruv_in as f64 * self.dynamic_fee() as f64) as u64;
         let ruv_after_fee = ruv_in.saturating_sub(fee);
@@ -251,7 +251,7 @@ impl ComputeAMM {
 
         // constant product: (x + dx) * (y - dy) = k
         // dy = y - k / (x + dx)
-        let k = *self.k_invariant.read().unwrap();
+        let k = *self.k_invariant.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         let new_ruv = (reserve_ruv as u128).saturating_add(ruv_after_fee as u128);
 
         if new_ruv == 0 {
@@ -265,8 +265,8 @@ impl ComputeAMM {
     /// Calculate expected output for compute to rUv swap (quote)
     #[wasm_bindgen(js_name = quoteComputeForRuv)]
     pub fn quote_compute_for_ruv(&self, compute_in: u64) -> u64 {
-        let reserve_ruv = *self.reserve_ruv.read().unwrap();
-        let reserve_compute = *self.reserve_compute.read().unwrap();
+        let reserve_ruv = *self.reserve_ruv.read().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let reserve_compute = *self.reserve_compute.read().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         let fee = (compute_in as f64 * self.dynamic_fee() as f64) as u64;
         let compute_after_fee = compute_in.saturating_sub(fee);
@@ -275,7 +275,7 @@ impl ComputeAMM {
             return 0;
         }
 
-        let k = *self.k_invariant.read().unwrap();
+        let k = *self.k_invariant.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         let new_compute = (reserve_compute as u128).saturating_add(compute_after_fee as u128);
 
         if new_compute == 0 {
@@ -289,13 +289,13 @@ impl ComputeAMM {
     /// Get swap count
     #[wasm_bindgen(js_name = getSwapCount)]
     pub fn get_swap_count(&self) -> usize {
-        self.swap_history.read().unwrap().len()
+        self.swap_history.read().unwrap_or_else(std::sync::PoisonError::into_inner).len()
     }
 
     /// Get LP position count
     #[wasm_bindgen(js_name = getLpPositionCount)]
     pub fn get_lp_position_count(&self) -> usize {
-        self.lp_positions.read().unwrap().len()
+        self.lp_positions.read().unwrap_or_else(std::sync::PoisonError::into_inner).len()
     }
 
     /// Get pool statistics as JSON
@@ -325,9 +325,9 @@ impl ComputeAMM {
             return Err(AmmError::InvalidAmount);
         }
 
-        let mut reserve_ruv = self.reserve_ruv.write().unwrap();
-        let mut reserve_compute = self.reserve_compute.write().unwrap();
-        let k = *self.k_invariant.read().unwrap();
+        let mut reserve_ruv = self.reserve_ruv.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut reserve_compute = self.reserve_compute.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let k = *self.k_invariant.read().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         // Calculate dynamic fee
         let fee_rate = self.dynamic_fee();
@@ -365,11 +365,11 @@ impl ComputeAMM {
         *reserve_compute = new_compute as u64;
 
         // Record fee
-        *self.fees_collected.write().unwrap() += fee;
+        *self.fees_collected.write().unwrap_or_else(std::sync::PoisonError::into_inner) += fee;
 
         // Record swap event
         let now = js_sys::Date::now() as u64;
-        self.swap_history.write().unwrap().push(SwapEvent {
+        self.swap_history.write().unwrap_or_else(std::sync::PoisonError::into_inner).push(SwapEvent {
             trader_id: trader_id.to_string(),
             input_type: SwapType::RuvForCompute,
             amount_in: ruv_in,
@@ -388,9 +388,9 @@ impl ComputeAMM {
             return Err(AmmError::InvalidAmount);
         }
 
-        let mut reserve_ruv = self.reserve_ruv.write().unwrap();
-        let mut reserve_compute = self.reserve_compute.write().unwrap();
-        let k = *self.k_invariant.read().unwrap();
+        let mut reserve_ruv = self.reserve_ruv.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut reserve_compute = self.reserve_compute.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let k = *self.k_invariant.read().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         // Calculate dynamic fee
         let fee_rate = self.dynamic_fee();
@@ -429,7 +429,7 @@ impl ComputeAMM {
 
         // Record swap event
         let now = js_sys::Date::now() as u64;
-        self.swap_history.write().unwrap().push(SwapEvent {
+        self.swap_history.write().unwrap_or_else(std::sync::PoisonError::into_inner).push(SwapEvent {
             trader_id: trader_id.to_string(),
             input_type: SwapType::ComputeForRuv,
             amount_in: compute_in,
@@ -448,10 +448,10 @@ impl ComputeAMM {
             return Err(AmmError::InvalidAmount);
         }
 
-        let mut reserve_ruv = self.reserve_ruv.write().unwrap();
-        let mut reserve_compute = self.reserve_compute.write().unwrap();
-        let mut total_lp = self.total_lp_tokens.write().unwrap();
-        let mut k = self.k_invariant.write().unwrap();
+        let mut reserve_ruv = self.reserve_ruv.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut reserve_compute = self.reserve_compute.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut total_lp = self.total_lp_tokens.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut k = self.k_invariant.write().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         // Calculate LP tokens to mint
         // LP tokens = min(ruv / reserve_ruv, compute / reserve_compute) * total_lp
@@ -480,7 +480,7 @@ impl ComputeAMM {
 
         // Record LP position
         let now = js_sys::Date::now() as u64;
-        let mut positions = self.lp_positions.write().unwrap();
+        let mut positions = self.lp_positions.write().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         // Check if provider already has a position
         if let Some(pos) = positions.iter_mut().find(|p| p.provider_id == provider_id) {
@@ -507,11 +507,11 @@ impl ComputeAMM {
             return Err(AmmError::InvalidAmount);
         }
 
-        let mut reserve_ruv = self.reserve_ruv.write().unwrap();
-        let mut reserve_compute = self.reserve_compute.write().unwrap();
-        let mut total_lp = self.total_lp_tokens.write().unwrap();
-        let mut k = self.k_invariant.write().unwrap();
-        let mut positions = self.lp_positions.write().unwrap();
+        let mut reserve_ruv = self.reserve_ruv.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut reserve_compute = self.reserve_compute.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut total_lp = self.total_lp_tokens.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut k = self.k_invariant.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut positions = self.lp_positions.write().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         // Find provider's position
         let pos = positions.iter_mut()
@@ -558,7 +558,7 @@ impl ComputeAMM {
 
     /// Get LP position for a provider
     pub fn get_lp_position(&self, provider_id: &str) -> Option<LpPosition> {
-        self.lp_positions.read().unwrap()
+        self.lp_positions.read().unwrap_or_else(std::sync::PoisonError::into_inner)
             .iter()
             .find(|p| p.provider_id == provider_id)
             .cloned()
@@ -566,7 +566,7 @@ impl ComputeAMM {
 
     /// Get recent swap history
     pub fn get_swap_history(&self, limit: usize) -> Vec<SwapEvent> {
-        let history = self.swap_history.read().unwrap();
+        let history = self.swap_history.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         history.iter().rev().take(limit).cloned().collect()
     }
 
@@ -582,9 +582,9 @@ impl ComputeAMM {
         }
         // Use the quote function to get the rUv needed for the desired compute
         // We approximate by checking what rUv input yields the desired compute output
-        let reserve_ruv = *self.reserve_ruv.read().unwrap();
-        let reserve_compute = *self.reserve_compute.read().unwrap();
-        let k = *self.k_invariant.read().unwrap();
+        let reserve_ruv = *self.reserve_ruv.read().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let reserve_compute = *self.reserve_compute.read().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let k = *self.k_invariant.read().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         if seconds as u128 >= reserve_compute as u128 {
             return u64::MAX; // Not enough compute in pool
@@ -614,7 +614,7 @@ impl ComputeAMM {
     /// Returns a list of (timestamp, price_at_that_time) tuples for the
     /// last `last_n` swaps. Useful for price transparency dashboards.
     pub fn get_price_history(&self, last_n: usize) -> Vec<(u64, f64)> {
-        let history = self.swap_history.read().unwrap();
+        let history = self.swap_history.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         history.iter()
             .rev()
             .take(last_n)
@@ -663,9 +663,9 @@ impl ComputeAMM {
         let current_price = self.get_price();
 
         // Simulate the swap to get new price
-        let reserve_ruv = *self.reserve_ruv.read().unwrap();
-        let reserve_compute = *self.reserve_compute.read().unwrap();
-        let k = *self.k_invariant.read().unwrap();
+        let reserve_ruv = *self.reserve_ruv.read().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let reserve_compute = *self.reserve_compute.read().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let k = *self.k_invariant.read().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         let fee = (ruv_in as f64 * self.dynamic_fee() as f64) as u64;
         let ruv_after_fee = ruv_in.saturating_sub(fee);

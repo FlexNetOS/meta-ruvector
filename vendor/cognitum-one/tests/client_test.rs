@@ -242,7 +242,7 @@ impl Respond for HeaderCapture {
                 map.insert(name, value);
             }
         }
-        *self.headers.lock().unwrap() = Some(map);
+        *self.headers.lock().unwrap_or_else(std::sync::PoisonError::into_inner) = Some(map);
         ResponseTemplate::new(200).set_body_json(json!({"status": "ok"}))
     }
 }
@@ -281,7 +281,7 @@ async fn default_client_does_not_send_authorization_header() {
     let client = test_client(&server.uri());
     client.health().await.unwrap();
 
-    let headers = captured.lock().unwrap();
+    let headers = captured.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
     let headers = headers.as_ref().expect("request was captured");
     assert!(
         headers.get("authorization").is_none(),

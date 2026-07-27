@@ -201,10 +201,10 @@ impl RateLimitedPolicyGate {
 
         // Check if we need to reset the window
         {
-            let window_start = self.window_start.read().unwrap();
+            let window_start = self.window_start.read().unwrap_or_else(std::sync::PoisonError::into_inner);
             if now.duration_since(*window_start).as_secs() >= 1 {
                 drop(window_start);
-                let mut window_start = self.window_start.write().unwrap();
+                let mut window_start = self.window_start.write().unwrap_or_else(std::sync::PoisonError::into_inner);
                 *window_start = now;
                 self.inference_count
                     .store(0, std::sync::atomic::Ordering::SeqCst);

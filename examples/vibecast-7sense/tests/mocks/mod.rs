@@ -66,33 +66,33 @@ impl MockRecordingRepository {
     }
 
     pub fn save(&self, recording: Recording) -> MockResult<()> {
-        let mut store = self.recordings.write().unwrap();
+        let mut store = self.recordings.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         store.insert(recording.id, recording);
         Ok(())
     }
 
     pub fn find_by_id(&self, id: &RecordingId) -> MockResult<Option<Recording>> {
-        let store = self.recordings.read().unwrap();
+        let store = self.recordings.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         Ok(store.get(id).cloned())
     }
 
     pub fn find_all(&self) -> MockResult<Vec<Recording>> {
-        let store = self.recordings.read().unwrap();
+        let store = self.recordings.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         Ok(store.values().cloned().collect())
     }
 
     pub fn delete(&self, id: &RecordingId) -> MockResult<()> {
-        let mut store = self.recordings.write().unwrap();
+        let mut store = self.recordings.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         store.remove(id);
         Ok(())
     }
 
     pub fn count(&self) -> usize {
-        self.recordings.read().unwrap().len()
+        self.recordings.read().unwrap_or_else(std::sync::PoisonError::into_inner).len()
     }
 
     pub fn find_by_sensor_id(&self, sensor_id: &str) -> MockResult<Vec<Recording>> {
-        let store = self.recordings.read().unwrap();
+        let store = self.recordings.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         let results: Vec<Recording> = store
             .values()
             .filter(|r| r.sensor_id == sensor_id)
@@ -106,7 +106,7 @@ impl MockRecordingRepository {
         start: DateTime<Utc>,
         end: DateTime<Utc>,
     ) -> MockResult<Vec<Recording>> {
-        let store = self.recordings.read().unwrap();
+        let store = self.recordings.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         let results: Vec<Recording> = store
             .values()
             .filter(|r| r.start_timestamp >= start && r.start_timestamp <= end)
@@ -117,7 +117,7 @@ impl MockRecordingRepository {
 
     /// Link segments to a recording
     pub fn add_segment_link(&self, recording_id: RecordingId, segment_id: SegmentId) {
-        let mut links = self.segments_by_recording.write().unwrap();
+        let mut links = self.segments_by_recording.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         links
             .entry(recording_id)
             .or_insert_with(Vec::new)
@@ -126,7 +126,7 @@ impl MockRecordingRepository {
 
     /// Get segment IDs for a recording
     pub fn get_segment_ids(&self, recording_id: &RecordingId) -> Vec<SegmentId> {
-        let links = self.segments_by_recording.read().unwrap();
+        let links = self.segments_by_recording.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         links.get(recording_id).cloned().unwrap_or_default()
     }
 }
@@ -152,18 +152,18 @@ impl MockSegmentRepository {
     }
 
     pub fn save(&self, segment: CallSegment) -> MockResult<()> {
-        let mut store = self.segments.write().unwrap();
+        let mut store = self.segments.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         store.insert(segment.id, segment);
         Ok(())
     }
 
     pub fn find_by_id(&self, id: &SegmentId) -> MockResult<Option<CallSegment>> {
-        let store = self.segments.read().unwrap();
+        let store = self.segments.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         Ok(store.get(id).cloned())
     }
 
     pub fn find_by_recording(&self, recording_id: &RecordingId) -> MockResult<Vec<CallSegment>> {
-        let store = self.segments.read().unwrap();
+        let store = self.segments.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         let results: Vec<CallSegment> = store
             .values()
             .filter(|s| s.recording_id == *recording_id)
@@ -178,7 +178,7 @@ impl MockSegmentRepository {
         start_ms: u64,
         end_ms: u64,
     ) -> MockResult<Vec<CallSegment>> {
-        let store = self.segments.read().unwrap();
+        let store = self.segments.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         let results: Vec<CallSegment> = store
             .values()
             .filter(|s| {
@@ -190,17 +190,17 @@ impl MockSegmentRepository {
     }
 
     pub fn delete(&self, id: &SegmentId) -> MockResult<()> {
-        let mut store = self.segments.write().unwrap();
+        let mut store = self.segments.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         store.remove(id);
         Ok(())
     }
 
     pub fn count(&self) -> usize {
-        self.segments.read().unwrap().len()
+        self.segments.read().unwrap_or_else(std::sync::PoisonError::into_inner).len()
     }
 
     pub fn find_by_quality(&self, min_grade: QualityGrade) -> MockResult<Vec<CallSegment>> {
-        let store = self.segments.read().unwrap();
+        let store = self.segments.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         let results: Vec<CallSegment> = store
             .values()
             .filter(|s| match (&s.quality_grade, &min_grade) {
@@ -252,27 +252,27 @@ impl MockEmbeddingRepository {
         let segment_id = embedding.segment_id;
         let embedding_id = embedding.id;
 
-        let mut store = self.embeddings.write().unwrap();
+        let mut store = self.embeddings.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         store.insert(embedding_id, embedding);
 
-        let mut by_segment = self.by_segment.write().unwrap();
+        let mut by_segment = self.by_segment.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         by_segment.insert(segment_id, embedding_id);
 
         Ok(())
     }
 
     pub fn find_by_id(&self, id: &EmbeddingId) -> MockResult<Option<Embedding>> {
-        let store = self.embeddings.read().unwrap();
+        let store = self.embeddings.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         Ok(store.get(id).cloned())
     }
 
     pub fn find_by_segment(&self, segment_id: &SegmentId) -> MockResult<Option<Embedding>> {
-        let by_segment = self.by_segment.read().unwrap();
+        let by_segment = self.by_segment.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         let embedding_id = by_segment.get(segment_id);
 
         match embedding_id {
             Some(id) => {
-                let store = self.embeddings.read().unwrap();
+                let store = self.embeddings.read().unwrap_or_else(std::sync::PoisonError::into_inner);
                 Ok(store.get(id).cloned())
             }
             None => Ok(None),
@@ -280,7 +280,7 @@ impl MockEmbeddingRepository {
     }
 
     pub fn find_by_model(&self, model_name: &str) -> MockResult<Vec<Embedding>> {
-        let store = self.embeddings.read().unwrap();
+        let store = self.embeddings.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         let results: Vec<Embedding> = store
             .values()
             .filter(|e| e.model_version.name == model_name)
@@ -297,20 +297,20 @@ impl MockEmbeddingRepository {
     }
 
     pub fn delete(&self, id: &EmbeddingId) -> MockResult<()> {
-        let mut store = self.embeddings.write().unwrap();
+        let mut store = self.embeddings.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         if let Some(embedding) = store.remove(id) {
-            let mut by_segment = self.by_segment.write().unwrap();
+            let mut by_segment = self.by_segment.write().unwrap_or_else(std::sync::PoisonError::into_inner);
             by_segment.remove(&embedding.segment_id);
         }
         Ok(())
     }
 
     pub fn count(&self) -> usize {
-        self.embeddings.read().unwrap().len()
+        self.embeddings.read().unwrap_or_else(std::sync::PoisonError::into_inner).len()
     }
 
     pub fn get_all_vectors(&self) -> Vec<(EmbeddingId, Vec<f32>)> {
-        let store = self.embeddings.read().unwrap();
+        let store = self.embeddings.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         store
             .iter()
             .map(|(id, emb)| (*id, emb.vector.clone()))
@@ -463,7 +463,7 @@ impl MockVectorIndex {
             layer: self.assign_layer(),
         };
 
-        let mut store = self.vectors.write().unwrap();
+        let mut store = self.vectors.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         store.insert(vector_id, indexed);
 
         Ok(vector_id)
@@ -482,7 +482,7 @@ impl MockVectorIndex {
 
     /// k-NN search
     pub fn search(&self, query: &[f32], k: usize) -> MockResult<Vec<SearchResult>> {
-        let store = self.vectors.read().unwrap();
+        let store = self.vectors.read().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         let mut results: Vec<(VectorId, f32)> = store
             .iter()
@@ -512,20 +512,20 @@ impl MockVectorIndex {
 
     /// Get vector by ID
     pub fn get(&self, id: &VectorId) -> MockResult<Option<IndexedVector>> {
-        let store = self.vectors.read().unwrap();
+        let store = self.vectors.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         Ok(store.get(id).cloned())
     }
 
     /// Remove vector
     pub fn remove(&self, id: &VectorId) -> MockResult<()> {
-        let mut store = self.vectors.write().unwrap();
+        let mut store = self.vectors.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         store.remove(id);
         Ok(())
     }
 
     /// Get all neighbors of a vector
     pub fn get_neighbors(&self, id: &VectorId, k: usize) -> MockResult<Vec<SearchResult>> {
-        let store = self.vectors.read().unwrap();
+        let store = self.vectors.read().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         let query_vector = store
             .get(id)
@@ -558,13 +558,13 @@ impl MockVectorIndex {
 
     /// Count vectors in index
     pub fn count(&self) -> usize {
-        self.vectors.read().unwrap().len()
+        self.vectors.read().unwrap_or_else(std::sync::PoisonError::into_inner).len()
     }
 
     /// Save index to bytes (mock persistence)
     pub fn save_to_bytes(&self) -> MockResult<Vec<u8>> {
         // Simplified serialization
-        let store = self.vectors.read().unwrap();
+        let store = self.vectors.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         let count = store.len() as u64;
         let mut bytes = count.to_le_bytes().to_vec();
 
@@ -606,7 +606,7 @@ impl MockVectorIndex {
 
     fn assign_layer(&self) -> usize {
         // Random layer assignment following HNSW distribution
-        let store = self.vectors.read().unwrap();
+        let store = self.vectors.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         let count = store.len();
         if count == 0 {
             return 0;
@@ -972,7 +972,7 @@ impl MockApiClient {
 
     /// Queue a response for the next request
     pub fn queue_response(&self, status: u16, body: &str) {
-        let mut responses = self.responses.write().unwrap();
+        let mut responses = self.responses.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         responses.push(MockResponse {
             status,
             body: body.to_string(),
@@ -982,10 +982,10 @@ impl MockApiClient {
 
     /// Simulate GET request
     pub fn get(&self, _path: &str) -> MockResult<MockResponse> {
-        let mut count = self.request_count.write().unwrap();
+        let mut count = self.request_count.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         *count += 1;
 
-        let mut responses = self.responses.write().unwrap();
+        let mut responses = self.responses.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         if responses.is_empty() {
             Ok(MockResponse {
                 status: 200,
@@ -999,10 +999,10 @@ impl MockApiClient {
 
     /// Simulate POST request
     pub fn post(&self, _path: &str, _body: &str) -> MockResult<MockResponse> {
-        let mut count = self.request_count.write().unwrap();
+        let mut count = self.request_count.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         *count += 1;
 
-        let mut responses = self.responses.write().unwrap();
+        let mut responses = self.responses.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         if responses.is_empty() {
             Ok(MockResponse {
                 status: 201,
@@ -1016,7 +1016,7 @@ impl MockApiClient {
 
     /// Get request count
     pub fn request_count(&self) -> usize {
-        *self.request_count.read().unwrap()
+        *self.request_count.read().unwrap_or_else(std::sync::PoisonError::into_inner)
     }
 }
 
@@ -1038,7 +1038,7 @@ impl MockRateLimiter {
     /// Check if request is allowed
     pub fn check(&self) -> bool {
         let now = std::time::Instant::now();
-        let mut times = self.request_times.write().unwrap();
+        let mut times = self.request_times.write().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         // Remove old entries (older than 1 second)
         times.retain(|t| now.duration_since(*t).as_secs() < 1);

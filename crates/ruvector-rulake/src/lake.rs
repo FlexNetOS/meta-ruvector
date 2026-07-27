@@ -89,7 +89,7 @@ impl RuLake {
     /// Register a backend under its `id()`. Returns an error if a backend
     /// with the same id already exists.
     pub fn register_backend(&self, backend: Arc<dyn BackendAdapter>) -> Result<()> {
-        let mut map = self.backends.write().unwrap();
+        let mut map = self.backends.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         let id = backend.id().to_string();
         if map.contains_key(&id) {
             return Err(RuLakeError::InvalidParameter(format!(
@@ -101,7 +101,7 @@ impl RuLake {
     }
 
     pub fn backend_ids(&self) -> Vec<BackendId> {
-        self.backends.read().unwrap().keys().cloned().collect()
+        self.backends.read().unwrap_or_else(std::sync::PoisonError::into_inner).keys().cloned().collect()
     }
 
     /// Access the cache stats for diagnostics / benchmarking.
@@ -675,7 +675,7 @@ impl RuLake {
     fn get_backend(&self, id: &str) -> Result<Arc<dyn BackendAdapter>> {
         self.backends
             .read()
-            .unwrap()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
             .get(id)
             .cloned()
             .ok_or_else(|| RuLakeError::UnknownBackend(id.to_string()))

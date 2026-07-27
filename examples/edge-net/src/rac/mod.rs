@@ -504,26 +504,26 @@ impl EventLog {
     /// Get current event count (includes all events)
     #[wasm_bindgen]
     pub fn len(&self) -> usize {
-        self.events.read().unwrap().len()
+        self.events.read().unwrap_or_else(std::sync::PoisonError::into_inner).len()
     }
 
     /// Check if log is empty
     #[wasm_bindgen(js_name = isEmpty)]
     pub fn is_empty(&self) -> bool {
-        self.events.read().unwrap().is_empty()
+        self.events.read().unwrap_or_else(std::sync::PoisonError::into_inner).is_empty()
     }
 
     /// Get current Merkle root as hex string
     #[wasm_bindgen(js_name = getRoot)]
     pub fn get_root(&self) -> String {
-        let root = self.root.read().unwrap();
+        let root = self.root.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         hex::encode(&*root)
     }
 
     /// Get total event count
     #[wasm_bindgen(js_name = totalEvents)]
     pub fn total_events(&self) -> usize {
-        self.events.read().unwrap().len()
+        self.events.read().unwrap_or_else(std::sync::PoisonError::into_inner).len()
     }
 }
 
@@ -538,9 +538,9 @@ impl EventLog {
     pub fn append(&self, event: Event) -> EventId {
         let id = event.id;
 
-        let mut events = self.events.write().unwrap();
-        let mut index = self.index.write().unwrap();
-        let mut root = self.root.write().unwrap();
+        let mut events = self.events.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut index = self.index.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut root = self.root.write().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         // Store event
         let event_idx = events.len();
@@ -555,13 +555,13 @@ impl EventLog {
 
     /// Get current root (no flushing needed - immediate storage)
     pub fn get_root_bytes(&self) -> [u8; 32] {
-        *self.root.read().unwrap()
+        *self.root.read().unwrap_or_else(std::sync::PoisonError::into_inner)
     }
 
     /// Get event by ID (O(1) lookup via index)
     pub fn get(&self, id: &EventId) -> Option<Event> {
-        let index = self.index.read().unwrap();
-        let events = self.events.read().unwrap();
+        let index = self.index.read().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let events = self.events.read().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         index.get(id)
             .and_then(|&idx| events.get(idx))
@@ -570,7 +570,7 @@ impl EventLog {
 
     /// Get events since a timestamp
     pub fn since(&self, timestamp: u64) -> Vec<Event> {
-        let events = self.events.read().unwrap();
+        let events = self.events.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         events.iter()
             .filter(|e| e.ts_unix_ms >= timestamp)
             .cloned()
@@ -579,7 +579,7 @@ impl EventLog {
 
     /// Get events for a context
     pub fn for_context(&self, context: &ContextId) -> Vec<Event> {
-        let events = self.events.read().unwrap();
+        let events = self.events.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         events.iter()
             .filter(|e| &e.context == context)
             .cloned()
@@ -588,7 +588,7 @@ impl EventLog {
 
     /// Get all events (for iteration)
     pub fn all_events(&self) -> Vec<Event> {
-        self.events.read().unwrap().clone()
+        self.events.read().unwrap_or_else(std::sync::PoisonError::into_inner).clone()
     }
 
     /// Compute incremental Merkle root (chain new event ID to existing root)
@@ -606,9 +606,9 @@ impl EventLog {
 
     /// Generate inclusion proof for an event (Axiom 11: Equivocation detectable)
     pub fn prove_inclusion(&self, event_id: &EventId) -> Option<InclusionProof> {
-        let index = self.index.read().unwrap();
-        let events = self.events.read().unwrap();
-        let root = *self.root.read().unwrap();
+        let index = self.index.read().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let events = self.events.read().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let root = *self.root.read().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         let &event_idx = index.get(event_id)?;
 
@@ -642,7 +642,7 @@ impl EventLog {
     pub fn verify_proof(&self, proof: &InclusionProof) -> bool {
         use sha2::{Sha256, Digest};
 
-        let events = self.events.read().unwrap();
+        let events = self.events.read().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         if proof.index >= events.len() {
             return false;
@@ -713,7 +713,7 @@ impl WitnessTracker {
     /// Get witness count for a claim
     #[wasm_bindgen(js_name = witnessCount)]
     pub fn witness_count(&self, claim_id: &str) -> usize {
-        self.witnesses.read().unwrap()
+        self.witnesses.read().unwrap_or_else(std::sync::PoisonError::into_inner)
             .get(claim_id)
             .map(|v| v.len())
             .unwrap_or(0)
@@ -722,7 +722,7 @@ impl WitnessTracker {
     /// Check if claim has sufficient independent witnesses
     #[wasm_bindgen(js_name = hasSufficientWitnesses)]
     pub fn has_sufficient_witnesses(&self, claim_id: &str) -> bool {
-        let witnesses = self.witnesses.read().unwrap();
+        let witnesses = self.witnesses.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         if let Some(records) = witnesses.get(claim_id) {
             // Count independent witness paths (no common intermediate nodes)
             let independent = self.count_independent_paths(records);
@@ -735,7 +735,7 @@ impl WitnessTracker {
     /// Get confidence score based on witness diversity
     #[wasm_bindgen(js_name = witnessConfidence)]
     pub fn witness_confidence(&self, claim_id: &str) -> f32 {
-        let witnesses = self.witnesses.read().unwrap();
+        let witnesses = self.witnesses.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         if let Some(records) = witnesses.get(claim_id) {
             let independent = self.count_independent_paths(records);
             // Confidence scales with independent witnesses, capped at 1.0
@@ -750,14 +750,14 @@ impl WitnessTracker {
     /// Add a witness record
     pub fn add_witness(&self, record: WitnessRecord) {
         let claim_key = hex::encode(&record.claim_id);
-        let mut witnesses = self.witnesses.write().unwrap();
+        let mut witnesses = self.witnesses.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         witnesses.entry(claim_key).or_default().push(record);
     }
 
     /// Get all witnesses for a claim
     pub fn get_witnesses(&self, claim_id: &EventId) -> Vec<WitnessRecord> {
         let claim_key = hex::encode(claim_id);
-        self.witnesses.read().unwrap()
+        self.witnesses.read().unwrap_or_else(std::sync::PoisonError::into_inner)
             .get(&claim_key)
             .cloned()
             .unwrap_or_default()
@@ -850,7 +850,7 @@ impl DriftTracker {
     /// Get drift for a context
     #[wasm_bindgen(js_name = getDrift)]
     pub fn get_drift(&self, context_hex: &str) -> f64 {
-        self.records.read().unwrap()
+        self.records.read().unwrap_or_else(std::sync::PoisonError::into_inner)
             .get(context_hex)
             .map(|r| r.drift)
             .unwrap_or(0.0)
@@ -865,7 +865,7 @@ impl DriftTracker {
     /// Get contexts with significant drift
     #[wasm_bindgen(js_name = getDriftedContexts)]
     pub fn get_drifted_contexts(&self) -> String {
-        let records = self.records.read().unwrap();
+        let records = self.records.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         let drifted: Vec<&str> = records.iter()
             .filter(|(_, r)| r.drift > self.drift_threshold)
             .map(|(k, _)| k.as_str())
@@ -878,7 +878,7 @@ impl DriftTracker {
     /// Update drift tracking for a context with new embedding
     pub fn update(&self, context: &ContextId, embedding: &Ruvector) {
         let context_key = hex::encode(context);
-        let mut records = self.records.write().unwrap();
+        let mut records = self.records.write().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         let now = current_timestamp_ms();
 
@@ -908,7 +908,7 @@ impl DriftTracker {
     /// Reset baseline for a context
     pub fn reset_baseline(&self, context: &ContextId) {
         let context_key = hex::encode(context);
-        let mut records = self.records.write().unwrap();
+        let mut records = self.records.write().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         if let Some(record) = records.get_mut(&context_key) {
             record.baseline = record.current.clone();
@@ -1022,7 +1022,7 @@ impl QuarantineManager {
     /// Check quarantine level for a claim
     #[wasm_bindgen(js_name = getLevel)]
     pub fn get_level(&self, claim_id: &str) -> u8 {
-        let levels = self.levels.read().unwrap();
+        let levels = self.levels.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         levels.get(claim_id)
             .map(|&l| l as u8)
             .unwrap_or(0)
@@ -1037,7 +1037,7 @@ impl QuarantineManager {
             2 => QuarantineLevel::RequiresWitness,
             _ => QuarantineLevel::Blocked,
         };
-        self.levels.write().unwrap().insert(claim_id.to_string(), quarantine_level);
+        self.levels.write().unwrap_or_else(std::sync::PoisonError::into_inner).insert(claim_id.to_string(), quarantine_level);
     }
 
     /// Check if claim can be used in decisions
@@ -1049,7 +1049,7 @@ impl QuarantineManager {
     /// Get number of quarantined claims
     #[wasm_bindgen(js_name = quarantinedCount)]
     pub fn quarantined_count(&self) -> usize {
-        let levels = self.levels.read().unwrap();
+        let levels = self.levels.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         levels.values().filter(|&&l| l != QuarantineLevel::None).count()
     }
 }
@@ -1063,7 +1063,7 @@ impl Default for QuarantineManager {
 impl QuarantineManager {
     /// Get all quarantined claims
     pub fn get_quarantined(&self) -> Vec<(String, QuarantineLevel)> {
-        let levels = self.levels.read().unwrap();
+        let levels = self.levels.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         levels.iter()
             .filter(|(_, &l)| l != QuarantineLevel::None)
             .map(|(k, &v)| (k.clone(), v))
@@ -1311,13 +1311,13 @@ impl CoherenceEngine {
     /// Get conflict count
     #[wasm_bindgen(js_name = conflictCount)]
     pub fn conflict_count(&self) -> usize {
-        self.conflicts.read().unwrap().values().map(|v| v.len()).sum()
+        self.conflicts.read().unwrap_or_else(std::sync::PoisonError::into_inner).values().map(|v| v.len()).sum()
     }
 
     /// Get statistics as JSON
     #[wasm_bindgen(js_name = getStats)]
     pub fn get_stats(&self) -> String {
-        let stats = self.stats.read().unwrap();
+        let stats = self.stats.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         serde_json::to_string(&*stats).unwrap_or_else(|_| "{}".to_string())
     }
 
@@ -1368,13 +1368,13 @@ impl CoherenceEngine {
     /// Register an authority policy for a context
     pub fn register_authority(&self, authority: ScopedAuthority) {
         let context_key = hex::encode(&authority.context);
-        self.authorities.write().unwrap().insert(context_key, authority);
+        self.authorities.write().unwrap_or_else(std::sync::PoisonError::into_inner).insert(context_key, authority);
     }
 
     /// Check if a resolution is authorized (Axiom 7)
     fn verify_authority(&self, context: &ContextId, resolution: &ResolutionEvent) -> bool {
         let context_key = hex::encode(context);
-        let authorities = self.authorities.read().unwrap();
+        let authorities = self.authorities.read().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         if let Some(authority) = authorities.get(&context_key) {
             authority.verify_resolution(resolution)
@@ -1394,7 +1394,7 @@ impl CoherenceEngine {
             EventKind::Resolution(resolution) => {
                 // CRITICAL: Verify authority before applying resolution (Axiom 7)
                 if !self.verify_authority(&event.context, resolution) {
-                    let mut stats = self.stats.write().unwrap();
+                    let mut stats = self.stats.write().unwrap_or_else(std::sync::PoisonError::into_inner);
                     stats.unauthorized_resolutions += 1;
                     return IngestResult::UnauthorizedResolution;
                 }
@@ -1406,7 +1406,7 @@ impl CoherenceEngine {
         let event_id = self.log.append(event.clone());
 
         // Update statistics
-        let mut stats = self.stats.write().unwrap();
+        let mut stats = self.stats.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         stats.events_processed += 1;
 
         // Handle based on event type
@@ -1414,7 +1414,7 @@ impl CoherenceEngine {
             EventKind::Assert(_) => {
                 // Add to semantic cluster for conflict detection
                 let context_key = hex::encode(&event.context);
-                let mut clusters = self.clusters.write().unwrap();
+                let mut clusters = self.clusters.write().unwrap_or_else(std::sync::PoisonError::into_inner);
                 clusters.entry(context_key).or_default().push(event_id);
             }
             EventKind::Challenge(challenge) => {
@@ -1430,7 +1430,7 @@ impl CoherenceEngine {
                     escalation_count: 0,
                 };
 
-                let mut conflicts = self.conflicts.write().unwrap();
+                let mut conflicts = self.conflicts.write().unwrap_or_else(std::sync::PoisonError::into_inner);
                 conflicts.entry(context_key).or_default().push(conflict);
 
                 // Quarantine disputed claims (Axiom 9)
@@ -1443,7 +1443,7 @@ impl CoherenceEngine {
             EventKind::Support(support) => {
                 // Update conflict temperature based on support (Axiom 6)
                 let context_key = hex::encode(&event.context);
-                let mut conflicts = self.conflicts.write().unwrap();
+                let mut conflicts = self.conflicts.write().unwrap_or_else(std::sync::PoisonError::into_inner);
 
                 if let Some(context_conflicts) = conflicts.get_mut(&context_key) {
                     for conflict in context_conflicts.iter_mut() {
@@ -1477,7 +1477,7 @@ impl CoherenceEngine {
 
                 // Update conflict status
                 let context_key = hex::encode(&event.context);
-                let mut conflicts = self.conflicts.write().unwrap();
+                let mut conflicts = self.conflicts.write().unwrap_or_else(std::sync::PoisonError::into_inner);
                 if let Some(context_conflicts) = conflicts.get_mut(&context_key) {
                     for conflict in context_conflicts.iter_mut() {
                         if conflict.id == resolution.conflict_id {
@@ -1519,7 +1519,7 @@ impl CoherenceEngine {
         verifier: &V,
     ) -> Vec<Conflict> {
         let context_key = hex::encode(context);
-        let clusters = self.clusters.read().unwrap();
+        let clusters = self.clusters.read().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         let Some(event_ids) = clusters.get(&context_key) else {
             return Vec::new();
@@ -1565,7 +1565,7 @@ impl CoherenceEngine {
     /// Get all conflicts for a context
     pub fn get_conflicts(&self, context: &ContextId) -> Vec<Conflict> {
         let context_key = hex::encode(context);
-        self.conflicts.read().unwrap()
+        self.conflicts.read().unwrap_or_else(std::sync::PoisonError::into_inner)
             .get(&context_key)
             .cloned()
             .unwrap_or_default()
@@ -1731,7 +1731,7 @@ impl RacSemanticRouter {
     /// Get peer count
     #[wasm_bindgen(js_name = peerCount)]
     pub fn peer_count(&self) -> usize {
-        self.peers.read().unwrap().len()
+        self.peers.read().unwrap_or_else(std::sync::PoisonError::into_inner).len()
     }
 }
 
@@ -1744,7 +1744,7 @@ impl Default for RacSemanticRouter {
 impl RacSemanticRouter {
     /// Register a peer
     pub fn register_peer(&self, peer_id: PublicKeyBytes, centroid: Ruvector, latency_ms: u32) {
-        let mut peers = self.peers.write().unwrap();
+        let mut peers = self.peers.write().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         // Update existing or add new
         if let Some(peer) = peers.iter_mut().find(|p| p.peer_id == peer_id) {
@@ -1763,7 +1763,7 @@ impl RacSemanticRouter {
 
     /// Get routing targets for an event (semantic neighbors + random sample)
     pub fn get_routes(&self, event: &Event) -> Vec<PublicKeyBytes> {
-        let peers = self.peers.read().unwrap();
+        let peers = self.peers.read().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         if peers.is_empty() {
             return Vec::new();
@@ -1808,7 +1808,7 @@ impl RacSemanticRouter {
     /// Prune stale peers
     pub fn prune_stale(&self, max_age_ms: u64) {
         let now = current_timestamp_ms();
-        let mut peers = self.peers.write().unwrap();
+        let mut peers = self.peers.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         peers.retain(|p| now - p.last_seen < max_age_ms);
     }
 }
@@ -1914,19 +1914,19 @@ impl ModelConsensusManager {
     /// Get number of tracked models
     #[wasm_bindgen(js_name = modelCount)]
     pub fn model_count(&self) -> usize {
-        self.model_claims.read().unwrap().len()
+        self.model_claims.read().unwrap_or_else(std::sync::PoisonError::into_inner).len()
     }
 
     /// Get number of active disputes
     #[wasm_bindgen(js_name = disputeCount)]
     pub fn dispute_count(&self) -> usize {
-        self.disputes.read().unwrap().iter().filter(|d| !d.resolved).count()
+        self.disputes.read().unwrap_or_else(std::sync::PoisonError::into_inner).iter().filter(|d| !d.resolved).count()
     }
 
     /// Get number of quarantined updates
     #[wasm_bindgen(js_name = quarantinedUpdateCount)]
     pub fn quarantined_update_count(&self) -> usize {
-        self.quarantined_updates.read().unwrap()
+        self.quarantined_updates.read().unwrap_or_else(std::sync::PoisonError::into_inner)
             .values()
             .map(|v| v.len())
             .sum()
@@ -1938,9 +1938,9 @@ impl ModelConsensusManager {
         let model_count = self.model_count();
         let dispute_count = self.dispute_count();
         let quarantined = self.quarantined_update_count();
-        let gradient_rounds = self.gradient_claims.read().unwrap().len();
-        let lora_count = self.lora_claims.read().unwrap().len();
-        let pattern_count = self.pattern_claims.read().unwrap().len();
+        let gradient_rounds = self.gradient_claims.read().unwrap_or_else(std::sync::PoisonError::into_inner).len();
+        let lora_count = self.lora_claims.read().unwrap_or_else(std::sync::PoisonError::into_inner).len();
+        let pattern_count = self.pattern_claims.read().unwrap_or_else(std::sync::PoisonError::into_inner).len();
 
         format!(
             r#"{{"models":{},"disputes":{},"quarantined":{},"gradient_rounds":{},"lora_adapters":{},"patterns":{}}}"#,
@@ -1958,7 +1958,7 @@ impl Default for ModelConsensusManager {
 impl ModelConsensusManager {
     /// Register a model weight claim
     pub fn register_model_claim(&self, event_id: EventId, claim: ModelWeightClaim) {
-        let mut claims = self.model_claims.write().unwrap();
+        let mut claims = self.model_claims.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         claims
             .entry(claim.model_id.clone())
             .or_default()
@@ -1969,7 +1969,7 @@ impl ModelConsensusManager {
 
     /// Register a gradient contribution claim
     pub fn register_gradient_claim(&self, event_id: EventId, claim: GradientContributionClaim) {
-        let mut claims = self.gradient_claims.write().unwrap();
+        let mut claims = self.gradient_claims.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         claims
             .entry(claim.round)
             .or_default()
@@ -1980,7 +1980,7 @@ impl ModelConsensusManager {
 
     /// Register a LoRA adapter claim
     pub fn register_lora_claim(&self, event_id: EventId, claim: LoraAdapterClaim) {
-        let mut claims = self.lora_claims.write().unwrap();
+        let mut claims = self.lora_claims.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         claims
             .entry(claim.adapter_id.clone())
             .or_default()
@@ -1989,7 +1989,7 @@ impl ModelConsensusManager {
 
     /// Register a learning pattern claim
     pub fn register_pattern_claim(&self, event_id: EventId, claim: LearningPatternClaim) {
-        let mut claims = self.pattern_claims.write().unwrap();
+        let mut claims = self.pattern_claims.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         claims
             .entry(claim.pattern_id.clone())
             .or_default()
@@ -1998,8 +1998,8 @@ impl ModelConsensusManager {
 
     /// Attempt to reach consensus on model weights
     pub fn model_consensus(&self, model_id: &str, layer: &str) -> Option<WeightConsensus> {
-        let claims = self.model_claims.read().unwrap();
-        let quarantined = self.quarantined_updates.read().unwrap();
+        let claims = self.model_claims.read().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let quarantined = self.quarantined_updates.read().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         let model_claims = claims.get(model_id)?;
         let layer_claims = model_claims.get(layer)?;
@@ -2165,7 +2165,7 @@ impl ModelConsensusManager {
 
     /// Detect gradient equivocation (Axiom 11)
     fn detect_gradient_equivocation(&self, event: &GradientContributionClaim) -> bool {
-        let claims = self.gradient_claims.read().unwrap();
+        let claims = self.gradient_claims.read().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         if let Some(round_claims) = claims.get(&event.round) {
             if let Some(contributor_claims) = round_claims.get(&event.contributor) {
@@ -2183,7 +2183,7 @@ impl ModelConsensusManager {
 
     /// Quarantine a disputed model update (Axiom 9)
     pub fn quarantine_model_update(&self, model_id: &str, event_id: EventId, dispute: Option<&ModelDispute>) {
-        let mut quarantined = self.quarantined_updates.write().unwrap();
+        let mut quarantined = self.quarantined_updates.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         quarantined
             .entry(model_id.to_string())
             .or_default()
@@ -2191,7 +2191,7 @@ impl ModelConsensusManager {
 
         // If dispute provided, register it
         if let Some(d) = dispute {
-            self.disputes.write().unwrap().push(d.clone());
+            self.disputes.write().unwrap_or_else(std::sync::PoisonError::into_inner).push(d.clone());
         }
     }
 
@@ -2199,7 +2199,7 @@ impl ModelConsensusManager {
     pub fn is_update_quarantined(&self, model_id: &str, event_id: &EventId) -> bool {
         self.quarantined_updates
             .read()
-            .unwrap()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
             .get(model_id)
             .map(|v| v.contains(event_id))
             .unwrap_or(false)
@@ -2207,7 +2207,7 @@ impl ModelConsensusManager {
 
     /// Lift quarantine on a model update (after dispute resolution)
     pub fn lift_quarantine(&self, model_id: &str, event_id: &EventId) -> bool {
-        let mut quarantined = self.quarantined_updates.write().unwrap();
+        let mut quarantined = self.quarantined_updates.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         if let Some(events) = quarantined.get_mut(model_id) {
             if let Some(pos) = events.iter().position(|e| e == event_id) {
                 events.remove(pos);
@@ -2219,7 +2219,7 @@ impl ModelConsensusManager {
 
     /// Detect conflicts in model weight claims (Axiom 6)
     pub fn detect_model_conflicts(&self, model_id: &str) -> Vec<ModelDispute> {
-        let claims = self.model_claims.read().unwrap();
+        let claims = self.model_claims.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         let mut disputes = Vec::new();
 
         if let Some(model_claims) = claims.get(model_id) {
@@ -2268,7 +2268,7 @@ impl ModelConsensusManager {
 
     /// Get LoRA adapter consensus for a task type
     pub fn lora_consensus(&self, adapter_id: &str) -> Option<(EventId, LoraAdapterClaim)> {
-        let claims = self.lora_claims.read().unwrap();
+        let claims = self.lora_claims.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         let adapter_claims = claims.get(adapter_id)?;
 
         if adapter_claims.is_empty() {
@@ -2289,7 +2289,7 @@ impl ModelConsensusManager {
 
     /// Get learning pattern consensus
     pub fn pattern_consensus(&self, pattern_id: &str) -> Option<(EventId, LearningPatternClaim)> {
-        let claims = self.pattern_claims.read().unwrap();
+        let claims = self.pattern_claims.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         let pattern_claims = claims.get(pattern_id)?;
 
         if pattern_claims.is_empty() {
@@ -2309,7 +2309,7 @@ impl ModelConsensusManager {
 
     /// Aggregate gradients for a federated learning round
     pub fn aggregate_round_gradients(&self, round: u64, min_contributors: usize) -> Option<Vec<(PublicKeyBytes, f32)>> {
-        let claims = self.gradient_claims.read().unwrap();
+        let claims = self.gradient_claims.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         let round_claims = claims.get(&round)?;
 
         if round_claims.len() < min_contributors {
@@ -2405,7 +2405,7 @@ impl CoherenceEngine {
         manager.quarantine_model_update(model_id, event_id, Some(&dispute));
         self.quarantine.set_level(&hex::encode(&event_id), 2);
 
-        let mut stats = self.stats.write().unwrap();
+        let mut stats = self.stats.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         stats.quarantined_claims += 1;
     }
 }

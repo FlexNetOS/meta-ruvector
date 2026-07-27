@@ -47,7 +47,7 @@ impl Backend for GlobMockBackend {
         WriteResult::default()
     }
     fn glob_info(&self, pattern: &str, _path: &str) -> Result<Vec<String>, String> {
-        let files = self.files.lock().unwrap();
+        let files = self.files.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
         let search = pattern.trim_start_matches('*').trim_end_matches('*');
         if search.is_empty() {
             // Wildcard-only pattern matches everything

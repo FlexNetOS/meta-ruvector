@@ -234,7 +234,7 @@ mod euler_tour_tests {
 
         // Initialize vertices
         {
-            let mut ett_lock = ett.lock().unwrap();
+            let mut ett_lock = ett.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
             for i in 1..=20 {
                 ett_lock.make_tree(i);
             }
@@ -245,7 +245,7 @@ mod euler_tour_tests {
             .map(|thread_id| {
                 let ett_clone = Arc::clone(&ett);
                 thread::spawn(move || {
-                    let mut ett_lock = ett_clone.lock().unwrap();
+                    let mut ett_lock = ett_clone.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
                     let base = thread_id * 5;
                     for i in 0..4 {
                         ett_lock.link(base + i + 1, base + i + 2);
@@ -259,7 +259,7 @@ mod euler_tour_tests {
         }
 
         // Verify all components are created
-        let ett_lock = ett.lock().unwrap();
+        let ett_lock = ett.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
         assert!(ett_lock.connected(1, 5));
         assert!(ett_lock.connected(6, 10));
         assert!(ett_lock.connected(11, 15));
@@ -376,7 +376,7 @@ mod cut_watcher_tests {
                 let watcher_clone = Arc::clone(&watcher);
                 thread::spawn(move || {
                     for i in 0..25 {
-                        let mut w = watcher_clone.lock().unwrap();
+                        let mut w = watcher_clone.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
                         w.insert_edge(thread_id * 100 + i, thread_id * 100 + i + 1, 1.0);
                     }
                 })
@@ -387,7 +387,7 @@ mod cut_watcher_tests {
             handle.join().unwrap();
         }
 
-        let w = watcher.lock().unwrap();
+        let w = watcher.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
         assert_eq!(w.updates_count, 100);
         assert!(w.needs_recompute);
     }

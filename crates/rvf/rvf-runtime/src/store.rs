@@ -3695,7 +3695,7 @@ mod tests {
                 scope.spawn(move || {
                     for i in 0..40u64 {
                         let q = random_vector(8, 100_000 + t * 1_000 + i);
-                        let guard = store.read().unwrap();
+                        let guard = store.read().unwrap_or_else(std::sync::PoisonError::into_inner);
                         let results = guard.query(&q, 10, &QueryOptions::default()).unwrap();
                         assert_eq!(results.len(), 10);
                         for w in results.windows(2) {
@@ -3710,7 +3710,7 @@ mod tests {
             scope.spawn(move || {
                 for i in 0..10u64 {
                     let v = random_vector(8, 555_000 + i);
-                    let mut guard = store.write().unwrap();
+                    let mut guard = store.write().unwrap_or_else(std::sync::PoisonError::into_inner);
                     guard
                         .ingest_batch(&[v.as_slice()], &[i % 50], None)
                         .unwrap();

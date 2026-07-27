@@ -129,7 +129,7 @@ fn test_concurrent_access_safety() {
                     vector: seq.to_kmer_vector(3, 128).unwrap(),
                     metadata: None,
                 };
-                idx_clone.lock().unwrap().db().insert(entry).unwrap();
+                idx_clone.lock().unwrap_or_else(std::sync::PoisonError::into_inner).db().insert(entry).unwrap();
             })
         })
         .collect();

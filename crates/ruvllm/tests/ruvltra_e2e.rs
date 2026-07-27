@@ -421,10 +421,10 @@ mod streaming_generation {
 
         for (token, chunk) in &tokens {
             let latency = Duration::from_millis(50);
-            state.lock().unwrap().record_token(*token, chunk, latency);
+            state.lock().unwrap_or_else(std::sync::PoisonError::into_inner).record_token(*token, chunk, latency);
         }
 
-        let final_state = state.lock().unwrap();
+        let final_state = state.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
         assert_eq!(final_state.tokens_received.len(), 4);
         assert_eq!(final_state.chunks_received.len(), 4);
         assert!(final_state.first_token_time.is_some());

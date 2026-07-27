@@ -183,7 +183,7 @@ impl CacheManager {
         let embedding = self.generate_embedding(image_data)?;
         let hash = self.hash_image(image_data);
 
-        let entries = self.entries.read().unwrap();
+        let entries = self.entries.read().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         // First try exact hash match
         if let Some(entry) = entries.get(&hash) {
@@ -241,7 +241,7 @@ impl CacheManager {
             last_access: self.current_timestamp(),
         };
 
-        let mut entries = self.entries.write().unwrap();
+        let mut entries = self.entries.write().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         // Check if we need to evict
         if entries.len() >= self.config.capacity && !entries.contains_key(&hash) {
@@ -271,7 +271,7 @@ impl CacheManager {
 
     /// Evict least recently used entry
     fn evict_lru(&self, entries: &mut HashMap<String, CacheEntry>) {
-        let mut lru = self.lru_order.write().unwrap();
+        let mut lru = self.lru_order.write().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         if let Some(key) = lru.first() {
             entries.remove(key);
@@ -282,20 +282,20 @@ impl CacheManager {
 
     /// Update LRU order
     fn update_lru(&self, key: &str) {
-        let mut lru = self.lru_order.write().unwrap();
+        let mut lru = self.lru_order.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         lru.retain(|k| k != key);
         lru.push(key.to_string());
     }
 
     /// Record cache hit
     fn record_hit(&self) {
-        let mut stats = self.stats.write().unwrap();
+        let mut stats = self.stats.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         stats.hits += 1;
     }
 
     /// Record cache hit with similarity
     fn record_hit_with_similarity(&self, similarity: f32) {
-        let mut stats = self.stats.write().unwrap();
+        let mut stats = self.stats.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         stats.hits += 1;
 
         // Update rolling average
@@ -305,31 +305,31 @@ impl CacheManager {
 
     /// Record cache miss
     fn record_miss(&self) {
-        let mut stats = self.stats.write().unwrap();
+        let mut stats = self.stats.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         stats.misses += 1;
     }
 
     /// Record eviction
     fn record_eviction(&self) {
-        let mut stats = self.stats.write().unwrap();
+        let mut stats = self.stats.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         stats.evictions += 1;
     }
 
     /// Update entry count
     fn update_stats_entries(&self, count: usize) {
-        let mut stats = self.stats.write().unwrap();
+        let mut stats = self.stats.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         stats.entries = count;
     }
 
     /// Get cache statistics
     pub fn stats(&self) -> CacheStats {
-        self.stats.read().unwrap().clone()
+        self.stats.read().unwrap_or_else(std::sync::PoisonError::into_inner).clone()
     }
 
     /// Clear all cache entries
     pub fn clear(&self) {
-        let mut entries = self.entries.write().unwrap();
-        let mut lru = self.lru_order.write().unwrap();
+        let mut entries = self.entries.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut lru = self.lru_order.write().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         entries.clear();
         lru.clear();
@@ -339,8 +339,8 @@ impl CacheManager {
 
     /// Remove expired entries
     pub fn cleanup(&self) {
-        let mut entries = self.entries.write().unwrap();
-        let mut lru = self.lru_order.write().unwrap();
+        let mut entries = self.entries.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut lru = self.lru_order.write().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         let expired: Vec<String> = entries
             .iter()

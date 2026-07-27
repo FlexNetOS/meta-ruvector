@@ -153,10 +153,10 @@ impl QueryCache {
         let entry = CacheEntry::new(results);
         let entry_size = entry.size_bytes;
 
-        let mut entries = self.entries.write().unwrap();
-        let mut lru = self.lru_order.write().unwrap();
-        let mut memory = self.memory_used.write().unwrap();
-        let mut stats = self.stats.write().unwrap();
+        let mut entries = self.entries.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut lru = self.lru_order.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut memory = self.memory_used.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut stats = self.stats.write().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         // Evict if necessary
         while (entries.len() >= self.config.max_entries
@@ -181,9 +181,9 @@ impl QueryCache {
 
     /// Remove entry from cache
     pub fn remove(&self, key: &str) -> bool {
-        let mut entries = self.entries.write().unwrap();
-        let mut lru = self.lru_order.write().unwrap();
-        let mut memory = self.memory_used.write().unwrap();
+        let mut entries = self.entries.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut lru = self.lru_order.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut memory = self.memory_used.write().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         if let Some(entry) = entries.remove(key) {
             *memory = memory.saturating_sub(entry.size_bytes);
@@ -198,9 +198,9 @@ impl QueryCache {
 
     /// Clear all cache entries
     pub fn clear(&self) {
-        let mut entries = self.entries.write().unwrap();
-        let mut lru = self.lru_order.write().unwrap();
-        let mut memory = self.memory_used.write().unwrap();
+        let mut entries = self.entries.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut lru = self.lru_order.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut memory = self.memory_used.write().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         entries.clear();
         lru.clear();
@@ -209,31 +209,31 @@ impl QueryCache {
 
     /// Get cache statistics
     pub fn stats(&self) -> CacheStats {
-        self.stats.read().unwrap().clone()
+        self.stats.read().unwrap_or_else(std::sync::PoisonError::into_inner).clone()
     }
 
     /// Get current memory usage
     pub fn memory_used(&self) -> usize {
-        *self.memory_used.read().unwrap()
+        *self.memory_used.read().unwrap_or_else(std::sync::PoisonError::into_inner)
     }
 
     /// Get number of cached entries
     pub fn len(&self) -> usize {
-        self.entries.read().unwrap().len()
+        self.entries.read().unwrap_or_else(std::sync::PoisonError::into_inner).len()
     }
 
     /// Check if cache is empty
     pub fn is_empty(&self) -> bool {
-        self.entries.read().unwrap().is_empty()
+        self.entries.read().unwrap_or_else(std::sync::PoisonError::into_inner).is_empty()
     }
 
     /// Clean expired entries
     pub fn clean_expired(&self) {
         let ttl = Duration::from_secs(self.config.ttl_seconds);
-        let mut entries = self.entries.write().unwrap();
-        let mut lru = self.lru_order.write().unwrap();
-        let mut memory = self.memory_used.write().unwrap();
-        let mut stats = self.stats.write().unwrap();
+        let mut entries = self.entries.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut lru = self.lru_order.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut memory = self.memory_used.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut stats = self.stats.write().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         let expired_keys: Vec<_> = entries
             .iter()

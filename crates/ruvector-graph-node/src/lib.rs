@@ -88,7 +88,7 @@ fn register_node(
 
     // Persist to storage if enabled (mirrors create_node behaviour).
     if let Some(storage_arc) = storage {
-        let storage_guard = storage_arc.write().expect("Storage RwLock poisoned");
+        let storage_guard = storage_arc.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         storage_guard
             .insert_node(&graph_node)
             .map_err(|e| Error::from_reason(format!("Failed to persist node: {}", e)))?;
@@ -199,11 +199,11 @@ impl GraphDatabase {
         let labels = node.labels.clone();
 
         tokio::task::spawn_blocking(move || {
-            let mut hg = hypergraph.write().expect("RwLock poisoned");
+            let mut hg = hypergraph.write().unwrap_or_else(std::sync::PoisonError::into_inner);
             hg.add_entity(id.clone(), embedding);
 
             // Add to property graph
-            let gdb = graph_db.write().expect("RwLock poisoned");
+            let gdb = graph_db.write().unwrap_or_else(std::sync::PoisonError::into_inner);
             let mut builder = NodeBuilder::new().id(&id);
 
             register_node(
@@ -245,7 +245,7 @@ impl GraphDatabase {
         tokio::task::spawn_blocking(move || {
             let core_edge = CoreHyperedge::new(nodes, description, embedding, confidence);
             let edge_id = core_edge.id.clone();
-            let mut hg = hypergraph.write().expect("RwLock poisoned");
+            let mut hg = hypergraph.write().unwrap_or_else(std::sync::PoisonError::into_inner);
             hg.add_hyperedge(core_edge)
                 .map_err(|e| Error::from_reason(format!("Failed to create edge: {}", e)))?;
             Ok(edge_id)
@@ -277,7 +277,7 @@ impl GraphDatabase {
         tokio::task::spawn_blocking(move || {
             let core_edge = CoreHyperedge::new(nodes, description, embedding, confidence);
             let edge_id = core_edge.id.clone();
-            let mut hg = hypergraph.write().expect("RwLock poisoned");
+            let mut hg = hypergraph.write().unwrap_or_else(std::sync::PoisonError::into_inner);
             hg.add_hyperedge(core_edge)
                 .map_err(|e| Error::from_reason(format!("Failed to create hyperedge: {}", e)))?;
             Ok(edge_id)
@@ -302,8 +302,8 @@ impl GraphDatabase {
             let parsed = parse_cypher(&cypher)
                 .map_err(|e| Error::from_reason(format!("Cypher parse error: {}", e)))?;
 
-            let gdb = graph_db.read().expect("RwLock poisoned");
-            let hg = hypergraph.read().expect("RwLock poisoned");
+            let gdb = graph_db.read().unwrap_or_else(std::sync::PoisonError::into_inner);
+            let hg = hypergraph.read().unwrap_or_else(std::sync::PoisonError::into_inner);
 
             let mut result_nodes: Vec<JsNodeResult> = Vec::new();
             let result_edges: Vec<JsEdgeResult> = Vec::new();
@@ -377,7 +377,7 @@ impl GraphDatabase {
     /// ```
     #[napi]
     pub fn query_sync(&self, _cypher: String) -> Result<JsQueryResult> {
-        let hg = self.hypergraph.read().expect("RwLock poisoned");
+        let hg = self.hypergraph.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         let stats = hg.stats();
 
         // Simplified query result for now
@@ -411,7 +411,7 @@ impl GraphDatabase {
         let k = query.k as usize;
 
         tokio::task::spawn_blocking(move || {
-            let hg = hypergraph.read().expect("RwLock poisoned");
+            let hg = hypergraph.read().unwrap_or_else(std::sync::PoisonError::into_inner);
             let results = hg.search_hyperedges(&embedding, k);
 
             Ok::<Vec<JsHyperedgeResult>, Error>(
@@ -440,7 +440,7 @@ impl GraphDatabase {
         let hops = k as usize;
 
         tokio::task::spawn_blocking(move || {
-            let hg = hypergraph.read().expect("RwLock poisoned");
+            let hg = hypergraph.read().unwrap_or_else(std::sync::PoisonError::into_inner);
             let neighbors = hg.k_hop_neighbors(start_node, hops);
             Ok::<Vec<String>, Error>(neighbors.into_iter().collect())
         })
@@ -459,7 +459,7 @@ impl GraphDatabase {
         let tm = self.transaction_manager.clone();
 
         tokio::task::spawn_blocking(move || {
-            let mut manager = tm.write().expect("RwLock poisoned");
+            let mut manager = tm.write().unwrap_or_else(std::sync::PoisonError::into_inner);
             Ok::<String, Error>(manager.begin())
         })
         .await
@@ -477,7 +477,7 @@ impl GraphDatabase {
         let tm = self.transaction_manager.clone();
 
         tokio::task::spawn_blocking(move || {
-            let mut manager = tm.write().expect("RwLock poisoned");
+            let mut manager = tm.write().unwrap_or_else(std::sync::PoisonError::into_inner);
             manager
                 .commit(&tx_id)
                 .map_err(|e| Error::from_reason(format!("Failed to commit: {}", e)))
@@ -497,7 +497,7 @@ impl GraphDatabase {
         let tm = self.transaction_manager.clone();
 
         tokio::task::spawn_blocking(move || {
-            let mut manager = tm.write().expect("RwLock poisoned");
+            let mut manager = tm.write().unwrap_or_else(std::sync::PoisonError::into_inner);
             manager
                 .rollback(&tx_id)
                 .map_err(|e| Error::from_reason(format!("Failed to rollback: {}", e)))
@@ -524,8 +524,8 @@ impl GraphDatabase {
         let edges = batch.edges;
 
         tokio::task::spawn_blocking(move || {
-            let mut hg = hypergraph.write().expect("RwLock poisoned");
-            let mut gdb = graph_db.write().expect("RwLock poisoned");
+            let mut hg = hypergraph.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+            let mut gdb = graph_db.write().unwrap_or_else(std::sync::PoisonError::into_inner);
             let mut node_ids = Vec::new();
             let mut edge_ids = Vec::new();
 
@@ -584,19 +584,19 @@ impl GraphDatabase {
 
         tokio::task::spawn_blocking(move || {
             let deleted_edges = {
-                let mut hg = hypergraph.write().expect("RwLock poisoned");
+                let mut hg = hypergraph.write().unwrap_or_else(std::sync::PoisonError::into_inner);
                 hg.remove_entity(&id, cascade) as u32
             };
 
             let deleted_node = {
-                let gdb = graph_db.read().expect("RwLock poisoned");
+                let gdb = graph_db.read().unwrap_or_else(std::sync::PoisonError::into_inner);
                 gdb.delete_node(&id)
                     .map_err(|e| Error::from_reason(format!("Failed to delete node: {}", e)))?
             };
 
             if deleted_node {
                 if let Some(ref storage_arc) = storage {
-                    let sg = storage_arc.write().expect("Storage RwLock poisoned");
+                    let sg = storage_arc.write().unwrap_or_else(std::sync::PoisonError::into_inner);
                     sg.delete_node(&id)
                         .map_err(|e| Error::from_reason(format!("Storage delete failed: {}", e)))?;
                 }
@@ -625,14 +625,14 @@ impl GraphDatabase {
 
         tokio::task::spawn_blocking(move || {
             let deleted = {
-                let gdb = graph_db.read().expect("RwLock poisoned");
+                let gdb = graph_db.read().unwrap_or_else(std::sync::PoisonError::into_inner);
                 gdb.delete_edge(&id)
                     .map_err(|e| Error::from_reason(format!("Failed to delete edge: {}", e)))?
             };
 
             if deleted {
                 if let Some(ref storage_arc) = storage {
-                    let sg = storage_arc.write().expect("Storage RwLock poisoned");
+                    let sg = storage_arc.write().unwrap_or_else(std::sync::PoisonError::into_inner);
                     sg.delete_edge(&id)
                         .map_err(|e| Error::from_reason(format!("Storage delete failed: {}", e)))?;
                 }
@@ -659,19 +659,19 @@ impl GraphDatabase {
 
         tokio::task::spawn_blocking(move || {
             {
-                let mut hg = hypergraph.write().expect("RwLock poisoned");
+                let mut hg = hypergraph.write().unwrap_or_else(std::sync::PoisonError::into_inner);
                 hg.remove_hyperedge(&id);
             }
 
             let deleted = {
-                let gdb = graph_db.read().expect("RwLock poisoned");
+                let gdb = graph_db.read().unwrap_or_else(std::sync::PoisonError::into_inner);
                 gdb.delete_hyperedge(&id)
                     .map_err(|e| Error::from_reason(format!("Failed to delete hyperedge: {}", e)))?
             };
 
             if deleted {
                 if let Some(ref storage_arc) = storage {
-                    let sg = storage_arc.write().expect("Storage RwLock poisoned");
+                    let sg = storage_arc.write().unwrap_or_else(std::sync::PoisonError::into_inner);
                     sg.delete_hyperedge(&id)
                         .map_err(|e| Error::from_reason(format!("Storage delete failed: {}", e)))?;
                 }
@@ -710,7 +710,7 @@ impl GraphDatabase {
         let hypergraph = self.hypergraph.clone();
 
         tokio::task::spawn_blocking(move || {
-            let hg = hypergraph.read().expect("RwLock poisoned");
+            let hg = hypergraph.read().unwrap_or_else(std::sync::PoisonError::into_inner);
             let stats = hg.stats();
 
             Ok::<JsGraphStats, Error>(JsGraphStats {

@@ -134,7 +134,7 @@ impl StakeManager {
         let mut key = [0u8; 32];
         key.copy_from_slice(node_id);
 
-        self.stakes.read().unwrap()
+        self.stakes.read().unwrap_or_else(std::sync::PoisonError::into_inner)
             .get(&key)
             .map(|s| s.amount.saturating_sub(s.slashed_amount))
             .unwrap_or(0)
@@ -149,7 +149,7 @@ impl StakeManager {
     /// Get total staked amount in network
     #[wasm_bindgen(js_name = totalStaked)]
     pub fn total_staked(&self) -> u64 {
-        self.stakes.read().unwrap()
+        self.stakes.read().unwrap_or_else(std::sync::PoisonError::into_inner)
             .values()
             .map(|s| s.amount.saturating_sub(s.slashed_amount))
             .sum()
@@ -158,7 +158,7 @@ impl StakeManager {
     /// Get number of stakers
     #[wasm_bindgen(js_name = stakerCount)]
     pub fn staker_count(&self) -> usize {
-        self.stakes.read().unwrap()
+        self.stakes.read().unwrap_or_else(std::sync::PoisonError::into_inner)
             .values()
             .filter(|s| s.amount > s.slashed_amount)
             .count()
@@ -172,7 +172,7 @@ impl StakeManager {
             return false;
         }
 
-        let mut stakes = self.stakes.write().unwrap();
+        let mut stakes = self.stakes.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         let now = current_timestamp_ms();
 
         stakes.entry(node_id)
@@ -195,7 +195,7 @@ impl StakeManager {
 
     /// Unstake tokens (if lock period has passed)
     pub fn unstake(&self, node_id: &PublicKeyBytes) -> Result<u64, &'static str> {
-        let mut stakes = self.stakes.write().unwrap();
+        let mut stakes = self.stakes.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         let now = current_timestamp_ms();
 
         let stake = stakes.get_mut(node_id).ok_or("No stake found")?;
@@ -213,8 +213,8 @@ impl StakeManager {
 
     /// Slash a node's stake
     pub fn slash(&self, node_id: &PublicKeyBytes, reason: SlashReason, evidence: Vec<EventId>) -> u64 {
-        let mut stakes = self.stakes.write().unwrap();
-        let mut slashes = self.slashes.write().unwrap();
+        let mut stakes = self.stakes.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut slashes = self.slashes.write().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         let Some(stake) = stakes.get_mut(node_id) else {
             return 0;
@@ -245,7 +245,7 @@ impl StakeManager {
 
     /// Get slash history for a node
     pub fn get_slashes(&self, node_id: &PublicKeyBytes) -> Vec<SlashEvent> {
-        self.slashes.read().unwrap()
+        self.slashes.read().unwrap_or_else(std::sync::PoisonError::into_inner)
             .iter()
             .filter(|s| &s.node_id == node_id)
             .cloned()
@@ -330,7 +330,7 @@ impl ReputationManager {
         key.copy_from_slice(node_id);
 
         let now = current_timestamp_ms();
-        self.records.read().unwrap()
+        self.records.read().unwrap_or_else(std::sync::PoisonError::into_inner)
             .get(&key)
             .map(|r| r.effective_score(now, self.decay_rate, self.decay_interval_ms))
             .unwrap_or(0.0)
@@ -345,13 +345,13 @@ impl ReputationManager {
     /// Get number of tracked nodes
     #[wasm_bindgen(js_name = nodeCount)]
     pub fn node_count(&self) -> usize {
-        self.records.read().unwrap().len()
+        self.records.read().unwrap_or_else(std::sync::PoisonError::into_inner).len()
     }
 
     /// Get average network reputation
     #[wasm_bindgen(js_name = averageReputation)]
     pub fn average_reputation(&self) -> f64 {
-        let records = self.records.read().unwrap();
+        let records = self.records.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         if records.is_empty() {
             return 0.0;
         }
@@ -368,7 +368,7 @@ impl ReputationManager {
 impl ReputationManager {
     /// Register a new node with initial reputation
     pub fn register(&self, node_id: PublicKeyBytes) {
-        let mut records = self.records.write().unwrap();
+        let mut records = self.records.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         let now = current_timestamp_ms();
 
         records.entry(node_id).or_insert(ReputationRecord {
@@ -394,7 +394,7 @@ impl ReputationManager {
 
     /// Record challenge outcome
     pub fn record_challenge(&self, winner: &PublicKeyBytes, loser: &PublicKeyBytes, weight: f64) {
-        let mut records = self.records.write().unwrap();
+        let mut records = self.records.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         let now = current_timestamp_ms();
 
         // Update winner
@@ -418,7 +418,7 @@ impl ReputationManager {
 
     /// Update reputation based on outcome
     fn update_reputation(&self, node_id: &PublicKeyBytes, success: bool, weight: f64) {
-        let mut records = self.records.write().unwrap();
+        let mut records = self.records.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         let now = current_timestamp_ms();
 
         let record = records.entry(*node_id).or_insert(ReputationRecord {
@@ -448,13 +448,13 @@ impl ReputationManager {
 
     /// Get detailed record for a node
     pub fn get_record(&self, node_id: &PublicKeyBytes) -> Option<ReputationRecord> {
-        self.records.read().unwrap().get(node_id).cloned()
+        self.records.read().unwrap_or_else(std::sync::PoisonError::into_inner).get(node_id).cloned()
     }
 
     /// Prune nodes with zero reputation
     pub fn prune_inactive(&self) {
         let now = current_timestamp_ms();
-        let mut records = self.records.write().unwrap();
+        let mut records = self.records.write().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         records.retain(|_, r| {
             r.effective_score(now, self.decay_rate, self.decay_interval_ms) > 0.01
@@ -536,7 +536,7 @@ impl RewardManager {
     /// Get number of pending rewards
     #[wasm_bindgen(js_name = pendingCount)]
     pub fn pending_count(&self) -> usize {
-        self.rewards.read().unwrap()
+        self.rewards.read().unwrap_or_else(std::sync::PoisonError::into_inner)
             .iter()
             .filter(|r| !r.claimed && !r.clawed_back)
             .count()
@@ -545,7 +545,7 @@ impl RewardManager {
     /// Get total pending reward amount
     #[wasm_bindgen(js_name = pendingAmount)]
     pub fn pending_amount(&self) -> u64 {
-        self.rewards.read().unwrap()
+        self.rewards.read().unwrap_or_else(std::sync::PoisonError::into_inner)
             .iter()
             .filter(|r| !r.claimed && !r.clawed_back)
             .map(|r| r.amount)
@@ -562,7 +562,7 @@ impl RewardManager {
         key.copy_from_slice(node_id);
 
         let now = current_timestamp_ms();
-        self.rewards.read().unwrap()
+        self.rewards.read().unwrap_or_else(std::sync::PoisonError::into_inner)
             .iter()
             .filter(|r| r.recipient == key && !r.claimed && !r.clawed_back && r.is_vested(now))
             .map(|r| r.amount)
@@ -597,14 +597,14 @@ impl RewardManager {
             clawed_back: false,
         };
 
-        self.rewards.write().unwrap().push(reward);
+        self.rewards.write().unwrap_or_else(std::sync::PoisonError::into_inner).push(reward);
         id
     }
 
     /// Claim vested rewards for a node
     pub fn claim(&self, node_id: &PublicKeyBytes) -> u64 {
         let now = current_timestamp_ms();
-        let mut rewards = self.rewards.write().unwrap();
+        let mut rewards = self.rewards.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         let mut claimed_amount = 0u64;
 
         for reward in rewards.iter_mut() {
@@ -618,14 +618,14 @@ impl RewardManager {
             }
         }
 
-        *self.total_distributed.write().unwrap() += claimed_amount;
+        *self.total_distributed.write().unwrap_or_else(std::sync::PoisonError::into_inner) += claimed_amount;
         claimed_amount
     }
 
     /// Claw back rewards for a disputed task
     pub fn claw_back(&self, task_id: &EventId) -> u64 {
         let now = current_timestamp_ms();
-        let mut rewards = self.rewards.write().unwrap();
+        let mut rewards = self.rewards.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         let mut clawed_back = 0u64;
 
         for reward in rewards.iter_mut() {
@@ -638,13 +638,13 @@ impl RewardManager {
             }
         }
 
-        *self.total_clawed_back.write().unwrap() += clawed_back;
+        *self.total_clawed_back.write().unwrap_or_else(std::sync::PoisonError::into_inner) += clawed_back;
         clawed_back
     }
 
     /// Get rewards for a specific task
     pub fn get_task_rewards(&self, task_id: &EventId) -> Vec<RewardRecord> {
-        self.rewards.read().unwrap()
+        self.rewards.read().unwrap_or_else(std::sync::PoisonError::into_inner)
             .iter()
             .filter(|r| &r.task_id == task_id)
             .cloned()
@@ -654,7 +654,7 @@ impl RewardManager {
     /// Prune old claimed/clawed-back rewards
     pub fn prune_old(&self, max_age_ms: u64) {
         let now = current_timestamp_ms();
-        let mut rewards = self.rewards.write().unwrap();
+        let mut rewards = self.rewards.write().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         rewards.retain(|r| {
             if r.claimed || r.clawed_back {
@@ -823,7 +823,7 @@ mod tests {
         assert_eq!(manager.claimable_amount(&recipient), 0);
 
         // Test vesting calculation
-        let rewards = manager.rewards.read().unwrap();
+        let rewards = manager.rewards.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         let reward = rewards.iter().find(|r| r.id == reward_id).unwrap();
         assert!(reward.vesting_progress(reward.created_at + 500) < 1.0);
     }
