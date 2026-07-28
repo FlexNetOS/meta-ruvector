@@ -39,6 +39,7 @@
 #![forbid(unsafe_code)]
 
 pub mod atas;
+pub mod attractor_study;
 pub mod baseline;
 pub mod dataset;
 pub mod ensemble;
