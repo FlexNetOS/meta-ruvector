@@ -84,8 +84,13 @@ all-features-v3 = ["all-features", "analytics-complete", "ai-complete-v3", "doma
 # PostgreSQL extension framework
 pgrx = "0.12"
 
-# Pin home to avoid edition2024 issues
-home = "=0.5.9"
+# Cryptographic SHAKE256 implementation shared with RVF witness hashing.
+# Disable the unrelated Ed25519 default feature for this SQL binding.
+rvf-crypto = { version = "0.2.0", path = "../rvf/rvf-crypto", default-features = false, features = ["std"] }
+
+# Keep this explicit because pgrx resolves `home` through the configured
+# source; 0.5.12 is the available Rust-2021-compatible release there.
+home = "=0.5.12"
 
 # SIMD acceleration (leverages existing ruvector-core capabilities)
 simsimd = "5.9"

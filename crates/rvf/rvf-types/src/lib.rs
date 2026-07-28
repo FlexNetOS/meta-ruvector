@@ -60,7 +60,10 @@ pub use attestation::{AttestationHeader, AttestationWitnessType, TeePlatform, KE
 pub use checksum::ChecksumAlgo;
 pub use compression::CompressionAlgo;
 pub use constants::*;
-pub use cow_map::{CowMapEntry, CowMapHeader, MapFormat, COWMAP_MAGIC};
+pub use cow_map::{
+    CowMapEntry, CowMapHeader, CowMapHeaderV1, MapFormat, COWMAP_MAGIC, COW_MAP_V1,
+    COW_MAP_V1_HEADER_SIZE, COW_MAP_V2, COW_MAP_V2_HEADER_SIZE,
+};
 pub use dashboard::{DashboardHeader, DASHBOARD_MAGIC, DASHBOARD_MAX_SIZE};
 pub use data_type::DataType;
 pub use delta::{DeltaEncoding, DeltaHeader, DELTA_MAGIC};

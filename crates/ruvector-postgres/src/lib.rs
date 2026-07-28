@@ -27,6 +27,7 @@ use pgrx::{GucContext, GucFlags, GucRegistry, GucSetting};
 
 // Module declarations
 pub mod attention;
+pub mod crypto;
 pub mod dag;
 pub mod distance;
 pub mod gnn;

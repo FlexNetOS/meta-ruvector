@@ -10,9 +10,64 @@
 
 ---
 
+## INV-011 Canonical Persistence Resolution (2026-07-27)
+
+The original ADR-031 COW table is internally contradictory: it calls
+`CowMapHeader` 64 bytes while assigning fields through offset `0x5F`. The
+runtime now treats that incomplete 64-byte shape as **V1, read-only** and uses
+an honest **V2 96-byte header** for every new COW map. V2 contains
+`map_root_offset`, `cluster_count`, `local_cluster_count`, `extent_support`,
+and an explicit monotonic `generation_id`; reserved bytes must be zero.
+
+Canonical COW_MAP and MEMBERSHIP payloads are encoded and validated only by
+the strict codecs in `rvf-wire`. Their segment frames use SHAKE-256/128
+(`checksum_algo=2`) and zero padding to the 64-byte segment boundary. Their
+32-byte payload hashes use `rvf_crypto::shake256_256`.
+
+Compatibility is intentionally one-way:
+
+- historical runtime frames with `checksum_algo=0`, the CRC32-rotation digest,
+  and no padding remain readable;
+- historical COW V1 payloads are accepted only inside that legacy frame;
+- canonical V2 COW and MEMBERSHIP payloads are accepted only in canonical
+  SHAKE/padded frames;
+- mixed framing/version combinations, zero hashes, non-zero padding, stale
+  generations, and malformed counts fail closed;
+- no writer emits the historical algo-0/unpadded form.
+
+Both segment types are linked through the manifest directory. The manifest's
+versioned generation trailer identifies the current COW and membership
+generations while retaining older directory entries as superseded history.
+Those counters are strict in-file consistency guards: replaying only one
+segment or mixing generations is rejected, but replaying an older
+self-consistent file image still requires an external trusted generation root
+to detect. They are not described as cryptographic rollback protection.
+
+COW lineage now binds the child to a canonical parent snapshot digest. Clean
+manifest-only appends do not change that digest, while every referenced
+non-manifest segment is bound by a full SHAKE-256 payload digest. Parent lookup
+requires both the exact `file_id` and snapshot digest; payload tampering or a
+post-branch parent append fails with `ParentChainBroken`.
+
+Include membership bits mean visible and Exclude membership bits mean
+tombstoned. Child deletion therefore clears a bit in Include mode and sets a
+bit in Exclude mode. `rvf filter --output` creates a real COW branch before
+installing the requested filter, so the closed/reopened output remains a
+queryable filtered parent view. Both CLI consumers use public, manifest-linked
+store APIs rather than guessed offsets or unmanifested raw segments.
+
+The dated findings below are retained as the historical audit record. Status
+and checklist entries updated in this resolution section supersede their
+original line references and recommendations.
+
+---
+
 ## Executive Summary
 
-The RVCOW implementation is structurally sound with good defensive practices (compile-time size assertions, magic number validation, `repr(C)` layouts). However, the audit identified **2 Critical**, **6 High**, **5 Medium**, and **4 Low** severity findings. The Critical and High findings have been fixed in-place. Medium/Low findings are documented for future remediation.
+The original 2026-02-14 audit identified **2 Critical**, **6 High**, **5
+Medium**, and **4 Low** severity findings. This document preserves that
+historical inventory; the 2026-07-27 resolution above and per-finding status
+updates below describe the current implementation.
 
 ### Findings Summary
 
@@ -33,26 +88,20 @@ The RVCOW implementation is structurally sound with good defensive practices (co
 
 **Severity**: Critical
 **Location**: `/workspaces/ruvector/crates/rvf/rvf-runtime/src/store.rs:1239-1251`
-**Status**: Documented (architectural issue requiring design decision)
+**Status**: **FIXED (2026-07-27)**
 
-**Description**: `simple_shake256_256` is a trivially reversible XOR-fold hash, not a cryptographic hash function. Despite its name suggesting SHAKE-256, it provides near-zero collision resistance and is trivially invertible. This function is used for:
+**Original Description**: `simple_shake256_256` was a trivially reversible
+XOR-fold hash despite its SHAKE name. It was used for:
 - `parent_hash` in `FileIdentity` (lineage verification)
 - `filter_hash` in `MembershipHeader` (filter integrity)
 - COW witness event hashes (`parent_cluster_hash`, `new_cluster_hash`)
 - Cluster deduplication in space-reclaim compaction
 
-**Impact**: An attacker can craft colliding inputs that produce identical hashes, defeating:
-1. Parent file provenance verification -- a different parent file could be substituted
-2. Membership filter integrity -- a modified filter bitmap could pass hash checks
-3. COW witness event auditing -- falsified cluster hashes in the audit trail
-4. Space-reclaim compaction -- different data could match parent hashes, causing data loss
-
-**Recommendation**: Replace `simple_shake256_256` with a real cryptographic hash. Options:
-- Add `sha3` crate dependency (provides SHAKE-256) for ~20KB binary increase
-- Use `blake3` for better performance with equivalent security
-- At minimum, document this is a placeholder and add a `#[cfg(feature = "crypto")]` gate
-
-**Note**: The function comment acknowledges this: "We use a simple non-cryptographic hash here since rvf-runtime doesn't depend on rvf-crypto." However, the security implications of this choice are severe for production use. All integrity guarantees documented in ADR-031 are void until this is addressed.
+**Fix Applied**: `rvf-runtime` now depends on `rvf-crypto`, and the compatibility
+function delegates to `rvf_crypto::shake256_256`. Membership payloads verify a
+full 32-byte SHAKE-256 digest; canonical segment frames use SHAKE-256/128.
+Parent resolution additionally recomputes the canonical parent snapshot digest
+and requires both that digest and the exact parent ID.
 
 ### C-02: KernelBinding from_bytes Does Not Validate Reserved/Padding Fields
 
@@ -190,10 +239,14 @@ The current implementation skips steps 1-3, merely displaying the hash values. T
 
 **Severity**: Medium
 **Location**: `/workspaces/ruvector/crates/rvf/rvf-cli/src/cmd/filter.rs:97-109`
+**Status**: **FIXED (2026-07-27)**
 
-**Description**: Similar to M-03, the `filter` CLI command writes a raw MEMBERSHIP_SEG directly to the file, bypassing the store API. The segment is not recorded in the manifest.
+**Original Description**: The `filter` CLI command wrote a raw MEMBERSHIP_SEG
+directly to the file, bypassing the store API.
 
-**Recommendation**: Use the membership filter API in `RvfStore` instead of raw segment writes.
+**Fix Applied**: The CLI uses `append_membership_filter`, and `--output`
+creates a persisted COW branch rather than an empty derived file. Its
+close/reopen/query behavior is covered by an end-to-end CLI test.
 
 ### M-05: No Parent Chain Depth Limit Enforced
 
@@ -212,19 +265,21 @@ The current implementation skips steps 1-3, merely displaying the hash values. T
 
 **Severity**: Low
 **Location**: `/workspaces/ruvector/crates/rvf/rvf-runtime/src/membership.rs:133-135`
+**Status**: **FIXED (2026-07-27)**
 
-**Description**: `MembershipFilter::bump_generation()` increments `generation_id` by 1, but there is no validation on deserialization that the loaded generation matches or exceeds the manifest's generation. ADR-031 specifies that stale generation IDs (lower than manifest) should be rejected with `GenerationStale` error.
-
-**Recommendation**: Add generation validation in `MembershipFilter::deserialize` that compares against the expected generation from the manifest.
+**Fix Applied**: Reopen requires the decoded COW/MEMBERSHIP generation to equal
+the manifest's corresponding generation and rejects mismatches with
+`GenerationStale`. This detects mixed in-file generations, not replay of an
+older self-consistent whole-file image.
 
 ### L-02: No Overflow Check on generation_id Increment
 
 **Severity**: Low
 **Location**: `/workspaces/ruvector/crates/rvf/rvf-runtime/src/membership.rs:134`
+**Status**: **FIXED (2026-07-27)**
 
-**Description**: `self.generation_id += 1` can overflow on `u32::MAX`. While unlikely in practice, this would cause the monotonicity invariant to be violated.
-
-**Recommendation**: Use `checked_add` and return an error on overflow, or use `saturating_add`.
+**Fix Applied**: Generation increments use `checked_add` and return
+`GenerationStale` on overflow.
 
 ### L-03: Cluster ID Multiplication Overflow in Parent Read
 
@@ -239,10 +294,10 @@ The current implementation skips steps 1-3, merely displaying the hash values. T
 
 **Severity**: Low
 **Location**: `/workspaces/ruvector/crates/rvf/rvf-runtime/src/membership.rs:147-182`
+**Status**: **FIXED (2026-07-27)**
 
-**Description**: `MembershipFilter::deserialize` recomputes `member_count` from the bitmap bits (line 174) rather than trusting the header's `member_count`. This is actually good practice. However, if the header's `member_count` disagrees with the actual bit count, there is no warning or error. A crafted header could claim 0 members while the bitmap has all bits set.
-
-**Recommendation**: Add a warning or optional validation that `header.member_count == computed_count`.
+**Fix Applied**: The strict `rvf-wire` codec rejects a header count that does
+not equal the bitmap popcount, as well as non-zero unused tail bits.
 
 ---
 
@@ -252,8 +307,10 @@ The current implementation skips steps 1-3, merely displaying the hash values. T
 
 **Severity**: Info
 **Location**: `/workspaces/ruvector/crates/rvf/rvf-cli/src/cmd/filter.rs:132-140`
+**Status**: **FIXED (2026-07-27)**
 
-**Description**: The `filter.rs` CLI command contains its own `simple_hash` function that is identical to `simple_shake256_256` in `store.rs`. This is a maintenance burden -- if one is updated, the other may be forgotten.
+**Fix Applied**: The duplicate CLI hash was removed; canonical MEMBERSHIP
+encoding and hashing route through `RvfStore` and `rvf-wire`.
 
 ### I-02: KernelBinding Version 0 Used as "Not Present" Sentinel
 
@@ -283,7 +340,9 @@ The current implementation skips steps 1-3, merely displaying the hash values. T
 
 ### 2. COW Map Security
 
-- [x] **Malicious redirect possible?** -- YES, because `simple_shake256_256` cannot verify integrity (C-01).
+- [x] **Malicious redirect possible?** -- Parent lookup requires the exact
+  `file_id` and canonical SHAKE-256 snapshot digest; payload tampering and
+  post-branch parent appends are rejected.
 - [x] **cluster_id range validated?** -- YES. Out-of-bounds lookup returns `Unallocated`.
 - [x] **Parent chain cycle prevention?** -- NO. No depth limit enforced (M-05).
 - [x] **Offsets validated before dereferencing?** -- YES. File I/O will return errors on invalid offsets.
@@ -292,15 +351,20 @@ The current implementation skips steps 1-3, merely displaying the hash values. T
 ### 3. Membership Filter Security
 
 - [x] **Empty include filter blocks all access?** -- YES. Verified by test `include_mode_empty_is_empty_view`.
-- [x] **generation_id validated monotonically?** -- NO. Not enforced at load time (L-01).
+- [x] **generation_id validated monotonically?** -- YES for in-file
+  COW/MEMBERSHIP-to-manifest consistency. Whole-file rollback requires an
+  external trusted generation root.
 - [x] **Filter bitmap bounds checked?** -- YES. `bitmap_contains` checks `vector_id >= vector_count`.
-- [x] **filter_hash verified on load?** -- NO. Depends on `simple_shake256_256` which is non-cryptographic (C-01).
+- [x] **filter_hash verified on load?** -- YES. The strict codec recomputes the
+  full `rvf_crypto` SHAKE-256 digest.
 
 ### 4. Crash Recovery
 
 - [x] **Double-root scheme implemented?** -- NOT YET. The runtime code does not implement the double-root scheme described in ADR-031 Section 8.3. Current implementation uses append-only manifests.
 - [x] **Orphaned data accessible after failed writes?** -- NO. Orphaned appended data has no manifest reference and is invisible.
-- [x] **Generation counters validated?** -- PARTIALLY. Increment works but no validation on load.
+- [x] **Generation counters validated?** -- PARTIALLY. Increment, overflow,
+  and current-manifest equality are enforced, but a trusted external anchor is
+  still required to detect a self-consistent whole-file rollback.
 
 ### 5. Input Validation
 
@@ -331,11 +395,11 @@ The current implementation skips steps 1-3, merely displaying the hash values. T
 | Guest compromise | Kernel is stub; eBPF verifier not implemented | NOT TESTABLE |
 | TEE integrity | Not implemented | NOT TESTABLE |
 | Supply chain | Signatures supported in type system | PARTIAL |
-| Replay attack | generation_id exists but not enforced | INCOMPLETE |
+| Replay attack | generation equality enforced in-file; no external trusted root | PARTIAL |
 | Data swap | KernelBinding exists but verification not enforced | INCOMPLETE |
 | Malicious alt kernel | Deterministic selection not implemented | NOT IMPLEMENTED |
-| COW map poisoning | Deterministic map ordering: YES | PARTIAL (no hash verification) |
-| Stale membership filter | generation_id exists but not enforced on load | INCOMPLETE |
+| COW map poisoning | strict codec, SHAKE frame, parent snapshot binding | IMPLEMENTED for file integrity |
+| Stale membership filter | strict hash/count/generation validation | IMPLEMENTED in-file; external rollback anchor pending |
 
 ---
 
@@ -356,15 +420,19 @@ The current implementation skips steps 1-3, merely displaying the hash values. T
 
 ## Recommendations (Priority Order)
 
-1. **P0**: Replace `simple_shake256_256` with a real cryptographic hash (blake3 or sha3 crate).
-2. **P0**: Implement manifest_root_hash verification in `verify_attestation` and in the kernel boot path.
-3. **P1**: Enforce parent chain depth limit (64 levels per ADR-031).
-4. **P1**: Enforce generation_id monotonicity on membership filter and COW map load.
-5. **P1**: Implement signed-required downgrade prevention per ADR-031 Section 9.
-6. **P2**: Fix freeze/filter CLI commands to use the store API instead of raw segment writes.
-7. **P2**: Add reserved field validation to MembershipHeader and DeltaHeader deserialization.
-8. **P3**: Add overflow protection to generation_id increment.
-9. **P3**: Add parent_hash/filter_hash consistency checks (once crypto hash is in place).
+1. **P0**: Implement `manifest_root_hash` verification in
+   `verify_attestation` and in the kernel boot path.
+2. **P0**: Anchor COW/MEMBERSHIP generations in a trusted external or Level0
+   root so rollback of an older self-consistent whole-file image is detectable.
+3. **P1**: Enforce the 64-level parent-chain limit and cycle prevention from
+   ADR-031.
+4. **P1**: Implement signed-required downgrade prevention per ADR-031 Section
+   9.
+5. **P2**: Fix the freeze CLI command to use the store API instead of raw
+   segment writes.
+6. **P2**: Add reserved-field validation to `MembershipHeader` and
+   `DeltaHeader` deserialization where not already enforced by the strict wire
+   codec.
 
 ---
 
@@ -378,7 +446,7 @@ The current implementation skips steps 1-3, merely displaying the hash values. T
 | `rvf-runtime/src/cow.rs` | Added `vectors_per_cluster > 0` assertion; changed silent write drop to error |
 | `rvf-runtime/src/cow_map.rs` | Added checked arithmetic for `count * 9` overflow |
 
-## Test Results After Fixes
+## Historical 2026-02-14 Test Results
 
 ```
 rvf-types:   122 passed, 0 failed
@@ -387,4 +455,6 @@ rvf-cli:       0 passed, 0 failed (no unit tests)
 integration:   6 passed, 2 failed (pre-existing failures in cow_branching.rs)
 ```
 
-The 2 integration test failures (`branch_inherits_vectors_via_query`, `branch_membership_filter_excludes_deleted`) are pre-existing and unrelated to this audit's changes -- they test branch+query integration that requires the membership filter to be wired into the query path, which is not yet implemented.
+These counts are retained only as the original audit receipt. Current
+verification includes `rvf-integration-tests`; the canonical INV-011 artifact
+records the current command, counts, and source digest.

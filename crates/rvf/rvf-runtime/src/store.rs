@@ -16,11 +16,12 @@ use rvf_types::kernel::{KernelHeader, KERNEL_MAGIC};
 use rvf_types::kernel_binding::KernelBinding;
 use rvf_types::wasm_bootstrap::{WasmHeader, WasmRole, WASM_MAGIC};
 use rvf_types::{
-    DomainProfile, ErrorCode, FileIdentity, RvfError, SegmentType, SEGMENT_HEADER_SIZE,
-    SEGMENT_MAGIC,
+    CowMapHeader, DomainProfile, ErrorCode, FileIdentity, MapFormat, RvfError, SegmentType,
+    COWMAP_MAGIC, COW_MAP_V2, COW_MAP_V2_HEADER_SIZE, SEGMENT_HEADER_SIZE, SEGMENT_MAGIC,
 };
 
 use crate::cow::{CowEngine, CowStats};
+use crate::cow_map::CowMap;
 use crate::deletion::DeletionBitmap;
 use crate::filter::{self, metadata_value_to_filter, FilterExpr, FilterValue, MetadataStore};
 use crate::index_path::{
@@ -69,6 +70,12 @@ pub struct RvfStore {
     cow_engine: Option<CowEngine>,
     /// Membership filter for branch-level vector visibility (None if unused).
     membership_filter: Option<MembershipFilter>,
+    /// Latest COW map generation committed by the manifest.
+    cow_map_generation: u32,
+    /// Latest membership generation committed by the manifest.
+    membership_generation: u32,
+    /// A mutable filter borrow or child tombstone changed in-memory state.
+    membership_dirty: bool,
     /// Path to the parent file (for COW reads that need parent data).
     parent_path: Option<PathBuf>,
     /// Hash of the last witness entry, used to chain-link successive witnesses.
@@ -152,6 +159,9 @@ impl RvfStore {
             file_identity: FileIdentity::new_root(file_id),
             cow_engine: None,
             membership_filter: None,
+            cow_map_generation: 0,
+            membership_generation: 0,
+            membership_dirty: false,
             parent_path: None,
             last_witness_hash: [0u8; 32],
             index: Mutex::new(None),
@@ -207,6 +217,9 @@ impl RvfStore {
             file_identity: FileIdentity::zeroed(),
             cow_engine: None,
             membership_filter: None,
+            cow_map_generation: 0,
+            membership_generation: 0,
+            membership_dirty: false,
             parent_path: None,
             last_witness_hash: [0u8; 32],
             index: Mutex::new(None),
@@ -258,6 +271,9 @@ impl RvfStore {
             file_identity: FileIdentity::zeroed(),
             cow_engine: None,
             membership_filter: None,
+            cow_map_generation: 0,
+            membership_generation: 0,
+            membership_dirty: false,
             parent_path: None,
             last_witness_hash: [0u8; 32],
             index: Mutex::new(None),
@@ -1165,14 +1181,17 @@ impl RvfStore {
         }
 
         // COW child: also tombstone parent-inherited IDs from the membership
-        // filter.  Parent IDs are not in `self.vectors`, so the loop above
-        // does not mark them.  Removing them from the membership filter makes
-        // `cow_exact_parent_scan` and `query_via_index_cow` correctly exclude
-        // them without an extra deletion_bitmap entry.
+        // filter. Parent IDs are not in `self.vectors`, so the loop above
+        // does not mark them. Include filters represent visible IDs, while
+        // Exclude filters represent tombstoned IDs.
         if let Some(ref mut mf) = self.membership_filter {
             for &id in ids {
-                mf.remove(id);
+                match mf.mode() {
+                    rvf_types::membership::FilterMode::Include => mf.remove(id),
+                    rvf_types::membership::FilterMode::Exclude => mf.add(id),
+                }
             }
+            self.membership_dirty = true;
         }
 
         self.epoch = epoch;
@@ -1183,6 +1202,11 @@ impl RvfStore {
             self.append_witness(witness_types::DATA_PROVENANCE, action.as_bytes())?;
         }
 
+        if self.membership_dirty {
+            if let Some(filter) = self.membership_filter.clone() {
+                self.append_membership_filter(filter)?;
+            }
+        }
         self.write_manifest()?;
 
         Ok(DeleteResult {
@@ -1338,7 +1362,15 @@ impl RvfStore {
                     continue;
                 }
                 // Use checked arithmetic for bounds safety.
-                let total_bytes = match (*payload_len as usize).checked_add(SEGMENT_HEADER_SIZE) {
+                let alignment_pad = u32::from_le_bytes(
+                    original_bytes[*orig_offset + 0x3C..*orig_offset + 0x40]
+                        .try_into()
+                        .unwrap(),
+                ) as usize;
+                let total_bytes = match (*payload_len as usize)
+                    .checked_add(SEGMENT_HEADER_SIZE)
+                    .and_then(|size| size.checked_add(alignment_pad))
+                {
                     Some(t) => t,
                     None => continue, // skip segment with implausible size
                 };
@@ -1381,7 +1413,7 @@ impl RvfStore {
                 .flush()
                 .map_err(|_| err(ErrorCode::FsyncFailed))?;
             seg_writer
-                .write_manifest_seg_with_identity(
+                .write_manifest_seg_with_state(
                     &mut temp_writer,
                     self.epoch,
                     self.options.dimension,
@@ -1391,6 +1423,8 @@ impl RvfStore {
                     &new_segment_dir,
                     &empty_dels,
                     fi,
+                    self.cow_map_generation,
+                    self.membership_generation,
                 )
                 .map_err(|_| err(ErrorCode::FsyncFailed))?;
 
@@ -1449,6 +1483,11 @@ impl RvfStore {
     /// it is written out as an INDEX_SEG so the next open can load it
     /// instead of rebuilding from vectors.
     pub fn close(mut self) -> Result<(), RvfError> {
+        if self.membership_dirty {
+            if let Some(filter) = self.membership_filter.clone() {
+                self.append_membership_filter(filter)?;
+            }
+        }
         self.persist_index()?;
 
         self.file
@@ -2194,19 +2233,23 @@ impl RvfStore {
     pub fn branch(&self, child_path: &Path) -> Result<Self, RvfError> {
         // Compute cluster geometry from the vector data
         let dim = self.options.dimension as u32;
-        let bytes_per_vec = dim * 4; // f32
-        let vectors_per_cluster = if bytes_per_vec > 0 {
-            (4096 / bytes_per_vec).max(1)
-        } else {
-            64
-        };
-        let cluster_size = vectors_per_cluster * bytes_per_vec;
-        let total_vecs = self.vectors.len() as u64;
-        let cluster_count = if vectors_per_cluster > 0 {
-            total_vecs.div_ceil(vectors_per_cluster as u64) as u32
-        } else {
-            0
-        };
+        let bytes_per_vec = dim
+            .checked_mul(4)
+            .ok_or_else(|| err(ErrorCode::CowMapCorrupt))?;
+        let cluster_size = bytes_per_vec
+            .max(4096)
+            .checked_next_power_of_two()
+            .ok_or_else(|| err(ErrorCode::CowMapCorrupt))?;
+        let vectors_per_cluster = cluster_size / bytes_per_vec;
+        let vector_count = self
+            .vectors
+            .ids()
+            .copied()
+            .max()
+            .map_or(0, |id| id.saturating_add(1));
+        let cluster_count_u64 = vector_count.div_ceil(vectors_per_cluster as u64);
+        let cluster_count =
+            u32::try_from(cluster_count_u64).map_err(|_| err(ErrorCode::CowMapCorrupt))?;
 
         // Derive the child via the standard lineage path
         let mut child = self.derive(
@@ -2216,21 +2259,23 @@ impl RvfStore {
         )?;
 
         // Initialize COW engine on the child with all clusters pointing to parent
-        child.cow_engine = Some(CowEngine::from_parent(
-            cluster_count,
+        let cow_map = CowMap::new_parent_ref(cluster_count);
+        child.append_cow_map(
+            cow_map,
             cluster_size,
             vectors_per_cluster,
-            bytes_per_vec,
-        ));
+            self.file_identity.file_id,
+            child.file_identity.parent_hash,
+        )?;
 
         // Initialize membership filter with all parent vectors visible
-        let mut filter = MembershipFilter::new_include(total_vecs);
+        let mut filter = MembershipFilter::new_include(vector_count);
         for &vid in self.vectors.ids() {
             if !self.deletion_bitmap.is_deleted(vid) {
                 filter.add(vid);
             }
         }
-        child.membership_filter = Some(filter);
+        child.append_membership_filter(filter)?;
 
         Ok(child)
     }
@@ -2267,7 +2312,159 @@ impl RvfStore {
 
     /// Get a mutable reference to the membership filter.
     pub fn membership_filter_mut(&mut self) -> Option<&mut MembershipFilter> {
+        self.membership_dirty = true;
         self.membership_filter.as_mut()
+    }
+
+    /// Get the currently loaded COW map, if this store is a COW child.
+    pub fn cow_map(&self) -> Option<&CowMap> {
+        self.cow_engine.as_ref().map(CowEngine::cow_map)
+    }
+
+    /// Append and manifest-link a canonical V2 COW_MAP segment.
+    ///
+    /// The generation is assigned monotonically by the store. Historical V1
+    /// payloads can be loaded but are never emitted.
+    #[allow(clippy::too_many_arguments)]
+    pub fn append_cow_map(
+        &mut self,
+        cow_map: CowMap,
+        cluster_size: u32,
+        vectors_per_cluster: u32,
+        base_file_id: [u8; 16],
+        base_file_hash: [u8; 32],
+    ) -> Result<u64, RvfError> {
+        let generation_id = self
+            .cow_map_generation
+            .checked_add(1)
+            .ok_or_else(|| err(ErrorCode::GenerationStale))?;
+        self.append_cow_map_at_generation(
+            cow_map,
+            cluster_size,
+            vectors_per_cluster,
+            base_file_id,
+            base_file_hash,
+            generation_id,
+        )
+    }
+
+    /// Append a canonical V2 COW_MAP segment at an externally committed
+    /// generation.
+    ///
+    /// This is used by durable database integrations whose generation is the
+    /// source of truth. The supplied generation must be non-zero and strictly
+    /// newer than the generation already committed in this store.
+    #[allow(clippy::too_many_arguments)]
+    pub fn append_cow_map_at_generation(
+        &mut self,
+        cow_map: CowMap,
+        cluster_size: u32,
+        vectors_per_cluster: u32,
+        base_file_id: [u8; 16],
+        base_file_hash: [u8; 32],
+        generation_id: u32,
+    ) -> Result<u64, RvfError> {
+        if self.read_only {
+            return Err(err(ErrorCode::ReadOnly));
+        }
+        if generation_id == 0 || generation_id <= self.cow_map_generation {
+            return Err(err(ErrorCode::GenerationStale));
+        }
+        if base_file_id != self.file_identity.parent_id
+            || base_file_hash != self.file_identity.parent_hash
+        {
+            return Err(err(ErrorCode::ParentChainBroken));
+        }
+        let bytes_per_vector = (self.options.dimension as u32)
+            .checked_mul(4)
+            .ok_or_else(|| err(ErrorCode::CowMapCorrupt))?;
+        let header = CowMapHeader {
+            magic: COWMAP_MAGIC,
+            version: COW_MAP_V2,
+            map_format: cow_map.format() as u8,
+            compression_policy: 0,
+            cluster_size_bytes: cluster_size,
+            vectors_per_cluster,
+            base_file_id,
+            base_file_hash,
+            map_root_offset: COW_MAP_V2_HEADER_SIZE as u64,
+            cluster_count: cow_map.cluster_count(),
+            local_cluster_count: cow_map.local_cluster_count(),
+            extent_support: 0,
+            reserved: [0; 3],
+            generation_id,
+            reserved2: [0; 8],
+        };
+        let payload = rvf_wire::encode_cow_map(&header, cow_map.entries())?;
+        let (seg_id, _) = self.append_payload(SegmentType::CowMap, &payload)?;
+        self.cow_engine = Some(CowEngine::from_persisted(
+            cow_map,
+            cluster_size,
+            vectors_per_cluster,
+            bytes_per_vector,
+        )?);
+        self.cow_map_generation = generation_id;
+        self.write_manifest()?;
+        Ok(seg_id)
+    }
+
+    /// Append and manifest-link a canonical MEMBERSHIP segment.
+    ///
+    /// The store assigns the next generation, preventing callers from
+    /// replaying a stale filter by supplying their own generation number.
+    pub fn append_membership_filter(&mut self, filter: MembershipFilter) -> Result<u64, RvfError> {
+        let generation_id = self
+            .membership_generation
+            .checked_add(1)
+            .ok_or_else(|| err(ErrorCode::GenerationStale))?;
+        self.append_membership_filter_at_generation(filter, generation_id)
+    }
+
+    /// Append a canonical MEMBERSHIP segment at an externally committed
+    /// generation.
+    ///
+    /// The explicit generation lets PostgreSQL/AgentDB mirrors bind their
+    /// durable generation directly to the RVF anti-replay field. Zero, stale,
+    /// and repeated generations fail closed.
+    pub fn append_membership_filter_at_generation(
+        &mut self,
+        mut filter: MembershipFilter,
+        generation_id: u32,
+    ) -> Result<u64, RvfError> {
+        if self.read_only {
+            return Err(err(ErrorCode::ReadOnly));
+        }
+        if generation_id == 0 || generation_id <= self.membership_generation {
+            return Err(err(ErrorCode::GenerationStale));
+        }
+        filter.set_generation(generation_id)?;
+        let payload = filter.encode_payload()?;
+        let (seg_id, _) = self.append_payload(SegmentType::Membership, &payload)?;
+        self.membership_filter = Some(filter);
+        self.membership_generation = generation_id;
+        self.membership_dirty = false;
+        self.write_manifest()?;
+        Ok(seg_id)
+    }
+
+    /// Append a canonical framed segment and link it into the next manifest.
+    ///
+    /// COW_MAP and MEMBERSHIP are intentionally excluded because they require
+    /// their strict versioned codecs and generation checks.
+    pub fn append_segment(
+        &mut self,
+        seg_type: SegmentType,
+        payload: &[u8],
+    ) -> Result<u64, RvfError> {
+        if matches!(
+            seg_type,
+            SegmentType::Manifest | SegmentType::CowMap | SegmentType::Membership
+        ) {
+            return Err(err(ErrorCode::InvalidManifest));
+        }
+        let (seg_id, _) = self.append_payload(seg_type, payload)?;
+        self.write_manifest()?;
+        Ok(seg_id)
     }
 
     /// Get the parent file path, if this is a COW child.
@@ -2341,6 +2538,9 @@ impl RvfStore {
             file_identity: child_identity,
             cow_engine: None,
             membership_filter: None,
+            cow_map_generation: 0,
+            membership_generation: 0,
+            membership_dirty: false,
             parent_path: Some(self.path.clone()),
             last_witness_hash: [0u8; 32],
             index: Mutex::new(None),
@@ -2354,28 +2554,18 @@ impl RvfStore {
         Ok(store)
     }
 
-    /// Compute a hash of this file's content for use as parent_hash in derivation.
+    /// Compute the canonical parent snapshot hash used by child lineage.
+    ///
+    /// Manifest-only appends (for example, a clean `close`) are excluded so
+    /// they do not change an otherwise identical snapshot. Every referenced
+    /// non-manifest segment is bound by a full SHAKE-256 digest of its payload,
+    /// so in-place tampering and post-branch parent mutations fail closed.
     fn compute_own_manifest_hash(&self) -> Result<[u8; 32], RvfError> {
-        use std::io::Read;
-        let file_len = self
-            .file
-            .metadata()
-            .map_err(|_| err(ErrorCode::InvalidManifest))?
-            .len();
-        if file_len == 0 {
-            return Ok([0u8; 32]);
-        }
-        // Hash up to 64KB from the end of the file (covers manifest segments)
-        let read_len = file_len.min(65536) as usize;
         let mut reader = BufReader::new(&self.file);
-        reader
-            .seek(SeekFrom::End(-(read_len as i64)))
-            .map_err(|_| err(ErrorCode::InvalidManifest))?;
-        let mut buf = vec![0u8; read_len];
-        reader
-            .read_exact(&mut buf)
-            .map_err(|_| err(ErrorCode::InvalidManifest))?;
-        Ok(simple_shake256_256(&buf))
+        let manifest = read_path::find_latest_manifest(&mut reader)
+            .map_err(|_| err(ErrorCode::InvalidManifest))?
+            .ok_or_else(|| err(ErrorCode::InvalidManifest))?;
+        canonical_parent_snapshot_hash(&self.file, &manifest)
     }
 
     /// Return the hash of the last witness entry (for external verification).
@@ -2399,6 +2589,36 @@ impl RvfStore {
     }
 
     // ── Internal methods ──────────────────────────────────────────────
+
+    fn append_payload(
+        &mut self,
+        seg_type: SegmentType,
+        payload: &[u8],
+    ) -> Result<(u64, u64), RvfError> {
+        if self.read_only {
+            return Err(err(ErrorCode::ReadOnly));
+        }
+        let writer = self
+            .seg_writer
+            .as_mut()
+            .ok_or_else(|| err(ErrorCode::InvalidManifest))?;
+        let seg_id = writer.alloc_seg_id();
+        let seg_offset = {
+            let mut buf_writer = BufWriter::new(&self.file);
+            buf_writer
+                .seek(SeekFrom::End(0))
+                .map_err(|_| err(ErrorCode::FsyncFailed))?;
+            writer
+                .write_payload_seg(&mut buf_writer, seg_type as u8, seg_id, payload)
+                .map_err(|_| err(ErrorCode::FsyncFailed))?
+        };
+        self.file
+            .sync_all()
+            .map_err(|_| err(ErrorCode::FsyncFailed))?;
+        self.segment_dir
+            .push((seg_id, seg_offset, payload.len() as u64, seg_type as u8));
+        Ok((seg_id, seg_offset))
+    }
 
     /// Append a witness segment to the file and update the witness chain.
     ///
@@ -2488,6 +2708,99 @@ impl RvfStore {
             .iter()
             .map(|e| (e.seg_id, e.offset, e.payload_length, e.seg_type))
             .collect();
+        self.cow_map_generation = manifest.cow_map_generation;
+        self.membership_generation = manifest.membership_generation;
+
+        let cow_entry = manifest
+            .segment_dir
+            .iter()
+            .rev()
+            .find(|entry| entry.seg_type == SegmentType::CowMap as u8);
+        match cow_entry {
+            Some(entry) => {
+                let (segment_header, payload) = {
+                    let mut reader = BufReader::new(&self.file);
+                    read_path::read_segment_payload(&mut reader, entry.offset)
+                        .map_err(|_| err(ErrorCode::CowMapCorrupt))?
+                };
+                let decoded = rvf_wire::decode_cow_map(&payload)
+                    .map_err(|_| err(ErrorCode::CowMapCorrupt))?;
+                let (map_format, cluster_size, vectors_per_cluster) = match decoded.header {
+                    rvf_wire::DecodedCowMapHeader::V1(header) => {
+                        if segment_header.checksum_algo != 0 || manifest.cow_map_generation != 0 {
+                            return Err(err(ErrorCode::CowMapCorrupt));
+                        }
+                        (
+                            MapFormat::try_from(header.map_format)
+                                .map_err(|_| err(ErrorCode::CowMapCorrupt))?,
+                            header.cluster_size_bytes,
+                            header.vectors_per_cluster,
+                        )
+                    }
+                    rvf_wire::DecodedCowMapHeader::V2(header) => {
+                        if segment_header.checksum_algo != 2
+                            || header.generation_id != manifest.cow_map_generation
+                        {
+                            return Err(err(ErrorCode::GenerationStale));
+                        }
+                        if let Some(identity) = manifest.file_identity.as_ref() {
+                            if header.base_file_id != identity.parent_id
+                                || header.base_file_hash != identity.parent_hash
+                            {
+                                return Err(err(ErrorCode::ParentChainBroken));
+                            }
+                        }
+                        (
+                            MapFormat::try_from(header.map_format)
+                                .map_err(|_| err(ErrorCode::CowMapCorrupt))?,
+                            header.cluster_size_bytes,
+                            header.vectors_per_cluster,
+                        )
+                    }
+                };
+                let map = CowMap::from_entries(map_format, decoded.entries)?;
+                let bytes_per_vector = (manifest.dimension as u32)
+                    .checked_mul(4)
+                    .ok_or_else(|| err(ErrorCode::CowMapCorrupt))?;
+                self.cow_engine = Some(CowEngine::from_persisted(
+                    map,
+                    cluster_size,
+                    vectors_per_cluster,
+                    bytes_per_vector,
+                )?);
+            }
+            None if manifest.cow_map_generation != 0 => {
+                return Err(err(ErrorCode::CowMapCorrupt));
+            }
+            None => {}
+        }
+
+        let membership_entry = manifest
+            .segment_dir
+            .iter()
+            .rev()
+            .find(|entry| entry.seg_type == SegmentType::Membership as u8);
+        match membership_entry {
+            Some(entry) => {
+                let (segment_header, payload) = {
+                    let mut reader = BufReader::new(&self.file);
+                    read_path::read_segment_payload(&mut reader, entry.offset)
+                        .map_err(|_| err(ErrorCode::MembershipInvalid))?
+                };
+                if segment_header.checksum_algo != 2 {
+                    return Err(err(ErrorCode::MembershipInvalid));
+                }
+                let filter = MembershipFilter::decode_payload(&payload)?;
+                if filter.generation_id() != manifest.membership_generation {
+                    return Err(err(ErrorCode::GenerationStale));
+                }
+                self.membership_filter = Some(filter);
+            }
+            None if manifest.membership_generation != 0 => {
+                return Err(err(ErrorCode::MembershipInvalid));
+            }
+            None => {}
+        }
 
         let vec_seg_entries: Vec<_> = manifest
             .segment_dir
@@ -2520,6 +2833,16 @@ impl RvfStore {
         if let Some(fi) = manifest.file_identity {
             self.file_identity = fi;
         }
+        if self.cow_engine.is_some() && self.file_identity.parent_id != [0; 16] {
+            self.parent_path = find_parent_path(
+                &self.path,
+                &self.file_identity.parent_id,
+                &self.file_identity.parent_hash,
+            );
+            if self.parent_path.is_none() {
+                return Err(err(ErrorCode::ParentChainBroken));
+            }
+        }
 
         // Load the most recently persisted HNSW index, if any. A stale or
         // corrupt INDEX_SEG is ignored; the index is then rebuilt from
@@ -2550,8 +2873,12 @@ impl RvfStore {
                 .iter()
                 .map(|&(id, _, _, _)| id)
                 .max()
-                .unwrap_or(0);
-            self.seg_writer = Some(SegmentWriter::new(max_seg_id + 1));
+                .unwrap_or(0)
+                .max(manifest.manifest_seg_id);
+            let next_seg_id = max_seg_id
+                .checked_add(1)
+                .ok_or_else(|| err(ErrorCode::InvalidManifest))?;
+            self.seg_writer = Some(SegmentWriter::new(next_seg_id));
         }
 
         Ok(())
@@ -2579,7 +2906,7 @@ impl RvfStore {
                 .seek(SeekFrom::End(0))
                 .map_err(|_| err(ErrorCode::FsyncFailed))?;
             writer
-                .write_manifest_seg_with_identity(
+                .write_manifest_seg_with_state(
                     &mut buf_writer,
                     self.epoch,
                     self.options.dimension,
@@ -2589,6 +2916,8 @@ impl RvfStore {
                     &self.segment_dir,
                     &deleted_ids,
                     fi,
+                    self.cow_map_generation,
+                    self.membership_generation,
                 )
                 .map_err(|_| err(ErrorCode::FsyncFailed))?
         };
@@ -2598,6 +2927,7 @@ impl RvfStore {
         if fi.is_some() {
             manifest_payload_len += 4 + 68; // FIDI marker + FileIdentity
         }
+        manifest_payload_len += 12; // RVGN marker + COW/MEMBERSHIP generations
         self.segment_dir.push((
             manifest_seg_id,
             manifest_offset,
@@ -2694,20 +3024,113 @@ fn generate_file_id(path: &Path) -> [u8; 16] {
     id
 }
 
-/// Minimal SHAKE-256 hash without depending on rvf-crypto.
-/// Uses a simple XOR-fold for a 32-byte digest.
-pub(crate) fn simple_shake256_256(data: &[u8]) -> [u8; 32] {
-    // We use a simple non-cryptographic hash here since rvf-runtime
-    // doesn't depend on rvf-crypto. For production lineage verification,
-    // use rvf_crypto::compute_manifest_hash.
-    let mut out = [0u8; 32];
-    for (i, &b) in data.iter().enumerate() {
-        out[i % 32] = out[i % 32].wrapping_add(b);
-        // Avalanche
-        let j = (i + 13) % 32;
-        out[j] = out[j].wrapping_add(out[i % 32].rotate_left(3));
+fn canonical_parent_snapshot_hash(
+    file: &File,
+    manifest: &read_path::ParsedManifest,
+) -> Result<[u8; 32], RvfError> {
+    let mut preimage = Vec::new();
+    preimage.extend_from_slice(b"RVF-PARENT-SNAPSHOT-V1\0");
+    preimage.extend_from_slice(&manifest.epoch.to_le_bytes());
+    preimage.extend_from_slice(&manifest.dimension.to_le_bytes());
+    preimage.extend_from_slice(&manifest.total_vectors.to_le_bytes());
+    preimage.push(manifest.profile_id);
+    preimage.push(manifest.metric.to_id());
+    preimage.extend_from_slice(&manifest.cow_map_generation.to_le_bytes());
+    preimage.extend_from_slice(&manifest.membership_generation.to_le_bytes());
+
+    let non_manifest_count = manifest
+        .segment_dir
+        .iter()
+        .filter(|entry| entry.seg_type != SegmentType::Manifest as u8)
+        .count();
+    preimage.extend_from_slice(&(non_manifest_count as u64).to_le_bytes());
+
+    for entry in manifest
+        .segment_dir
+        .iter()
+        .filter(|entry| entry.seg_type != SegmentType::Manifest as u8)
+    {
+        let (header, payload) = {
+            let mut reader = BufReader::new(file);
+            read_path::read_segment_payload(&mut reader, entry.offset)
+                .map_err(|_| err(ErrorCode::ParentChainBroken))?
+        };
+        if header.segment_id != entry.seg_id
+            || header.payload_length != entry.payload_length
+            || header.seg_type != entry.seg_type
+        {
+            return Err(err(ErrorCode::ParentChainBroken));
+        }
+
+        preimage.extend_from_slice(&entry.seg_id.to_le_bytes());
+        preimage.extend_from_slice(&entry.offset.to_le_bytes());
+        preimage.extend_from_slice(&entry.payload_length.to_le_bytes());
+        preimage.push(entry.seg_type);
+        preimage.push(header.version);
+        preimage.extend_from_slice(&header.flags.to_le_bytes());
+        preimage.extend_from_slice(&header.timestamp_ns.to_le_bytes());
+        preimage.push(header.checksum_algo);
+        preimage.push(header.compression);
+        preimage.extend_from_slice(&header.uncompressed_len.to_le_bytes());
+        preimage.extend_from_slice(&rvf_crypto::shake256_256(&payload));
     }
-    out
+
+    preimage.extend_from_slice(&(manifest.deleted_ids.len() as u64).to_le_bytes());
+    for id in &manifest.deleted_ids {
+        preimage.extend_from_slice(&id.to_le_bytes());
+    }
+    match manifest.file_identity {
+        Some(identity) => {
+            preimage.push(1);
+            preimage.extend_from_slice(&identity.to_bytes());
+        }
+        None => preimage.push(0),
+    }
+
+    Ok(rvf_crypto::shake256_256(&preimage))
+}
+
+fn find_parent_path(
+    child_path: &Path,
+    parent_id: &[u8; 16],
+    parent_hash: &[u8; 32],
+) -> Option<PathBuf> {
+    let directory = child_path.parent()?;
+    for entry in fs::read_dir(directory).ok()? {
+        let Ok(entry) = entry else {
+            continue;
+        };
+        let path = entry.path();
+        if path == child_path || !entry.file_type().is_ok_and(|kind| kind.is_file()) {
+            continue;
+        }
+        let Ok(file) = File::open(&path) else {
+            continue;
+        };
+        let mut reader = BufReader::new(&file);
+        let Ok(Some(manifest)) = read_path::find_latest_manifest(&mut reader) else {
+            continue;
+        };
+        if !manifest
+            .file_identity
+            .is_some_and(|identity| &identity.file_id == parent_id)
+        {
+            continue;
+        }
+        if canonical_parent_snapshot_hash(&file, &manifest)
+            .ok()
+            .as_ref()
+            == Some(parent_hash)
+        {
+            return Some(path);
+        }
+    }
+    None
+}
+
+/// Compute the real SHAKE-256-256 digest used by persisted RVF metadata.
+pub(crate) fn simple_shake256_256(data: &[u8]) -> [u8; 32] {
+    rvf_crypto::shake256_256(data)
 }
 
 /// Scan raw file bytes for segment headers whose type should be preserved
@@ -2750,9 +3173,14 @@ fn scan_preservable_segments(file_bytes: &[u8]) -> Vec<(usize, u64, u64, u8)> {
                 file_bytes[i + 0x16],
                 file_bytes[i + 0x17],
             ]);
+            let alignment_pad =
+                u32::from_le_bytes(file_bytes[i + 0x3C..i + 0x40].try_into().unwrap()) as usize;
 
             // Use checked arithmetic to prevent overflow on crafted payload_len.
-            let total = match (payload_len as usize).checked_add(SEGMENT_HEADER_SIZE) {
+            let total = match (payload_len as usize)
+                .checked_add(SEGMENT_HEADER_SIZE)
+                .and_then(|size| size.checked_add(alignment_pad))
+            {
                 Some(t) if payload_len <= file_bytes.len() as u64 => t,
                 _ => {
                     // Payload length is implausibly large; skip this byte.
@@ -3695,7 +4123,9 @@ mod tests {
                 scope.spawn(move || {
                     for i in 0..40u64 {
                         let q = random_vector(8, 100_000 + t * 1_000 + i);
-                        let guard = store.read().unwrap_or_else(std::sync::PoisonError::into_inner);
+                        let guard = store
+                            .read()
+                            .unwrap_or_else(std::sync::PoisonError::into_inner);
                         let results = guard.query(&q, 10, &QueryOptions::default()).unwrap();
                         assert_eq!(results.len(), 10);
                         for w in results.windows(2) {
@@ -3710,7 +4140,9 @@ mod tests {
             scope.spawn(move || {
                 for i in 0..10u64 {
                     let v = random_vector(8, 555_000 + i);
-                    let mut guard = store.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+                    let mut guard = store
+                        .write()
+                        .unwrap_or_else(std::sync::PoisonError::into_inner);
                     guard
                         .ingest_batch(&[v.as_slice()], &[i % 50], None)
                         .unwrap();
@@ -3770,5 +4202,426 @@ mod tests {
         assert!(results.iter().all(|r| r.id != 3 || r.distance > 1.0));
 
         store.close().unwrap();
+    }
+
+    #[test]
+    fn cow_and_membership_survive_real_store_close_reopen() {
+        let dir = TempDir::new().unwrap();
+        let parent_path = dir.path().join("parent.rvf");
+        let child_path = dir.path().join("child.rvf");
+        let options = RvfOptions {
+            dimension: 4,
+            metric: DistanceMetric::L2,
+            ..Default::default()
+        };
+        let mut parent = RvfStore::create(&parent_path, options).unwrap();
+        let vectors = [
+            vec![0.0, 0.0, 0.0, 0.0],
+            vec![1.0, 1.0, 1.0, 1.0],
+            vec![2.0, 2.0, 2.0, 2.0],
+        ];
+        let refs: Vec<&[f32]> = vectors.iter().map(Vec::as_slice).collect();
+        parent.ingest_batch(&refs, &[0, 1, 2], None).unwrap();
+
+        let child = parent.branch(&child_path).unwrap();
+        let expected_map = child.cow_map().unwrap().clone();
+        let expected_membership = child.membership_filter().unwrap().clone();
+        assert_eq!(
+            child
+                .segment_dir()
+                .iter()
+                .filter(|entry| entry.3 == SegmentType::CowMap as u8)
+                .count(),
+            1
+        );
+        assert_eq!(
+            child
+                .segment_dir()
+                .iter()
+                .filter(|entry| entry.3 == SegmentType::Membership as u8)
+                .count(),
+            1
+        );
+
+        // Independently prove both directory entries use canonical padded
+        // rvf-wire frames before closing the actual store.
+        let bytes = fs::read(&child_path).unwrap();
+        for &(_, offset, _, kind) in child.segment_dir().iter().filter(|entry| {
+            entry.3 == SegmentType::CowMap as u8 || entry.3 == SegmentType::Membership as u8
+        }) {
+            let (header, payload) = rvf_wire::read_segment(&bytes[offset as usize..]).unwrap();
+            rvf_wire::validate_segment(&header, payload).unwrap();
+            assert_eq!(header.checksum_algo, 2);
+            assert_eq!(
+                (SEGMENT_HEADER_SIZE + payload.len() + header.alignment_pad as usize) % 64,
+                0
+            );
+            if kind == SegmentType::CowMap as u8 {
+                assert!(matches!(
+                    rvf_wire::decode_cow_map(payload).unwrap().header,
+                    rvf_wire::DecodedCowMapHeader::V2(_)
+                ));
+            } else {
+                rvf_wire::decode_membership(payload).unwrap();
+            }
+        }
+
+        child.close().unwrap();
+        parent.close().unwrap();
+
+        let reopened = RvfStore::open(&child_path).unwrap();
+        assert_eq!(reopened.cow_map(), Some(&expected_map));
+        assert_eq!(reopened.membership_filter(), Some(&expected_membership));
+        assert_eq!(reopened.parent_path(), Some(parent_path.as_path()));
+        let results = reopened
+            .query(
+                &[2.0, 2.0, 2.0, 2.0],
+                1,
+                &QueryOptions {
+                    force_exact: true,
+                    ..Default::default()
+                },
+            )
+            .unwrap();
+        assert_eq!(results.first().map(|result| result.id), Some(2));
+        reopened.close().unwrap();
+    }
+
+    #[test]
+    fn cow_reopen_rejects_parent_payload_tampering_with_same_file_id() {
+        let dir = TempDir::new().unwrap();
+        let parent_path = dir.path().join("tamper-parent.rvf");
+        let child_path = dir.path().join("tamper-child.rvf");
+        let mut parent = RvfStore::create(
+            &parent_path,
+            RvfOptions {
+                dimension: 2,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        parent.ingest_batch(&[&[1.0f32, 2.0]], &[0], None).unwrap();
+        let vector_offset = parent
+            .segment_dir()
+            .iter()
+            .find(|entry| entry.3 == SegmentType::Vec as u8)
+            .unwrap()
+            .1;
+
+        let child = parent.branch(&child_path).unwrap();
+        child.close().unwrap();
+        parent.close().unwrap();
+
+        let mut file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(&parent_path)
+            .unwrap();
+        file.seek(SeekFrom::Start(vector_offset + SEGMENT_HEADER_SIZE as u64))
+            .unwrap();
+        let mut byte = [0u8; 1];
+        file.read_exact(&mut byte).unwrap();
+        byte[0] ^= 0x80;
+        file.seek(SeekFrom::Start(vector_offset + SEGMENT_HEADER_SIZE as u64))
+            .unwrap();
+        file.write_all(&byte).unwrap();
+        file.sync_all().unwrap();
+
+        assert!(matches!(
+            RvfStore::open(&child_path),
+            Err(RvfError::Code(ErrorCode::ParentChainBroken))
+        ));
+    }
+
+    #[test]
+    fn cow_reopen_rejects_parent_append_after_branch() {
+        let dir = TempDir::new().unwrap();
+        let parent_path = dir.path().join("mutable-parent.rvf");
+        let child_path = dir.path().join("mutable-child.rvf");
+        let mut parent = RvfStore::create(
+            &parent_path,
+            RvfOptions {
+                dimension: 2,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        parent.ingest_batch(&[&[1.0f32, 2.0]], &[0], None).unwrap();
+
+        let child = parent.branch(&child_path).unwrap();
+        child.close().unwrap();
+        parent.ingest_batch(&[&[3.0f32, 4.0]], &[1], None).unwrap();
+        parent.close().unwrap();
+
+        assert!(matches!(
+            RvfStore::open(&child_path),
+            Err(RvfError::Code(ErrorCode::ParentChainBroken))
+        ));
+    }
+
+    #[test]
+    fn exclude_membership_delete_adds_a_persistent_tombstone() {
+        let dir = TempDir::new().unwrap();
+        let path = dir.path().join("exclude-delete.rvf");
+        let mut store = RvfStore::create(
+            &path,
+            RvfOptions {
+                dimension: 2,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        store.ingest_batch(&[&[1.0f32, 2.0]], &[0], None).unwrap();
+        store
+            .append_membership_filter(MembershipFilter::new_exclude(1))
+            .unwrap();
+
+        assert!(store.membership_filter().unwrap().contains(0));
+        store.delete(&[0]).unwrap();
+        assert!(!store.membership_filter().unwrap().contains(0));
+        store.close().unwrap();
+
+        let reopened = RvfStore::open(&path).unwrap();
+        assert_eq!(
+            reopened.membership_filter().unwrap().mode(),
+            rvf_types::membership::FilterMode::Exclude
+        );
+        assert!(!reopened.membership_filter().unwrap().contains(0));
+        reopened.close().unwrap();
+    }
+
+    #[test]
+    fn membership_replacement_is_monotonic_and_old_generation_remains_directory_visible() {
+        let dir = TempDir::new().unwrap();
+        let path = dir.path().join("membership_generations.rvf");
+        let options = RvfOptions {
+            dimension: 2,
+            ..Default::default()
+        };
+        let mut store = RvfStore::create(&path, options).unwrap();
+        let mut first = MembershipFilter::new_include(8);
+        first.add(1);
+        store.append_membership_filter(first).unwrap();
+        assert_eq!(store.membership_filter().unwrap().generation_id(), 1);
+
+        let mut second = MembershipFilter::new_include(8);
+        second.add(2);
+        store.append_membership_filter(second).unwrap();
+        assert_eq!(store.membership_filter().unwrap().generation_id(), 2);
+        assert_eq!(
+            store
+                .segment_dir()
+                .iter()
+                .filter(|entry| entry.3 == SegmentType::Membership as u8)
+                .count(),
+            2
+        );
+        store.close().unwrap();
+
+        let reopened = RvfStore::open(&path).unwrap();
+        let filter = reopened.membership_filter().unwrap();
+        assert_eq!(filter.generation_id(), 2);
+        assert!(filter.contains(2));
+        assert!(!filter.contains(1));
+        reopened.close().unwrap();
+    }
+
+    #[test]
+    fn explicit_database_generation_is_bound_and_fails_closed() {
+        let dir = TempDir::new().unwrap();
+        let parent_path = dir.path().join("database-generation-parent.rvf");
+        let child_path = dir.path().join("database-generation-child.rvf");
+        let options = RvfOptions {
+            dimension: 2,
+            ..Default::default()
+        };
+        let mut parent = RvfStore::create(&parent_path, options.clone()).unwrap();
+        parent
+            .ingest_batch(&[&[1.0f32, 2.0], &[3.0, 4.0]], &[1, 2], None)
+            .unwrap();
+        let mut child = parent
+            .derive(&child_path, rvf_types::DerivationType::Clone, Some(options))
+            .unwrap();
+        let map = CowMap::new_parent_ref(1);
+        child
+            .append_cow_map_at_generation(
+                map.clone(),
+                4096,
+                512,
+                *parent.file_id(),
+                child.file_identity().parent_hash,
+                7,
+            )
+            .unwrap();
+        let mut filter = MembershipFilter::new_include(3);
+        filter.add(1);
+        child
+            .append_membership_filter_at_generation(filter.clone(), 7)
+            .unwrap();
+
+        assert!(child
+            .append_cow_map_at_generation(
+                map,
+                4096,
+                512,
+                *parent.file_id(),
+                child.file_identity().parent_hash,
+                7,
+            )
+            .is_err());
+        assert!(child
+            .append_membership_filter_at_generation(filter, 0)
+            .is_err());
+
+        child.close().unwrap();
+        parent.close().unwrap();
+        let reopened = RvfStore::open(&child_path).unwrap();
+        let reopened_filter = reopened.membership_filter().unwrap();
+        assert_eq!(reopened_filter.generation_id(), 7);
+        assert!(reopened_filter.contains(1));
+        assert!(!reopened_filter.contains(2));
+        reopened.close().unwrap();
+    }
+
+    #[test]
+    fn explicit_max_generation_prevents_implicit_overflow() {
+        let dir = TempDir::new().unwrap();
+        let path = dir.path().join("database-generation-max.rvf");
+        let mut store = RvfStore::create(
+            &path,
+            RvfOptions {
+                dimension: 2,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        store
+            .append_membership_filter_at_generation(MembershipFilter::new_include(1), u32::MAX)
+            .unwrap();
+        assert!(store
+            .append_membership_filter(MembershipFilter::new_include(1))
+            .is_err());
+        store.close().unwrap();
+    }
+
+    #[test]
+    fn reopen_rejects_manifest_membership_generation_mismatch() {
+        let dir = TempDir::new().unwrap();
+        let parent_path = dir.path().join("generation-parent.rvf");
+        let child_path = dir.path().join("generation-child.rvf");
+        let mut parent = RvfStore::create(
+            &parent_path,
+            RvfOptions {
+                dimension: 2,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        parent.ingest_batch(&[&[1.0f32, 2.0]], &[0], None).unwrap();
+        let child = parent.branch(&child_path).unwrap();
+        let membership_offset = child
+            .segment_dir()
+            .iter()
+            .find(|entry| entry.3 == SegmentType::Membership as u8)
+            .unwrap()
+            .1;
+        child.close().unwrap();
+        parent.close().unwrap();
+
+        let mut file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(&child_path)
+            .unwrap();
+        file.seek(SeekFrom::Start(membership_offset)).unwrap();
+        let mut segment_header = [0u8; SEGMENT_HEADER_SIZE];
+        file.read_exact(&mut segment_header).unwrap();
+        let payload_len =
+            u64::from_le_bytes(segment_header[0x10..0x18].try_into().unwrap()) as usize;
+        let mut payload = vec![0u8; payload_len];
+        file.read_exact(&mut payload).unwrap();
+        payload[0x24..0x28].copy_from_slice(&2u32.to_le_bytes());
+        segment_header[0x28..0x38].copy_from_slice(&rvf_crypto::shake256_128(&payload));
+        file.seek(SeekFrom::Start(membership_offset)).unwrap();
+        file.write_all(&segment_header).unwrap();
+        file.write_all(&payload).unwrap();
+        file.sync_all().unwrap();
+        drop(file);
+
+        assert!(matches!(
+            RvfStore::open(&child_path),
+            Err(RvfError::Code(ErrorCode::GenerationStale))
+        ));
+    }
+
+    #[test]
+    fn legacy_runtime_store_reopens_then_only_appends_canonical_frames() {
+        fn legacy_frame(seg_type: SegmentType, seg_id: u64, payload: &[u8]) -> Vec<u8> {
+            let mut header = [0u8; SEGMENT_HEADER_SIZE];
+            header[0x00..0x04].copy_from_slice(&SEGMENT_MAGIC.to_le_bytes());
+            header[0x04] = 1;
+            header[0x05] = seg_type as u8;
+            header[0x08..0x10].copy_from_slice(&seg_id.to_le_bytes());
+            header[0x10..0x18].copy_from_slice(&(payload.len() as u64).to_le_bytes());
+            header[0x20] = 0;
+            header[0x28..0x38].copy_from_slice(&crate::hashing::legacy_content_hash(payload));
+            let mut frame = header.to_vec();
+            frame.extend_from_slice(payload);
+            frame
+        }
+
+        let dir = TempDir::new().unwrap();
+        let path = dir.path().join("legacy-runtime.rvf");
+        let mut vec_payload = Vec::new();
+        vec_payload.extend_from_slice(&2u16.to_le_bytes());
+        vec_payload.extend_from_slice(&1u32.to_le_bytes());
+        vec_payload.extend_from_slice(&7u64.to_le_bytes());
+        vec_payload.extend_from_slice(&1.0f32.to_le_bytes());
+        vec_payload.extend_from_slice(&2.0f32.to_le_bytes());
+        let vec_frame = legacy_frame(SegmentType::Vec, 1, &vec_payload);
+
+        let mut manifest_payload = Vec::new();
+        manifest_payload.extend_from_slice(&1u32.to_le_bytes()); // epoch
+        manifest_payload.extend_from_slice(&2u16.to_le_bytes()); // dimension
+        manifest_payload.extend_from_slice(&1u64.to_le_bytes()); // vectors
+        manifest_payload.extend_from_slice(&1u32.to_le_bytes()); // directory entries
+        manifest_payload.extend_from_slice(&[0u8; 4]); // profile, metric, reserved
+        manifest_payload.extend_from_slice(&1u64.to_le_bytes()); // vec seg id
+        manifest_payload.extend_from_slice(&0u64.to_le_bytes()); // vec offset
+        manifest_payload.extend_from_slice(&(vec_payload.len() as u64).to_le_bytes());
+        manifest_payload.push(SegmentType::Vec as u8);
+        manifest_payload.extend_from_slice(&0u32.to_le_bytes()); // deleted count
+        let manifest_frame = legacy_frame(SegmentType::Manifest, 2, &manifest_payload);
+
+        let mut original = vec_frame;
+        original.extend_from_slice(&manifest_frame);
+        fs::write(&path, original).unwrap();
+
+        let mut store = RvfStore::open(&path).unwrap();
+        assert_eq!(
+            store
+                .query(&[1.0, 2.0], 1, &QueryOptions::default())
+                .unwrap()[0]
+                .id,
+            7
+        );
+        store.ingest_batch(&[&[3.0f32, 4.0]], &[8], None).unwrap();
+        let canonical_offset = store
+            .segment_dir()
+            .iter()
+            .rev()
+            .find(|entry| entry.3 == SegmentType::Vec as u8)
+            .unwrap()
+            .1;
+        let bytes = fs::read(&path).unwrap();
+        let (header, payload) =
+            rvf_wire::read_segment(&bytes[canonical_offset as usize..]).unwrap();
+        assert_eq!(header.checksum_algo, 2);
+        rvf_wire::validate_segment(&header, payload).unwrap();
+        store.close().unwrap();
+
+        let reopened = RvfStore::open(&path).unwrap();
+        assert_eq!(reopened.read_all_vectors().len(), 2);
+        reopened.close().unwrap();
     }
 }
