@@ -304,6 +304,8 @@ members = [
     "crates/rvAgent/rvagent-mcp",
     "crates/rvAgent/rvagent-wasm",
     "crates/rvAgent/rvagent-a2a",
+    # LifeOS TEAS unified execution engine (TEASTASK-001)
+    "crates/rvAgent/rvagent-engine",
     # ADR-159 a2a-swarm demo
     "examples/a2a-swarm",
     # ETL pipeline example
