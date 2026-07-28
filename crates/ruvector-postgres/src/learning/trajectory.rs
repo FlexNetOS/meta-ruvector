@@ -102,8 +102,8 @@ impl TrajectoryTracker {
 
     /// Record a new trajectory
     pub fn record(&self, trajectory: QueryTrajectory) {
-        let mut trajectories = self.trajectories.write().unwrap();
-        let mut pos = self.write_pos.write().unwrap();
+        let mut trajectories = self.trajectories.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut pos = self.write_pos.write().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         if trajectories.len() < self.max_size {
             trajectories.push(trajectory);
@@ -116,14 +116,14 @@ impl TrajectoryTracker {
 
     /// Get the most recent n trajectories
     pub fn get_recent(&self, n: usize) -> Vec<QueryTrajectory> {
-        let trajectories = self.trajectories.read().unwrap();
+        let trajectories = self.trajectories.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         let count = trajectories.len().min(n);
 
         if count == 0 {
             return Vec::new();
         }
 
-        let pos = *self.write_pos.read().unwrap();
+        let pos = *self.write_pos.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         let mut result = Vec::with_capacity(count);
 
         if trajectories.len() < self.max_size {
@@ -143,12 +143,12 @@ impl TrajectoryTracker {
 
     /// Get all trajectories
     pub fn get_all(&self) -> Vec<QueryTrajectory> {
-        self.trajectories.read().unwrap().clone()
+        self.trajectories.read().unwrap_or_else(std::sync::PoisonError::into_inner).clone()
     }
 
     /// Get trajectories within a time window
     pub fn get_since(&self, duration: Duration) -> Vec<QueryTrajectory> {
-        let trajectories = self.trajectories.read().unwrap();
+        let trajectories = self.trajectories.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         let cutoff = SystemTime::now() - duration;
 
         trajectories
@@ -160,7 +160,7 @@ impl TrajectoryTracker {
 
     /// Get trajectories with feedback only
     pub fn get_with_feedback(&self) -> Vec<QueryTrajectory> {
-        let trajectories = self.trajectories.read().unwrap();
+        let trajectories = self.trajectories.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         trajectories
             .iter()
             .filter(|t| !t.relevant_ids.is_empty())
@@ -170,7 +170,7 @@ impl TrajectoryTracker {
 
     /// Calculate average latency
     pub fn avg_latency(&self) -> Option<f64> {
-        let trajectories = self.trajectories.read().unwrap();
+        let trajectories = self.trajectories.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         if trajectories.is_empty() {
             return None;
         }
@@ -181,7 +181,7 @@ impl TrajectoryTracker {
 
     /// Get statistics
     pub fn stats(&self) -> TrajectoryStats {
-        let trajectories = self.trajectories.read().unwrap();
+        let trajectories = self.trajectories.read().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         if trajectories.is_empty() {
             return TrajectoryStats::default();

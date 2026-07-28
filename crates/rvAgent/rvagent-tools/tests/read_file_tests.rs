@@ -24,7 +24,7 @@ impl Backend for ReadMockBackend {
         Ok(vec![])
     }
     fn read(&self, path: &str, offset: usize, limit: usize) -> Result<String, String> {
-        let files = self.files.lock().unwrap();
+        let files = self.files.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
         match files.get(path) {
             Some(content) => {
                 if content.is_empty() {

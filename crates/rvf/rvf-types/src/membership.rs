@@ -35,14 +35,14 @@ impl TryFrom<u8> for FilterType {
     }
 }
 
-/// Filter mode: include-by-default or exclude-by-default.
+/// Filter mode controlling how set bitmap bits affect visibility.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[repr(u8)]
 pub enum FilterMode {
-    /// Vectors are included unless filtered out.
+    /// A vector is visible only when its bit is set.
     Include = 0,
-    /// Vectors are excluded unless explicitly included.
+    /// A vector is visible only when its bit is clear.
     Exclude = 1,
 }
 
@@ -65,7 +65,7 @@ impl TryFrom<u8> for FilterMode {
 ///
 /// Follows the standard 64-byte `SegmentHeader`. All multi-byte fields are
 /// little-endian on the wire.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[repr(C)]
 pub struct MembershipHeader {
     /// Magic: `MEMBERSHIP_MAGIC` (0x52564D42, "RVMB").
@@ -132,7 +132,7 @@ impl MembershipHeader {
             });
         }
 
-        Ok(Self {
+        let header = Self {
             magic,
             version: u16::from_le_bytes([data[0x04], data[0x05]]),
             filter_type: data[0x06],
@@ -167,7 +167,24 @@ impl MembershipHeader {
                 r.copy_from_slice(&data[0x58..0x60]);
                 r
             },
-        })
+        };
+
+        if header.version != 1 {
+            return Err(RvfError::Code(crate::ErrorCode::InvalidVersion));
+        }
+        FilterType::try_from(header.filter_type)
+            .map_err(|_| RvfError::Code(crate::ErrorCode::MembershipInvalid))?;
+        FilterMode::try_from(header.filter_mode)
+            .map_err(|_| RvfError::Code(crate::ErrorCode::MembershipInvalid))?;
+        if header.member_count > header.vector_count
+            || header.filter_offset != 96
+            || header._reserved != 0
+            || header._reserved2 != [0; 8]
+        {
+            return Err(RvfError::Code(crate::ErrorCode::MembershipInvalid));
+        }
+
+        Ok(header)
     }
 }
 
@@ -236,6 +253,25 @@ mod tests {
             RvfError::BadMagic { expected, .. } => assert_eq!(expected, MEMBERSHIP_MAGIC),
             other => panic!("expected BadMagic, got {other:?}"),
         }
+    }
+
+    #[test]
+    fn rejects_invalid_version_enums_counts_and_reserved_fields() {
+        let mut bytes = sample_header().to_bytes();
+        bytes[0x04..0x06].copy_from_slice(&2u16.to_le_bytes());
+        assert!(MembershipHeader::from_bytes(&bytes).is_err());
+
+        let mut bytes = sample_header().to_bytes();
+        bytes[0x06] = 0xFF;
+        assert!(MembershipHeader::from_bytes(&bytes).is_err());
+
+        let mut bytes = sample_header().to_bytes();
+        bytes[0x10..0x18].copy_from_slice(&1_000_001u64.to_le_bytes());
+        assert!(MembershipHeader::from_bytes(&bytes).is_err());
+
+        let mut bytes = sample_header().to_bytes();
+        bytes[0x54] = 1;
+        assert!(MembershipHeader::from_bytes(&bytes).is_err());
     }
 
     #[test]

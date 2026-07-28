@@ -5,7 +5,8 @@
 
 use crate::hash::verify_content_hash;
 use rvf_types::{
-    ErrorCode, RvfError, SegmentHeader, SEGMENT_HEADER_SIZE, SEGMENT_MAGIC, SEGMENT_VERSION,
+    ErrorCode, RvfError, SegmentHeader, SEGMENT_ALIGNMENT, SEGMENT_HEADER_SIZE, SEGMENT_MAGIC,
+    SEGMENT_VERSION,
 };
 
 /// Read and parse a segment header from the first 64 bytes of `data`.
@@ -82,6 +83,9 @@ pub fn read_segment_header(data: &[u8]) -> Result<SegmentHeader, RvfError> {
 ///
 /// - `InvalidChecksum` if the computed hash does not match.
 pub fn validate_segment(header: &SegmentHeader, payload: &[u8]) -> Result<(), RvfError> {
+    if !matches!(header.checksum_algo, 1 | 2) {
+        return Err(RvfError::Code(ErrorCode::AlgoUnsupported));
+    }
     // Always verify the content hash. The SEALED flag is not a reason to skip
     // verification -- an attacker could set the flag on a tampered segment to
     // bypass integrity checks.
@@ -104,9 +108,26 @@ pub fn validate_segment(header: &SegmentHeader, payload: &[u8]) -> Result<(), Rv
 ///   declared payload length.
 pub fn read_segment(data: &[u8]) -> Result<(SegmentHeader, &[u8]), RvfError> {
     let header = read_segment_header(data)?;
-    let payload_end = SEGMENT_HEADER_SIZE + header.payload_length as usize;
+    let payload_len = usize::try_from(header.payload_length)
+        .map_err(|_| RvfError::Code(ErrorCode::TruncatedSegment))?;
+    let payload_end = SEGMENT_HEADER_SIZE
+        .checked_add(payload_len)
+        .ok_or(RvfError::Code(ErrorCode::TruncatedSegment))?;
     if data.len() < payload_end {
         return Err(RvfError::Code(ErrorCode::TruncatedSegment));
+    }
+    let expected_pad = (SEGMENT_ALIGNMENT - (payload_end % SEGMENT_ALIGNMENT)) % SEGMENT_ALIGNMENT;
+    if header.alignment_pad as usize != expected_pad {
+        return Err(RvfError::Code(ErrorCode::AlignmentError));
+    }
+    let frame_end = payload_end
+        .checked_add(expected_pad)
+        .ok_or(RvfError::Code(ErrorCode::TruncatedSegment))?;
+    if data.len() < frame_end {
+        return Err(RvfError::Code(ErrorCode::TruncatedSegment));
+    }
+    if data[payload_end..frame_end].iter().any(|&byte| byte != 0) {
+        return Err(RvfError::Code(ErrorCode::AlignmentError));
     }
     let payload = &data[SEGMENT_HEADER_SIZE..payload_end];
     Ok((header, payload))
@@ -170,5 +191,36 @@ mod tests {
         data[4] = 99; // bad version
         let result = read_segment_header(&data);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn rejects_truncated_and_nonzero_padding() {
+        let seg = write_segment(SegmentType::Vec as u8, b"padding", SegmentFlags::empty(), 1);
+        assert!(matches!(
+            read_segment(&seg[..seg.len() - 1]),
+            Err(RvfError::Code(ErrorCode::TruncatedSegment))
+        ));
+
+        let mut corrupt = seg;
+        *corrupt.last_mut().unwrap() = 1;
+        assert!(matches!(
+            read_segment(&corrupt),
+            Err(RvfError::Code(ErrorCode::AlignmentError))
+        ));
+    }
+
+    #[test]
+    fn rejects_declared_padding_mismatch() {
+        let mut seg = write_segment(
+            SegmentType::Membership as u8,
+            b"membership",
+            SegmentFlags::empty(),
+            1,
+        );
+        seg[0x3C..0x40].copy_from_slice(&0u32.to_le_bytes());
+        assert!(matches!(
+            read_segment(&seg),
+            Err(RvfError::Code(ErrorCode::AlignmentError))
+        ));
     }
 }

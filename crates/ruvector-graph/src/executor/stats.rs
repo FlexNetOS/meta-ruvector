@@ -24,33 +24,33 @@ impl Statistics {
 
     /// Update table statistics
     pub fn update_table_stats(&self, table_name: String, stats: TableStats) {
-        self.tables.write().unwrap().insert(table_name, stats);
+        self.tables.write().unwrap_or_else(std::sync::PoisonError::into_inner).insert(table_name, stats);
     }
 
     /// Get table statistics
     pub fn get_table_stats(&self, table_name: &str) -> Option<TableStats> {
-        self.tables.read().unwrap().get(table_name).cloned()
+        self.tables.read().unwrap_or_else(std::sync::PoisonError::into_inner).get(table_name).cloned()
     }
 
     /// Update column statistics
     pub fn update_column_stats(&self, column_key: String, stats: ColumnStats) {
-        self.columns.write().unwrap().insert(column_key, stats);
+        self.columns.write().unwrap_or_else(std::sync::PoisonError::into_inner).insert(column_key, stats);
     }
 
     /// Get column statistics
     pub fn get_column_stats(&self, column_key: &str) -> Option<ColumnStats> {
-        self.columns.read().unwrap().get(column_key).cloned()
+        self.columns.read().unwrap_or_else(std::sync::PoisonError::into_inner).get(column_key).cloned()
     }
 
     /// Check if statistics are empty
     pub fn is_empty(&self) -> bool {
-        self.tables.read().unwrap().is_empty() && self.columns.read().unwrap().is_empty()
+        self.tables.read().unwrap_or_else(std::sync::PoisonError::into_inner).is_empty() && self.columns.read().unwrap_or_else(std::sync::PoisonError::into_inner).is_empty()
     }
 
     /// Clear all statistics
     pub fn clear(&self) {
-        self.tables.write().unwrap().clear();
-        self.columns.write().unwrap().clear();
+        self.tables.write().unwrap_or_else(std::sync::PoisonError::into_inner).clear();
+        self.columns.write().unwrap_or_else(std::sync::PoisonError::into_inner).clear();
     }
 
     /// Estimate join selectivity

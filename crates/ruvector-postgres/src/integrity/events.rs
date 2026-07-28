@@ -336,7 +336,7 @@ impl IntegrityEventStore {
 
         // Add to buffer
         {
-            let mut events = self.events.write().unwrap();
+            let mut events = self.events.write().unwrap_or_else(std::sync::PoisonError::into_inner);
             if events.len() >= self.max_events {
                 events.pop_front();
             }
@@ -345,7 +345,7 @@ impl IntegrityEventStore {
 
         // Notify listeners
         {
-            let listeners = self.listeners.read().unwrap();
+            let listeners = self.listeners.read().unwrap_or_else(std::sync::PoisonError::into_inner);
             for listener in listeners.iter() {
                 listener(&event);
             }
@@ -356,7 +356,7 @@ impl IntegrityEventStore {
 
     /// Get recent events
     pub fn get_recent(&self, count: usize) -> Vec<IntegrityEventContent> {
-        let events = self.events.read().unwrap();
+        let events = self.events.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         events.iter().rev().take(count).cloned().collect()
     }
 
@@ -366,7 +366,7 @@ impl IntegrityEventStore {
         event_type: IntegrityEventType,
         count: usize,
     ) -> Vec<IntegrityEventContent> {
-        let events = self.events.read().unwrap();
+        let events = self.events.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         events
             .iter()
             .rev()
@@ -378,7 +378,7 @@ impl IntegrityEventStore {
 
     /// Get events since a timestamp
     pub fn get_since(&self, since: SystemTime) -> Vec<IntegrityEventContent> {
-        let events = self.events.read().unwrap();
+        let events = self.events.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         events
             .iter()
             .filter(|e| e.created_at >= since)
@@ -396,23 +396,23 @@ impl IntegrityEventStore {
     where
         F: Fn(&IntegrityEventContent) + Send + Sync + 'static,
     {
-        let mut listeners = self.listeners.write().unwrap();
+        let mut listeners = self.listeners.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         listeners.push(Box::new(listener));
     }
 
     /// Get event count
     pub fn event_count(&self) -> usize {
-        self.events.read().unwrap().len()
+        self.events.read().unwrap_or_else(std::sync::PoisonError::into_inner).len()
     }
 
     /// Clear all events
     pub fn clear(&self) {
-        self.events.write().unwrap().clear();
+        self.events.write().unwrap_or_else(std::sync::PoisonError::into_inner).clear();
     }
 
     /// Get statistics
     pub fn stats(&self) -> EventStoreStats {
-        let events = self.events.read().unwrap();
+        let events = self.events.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         let mut by_type: std::collections::HashMap<IntegrityEventType, usize> =
             std::collections::HashMap::new();
         let mut by_severity = [0usize; 3];

@@ -561,7 +561,7 @@ impl SemanticRouter {
         if peer_id.len() == 32 {
             let mut id = [0u8; 32];
             id.copy_from_slice(peer_id);
-            *self.my_peer_id.write().unwrap() = Some(id);
+            *self.my_peer_id.write().unwrap_or_else(std::sync::PoisonError::into_inner) = Some(id);
         }
     }
 
@@ -569,26 +569,26 @@ impl SemanticRouter {
     #[wasm_bindgen(js_name = setMyCapabilities)]
     pub fn set_my_capabilities(&self, capabilities: Vec<String>) {
         let centroid = self.embed_capabilities_internal(&capabilities);
-        *self.my_centroid.write().unwrap() = centroid;
+        *self.my_centroid.write().unwrap_or_else(std::sync::PoisonError::into_inner) = centroid;
     }
 
     /// Get peer count
     #[wasm_bindgen(js_name = peerCount)]
     pub fn peer_count(&self) -> usize {
-        self.peers.read().unwrap().len()
+        self.peers.read().unwrap_or_else(std::sync::PoisonError::into_inner).len()
     }
 
     /// Get topic count
     #[wasm_bindgen(js_name = topicCount)]
     pub fn topic_count(&self) -> usize {
-        self.topics.read().unwrap().len()
+        self.topics.read().unwrap_or_else(std::sync::PoisonError::into_inner).len()
     }
 
     /// Get active peer count (seen in last 60 seconds)
     #[wasm_bindgen(js_name = activePeerCount)]
     pub fn active_peer_count(&self) -> usize {
         let now = current_timestamp_ms();
-        self.peers.read().unwrap()
+        self.peers.read().unwrap_or_else(std::sync::PoisonError::into_inner)
             .values()
             .filter(|p| now.saturating_sub(p.last_seen) < 60_000)
             .count()
@@ -597,8 +597,8 @@ impl SemanticRouter {
     /// Get statistics as JSON
     #[wasm_bindgen(js_name = getStats)]
     pub fn get_stats(&self) -> String {
-        let peers = self.peers.read().unwrap();
-        let topics = self.topics.read().unwrap();
+        let peers = self.peers.read().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let topics = self.topics.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         let now = current_timestamp_ms();
 
         let total_peers = peers.len();
@@ -714,8 +714,8 @@ impl SemanticRouter {
     pub fn update_peer(&self, peer_id: PeerId, capabilities: &[String], latency_ms: Option<u32>) {
         let embedding = self.embed_capabilities_internal(capabilities);
 
-        let mut peers = self.peers.write().unwrap();
-        let mut index = self.hnsw_index.write().unwrap();
+        let mut peers = self.peers.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut index = self.hnsw_index.write().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         let now = current_timestamp_ms();
 
@@ -744,13 +744,13 @@ impl SemanticRouter {
 
     /// Remove a peer from the router
     pub fn remove_peer(&self, peer_id: &PeerId) {
-        self.peers.write().unwrap().remove(peer_id);
-        self.hnsw_index.write().unwrap().remove(peer_id);
+        self.peers.write().unwrap_or_else(std::sync::PoisonError::into_inner).remove(peer_id);
+        self.hnsw_index.write().unwrap_or_else(std::sync::PoisonError::into_inner).remove(peer_id);
     }
 
     /// Update peer reputation after an interaction
     pub fn update_reputation(&self, peer_id: &PeerId, success: bool, delta: f32) {
-        if let Some(peer) = self.peers.write().unwrap().get_mut(peer_id) {
+        if let Some(peer) = self.peers.write().unwrap_or_else(std::sync::PoisonError::into_inner).get_mut(peer_id) {
             if success {
                 peer.success_count += 1;
                 peer.reputation = (peer.reputation + delta).clamp(0.0, 1.0);
@@ -764,7 +764,7 @@ impl SemanticRouter {
 
     /// Get a peer's info
     pub fn get_peer(&self, peer_id: &PeerId) -> Option<PeerInfo> {
-        self.peers.read().unwrap().get(peer_id).cloned()
+        self.peers.read().unwrap_or_else(std::sync::PoisonError::into_inner).get(peer_id).cloned()
     }
 
     // ========================================================================
@@ -774,13 +774,13 @@ impl SemanticRouter {
     /// Get routes for an event (semantic neighbors + random sample)
     pub fn get_routes(&self, event: &Event) -> Vec<PeerId> {
         let event_vector = self.embed_event(event);
-        let my_peer_id = self.my_peer_id.read().unwrap().clone();
+        let my_peer_id = self.my_peer_id.read().unwrap_or_else(std::sync::PoisonError::into_inner).clone();
 
         // Get semantic neighbors via HNSW
-        let index = self.hnsw_index.read().unwrap();
+        let index = self.hnsw_index.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         let neighbors = index.search(&event_vector, self.semantic_neighbors * 2);
 
-        let peers = self.peers.read().unwrap();
+        let peers = self.peers.read().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         // Filter and sort by composite routing score
         let mut scored_neighbors: Vec<_> = neighbors
@@ -811,11 +811,11 @@ impl SemanticRouter {
 
     /// Get routes for a raw vector query
     pub fn get_routes_for_vector(&self, query: &[f32]) -> Vec<PeerId> {
-        let my_peer_id = self.my_peer_id.read().unwrap().clone();
-        let index = self.hnsw_index.read().unwrap();
+        let my_peer_id = self.my_peer_id.read().unwrap_or_else(std::sync::PoisonError::into_inner).clone();
+        let index = self.hnsw_index.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         let neighbors = index.search(query, self.semantic_neighbors * 2);
 
-        let peers = self.peers.read().unwrap();
+        let peers = self.peers.read().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         let mut scored_neighbors: Vec<_> = neighbors
             .iter()
@@ -844,7 +844,7 @@ impl SemanticRouter {
 
     /// Random sample of peers for robustness (excluding already selected)
     fn random_sample_internal(&self, count: usize, exclude: &[PeerId], my_id: &Option<PeerId>) -> Vec<PeerId> {
-        let peers = self.peers.read().unwrap();
+        let peers = self.peers.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         let now = current_timestamp_ms();
 
         // Use current timestamp as pseudo-random seed
@@ -889,7 +889,7 @@ impl SemanticRouter {
 
     /// Register a topic with its semantic centroid
     pub fn register_topic(&self, hash: TopicHash, name: String, centroid: Vec<f32>) {
-        self.topics.write().unwrap().insert(hash, TopicInfo {
+        self.topics.write().unwrap_or_else(std::sync::PoisonError::into_inner).insert(hash, TopicInfo {
             hash,
             name,
             centroid,
@@ -900,8 +900,8 @@ impl SemanticRouter {
 
     /// Discover topics by semantic similarity to my centroid
     pub fn discover_topics(&self, threshold: f32) -> Vec<TopicHash> {
-        let my_centroid = self.my_centroid.read().unwrap();
-        let topics = self.topics.read().unwrap();
+        let my_centroid = self.my_centroid.read().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let topics = self.topics.read().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         topics
             .iter()
@@ -918,7 +918,7 @@ impl SemanticRouter {
 
     /// Find topics similar to a query vector
     pub fn find_similar_topics(&self, query: &[f32], k: usize) -> Vec<(TopicHash, f64)> {
-        let topics = self.topics.read().unwrap();
+        let topics = self.topics.read().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         let mut scored: Vec<_> = topics
             .iter()
@@ -945,8 +945,8 @@ impl SemanticRouter {
     /// Prune stale peers (not seen in given duration)
     pub fn prune_stale(&self, max_age_ms: u64) -> usize {
         let now = current_timestamp_ms();
-        let mut peers = self.peers.write().unwrap();
-        let mut index = self.hnsw_index.write().unwrap();
+        let mut peers = self.peers.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut index = self.hnsw_index.write().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         let stale: Vec<PeerId> = peers
             .iter()
@@ -964,8 +964,8 @@ impl SemanticRouter {
 
     /// Prune low-reputation peers
     pub fn prune_low_reputation(&self, min_reputation: f32) -> usize {
-        let mut peers = self.peers.write().unwrap();
-        let mut index = self.hnsw_index.write().unwrap();
+        let mut peers = self.peers.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut index = self.hnsw_index.write().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         let to_remove: Vec<PeerId> = peers
             .iter()
@@ -983,12 +983,12 @@ impl SemanticRouter {
 
     /// Get all known peer IDs
     pub fn all_peer_ids(&self) -> Vec<PeerId> {
-        self.peers.read().unwrap().keys().cloned().collect()
+        self.peers.read().unwrap_or_else(std::sync::PoisonError::into_inner).keys().cloned().collect()
     }
 
     /// Get peers by capability
     pub fn peers_with_capability(&self, capability: &str) -> Vec<PeerId> {
-        self.peers.read().unwrap()
+        self.peers.read().unwrap_or_else(std::sync::PoisonError::into_inner)
             .iter()
             .filter(|(_, peer)| peer.capabilities.contains(&capability.to_string()))
             .map(|(pid, _)| *pid)

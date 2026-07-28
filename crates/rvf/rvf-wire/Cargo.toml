@@ -17,9 +17,9 @@ std = ["rvf-types/std"]
 
 [dependencies]
 rvf-types = { version = "0.2.0", path = "../rvf-types" }
+rvf-crypto = { version = "0.2.0", path = "../rvf-crypto", default-features = false }
 xxhash-rust = { version = "0.8", features = ["xxh3"] }
 crc32c = "0.6"
-sha3 = "0.10"
 subtle = "2.6"
 
 [dev-dependencies]

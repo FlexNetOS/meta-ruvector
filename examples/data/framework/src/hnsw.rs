@@ -581,7 +581,7 @@ impl HnswIndex {
 
     /// Randomly assign a layer to a new node
     fn random_level(&self) -> usize {
-        let mut rng = self.rng.write().unwrap();
+        let mut rng = self.rng.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         let uniform: f64 = rng.gen();
         (-uniform.ln() * self.config.ml).floor() as usize
     }

@@ -143,29 +143,34 @@ The COW map is the core data structure that maps cluster IDs to their physical l
 - 512 KB for read-heavy/archival workloads
 
 ```
-CowMapHeader (64 bytes, repr(C)):
+CowMapHeader V2 (96 bytes, repr(C)):
 ┌──────────────────────┬──────┬──────────────────────────────────────────────┐
 │ Offset │ Type        │ Size │ Field                                        │
 ├────────┼─────────────┼──────┼──────────────────────────────────────────────┤
 │ 0x00   │ u32         │  4   │ magic = 0x5256_434D ("RVCM")                │
-│ 0x04   │ u16         │  2   │ version                                      │
+│ 0x04   │ u16         │  2   │ version = 2                                  │
 │ 0x06   │ u8          │  1   │ map_format (0=flat_array, 1=art_tree,        │
 │        │             │      │             2=extent_list)                    │
 │ 0x07   │ u8          │  1   │ compression_policy                           │
 │ 0x08   │ u32         │  4   │ cluster_size_bytes (power of 2, SIMD-aligned)│
 │ 0x0C   │ u32         │  4   │ vectors_per_cluster                          │
 │ 0x10   │ [u8; 16]    │ 16   │ base_file_id (UUID of parent file)           │
-│ 0x20   │ [u8; 32]    │ 32   │ base_file_hash (SHAKE-256-256 of parent      │
-│        │             │      │  Level0Root manifest)                        │
+│ 0x20   │ [u8; 32]    │ 32   │ base_file_hash (SHAKE-256-256 canonical      │
+│        │             │      │  parent snapshot digest)                     │
 │ 0x40   │ u64         │  8   │ map_root_offset (offset to map data)         │
 │ 0x48   │ u32         │  4   │ cluster_count (total clusters in base)       │
 │ 0x4C   │ u32         │  4   │ local_cluster_count (clusters stored locally)│
 │ 0x50   │ u8          │  1   │ extent_support (1=extents enabled)           │
 │ 0x51   │ [u8; 3]     │  3   │ _reserved (must be zero)                     │
-│ 0x54   │ [u8; 12]    │ 12   │ _reserved2 (must be zero)                    │
+│ 0x54   │ u32         │  4   │ generation_id (monotonic consistency guard)  │
+│ 0x58   │ [u8; 8]     │  8   │ _reserved2 (must be zero)                    │
 └────────┴─────────────┴──────┴──────────────────────────────────────────────┘
-Total: 64 bytes (compile-time assertion required)
+Total: 96 bytes (compile-time assertion required)
 ```
+
+Compatibility note: the previously implemented 64-byte prefix is V1 and is
+read-only. It omitted every field at `0x40` and beyond despite the earlier
+table claiming those fields were present. V2 is the only writable form.
 
 **Lookup contract**:
 ```
@@ -232,7 +237,7 @@ MembershipHeader (96 bytes, repr(C)):
 │ 0x10   │ u64         │  8   │ member_count (vectors matching filter)       │
 │ 0x18   │ u64         │  8   │ filter_offset (offset to filter data)        │
 │ 0x20   │ u32         │  4   │ filter_size (size of filter data in bytes)   │
-│ 0x24   │ u32         │  4   │ generation_id (monotonic, anti-replay)       │
+│ 0x24   │ u32         │  4   │ generation_id (monotonic consistency guard)  │
 │ 0x28   │ [u8; 32]    │ 32   │ filter_hash (SHAKE-256-256 of filter data)   │
 │ 0x48   │ u64         │  8   │ bloom_offset (optional bloom accelerator,    │
 │        │             │      │  0=none)                                     │
@@ -251,12 +256,13 @@ Total: 96 bytes (compile-time assertion required)
 - A vector is visible iff `!filter.contains(vector_id)`.
 - Empty filter = full view.
 
-**Anti-replay**: `generation_id` is monotonically increasing. Enforcement rules:
+**Generation consistency**: `generation_id` is monotonically increasing.
+Enforcement rules:
 
 **On open** (enforced by runtime, not advisory):
 ```
-if Level0Root.membership_generation > MembershipHeader.generation_id:
-    return Err(MembershipInvalid)  // stale filter, refuse to use
+if manifest.membership_generation != MembershipHeader.generation_id:
+    return Err(GenerationStale)  // mixed generation, refuse to use
 ```
 
 **On update** (enforced by runtime):
@@ -268,11 +274,15 @@ Level0Root.membership_generation updated to new_generation_id
 
 **Same rules apply to `cow_map_generation`**:
 ```
-On open:  Level0Root.cow_map_generation > CowMapHeader version → CowMapCorrupt
+On open:  Level0Root.cow_map_generation != CowMapHeader.generation_id → CowMapCorrupt
 On update: new generation must strictly increase; old COW_MAP_SEG preserved
 ```
 
-This prevents replay attacks and makes L0 cache invalidation safe — any cached generation less than the manifest generation is stale and must be evicted.
+This prevents mixed-segment replay and makes cache invalidation safe. It does
+not detect replay of an older self-consistent file image containing matching
+segments and manifest. Cryptographic rollback protection requires the
+generation to be committed to a trusted external or Level0 root that is not
+replayable with the same file.
 
 **Source file**: `rvf-types/src/membership.rs` (~150 lines)
 
@@ -811,7 +821,7 @@ Added to `ErrorCode` enum in `rvf-types/src/error.rs`:
 
 | File | Crate | Description |
 |------|-------|-------------|
-| `rvf-types/src/cow_map.rs` | rvf-types | CowMapHeader (64B) + ART node types |
+| `rvf-types/src/cow_map.rs` | rvf-types | CowMapHeaderV1 (64B read-only) + CowMapHeader V2 (96B) |
 | `rvf-types/src/refcount.rs` | rvf-types | RefcountHeader (32B) |
 | `rvf-types/src/membership.rs` | rvf-types | MembershipHeader (96B) + filter types |
 | `rvf-types/src/delta.rs` | rvf-types | DeltaHeader (64B) |
@@ -1015,7 +1025,8 @@ cargo clippy --workspace --exclude rvf-wasm
 ## Appendix B: Compile-Time Assertions Required
 
 ```rust
-const _: () = assert!(size_of::<CowMapHeader>() == 64);
+const _: () = assert!(size_of::<CowMapHeaderV1>() == 64);
+const _: () = assert!(size_of::<CowMapHeader>() == 96);
 const _: () = assert!(size_of::<RefcountHeader>() == 32);
 const _: () = assert!(size_of::<MembershipHeader>() == 96);
 const _: () = assert!(size_of::<DeltaHeader>() == 64);

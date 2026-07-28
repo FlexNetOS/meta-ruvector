@@ -137,13 +137,13 @@ impl OnnxEmbedder {
 
     /// Generate semantic embedding from text
     pub fn embed_text(&self, text: &str) -> Vec<f32> {
-        let mut embedder = self.embedder.write().unwrap();
+        let mut embedder = self.embedder.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         embedder.embed_one(text).unwrap_or_else(|_| vec![0.0; 384])
     }
 
     /// Generate embeddings for multiple texts (batch processing)
     pub fn embed_batch(&self, texts: &[&str]) -> Vec<Vec<f32>> {
-        let mut embedder = self.embedder.write().unwrap();
+        let mut embedder = self.embedder.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         match embedder.embed(texts) {
             Ok(output) => (0..texts.len())
                 .map(|i| output.get(i).unwrap_or(&vec![0.0; 384]).clone())
@@ -221,13 +221,13 @@ impl OnnxEmbedder {
 
     /// Get the embedding dimension (384 for MiniLM, 768 for larger models)
     pub fn dimension(&self) -> usize {
-        let embedder = self.embedder.read().unwrap();
+        let embedder = self.embedder.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         embedder.dimension()
     }
 
     /// Compute cosine similarity between two texts
     pub fn similarity(&self, text1: &str, text2: &str) -> f32 {
-        let mut embedder = self.embedder.write().unwrap();
+        let mut embedder = self.embedder.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         embedder.similarity(text1, text2).unwrap_or(0.0)
     }
 

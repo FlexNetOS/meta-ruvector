@@ -637,7 +637,7 @@ mod tests {
         }
 
         fn add_neighbor(&self, query_id: &str, neighbor: Neighbor) {
-            let mut neighbors = self.neighbors.write().unwrap();
+            let mut neighbors = self.neighbors.write().unwrap_or_else(std::sync::PoisonError::into_inner);
             neighbors
                 .entry(query_id.to_string())
                 .or_default()
@@ -645,7 +645,7 @@ mod tests {
         }
 
         fn add_embedding(&self, id: &str, embedding: Vec<f32>) {
-            let mut embeddings = self.embeddings.write().unwrap();
+            let mut embeddings = self.embeddings.write().unwrap_or_else(std::sync::PoisonError::into_inner);
             embeddings.insert(id.to_string(), embedding);
         }
     }
@@ -653,7 +653,7 @@ mod tests {
     #[async_trait::async_trait]
     impl VectorSpaceService for MockVectorService {
         async fn find_neighbors(&self, embedding_id: &EmbeddingId, k: usize) -> Result<Vec<Neighbor>> {
-            let neighbors = self.neighbors.read().unwrap();
+            let neighbors = self.neighbors.read().unwrap_or_else(std::sync::PoisonError::into_inner);
             let result = neighbors
                 .get(embedding_id.as_str())
                 .map(|n| n.iter().take(k).cloned().collect())
@@ -662,7 +662,7 @@ mod tests {
         }
 
         async fn get_embedding(&self, embedding_id: &EmbeddingId) -> Result<Option<Vec<f32>>> {
-            let embeddings = self.embeddings.read().unwrap();
+            let embeddings = self.embeddings.read().unwrap_or_else(std::sync::PoisonError::into_inner);
             Ok(embeddings.get(embedding_id.as_str()).cloned())
         }
 

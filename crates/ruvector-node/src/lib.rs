@@ -286,7 +286,7 @@ impl VectorDB {
         let db = self.inner.clone();
 
         tokio::task::spawn_blocking(move || {
-            let db = db.read().expect("RwLock poisoned");
+            let db = db.read().unwrap_or_else(std::sync::PoisonError::into_inner);
             db.insert(core_entry)
         })
         .await
@@ -312,7 +312,7 @@ impl VectorDB {
         let db = self.inner.clone();
 
         tokio::task::spawn_blocking(move || {
-            let db = db.read().expect("RwLock poisoned");
+            let db = db.read().unwrap_or_else(std::sync::PoisonError::into_inner);
             db.insert_batch(core_entries)
         })
         .await
@@ -338,7 +338,7 @@ impl VectorDB {
         let db = self.inner.clone();
 
         tokio::task::spawn_blocking(move || {
-            let db = db.read().expect("RwLock poisoned");
+            let db = db.read().unwrap_or_else(std::sync::PoisonError::into_inner);
             db.search(core_query)
         })
         .await
@@ -360,7 +360,7 @@ impl VectorDB {
         let db = self.inner.clone();
 
         tokio::task::spawn_blocking(move || {
-            let db = db.read().expect("RwLock poisoned");
+            let db = db.read().unwrap_or_else(std::sync::PoisonError::into_inner);
             db.delete(&id)
         })
         .await
@@ -384,7 +384,7 @@ impl VectorDB {
         let db = self.inner.clone();
 
         let result = tokio::task::spawn_blocking(move || {
-            let db = db.read().expect("RwLock poisoned");
+            let db = db.read().unwrap_or_else(std::sync::PoisonError::into_inner);
             db.get(&id)
         })
         .await
@@ -415,7 +415,7 @@ impl VectorDB {
         let db = self.inner.clone();
 
         tokio::task::spawn_blocking(move || {
-            let db = db.read().expect("RwLock poisoned");
+            let db = db.read().unwrap_or_else(std::sync::PoisonError::into_inner);
             db.len()
         })
         .await
@@ -437,7 +437,7 @@ impl VectorDB {
         let db = self.inner.clone();
 
         tokio::task::spawn_blocking(move || {
-            let db = db.read().expect("RwLock poisoned");
+            let db = db.read().unwrap_or_else(std::sync::PoisonError::into_inner);
             db.is_empty()
         })
         .await
@@ -602,7 +602,7 @@ impl CollectionManager {
         let manager = self.inner.clone();
 
         tokio::task::spawn_blocking(move || {
-            let manager = manager.write().expect("RwLock poisoned");
+            let manager = manager.write().unwrap_or_else(std::sync::PoisonError::into_inner);
             manager.create_collection(&name, core_config)
         })
         .await
@@ -622,7 +622,7 @@ impl CollectionManager {
         let manager = self.inner.clone();
 
         tokio::task::spawn_blocking(move || {
-            let manager = manager.read().expect("RwLock poisoned");
+            let manager = manager.read().unwrap_or_else(std::sync::PoisonError::into_inner);
             manager.list_collections()
         })
         .await
@@ -640,7 +640,7 @@ impl CollectionManager {
         let manager = self.inner.clone();
 
         tokio::task::spawn_blocking(move || {
-            let manager = manager.write().expect("RwLock poisoned");
+            let manager = manager.write().unwrap_or_else(std::sync::PoisonError::into_inner);
             manager.delete_collection(&name)
         })
         .await
@@ -660,7 +660,7 @@ impl CollectionManager {
         let manager = self.inner.clone();
 
         tokio::task::spawn_blocking(move || {
-            let manager = manager.read().expect("RwLock poisoned");
+            let manager = manager.read().unwrap_or_else(std::sync::PoisonError::into_inner);
             manager.collection_stats(&name)
         })
         .await
@@ -680,7 +680,7 @@ impl CollectionManager {
         let manager = self.inner.clone();
 
         tokio::task::spawn_blocking(move || {
-            let manager = manager.write().expect("RwLock poisoned");
+            let manager = manager.write().unwrap_or_else(std::sync::PoisonError::into_inner);
             manager.create_alias(&alias, &collection)
         })
         .await
@@ -699,7 +699,7 @@ impl CollectionManager {
         let manager = self.inner.clone();
 
         tokio::task::spawn_blocking(move || {
-            let manager = manager.write().expect("RwLock poisoned");
+            let manager = manager.write().unwrap_or_else(std::sync::PoisonError::into_inner);
             manager.delete_alias(&alias)
         })
         .await
@@ -721,7 +721,7 @@ impl CollectionManager {
         let manager = self.inner.clone();
 
         let aliases = tokio::task::spawn_blocking(move || {
-            let manager = manager.read().expect("RwLock poisoned");
+            let manager = manager.read().unwrap_or_else(std::sync::PoisonError::into_inner);
             manager.list_aliases()
         })
         .await

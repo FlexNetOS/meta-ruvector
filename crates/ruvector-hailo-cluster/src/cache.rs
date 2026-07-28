@@ -191,7 +191,7 @@ impl EmbeddingCache {
             Miss,
         }
         let arc_vec: Option<Arc<Vec<f32>>> = {
-            let mut shard = self.shards[shard_idx].lock().unwrap();
+            let mut shard = self.shards[shard_idx].lock().unwrap_or_else(std::sync::PoisonError::into_inner);
             shard.counter = shard.counter.wrapping_add(1);
             let now_counter = shard.counter;
             let now = if self.ttl.is_some() {
@@ -246,7 +246,7 @@ impl EmbeddingCache {
         let k = Self::key(fingerprint, text);
         let shard_idx = self.shard_for(&k);
         let arc = Arc::new(value);
-        let mut shard = self.shards[shard_idx].lock().unwrap();
+        let mut shard = self.shards[shard_idx].lock().unwrap_or_else(std::sync::PoisonError::into_inner);
         shard.counter = shard.counter.wrapping_add(1);
         let now_counter = shard.counter;
         shard.map.insert(
@@ -288,7 +288,7 @@ impl EmbeddingCache {
             ..Default::default()
         };
         for sh in self.shards.iter() {
-            let g = sh.lock().unwrap();
+            let g = sh.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
             s.size += g.map.len();
             s.hits += g.hits;
             s.misses += g.misses;
@@ -305,7 +305,7 @@ impl EmbeddingCache {
         }
         let mut total = 0usize;
         for sh in self.shards.iter() {
-            let mut g = sh.lock().unwrap();
+            let mut g = sh.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
             let dropped = g.map.len();
             g.map.clear();
             g.evictions += dropped as u64;

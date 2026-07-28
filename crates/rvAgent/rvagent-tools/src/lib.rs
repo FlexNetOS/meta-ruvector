@@ -524,7 +524,7 @@ pub(crate) mod tests_common {
 
     impl Backend for MockBackend {
         fn ls_info(&self, _path: &str) -> Result<Vec<FileInfo>, String> {
-            let files = self.files.lock().unwrap();
+            let files = self.files.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
             let mut infos: Vec<FileInfo> = files
                 .iter()
                 .map(|(name, content)| FileInfo {
@@ -539,7 +539,7 @@ pub(crate) mod tests_common {
         }
 
         fn read(&self, path: &str, offset: usize, limit: usize) -> Result<String, String> {
-            let files = self.files.lock().unwrap();
+            let files = self.files.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
             match files.get(path) {
                 Some(content) => {
                     if content.is_empty() {
@@ -557,7 +557,7 @@ pub(crate) mod tests_common {
         }
 
         fn write(&self, path: &str, content: &str) -> WriteResult {
-            let mut files = self.files.lock().unwrap();
+            let mut files = self.files.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
             if files.contains_key(path) {
                 return WriteResult {
                     error: Some(format!(
@@ -578,7 +578,7 @@ pub(crate) mod tests_common {
             new_string: &str,
             replace_all: bool,
         ) -> WriteResult {
-            let mut files = self.files.lock().unwrap();
+            let mut files = self.files.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
             match files.get(path).cloned() {
                 None => WriteResult {
                     error: Some(format!("File not found: {}", path)),
@@ -618,7 +618,7 @@ pub(crate) mod tests_common {
         }
 
         fn glob_info(&self, pattern: &str, _path: &str) -> Result<Vec<String>, String> {
-            let files = self.files.lock().unwrap();
+            let files = self.files.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
             let search = pattern.trim_start_matches('*').trim_end_matches('*');
             let mut matches: Vec<String> = files
                 .keys()
@@ -635,7 +635,7 @@ pub(crate) mod tests_common {
             _path: Option<&str>,
             _include: Option<&str>,
         ) -> Result<Vec<GrepMatch>, String> {
-            let files = self.files.lock().unwrap();
+            let files = self.files.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
             let mut matches = Vec::new();
             let mut sorted_files: Vec<_> = files.iter().collect();
             sorted_files.sort_by_key(|(k, _)| (*k).clone());

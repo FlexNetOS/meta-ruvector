@@ -183,8 +183,8 @@ impl TrajectoryTracker {
             Err(_) => return false,
         };
 
-        let mut trajectories = self.trajectories.write().unwrap();
-        let mut pos = self.write_pos.write().unwrap();
+        let mut trajectories = self.trajectories.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut pos = self.write_pos.write().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         if trajectories.len() < self.max_size {
             trajectories.push(trajectory);
@@ -199,7 +199,7 @@ impl TrajectoryTracker {
     /// Get statistics as JSON
     #[wasm_bindgen(js_name = getStats)]
     pub fn get_stats(&self) -> String {
-        let trajectories = self.trajectories.read().unwrap();
+        let trajectories = self.trajectories.read().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         if trajectories.is_empty() {
             return r#"{"total":0}"#.to_string();
@@ -223,7 +223,7 @@ impl TrajectoryTracker {
     /// Get count of trajectories
     #[wasm_bindgen]
     pub fn count(&self) -> usize {
-        self.trajectories.read().unwrap().len()
+        self.trajectories.read().unwrap_or_else(std::sync::PoisonError::into_inner).len()
     }
 }
 
@@ -293,7 +293,7 @@ impl ReasoningBank {
         // Compute spatial hash for indexing
         let hash = Self::spatial_hash(&pattern.centroid);
 
-        let mut next_id = self.next_id.write().unwrap();
+        let mut next_id = self.next_id.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         let id = *next_id;
         *next_id += 1;
 
@@ -303,10 +303,10 @@ impl ReasoningBank {
             last_used: js_sys::Date::now() as u64,
         };
 
-        self.patterns.write().unwrap().insert(id, entry);
+        self.patterns.write().unwrap_or_else(std::sync::PoisonError::into_inner).insert(id, entry);
 
         // Add to spatial index
-        let mut index = self.spatial_index.write().unwrap();
+        let mut index = self.spatial_index.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         index.entry(hash)
             .or_insert_with(|| SpatialBucket { pattern_ids: Vec::with_capacity(10) })
             .pattern_ids.push(id);
@@ -326,7 +326,7 @@ impl ReasoningBank {
         let now = js_sys::Date::now() as u64;
 
         // Step 1: Fast approximate search using spatial index
-        let index = self.spatial_index.read().unwrap();
+        let index = self.spatial_index.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         let mut candidate_ids = Vec::with_capacity(k * 3);  // Pre-allocate
 
         // Get patterns from same bucket
@@ -354,7 +354,7 @@ impl ReasoningBank {
         }
 
         // Step 2: Exact similarity computation only for candidates
-        let mut patterns = self.patterns.write().unwrap();
+        let mut patterns = self.patterns.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         let mut similarities = Vec::with_capacity(candidate_ids.len());
 
         for &id in &candidate_ids {
@@ -398,7 +398,7 @@ impl ReasoningBank {
     /// Prune low-quality patterns
     #[wasm_bindgen]
     pub fn prune(&self, min_usage: usize, min_confidence: f64) -> usize {
-        let mut patterns = self.patterns.write().unwrap();
+        let mut patterns = self.patterns.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         let before = patterns.len();
 
         patterns.retain(|_, entry| {
@@ -411,13 +411,13 @@ impl ReasoningBank {
     /// Get total pattern count
     #[wasm_bindgen]
     pub fn count(&self) -> usize {
-        self.patterns.read().unwrap().len()
+        self.patterns.read().unwrap_or_else(std::sync::PoisonError::into_inner).len()
     }
 
     /// Get bank statistics
     #[wasm_bindgen(js_name = getStats)]
     pub fn get_stats(&self) -> String {
-        let patterns = self.patterns.read().unwrap();
+        let patterns = self.patterns.read().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         if patterns.is_empty() {
             return r#"{"total":0}"#.to_string();

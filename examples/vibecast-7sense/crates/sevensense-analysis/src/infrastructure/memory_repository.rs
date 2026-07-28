@@ -45,11 +45,11 @@ impl InMemoryAnalysisRepository {
     /// Get statistics about stored data.
     #[must_use]
     pub fn stats(&self) -> RepositoryStats {
-        let clusters = self.clusters.read().unwrap();
-        let prototypes = self.prototypes.read().unwrap();
-        let motifs = self.motifs.read().unwrap();
-        let sequences = self.sequences.read().unwrap();
-        let anomalies = self.anomalies.read().unwrap();
+        let clusters = self.clusters.read().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let prototypes = self.prototypes.read().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let motifs = self.motifs.read().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let sequences = self.sequences.read().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let anomalies = self.anomalies.read().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         RepositoryStats {
             cluster_count: clusters.len(),

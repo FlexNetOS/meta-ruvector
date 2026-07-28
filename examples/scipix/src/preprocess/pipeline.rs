@@ -441,14 +441,14 @@ mod tests {
             .auto_rotate(false)
             .auto_deskew(false)
             .progress_callback(move |step, _progress| {
-                progress_clone.lock().unwrap().push(step.to_string());
+                progress_clone.lock().unwrap_or_else(std::sync::PoisonError::into_inner).push(step.to_string());
             })
             .build();
 
         let img = create_test_image();
         let _ = pipeline.process(&img);
 
-        let steps = progress_steps.lock().unwrap();
+        let steps = progress_steps.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
         assert!(!steps.is_empty());
         assert!(steps.iter().any(|s| s.contains("Starting")));
         assert!(steps.iter().any(|s| s.contains("complete")));

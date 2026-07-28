@@ -186,7 +186,7 @@ pub fn stoer_wagner_mincut(n: usize, edges: &[(usize, usize, f64)]) -> f64 {
 #[pg_extern]
 fn ruvector_integrity_status() -> pgrx::JsonB {
     let manager = get_integrity_manager();
-    let reader = manager.read().unwrap();
+    let reader = manager.read().unwrap_or_else(std::sync::PoisonError::into_inner);
     let contracts: Vec<_> = reader
         .list_contracts()
         .iter()
@@ -216,7 +216,7 @@ fn ruvector_integrity_create_contract(
         active: true,
     };
     let manager = get_integrity_manager();
-    manager.write().unwrap().register_contract(contract.clone());
+    manager.write().unwrap_or_else(std::sync::PoisonError::into_inner).register_contract(contract.clone());
     pgrx::JsonB(serde_json::json!({ "success": true, "contract": contract }))
 }
 
@@ -230,7 +230,7 @@ fn ruvector_integrity_validate(
     let manager = get_integrity_manager();
     let result = manager
         .read()
-        .unwrap()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
         .validate(contract_id, recall, latency_ms as u64, mincut);
     pgrx::JsonB(serde_json::json!(result))
 }

@@ -264,13 +264,13 @@ impl LevelPool {
     pub fn get_level(&self, level_idx: usize) -> Option<LazyLevel> {
         self.touch(level_idx);
 
-        let levels = self.levels.read().unwrap();
+        let levels = self.levels.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         levels.get(&level_idx).cloned()
     }
 
     /// Check if level is materialized
     pub fn is_materialized(&self, level_idx: usize) -> bool {
-        let levels = self.levels.read().unwrap();
+        let levels = self.levels.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         levels
             .get(&level_idx)
             .map(|l| l.is_materialized())
@@ -291,10 +291,10 @@ impl LevelPool {
             self.peak_memory.store(current, Ordering::Relaxed);
         }
 
-        let mut levels = self.levels.write().unwrap();
+        let mut levels = self.levels.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         levels.insert(level_idx, LazyLevel::Materialized(data));
 
-        let mut lru = self.lru_order.write().unwrap();
+        let mut lru = self.lru_order.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         lru.retain(|&l| l != level_idx);
         lru.push_back(level_idx);
 
@@ -303,7 +303,7 @@ impl LevelPool {
 
     /// Mark level as dirty
     pub fn mark_dirty(&self, level_idx: usize) {
-        let mut levels = self.levels.write().unwrap();
+        let mut levels = self.levels.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         if let Some(level) = levels.get_mut(&level_idx) {
             if let LazyLevel::Materialized(data) = level.clone() {
                 *level = LazyLevel::Dirty(data);
@@ -313,7 +313,7 @@ impl LevelPool {
 
     /// Mark level as clean (after recomputation)
     pub fn mark_clean(&self, level_idx: usize) {
-        let mut levels = self.levels.write().unwrap();
+        let mut levels = self.levels.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         if let Some(level) = levels.get_mut(&level_idx) {
             if let LazyLevel::Dirty(data) = level.clone() {
                 *level = LazyLevel::Materialized(data);
@@ -323,7 +323,7 @@ impl LevelPool {
 
     /// Evict a level (lazy deallocation)
     pub fn evict(&self, level_idx: usize) {
-        let mut levels = self.levels.write().unwrap();
+        let mut levels = self.levels.write().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         if let Some(level) = levels.get(&level_idx) {
             let last_vertex_count = level.data().map(|d| d.vertices.len()).unwrap_or(0);
@@ -333,7 +333,7 @@ impl LevelPool {
             // Try to recycle the allocation
             if self.config.lazy_dealloc {
                 if let Some(data) = level.data().cloned() {
-                    let mut free_list = self.free_list.write().unwrap();
+                    let mut free_list = self.free_list.write().unwrap_or_else(std::sync::PoisonError::into_inner);
                     if free_list.len() < 10 {
                         free_list.push(data);
                     }
@@ -347,19 +347,19 @@ impl LevelPool {
             self.deallocations.fetch_add(1, Ordering::Relaxed);
         }
 
-        let mut lru = self.lru_order.write().unwrap();
+        let mut lru = self.lru_order.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         lru.retain(|&l| l != level_idx);
     }
 
     /// Ensure we have capacity (evict if needed)
     fn ensure_capacity(&self) {
-        let levels = self.levels.read().unwrap();
+        let levels = self.levels.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         let materialized_count = levels.values().filter(|l| l.is_materialized()).count();
         drop(levels);
 
         if materialized_count >= self.config.max_materialized_levels {
             // Evict least recently used
-            let lru = self.lru_order.read().unwrap();
+            let lru = self.lru_order.read().unwrap_or_else(std::sync::PoisonError::into_inner);
             if let Some(&evict_idx) = lru.front() {
                 drop(lru);
                 self.evict(evict_idx);
@@ -369,7 +369,7 @@ impl LevelPool {
         // Also check memory budget
         if self.config.memory_budget > 0 {
             while self.memory_usage.load(Ordering::Relaxed) > self.config.memory_budget {
-                let lru = self.lru_order.read().unwrap();
+                let lru = self.lru_order.read().unwrap_or_else(std::sync::PoisonError::into_inner);
                 if let Some(&evict_idx) = lru.front() {
                     drop(lru);
                     self.evict(evict_idx);
@@ -384,7 +384,7 @@ impl LevelPool {
     fn touch(&self, level_idx: usize) {
         let timestamp = self.operation_counter.fetch_add(1, Ordering::Relaxed);
 
-        let mut levels = self.levels.write().unwrap();
+        let mut levels = self.levels.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         if let Some(level) = levels.get_mut(&level_idx) {
             if let Some(data) = level.data_mut() {
                 data.last_access = timestamp;
@@ -393,7 +393,7 @@ impl LevelPool {
         drop(levels);
 
         // Update LRU order
-        let mut lru = self.lru_order.write().unwrap();
+        let mut lru = self.lru_order.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         lru.retain(|&l| l != level_idx);
         lru.push_back(level_idx);
     }
@@ -401,7 +401,7 @@ impl LevelPool {
     /// Get a recycled allocation or create new
     pub fn allocate_level(&self, level_idx: usize, capacity: usize) -> LevelData {
         // Try to get from free list
-        let mut free_list = self.free_list.write().unwrap();
+        let mut free_list = self.free_list.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         if let Some(mut data) = free_list.pop() {
             data.level = level_idx;
             data.vertices.clear();
@@ -416,7 +416,7 @@ impl LevelPool {
 
     /// Get pool statistics
     pub fn stats(&self) -> PoolStats {
-        let levels = self.levels.read().unwrap();
+        let levels = self.levels.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         let materialized_count = levels.values().filter(|l| l.is_materialized()).count();
 
         PoolStats {
@@ -436,10 +436,10 @@ impl LevelPool {
 
     /// Clear all levels
     pub fn clear(&self) {
-        let mut levels = self.levels.write().unwrap();
+        let mut levels = self.levels.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         levels.clear();
 
-        let mut lru = self.lru_order.write().unwrap();
+        let mut lru = self.lru_order.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         lru.clear();
 
         self.memory_usage.store(0, Ordering::Relaxed);

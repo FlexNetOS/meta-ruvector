@@ -446,25 +446,48 @@ fn bench_cowmap_serialization() {
     println!("\n=== BENCH: CowMap Serialization ===");
 
     use rvf_runtime::cow_map::CowMap;
-    use rvf_types::cow_map::{CowMapEntry, MapFormat};
+    use rvf_types::{
+        cow_map::{CowMapEntry, MapFormat},
+        CowMapHeader, COWMAP_MAGIC, COW_MAP_V2, COW_MAP_V2_HEADER_SIZE,
+    };
+    use rvf_wire::{decode_cow_map, encode_cow_map};
 
     for &size in &[1_000u32, 10_000, 100_000] {
         let mut map = CowMap::new_parent_ref(size);
         for i in (0..size).step_by(5) {
-            map.update(i, CowMapEntry::LocalOffset(i as u64 * 4096));
+            map.update(i, CowMapEntry::LocalOffset((i as u64 + 1) * 4096));
         }
+        let header = CowMapHeader {
+            magic: COWMAP_MAGIC,
+            version: COW_MAP_V2,
+            map_format: MapFormat::FlatArray as u8,
+            compression_policy: 0,
+            cluster_size_bytes: 4096,
+            vectors_per_cluster: 32,
+            base_file_id: [1; 16],
+            base_file_hash: [2; 32],
+            map_root_offset: COW_MAP_V2_HEADER_SIZE as u64,
+            cluster_count: map.cluster_count(),
+            local_cluster_count: map.local_cluster_count(),
+            extent_support: 0,
+            reserved: [0; 3],
+            generation_id: 1,
+            reserved2: [0; 8],
+        };
 
         let (min_us, avg_us, max_us) = bench_iterations(
             || {
                 let start = Instant::now();
-                let bytes = map.serialize();
-                let _restored = CowMap::deserialize(&bytes, MapFormat::FlatArray).unwrap();
+                let bytes = encode_cow_map(&header, map.entries()).unwrap();
+                let decoded = decode_cow_map(&bytes).unwrap();
+                let _restored =
+                    CowMap::from_entries(MapFormat::FlatArray, decoded.entries).unwrap();
                 start.elapsed().as_micros()
             },
             5,
         );
 
-        let wire_size = map.serialize().len();
+        let wire_size = encode_cow_map(&header, map.entries()).unwrap().len();
         println!(
             "BENCH: cowmap_serde(size={size}, wire_bytes={wire_size}): min={min_us}us avg={avg_us}us max={max_us}us"
         );

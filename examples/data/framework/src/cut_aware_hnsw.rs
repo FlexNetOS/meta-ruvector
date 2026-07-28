@@ -502,7 +502,7 @@ impl CutAwareHNSW {
         let neighbors = self.hnsw.search_knn(vector, self.config.m * 2)?;
 
         // Add edges to cut watcher
-        let mut watcher = self.cut_watcher.write().unwrap();
+        let mut watcher = self.cut_watcher.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         for neighbor in neighbors {
             if let Some(&neighbor_node_id) = self.hnsw_to_node.get(&neighbor.node_id) {
                 if neighbor_node_id != node_id {
@@ -561,7 +561,7 @@ impl CutAwareHNSW {
         let mut results: Vec<SearchResult> = Vec::new();
         let mut cross_cut_count: HashMap<u32, usize> = HashMap::new();
 
-        let mut watcher = self.cut_watcher.write().unwrap();
+        let mut watcher = self.cut_watcher.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         let threshold = self.config.coherence_gate_threshold;
 
         for result in hnsw_results.iter().take(k * 2) {
@@ -624,7 +624,7 @@ impl CutAwareHNSW {
         queue.push_back((node, 0));
         visited.insert(node);
 
-        let mut watcher = self.cut_watcher.write().unwrap();
+        let mut watcher = self.cut_watcher.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         let threshold = self.config.coherence_gate_threshold;
 
         while let Some((current, depth)) = queue.pop_front() {
@@ -659,19 +659,19 @@ impl CutAwareHNSW {
 
     /// Check if path crosses a weak cut
     fn path_crosses_weak_cut(&self, from: u32, to: u32) -> bool {
-        let mut watcher = self.cut_watcher.write().unwrap();
+        let mut watcher = self.cut_watcher.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         watcher.crosses_weak_cut(from, to, self.config.coherence_gate_threshold)
     }
 
     /// Add edge and update cut watcher
     pub fn add_edge(&mut self, u: u32, v: u32, weight: f64) {
-        let mut watcher = self.cut_watcher.write().unwrap();
+        let mut watcher = self.cut_watcher.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         watcher.add_edge(u, v, weight);
     }
 
     /// Remove edge and update cut watcher
     pub fn remove_edge(&mut self, u: u32, v: u32) {
-        let mut watcher = self.cut_watcher.write().unwrap();
+        let mut watcher = self.cut_watcher.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         watcher.remove_edge(u, v);
     }
 
@@ -680,7 +680,7 @@ impl CutAwareHNSW {
         let mut stats = UpdateStats::default();
 
         {
-            let mut watcher = self.cut_watcher.write().unwrap();
+            let mut watcher = self.cut_watcher.write().unwrap_or_else(std::sync::PoisonError::into_inner);
 
             for update in updates {
                 match update.kind {
@@ -717,7 +717,7 @@ impl CutAwareHNSW {
     pub fn prune_weak_edges(&mut self, threshold: f64) -> usize {
         let mut pruned = 0;
 
-        let mut watcher = self.cut_watcher.write().unwrap();
+        let mut watcher = self.cut_watcher.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         let boundary_edges = watcher.boundary_edges().clone();
 
         for (u, v) in boundary_edges {
@@ -742,7 +742,7 @@ impl CutAwareHNSW {
         self.zones.clear();
         self.node_to_zone.clear();
 
-        let mut watcher = self.cut_watcher.write().unwrap();
+        let mut watcher = self.cut_watcher.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         let min_cut = watcher.min_cut_value();
 
         // Use min-cut partition to identify zones
@@ -856,7 +856,7 @@ impl CutAwareHNSW {
 
     /// Get cut distribution across layers
     pub fn cut_distribution(&self) -> Vec<LayerCutStats> {
-        let watcher = self.cut_watcher.read().unwrap();
+        let watcher = self.cut_watcher.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         let nodes = watcher.nodes();
 
         if nodes.is_empty() {
@@ -1161,7 +1161,7 @@ mod tests {
 
         // Force recomputation
         {
-            let mut watcher = index.cut_watcher.write().unwrap();
+            let mut watcher = index.cut_watcher.write().unwrap_or_else(std::sync::PoisonError::into_inner);
             watcher.min_cut_value();
         }
 

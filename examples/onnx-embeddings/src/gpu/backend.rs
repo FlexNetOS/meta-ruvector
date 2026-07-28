@@ -369,7 +369,7 @@ impl GpuBackend for WebGpuBackend {
     }
 
     fn memory_stats(&self) -> GpuMemoryStats {
-        let buffers = self.buffers.lock().unwrap();
+        let buffers = self.buffers.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
         let total_allocated: u64 = buffers.values().map(|b| b.size()).sum();
         GpuMemoryStats {
             total: total_allocated,
@@ -389,13 +389,13 @@ impl GpuBackend for WebGpuBackend {
             mapped_at_creation: false,
         });
 
-        self.buffers.lock().unwrap().insert(handle.id, wgpu_buffer);
+        self.buffers.lock().unwrap_or_else(std::sync::PoisonError::into_inner).insert(handle.id, wgpu_buffer);
 
         Ok(handle)
     }
 
     fn write_buffer(&self, buffer: &GpuBuffer, data: &[u8]) -> Result<()> {
-        let buffers = self.buffers.lock().unwrap();
+        let buffers = self.buffers.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
         let wgpu_buffer =
             buffers
                 .get(&buffer.id)
@@ -408,7 +408,7 @@ impl GpuBackend for WebGpuBackend {
     }
 
     fn read_buffer(&self, buffer: &GpuBuffer, size: u64) -> Result<Vec<u8>> {
-        let buffers = self.buffers.lock().unwrap();
+        let buffers = self.buffers.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
         let wgpu_buffer =
             buffers
                 .get(&buffer.id)
@@ -547,11 +547,11 @@ impl GpuBackend for WebGpuBackend {
 
         self.pipelines
             .lock()
-            .unwrap()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
             .insert(handle.id, compute_pipeline);
         self.bind_group_layouts
             .lock()
-            .unwrap()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
             .insert(handle.id, bind_group_layout);
 
         Ok(handle)
@@ -563,9 +563,9 @@ impl GpuBackend for WebGpuBackend {
         bindings: &[&GpuBuffer],
         workgroups: [u32; 3],
     ) -> Result<()> {
-        let pipelines = self.pipelines.lock().unwrap();
-        let layouts = self.bind_group_layouts.lock().unwrap();
-        let buffers = self.buffers.lock().unwrap();
+        let pipelines = self.pipelines.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let layouts = self.bind_group_layouts.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let buffers = self.buffers.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         let compute_pipeline =
             pipelines
@@ -632,13 +632,13 @@ impl GpuBackend for WebGpuBackend {
     }
 
     fn release_buffer(&self, buffer: GpuBuffer) -> Result<()> {
-        self.buffers.lock().unwrap().remove(&buffer.id);
+        self.buffers.lock().unwrap_or_else(std::sync::PoisonError::into_inner).remove(&buffer.id);
         Ok(())
     }
 
     fn release_pipeline(&self, pipeline: ComputePipeline) -> Result<()> {
-        self.pipelines.lock().unwrap().remove(&pipeline.id);
-        self.bind_group_layouts.lock().unwrap().remove(&pipeline.id);
+        self.pipelines.lock().unwrap_or_else(std::sync::PoisonError::into_inner).remove(&pipeline.id);
+        self.bind_group_layouts.lock().unwrap_or_else(std::sync::PoisonError::into_inner).remove(&pipeline.id);
         Ok(())
     }
 }
@@ -729,7 +729,7 @@ impl CudaWasmBackend {
 
     /// Register built-in CUDA-WASM kernels
     fn register_builtin_kernels(&self) {
-        let mut kernels = self.kernels.lock().unwrap();
+        let mut kernels = self.kernels.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         // Batch cosine similarity kernel
         kernels.insert(
@@ -1175,7 +1175,7 @@ impl GpuBackend for CudaWasmBackend {
     }
 
     fn memory_stats(&self) -> GpuMemoryStats {
-        let stats = self.memory_stats.lock().unwrap();
+        let stats = self.memory_stats.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
         GpuMemoryStats {
             total: self.device_info.total_memory,
             used: stats.allocated,
@@ -1192,10 +1192,10 @@ impl GpuBackend for CudaWasmBackend {
 
         // Allocate buffer storage
         let buffer = vec![0u8; size as usize];
-        self.buffers.lock().unwrap().insert(handle.id, buffer);
+        self.buffers.lock().unwrap_or_else(std::sync::PoisonError::into_inner).insert(handle.id, buffer);
 
         // Update memory stats
-        let mut stats = self.memory_stats.lock().unwrap();
+        let mut stats = self.memory_stats.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
         stats.allocated += size;
         stats.peak = stats.peak.max(stats.allocated);
 
@@ -1203,7 +1203,7 @@ impl GpuBackend for CudaWasmBackend {
     }
 
     fn write_buffer(&self, buffer: &GpuBuffer, data: &[u8]) -> Result<()> {
-        let mut buffers = self.buffers.lock().unwrap();
+        let mut buffers = self.buffers.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
         let buf = buffers
             .get_mut(&buffer.id)
             .ok_or_else(|| EmbeddingError::GpuBufferError {
@@ -1216,7 +1216,7 @@ impl GpuBackend for CudaWasmBackend {
     }
 
     fn read_buffer(&self, buffer: &GpuBuffer, size: u64) -> Result<Vec<u8>> {
-        let buffers = self.buffers.lock().unwrap();
+        let buffers = self.buffers.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
         let buf = buffers
             .get(&buffer.id)
             .ok_or_else(|| EmbeddingError::GpuBufferError {
@@ -1234,7 +1234,7 @@ impl GpuBackend for CudaWasmBackend {
         workgroup_size: [u32; 3],
     ) -> Result<ComputePipeline> {
         // Register built-in kernels if not already done
-        if self.kernels.lock().unwrap().is_empty() {
+        if self.kernels.lock().unwrap_or_else(std::sync::PoisonError::into_inner).is_empty() {
             self.register_builtin_kernels();
         }
 
@@ -1252,7 +1252,7 @@ impl GpuBackend for CudaWasmBackend {
     ) -> Result<()> {
         // Get kernel entry point
         let entry_point = {
-            let kernels = self.kernels.lock().unwrap();
+            let kernels = self.kernels.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
             let kernel = kernels.get(&pipeline.shader_name).ok_or_else(|| {
                 EmbeddingError::GpuOperationFailed {
                     operation: "dispatch".to_string(),
@@ -1271,7 +1271,7 @@ impl GpuBackend for CudaWasmBackend {
 
         // Clone input buffers for kernel execution
         let (input_copies, output_size): (Vec<Vec<u8>>, usize) = {
-            let buffers = self.buffers.lock().unwrap();
+            let buffers = self.buffers.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
 
             // Verify all buffers exist
             for (i, buf_handle) in bindings.iter().enumerate() {
@@ -1305,7 +1305,7 @@ impl GpuBackend for CudaWasmBackend {
 
         // Write output back
         {
-            let mut buffers = self.buffers.lock().unwrap();
+            let mut buffers = self.buffers.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
             if let Some(out) = buffers.get_mut(&output_id) {
                 out.copy_from_slice(&temp_output);
             }
@@ -1320,9 +1320,9 @@ impl GpuBackend for CudaWasmBackend {
     }
 
     fn release_buffer(&self, buffer: GpuBuffer) -> Result<()> {
-        let mut buffers = self.buffers.lock().unwrap();
+        let mut buffers = self.buffers.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
         if let Some(buf) = buffers.remove(&buffer.id) {
-            let mut stats = self.memory_stats.lock().unwrap();
+            let mut stats = self.memory_stats.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
             stats.allocated = stats.allocated.saturating_sub(buf.len() as u64);
         }
         Ok(())

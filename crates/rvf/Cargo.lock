@@ -1723,6 +1723,7 @@ dependencies = [
  "rvf-wire",
  "serde",
  "serde_json",
+ "tempfile",
  "tokio",
 ]
 
@@ -1851,9 +1852,11 @@ version = "0.3.0"
 dependencies = [
  "crc32fast",
  "rand",
+ "rvf-crypto",
  "rvf-index",
  "rvf-quant",
  "rvf-types",
+ "rvf-wire",
  "tempfile",
 ]
 
@@ -1911,8 +1914,8 @@ name = "rvf-wire"
 version = "0.1.0"
 dependencies = [
  "crc32c",
+ "rvf-crypto",
  "rvf-types",
- "sha3",
  "subtle",
  "tempfile",
  "xxhash-rust",

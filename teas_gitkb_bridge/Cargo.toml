@@ -1,0 +1,14 @@
+[package]
+name = "teas_gitkb_bridge"
+version = "0.1.0"
+edition = "2021"
+description = "TEAS -> GitKB single-authority projection bridge (ARCHBP-023). TEAS is the sole task authority; GitKB board/graph/ready/assign/context/incident views are a deterministic one-directional projection with no write-back and fail-closed, visible contradictions."
+license = "MIT OR Apache-2.0"
+publish = false
+
+# Standalone crate: opts out of the meta-ruvector root workspace so the
+# production build/clippy surface is untouched. Zero external dependencies by
+# design — deterministic projection keeps every replay reproducible.
+[workspace]
+
+[dependencies]

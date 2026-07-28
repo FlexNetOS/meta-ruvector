@@ -62,32 +62,32 @@ impl Default for DagState {
 impl DagState {
     /// Check if neural DAG learning is enabled
     pub fn is_enabled(&self) -> bool {
-        self.inner.lock().unwrap().enabled
+        self.inner.lock().unwrap_or_else(std::sync::PoisonError::into_inner).enabled
     }
 
     /// Enable or disable neural DAG learning
     pub fn set_enabled(&self, enabled: bool) {
-        self.inner.lock().unwrap().enabled = enabled;
+        self.inner.lock().unwrap_or_else(std::sync::PoisonError::into_inner).enabled = enabled;
     }
 
     /// Get the learning rate
     pub fn get_learning_rate(&self) -> f64 {
-        self.inner.lock().unwrap().learning_rate
+        self.inner.lock().unwrap_or_else(std::sync::PoisonError::into_inner).learning_rate
     }
 
     /// Set the learning rate
     pub fn set_learning_rate(&self, rate: f64) {
-        self.inner.lock().unwrap().learning_rate = rate;
+        self.inner.lock().unwrap_or_else(std::sync::PoisonError::into_inner).learning_rate = rate;
     }
 
     /// Get the current attention mechanism
     pub fn get_attention_mechanism(&self) -> String {
-        self.inner.lock().unwrap().attention_mechanism.clone()
+        self.inner.lock().unwrap_or_else(std::sync::PoisonError::into_inner).attention_mechanism.clone()
     }
 
     /// Set the attention mechanism
     pub fn set_attention_mechanism(&self, mechanism: String) {
-        self.inner.lock().unwrap().attention_mechanism = mechanism;
+        self.inner.lock().unwrap_or_else(std::sync::PoisonError::into_inner).attention_mechanism = mechanism;
     }
 
     /// Configure SONA parameters
@@ -98,7 +98,7 @@ impl DagState {
         ewc_lambda: f64,
         pattern_clusters: i32,
     ) {
-        let mut inner = self.inner.lock().unwrap();
+        let mut inner = self.inner.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
         inner.micro_lora_rank = micro_lora_rank;
         inner.base_lora_rank = base_lora_rank;
         inner.ewc_lambda = ewc_lambda;
@@ -107,17 +107,17 @@ impl DagState {
 
     /// Get pattern count
     pub fn get_pattern_count(&self) -> usize {
-        self.inner.lock().unwrap().pattern_count
+        self.inner.lock().unwrap_or_else(std::sync::PoisonError::into_inner).pattern_count
     }
 
     /// Get trajectory count
     pub fn get_trajectory_count(&self) -> usize {
-        self.inner.lock().unwrap().trajectory_count
+        self.inner.lock().unwrap_or_else(std::sync::PoisonError::into_inner).trajectory_count
     }
 
     /// Get cache hit rate
     pub fn get_cache_hit_rate(&self) -> f64 {
-        let inner = self.inner.lock().unwrap();
+        let inner = self.inner.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
         let total = inner.cache_hit_count + inner.cache_miss_count;
         if total == 0 {
             0.0
@@ -128,7 +128,7 @@ impl DagState {
 
     /// Get average improvement
     pub fn get_avg_improvement(&self) -> f64 {
-        let inner = self.inner.lock().unwrap();
+        let inner = self.inner.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
         if inner.improvement_count == 0 {
             0.0
         } else {
@@ -140,14 +140,14 @@ impl DagState {
     pub fn set_attention_params(&self, mechanism: &str, params: Value) {
         self.inner
             .lock()
-            .unwrap()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
             .attention_params
             .insert(mechanism.to_string(), params);
     }
 
     /// Get configuration as a struct (for composite type)
     pub fn get_config(&self) -> DagConfig {
-        let inner = self.inner.lock().unwrap();
+        let inner = self.inner.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
         DagConfig {
             enabled: inner.enabled,
             learning_rate: inner.learning_rate,
@@ -161,29 +161,29 @@ impl DagState {
 
     /// Record a cache hit
     pub fn record_cache_hit(&self) {
-        self.inner.lock().unwrap().cache_hit_count += 1;
+        self.inner.lock().unwrap_or_else(std::sync::PoisonError::into_inner).cache_hit_count += 1;
     }
 
     /// Record a cache miss
     pub fn record_cache_miss(&self) {
-        self.inner.lock().unwrap().cache_miss_count += 1;
+        self.inner.lock().unwrap_or_else(std::sync::PoisonError::into_inner).cache_miss_count += 1;
     }
 
     /// Record an improvement
     pub fn record_improvement(&self, improvement: f64) {
-        let mut inner = self.inner.lock().unwrap();
+        let mut inner = self.inner.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
         inner.total_improvements += improvement;
         inner.improvement_count += 1;
     }
 
     /// Increment pattern count
     pub fn increment_pattern_count(&self) {
-        self.inner.lock().unwrap().pattern_count += 1;
+        self.inner.lock().unwrap_or_else(std::sync::PoisonError::into_inner).pattern_count += 1;
     }
 
     /// Increment trajectory count
     pub fn increment_trajectory_count(&self) {
-        self.inner.lock().unwrap().trajectory_count += 1;
+        self.inner.lock().unwrap_or_else(std::sync::PoisonError::into_inner).trajectory_count += 1;
     }
 }
 

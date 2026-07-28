@@ -2,12 +2,11 @@
   "generatedBy": "codex-env",
   "sourceRoot": ".claude",
   "rawMirrorRoot": ".codex/mirror/.claude",
-  "sourceFileCount": 396,
+  "sourceFileCount": 391,
   "kindCounts": {
     "agent": 124,
     "command": 130,
     "helper": 46,
-    "hook": 5,
     "identity": 1,
     "intelligence": 36,
     "other": 10,
@@ -5126,81 +5125,6 @@
         "fileName": "ruvector-instincts.yaml",
         "firstHeading": "Instincts generated from https://github.com/FlexNetOS/ruvector",
         "pathSlug": "homunculus-instincts-inherited-ruvector-instincts-yaml"
-      }
-    },
-    {
-      "source": ".claude/hooks/bench-runner.sh",
-      "mirror": ".codex/mirror/.claude/hooks/bench-runner.sh",
-      "kind": "hook",
-      "executable": true,
-      "bytes": 2575,
-      "sourceSha256": "708291bbfea58874fd3242f93672248ffd842ceea28ed8b9fd09817190285e68",
-      "mirrorSha256": "708291bbfea58874fd3242f93672248ffd842ceea28ed8b9fd09817190285e68",
-      "symbols": {
-        "extension": "sh",
-        "fileName": "bench-runner.sh",
-        "firstHeading": "Benchmark runner with baseline comparison for RuVector",
-        "pathSlug": "hooks-bench-runner-sh"
-      }
-    },
-    {
-      "source": ".claude/hooks/crate-context.sh",
-      "mirror": ".codex/mirror/.claude/hooks/crate-context.sh",
-      "kind": "hook",
-      "executable": true,
-      "bytes": 3576,
-      "sourceSha256": "58c8748ea17083107d2a3759bd4e9eeaeda27b8607237b14d2ddcf789e9ba62c",
-      "mirrorSha256": "58c8748ea17083107d2a3759bd4e9eeaeda27b8607237b14d2ddcf789e9ba62c",
-      "symbols": {
-        "extension": "sh",
-        "fileName": "crate-context.sh",
-        "firstHeading": "Load crate-specific context for intelligent code assistance",
-        "pathSlug": "hooks-crate-context-sh"
-      }
-    },
-    {
-      "source": ".claude/hooks/post-rust-edit.sh",
-      "mirror": ".codex/mirror/.claude/hooks/post-rust-edit.sh",
-      "kind": "hook",
-      "executable": true,
-      "bytes": 2575,
-      "sourceSha256": "5ca51bb42a2c5a6de94550f8b054af9cd0365dc37fbeb9318b10ab23441ca638",
-      "mirrorSha256": "5ca51bb42a2c5a6de94550f8b054af9cd0365dc37fbeb9318b10ab23441ca638",
-      "symbols": {
-        "extension": "sh",
-        "fileName": "post-rust-edit.sh",
-        "firstHeading": "Post-edit hook for Rust files in RuVector",
-        "pathSlug": "hooks-post-rust-edit-sh"
-      }
-    },
-    {
-      "source": ".claude/hooks/rust-check.sh",
-      "mirror": ".codex/mirror/.claude/hooks/rust-check.sh",
-      "kind": "hook",
-      "executable": true,
-      "bytes": 3403,
-      "sourceSha256": "dc073782162fe6f2ad1e1b08e8891ac07a7b8f3886a47f616f799bffd32474af",
-      "mirrorSha256": "dc073782162fe6f2ad1e1b08e8891ac07a7b8f3886a47f616f799bffd32474af",
-      "symbols": {
-        "extension": "sh",
-        "fileName": "rust-check.sh",
-        "firstHeading": "Rust-specific pre-edit hook for RuVector",
-        "pathSlug": "hooks-rust-check-sh"
-      }
-    },
-    {
-      "source": ".claude/hooks/wasm-size-check.sh",
-      "mirror": ".codex/mirror/.claude/hooks/wasm-size-check.sh",
-      "kind": "hook",
-      "executable": true,
-      "bytes": 2595,
-      "sourceSha256": "bd312e1619732f3ba0045309b3d0765868934abe0007520a06be51ad2e4a644e",
-      "mirrorSha256": "bd312e1619732f3ba0045309b3d0765868934abe0007520a06be51ad2e4a644e",
-      "symbols": {
-        "extension": "sh",
-        "fileName": "wasm-size-check.sh",
-        "firstHeading": "WASM size checker for rvlite and other WASM crates",
-        "pathSlug": "hooks-wasm-size-check-sh"
       }
     },
     {

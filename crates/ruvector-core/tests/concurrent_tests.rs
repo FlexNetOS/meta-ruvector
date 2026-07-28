@@ -290,7 +290,7 @@ fn test_atomicity_of_batch_insert() {
 
                 let ids = db_clone.insert_batch(vectors).unwrap();
 
-                let mut lock = ids_clone.lock().unwrap();
+                let mut lock = ids_clone.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
                 for id in ids {
                     lock.insert(id);
                 }
@@ -305,7 +305,7 @@ fn test_atomicity_of_batch_insert() {
     }
 
     // Verify all insertions were recorded
-    let total_inserted = inserted_ids.lock().unwrap().len();
+    let total_inserted = inserted_ids.lock().unwrap_or_else(std::sync::PoisonError::into_inner).len();
     assert_eq!(total_inserted, num_threads * 10 * 10); // threads * batches * vectors_per_batch
     assert_eq!(db.len().unwrap(), total_inserted);
 }

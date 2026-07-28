@@ -83,7 +83,7 @@ impl StubDiscovery {
     }
 
     fn push_snapshot(&self, urls: Vec<&str>) {
-        let mut guard = self.snapshots.lock().expect("lock");
+        let mut guard = self.snapshots.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
         guard.push(urls.into_iter().map(DiscoveredPeer::new).collect());
     }
 
@@ -96,7 +96,7 @@ impl StubDiscovery {
 impl Discovery for StubDiscovery {
     async fn discover(&self) -> Result<Vec<DiscoveredPeer>, Error> {
         self.calls.fetch_add(1, Ordering::SeqCst);
-        let mut guard = self.snapshots.lock().expect("lock");
+        let mut guard = self.snapshots.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
         if guard.len() == 1 {
             // Last snapshot — return it repeatedly.
             return Ok(guard[0].clone());

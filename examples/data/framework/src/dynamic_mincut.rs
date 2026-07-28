@@ -1168,7 +1168,7 @@ mod tests {
         watcher.insert_edge(2, 0, 1.0).unwrap();
 
         // Check connectivity
-        let tree = watcher.euler_tree.read().unwrap();
+        let tree = watcher.euler_tree.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         assert!(tree.connected(0, 1));
         assert!(tree.connected(1, 2));
         assert!(tree.connected(0, 2));
@@ -1183,14 +1183,14 @@ mod tests {
         watcher.insert_edge(1, 2, 1.0).unwrap();
 
         {
-            let tree = watcher.euler_tree.read().unwrap();
+            let tree = watcher.euler_tree.read().unwrap_or_else(std::sync::PoisonError::into_inner);
             assert!(tree.connected(0, 2));
         }
 
         watcher.delete_edge(1, 2).unwrap();
 
         {
-            let tree = watcher.euler_tree.read().unwrap();
+            let tree = watcher.euler_tree.read().unwrap_or_else(std::sync::PoisonError::into_inner);
             assert!(!tree.connected(0, 2));
             assert!(tree.connected(0, 1));
         }

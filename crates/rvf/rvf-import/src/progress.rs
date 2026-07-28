@@ -40,7 +40,7 @@ impl CollectingProgress {
     }
 
     pub fn reports(&self) -> Vec<(u64, u64, u64)> {
-        self.reports.lock().unwrap().clone()
+        self.reports.lock().unwrap_or_else(std::sync::PoisonError::into_inner).clone()
     }
 }
 
@@ -48,7 +48,7 @@ impl ProgressReporter for CollectingProgress {
     fn report(&self, imported: u64, rejected: u64, total: u64) {
         self.reports
             .lock()
-            .unwrap()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
             .push((imported, rejected, total));
     }
 }

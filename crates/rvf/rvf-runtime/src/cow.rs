@@ -99,6 +99,35 @@ impl CowEngine {
         }
     }
 
+    /// Reconstruct an engine from a validated, persisted COW map.
+    pub(crate) fn from_persisted(
+        cow_map: CowMap,
+        cluster_size: u32,
+        vectors_per_cluster: u32,
+        bytes_per_vector: u32,
+    ) -> Result<Self, RvfError> {
+        if vectors_per_cluster == 0
+            || bytes_per_vector == 0
+            || cluster_size == 0
+            || !cluster_size.is_power_of_two()
+            || vectors_per_cluster
+                .checked_mul(bytes_per_vector)
+                .is_none_or(|used| used > cluster_size)
+        {
+            return Err(RvfError::Code(ErrorCode::CowMapCorrupt));
+        }
+        Ok(Self {
+            cow_map,
+            cluster_size,
+            vectors_per_cluster,
+            bytes_per_vector,
+            l0_cache: HashMap::new(),
+            write_buffer: HashMap::new(),
+            frozen: false,
+            snapshot_epoch: 0,
+        })
+    }
+
     /// Get a reference to the underlying COW map.
     pub fn cow_map(&self) -> &CowMap {
         &self.cow_map

@@ -7,7 +7,9 @@
 //! 4. On-demand: load cold segments as queries need them
 
 use crate::options::DistanceMetric;
-use rvf_types::{FileIdentity, SegmentHeader, SegmentType, SEGMENT_HEADER_SIZE, SEGMENT_MAGIC};
+use rvf_types::{
+    FileIdentity, SegmentHeader, SegmentType, SEGMENT_ALIGNMENT, SEGMENT_HEADER_SIZE, SEGMENT_MAGIC,
+};
 use std::io::{self, Read, Seek, SeekFrom};
 
 /// In-memory vector storage. The contiguous-slab implementation lives in
@@ -28,6 +30,7 @@ pub(crate) struct SegDirEntry {
 #[derive(Clone, Debug)]
 #[allow(dead_code)]
 pub(crate) struct ParsedManifest {
+    pub manifest_seg_id: u64,
     pub epoch: u32,
     pub dimension: u16,
     pub total_vectors: u64,
@@ -40,6 +43,8 @@ pub(crate) struct ParsedManifest {
     pub segment_dir: Vec<SegDirEntry>,
     pub deleted_ids: Vec<u64>,
     pub file_identity: Option<FileIdentity>,
+    pub cow_map_generation: u32,
+    pub membership_generation: u32,
 }
 
 /// Scan backwards from EOF to find and parse the latest valid manifest.
@@ -98,42 +103,14 @@ fn scan_tail_for_manifest<R: Read + Seek>(
     for i in (0..=last_possible).rev() {
         if buf[i..i + 4] == magic_bytes && buf[i + 5] == manifest_type {
             // Found a candidate manifest header at offset `i` within the buffer.
-            let hdr_buf = &buf[i..i + SEGMENT_HEADER_SIZE];
-            let payload_length_u64 = u64::from_le_bytes([
-                hdr_buf[0x10],
-                hdr_buf[0x11],
-                hdr_buf[0x12],
-                hdr_buf[0x13],
-                hdr_buf[0x14],
-                hdr_buf[0x15],
-                hdr_buf[0x16],
-                hdr_buf[0x17],
-            ]);
-
-            // Reject implausible payload lengths to prevent OOM.
-            if payload_length_u64 > MAX_READ_PAYLOAD {
-                continue;
-            }
-            let payload_length = payload_length_u64 as usize;
-
-            let payload_start = i + SEGMENT_HEADER_SIZE;
-            let payload_end = match payload_start.checked_add(payload_length) {
-                Some(end) => end,
-                None => continue, // overflow: skip this candidate
-            };
-
-            if payload_end <= buf.len() {
-                // Payload is within our buffer — parse directly.
-                if let Some(manifest) = parse_manifest_payload(&buf[payload_start..payload_end]) {
-                    return Ok(Some(manifest));
-                }
-            } else {
-                // Payload extends beyond our buffer — read from file.
-                let file_offset = scan_start + i as u64 + SEGMENT_HEADER_SIZE as u64;
-                reader.seek(SeekFrom::Start(file_offset))?;
-                let mut payload = vec![0u8; payload_length];
-                if reader.read_exact(&mut payload).is_ok() {
-                    if let Some(manifest) = parse_manifest_payload(&payload) {
+            // A magic/type match is only a candidate. Validate the complete
+            // canonical or explicitly-legacy frame before trusting payload
+            // bytes as a manifest.
+            let file_offset = scan_start + i as u64;
+            if let Ok((header, payload)) = read_segment_payload(reader, file_offset) {
+                if header.seg_type == manifest_type {
+                    if let Some(mut manifest) = parse_manifest_payload(&payload) {
+                        manifest.manifest_seg_id = header.segment_id;
                         return Ok(Some(manifest));
                     }
                 }
@@ -236,7 +213,7 @@ fn parse_manifest_payload(payload: &[u8]) -> Option<ParsedManifest> {
         offset += 4;
         for _ in 0..del_count {
             if offset + 8 > payload.len() {
-                break;
+                return None;
             }
             let did = u64::from_le_bytes([
                 payload[offset],
@@ -265,6 +242,7 @@ fn parse_manifest_payload(payload: &[u8]) -> Option<ParsedManifest> {
         if marker == 0x4649_4449 {
             offset += 4;
             let fi_data: &[u8; 68] = payload[offset..offset + 68].try_into().ok()?;
+            offset += 68;
             Some(FileIdentity::from_bytes(fi_data))
         } else {
             None
@@ -273,7 +251,21 @@ fn parse_manifest_payload(payload: &[u8]) -> Option<ParsedManifest> {
         None
     };
 
+    let (cow_map_generation, membership_generation) = if offset == payload.len() {
+        (0, 0)
+    } else if offset + 12 == payload.len()
+        && u32::from_le_bytes(payload[offset..offset + 4].try_into().ok()?) == 0x5256_474E
+    {
+        (
+            u32::from_le_bytes(payload[offset + 4..offset + 8].try_into().ok()?),
+            u32::from_le_bytes(payload[offset + 8..offset + 12].try_into().ok()?),
+        )
+    } else {
+        return None;
+    };
+
     Some(ParsedManifest {
+        manifest_seg_id: 0,
         epoch,
         dimension,
         total_vectors,
@@ -282,6 +274,8 @@ fn parse_manifest_payload(payload: &[u8]) -> Option<ParsedManifest> {
         segment_dir,
         deleted_ids,
         file_identity,
+        cow_map_generation,
+        membership_generation,
     })
 }
 
@@ -388,71 +382,65 @@ pub(crate) fn read_segment_payload<R: Read + Seek>(
         ));
     }
 
-    let header = SegmentHeader {
-        magic,
-        version: hdr_buf[0x04],
-        seg_type: hdr_buf[0x05],
-        flags: u16::from_le_bytes([hdr_buf[0x06], hdr_buf[0x07]]),
-        segment_id: u64::from_le_bytes([
-            hdr_buf[0x08],
-            hdr_buf[0x09],
-            hdr_buf[0x0A],
-            hdr_buf[0x0B],
-            hdr_buf[0x0C],
-            hdr_buf[0x0D],
-            hdr_buf[0x0E],
-            hdr_buf[0x0F],
-        ]),
-        payload_length,
-        timestamp_ns: u64::from_le_bytes([
-            hdr_buf[0x18],
-            hdr_buf[0x19],
-            hdr_buf[0x1A],
-            hdr_buf[0x1B],
-            hdr_buf[0x1C],
-            hdr_buf[0x1D],
-            hdr_buf[0x1E],
-            hdr_buf[0x1F],
-        ]),
-        checksum_algo: hdr_buf[0x20],
-        compression: hdr_buf[0x21],
-        reserved_0: u16::from_le_bytes([hdr_buf[0x22], hdr_buf[0x23]]),
-        reserved_1: u32::from_le_bytes([
-            hdr_buf[0x24],
-            hdr_buf[0x25],
-            hdr_buf[0x26],
-            hdr_buf[0x27],
-        ]),
-        content_hash: {
-            let mut h = [0u8; 16];
-            h.copy_from_slice(&hdr_buf[0x28..0x38]);
-            h
-        },
-        uncompressed_len: u32::from_le_bytes([
-            hdr_buf[0x38],
-            hdr_buf[0x39],
-            hdr_buf[0x3A],
-            hdr_buf[0x3B],
-        ]),
-        alignment_pad: u32::from_le_bytes([
-            hdr_buf[0x3C],
-            hdr_buf[0x3D],
-            hdr_buf[0x3E],
-            hdr_buf[0x3F],
-        ]),
-    };
+    let header = rvf_wire::read_segment_header(&hdr_buf)
+        .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "invalid segment header"))?;
+    if header.reserved_0 != 0
+        || header.reserved_1 != 0
+        || header.compression != 0
+        || header.uncompressed_len != 0
+    {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidData,
+            "noncanonical segment header fields",
+        ));
+    }
 
     // payload_length is guaranteed <= MAX_READ_PAYLOAD (256 MiB) which fits in usize.
     let mut payload = vec![0u8; payload_length as usize];
     reader.read_exact(&mut payload)?;
 
-    // Verify content hash if it is non-zero (zero hash means "not set").
-    if header.content_hash != [0u8; 16] {
-        let computed = compute_content_hash(&payload);
-        if computed != header.content_hash {
+    match header.checksum_algo {
+        // Historical runtime compatibility: algo 0 means the CRC32-rotation
+        // digest and, critically, an unpadded frame. Do not reinterpret it as
+        // rvf-wire's old algo-0 XXH fallback.
+        0 => {
+            if header.alignment_pad != 0
+                || crate::hashing::legacy_content_hash(&payload) != header.content_hash
+            {
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    "invalid legacy segment checksum or framing",
+                ));
+            }
+        }
+        1 | 2 => {
+            rvf_wire::validate_segment(&header, &payload).map_err(|_| {
+                io::Error::new(io::ErrorKind::InvalidData, "segment content hash mismatch")
+            })?;
+            let payload_end = SEGMENT_HEADER_SIZE
+                .checked_add(payload.len())
+                .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "segment overflow"))?;
+            let expected_pad =
+                (SEGMENT_ALIGNMENT - payload_end % SEGMENT_ALIGNMENT) % SEGMENT_ALIGNMENT;
+            if header.alignment_pad as usize != expected_pad {
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    "segment padding declaration mismatch",
+                ));
+            }
+            let mut padding = vec![0u8; expected_pad];
+            reader.read_exact(&mut padding)?;
+            if padding.iter().any(|&byte| byte != 0) {
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    "nonzero segment padding",
+                ));
+            }
+        }
+        _ => {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidData,
-                "segment content hash mismatch",
+                "unsupported segment checksum algorithm",
             ));
         }
     }
@@ -460,15 +448,52 @@ pub(crate) fn read_segment_payload<R: Read + Seek>(
     Ok((header, payload))
 }
 
-/// Compute a 16-byte content hash matching the write path's algorithm.
-/// Delegates to the single shared implementation in [`crate::hashing`].
-fn compute_content_hash(data: &[u8]) -> [u8; 16] {
-    crate::hashing::legacy_content_hash(data)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rvf_types::{SegmentFlags, SEGMENT_VERSION};
+    use std::io::Cursor;
+
+    fn header_bytes(header: &SegmentHeader) -> [u8; SEGMENT_HEADER_SIZE] {
+        let mut bytes = [0u8; SEGMENT_HEADER_SIZE];
+        bytes[0x00..0x04].copy_from_slice(&header.magic.to_le_bytes());
+        bytes[0x04] = header.version;
+        bytes[0x05] = header.seg_type;
+        bytes[0x06..0x08].copy_from_slice(&header.flags.to_le_bytes());
+        bytes[0x08..0x10].copy_from_slice(&header.segment_id.to_le_bytes());
+        bytes[0x10..0x18].copy_from_slice(&header.payload_length.to_le_bytes());
+        bytes[0x18..0x20].copy_from_slice(&header.timestamp_ns.to_le_bytes());
+        bytes[0x20] = header.checksum_algo;
+        bytes[0x21] = header.compression;
+        bytes[0x22..0x24].copy_from_slice(&header.reserved_0.to_le_bytes());
+        bytes[0x24..0x28].copy_from_slice(&header.reserved_1.to_le_bytes());
+        bytes[0x28..0x38].copy_from_slice(&header.content_hash);
+        bytes[0x38..0x3C].copy_from_slice(&header.uncompressed_len.to_le_bytes());
+        bytes[0x3C..0x40].copy_from_slice(&header.alignment_pad.to_le_bytes());
+        bytes
+    }
+
+    fn legacy_frame(payload: &[u8]) -> Vec<u8> {
+        let header = SegmentHeader {
+            magic: SEGMENT_MAGIC,
+            version: SEGMENT_VERSION,
+            seg_type: SegmentType::Vec as u8,
+            flags: 0,
+            segment_id: 7,
+            payload_length: payload.len() as u64,
+            timestamp_ns: 0,
+            checksum_algo: 0,
+            compression: 0,
+            reserved_0: 0,
+            reserved_1: 0,
+            content_hash: crate::hashing::legacy_content_hash(payload),
+            uncompressed_len: 0,
+            alignment_pad: 0,
+        };
+        let mut frame = header_bytes(&header).to_vec();
+        frame.extend_from_slice(payload);
+        frame
+    }
 
     #[test]
     fn parse_empty_manifest() {
@@ -499,6 +524,60 @@ mod tests {
         assert_eq!(result[0].1, vec![1.0, 2.0]);
         assert_eq!(result[1].0, 20);
         assert_eq!(result[1].1, vec![3.0, 4.0]);
+    }
+
+    #[test]
+    fn reads_historical_crc_rotation_unpadded_frame() {
+        let payload = b"historical runtime payload";
+        let frame = legacy_frame(payload);
+        assert_eq!(frame.len(), SEGMENT_HEADER_SIZE + payload.len());
+        let (header, decoded) = read_segment_payload(&mut Cursor::new(frame), 0)
+            .expect("legacy frame must remain readable");
+        assert_eq!(header.checksum_algo, 0);
+        assert_eq!(decoded, payload);
+    }
+
+    #[test]
+    fn reads_historical_empty_payload_with_valid_zero_digest() {
+        let frame = legacy_frame(&[]);
+        assert_eq!(&frame[0x28..0x38], &[0; 16]);
+        let (header, decoded) = read_segment_payload(&mut Cursor::new(frame), 0)
+            .expect("zero is the valid historical CRC-rotation digest for an empty payload");
+        assert_eq!(header.checksum_algo, 0);
+        assert!(decoded.is_empty());
+    }
+
+    #[test]
+    fn rejects_algo_zero_xxh_hash_and_mixed_padding() {
+        let payload = b"ambiguous legacy payload";
+        let mut frame = legacy_frame(payload);
+        frame[0x28..0x38].copy_from_slice(&rvf_wire::hash::compute_xxh3_128(payload));
+        assert!(read_segment_payload(&mut Cursor::new(frame), 0).is_err());
+
+        let mut frame = legacy_frame(payload);
+        frame[0x3C..0x40].copy_from_slice(&1u32.to_le_bytes());
+        frame.push(0);
+        assert!(read_segment_payload(&mut Cursor::new(frame), 0).is_err());
+    }
+
+    #[test]
+    fn canonical_reader_checks_checksum_truncation_and_zero_padding() {
+        let frame = rvf_wire::write_segment(
+            SegmentType::Membership as u8,
+            b"canonical",
+            SegmentFlags::empty(),
+            9,
+        );
+        let (_, payload) = read_segment_payload(&mut Cursor::new(frame.clone()), 0).unwrap();
+        assert_eq!(payload, b"canonical");
+
+        assert!(
+            read_segment_payload(&mut Cursor::new(frame[..frame.len() - 1].to_vec()), 0).is_err()
+        );
+
+        let mut nonzero_padding = frame;
+        *nonzero_padding.last_mut().unwrap() = 1;
+        assert!(read_segment_payload(&mut Cursor::new(nonzero_padding), 0).is_err());
     }
 
     #[test]

@@ -336,7 +336,7 @@ impl DepthTelemetry {
         let max = *token_depths.iter().max().unwrap();
         let min = *token_depths.iter().min().unwrap();
 
-        let mut inner = self.inner.lock().unwrap();
+        let mut inner = self.inner.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
         inner.means.push(mean);
         inner.maxes.push(max);
         inner.mins.push(min);
@@ -344,7 +344,7 @@ impl DepthTelemetry {
 
     /// Aggregate statistics over all recorded passes.
     pub fn stats(&self) -> DepthStats {
-        let inner = self.inner.lock().unwrap();
+        let inner = self.inner.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
         let samples = inner.means.len();
         if samples == 0 {
             return DepthStats::default();
@@ -360,7 +360,7 @@ impl DepthTelemetry {
 
     /// Reset all recorded telemetry.
     pub fn reset(&self) {
-        let mut inner = self.inner.lock().unwrap();
+        let mut inner = self.inner.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
         inner.means.clear();
         inner.maxes.clear();
         inner.mins.clear();

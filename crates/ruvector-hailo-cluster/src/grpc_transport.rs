@@ -117,7 +117,7 @@ impl GrpcTransport {
     /// creation is async, so we block_on the runtime.
     fn channel_for(&self, worker: &WorkerEndpoint) -> Result<Channel, ClusterError> {
         // Fast path: cache hit.
-        if let Some(c) = self.channels.lock().unwrap().get(&worker.address) {
+        if let Some(c) = self.channels.lock().unwrap_or_else(std::sync::PoisonError::into_inner).get(&worker.address) {
             return Ok(c.clone());
         }
         // Slow path: dial. Default plaintext http://; when TLS is
@@ -164,7 +164,7 @@ impl GrpcTransport {
             })?;
         self.channels
             .lock()
-            .unwrap()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
             .insert(worker.address.clone(), channel.clone());
         Ok(channel)
     }
@@ -521,7 +521,7 @@ mod tests {
             transport.embed(&worker, "x", 4).unwrap();
         }
         // After 5 calls, only one cached channel.
-        let n = transport.channels.lock().unwrap().len();
+        let n = transport.channels.lock().unwrap_or_else(std::sync::PoisonError::into_inner).len();
         assert_eq!(n, 1);
     }
 }

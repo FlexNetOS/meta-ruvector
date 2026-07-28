@@ -129,7 +129,7 @@ impl DataIngester {
             all_records.extend(records);
 
             {
-                let mut stats = self.stats.write().unwrap();
+                let mut stats = self.stats.write().unwrap_or_else(std::sync::PoisonError::into_inner);
                 stats.batches_processed += 1;
             }
 
@@ -172,7 +172,7 @@ impl DataIngester {
                         for record in batch {
                             // Deduplicate
                             if config.deduplicate {
-                                let mut ids = seen_ids.write().unwrap();
+                                let mut ids = seen_ids.write().unwrap_or_else(std::sync::PoisonError::into_inner);
                                 if ids.contains(&record.id) {
                                     continue;
                                 }
@@ -183,7 +183,7 @@ impl DataIngester {
                                 return; // Receiver dropped
                             }
 
-                            let mut s = stats.write().unwrap();
+                            let mut s = stats.write().unwrap_or_else(std::sync::PoisonError::into_inner);
                             s.records_fetched += 1;
                         }
 
@@ -193,7 +193,7 @@ impl DataIngester {
                         }
                     }
                     Err(_) => {
-                        let mut s = stats.write().unwrap();
+                        let mut s = stats.write().unwrap_or_else(std::sync::PoisonError::into_inner);
                         s.errors += 1;
                         break;
                     }
@@ -218,7 +218,7 @@ impl DataIngester {
                 let delay = self.config.retry_delay_ms * (1 << (attempt - 1));
                 tokio::time::sleep(tokio::time::Duration::from_millis(delay)).await;
 
-                let mut stats = self.stats.write().unwrap();
+                let mut stats = self.stats.write().unwrap_or_else(std::sync::PoisonError::into_inner);
                 stats.retries += 1;
             }
 
@@ -230,7 +230,7 @@ impl DataIngester {
             }
         }
 
-        let mut stats = self.stats.write().unwrap();
+        let mut stats = self.stats.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         stats.errors += 1;
 
         Err(last_error.unwrap_or_else(|| FrameworkError::Ingestion("Unknown error".to_string())))
@@ -239,14 +239,14 @@ impl DataIngester {
     /// Deduplicate a batch of records
     fn deduplicate_batch(&self, batch: Vec<DataRecord>) -> Vec<DataRecord> {
         let mut unique = Vec::with_capacity(batch.len());
-        let mut seen = self.seen_ids.write().unwrap();
+        let mut seen = self.seen_ids.write().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         for record in batch {
             if !seen.contains(&record.id) {
                 seen.insert(record.id.clone());
                 unique.push(record);
             } else {
-                let mut stats = self.stats.write().unwrap();
+                let mut stats = self.stats.write().unwrap_or_else(std::sync::PoisonError::into_inner);
                 stats.duplicates_skipped += 1;
             }
         }
@@ -256,12 +256,12 @@ impl DataIngester {
 
     /// Get current ingestion statistics
     pub fn stats(&self) -> IngestionStats {
-        self.stats.read().unwrap().clone()
+        self.stats.read().unwrap_or_else(std::sync::PoisonError::into_inner).clone()
     }
 
     /// Reset statistics
     pub fn reset_stats(&self) {
-        *self.stats.write().unwrap() = IngestionStats::default();
+        *self.stats.write().unwrap_or_else(std::sync::PoisonError::into_inner) = IngestionStats::default();
     }
 }
 

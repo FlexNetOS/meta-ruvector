@@ -1,6 +1,6 @@
 //! Segment writer: serializes a segment header + payload into a byte buffer.
 //!
-//! The writer computes the content hash (XXH3-128 by default), sets the
+//! The writer computes the content hash (SHAKE-256/128 by default), sets the
 //! timestamp, and pads the output to a 64-byte boundary.
 
 use crate::hash::compute_content_hash;
@@ -9,8 +9,8 @@ use rvf_types::{
     SEGMENT_VERSION,
 };
 
-/// Default checksum algorithm: XXH3-128.
-const DEFAULT_CHECKSUM_ALGO: u8 = 1;
+/// Default checksum algorithm: SHAKE-256/128.
+pub const DEFAULT_CHECKSUM_ALGO: u8 = 2;
 
 /// Calculate the total padded size of a segment (header + payload + padding).
 ///
@@ -23,7 +23,8 @@ pub fn calculate_padded_size(header_size: usize, payload_size: usize) -> usize {
 /// Serialize a complete segment: 64-byte header + payload + zero-padding to
 /// the next 64-byte boundary.
 ///
-/// The content hash is computed over the raw payload using XXH3-128 (algo=1).
+/// The content hash is computed over the raw payload using SHAKE-256/128
+/// (algo=2).
 /// The timestamp is set to 0 (callers should overwrite if needed).
 pub fn write_segment(
     seg_type: u8,
@@ -42,6 +43,10 @@ pub fn write_segment_with_algo(
     segment_id: u64,
     checksum_algo: u8,
 ) -> Vec<u8> {
+    assert!(
+        matches!(checksum_algo, 1 | 2),
+        "canonical RVF writers only support checksum algorithms 1 and 2"
+    );
     let content_hash = compute_content_hash(checksum_algo, payload);
     let total_size = calculate_padded_size(SEGMENT_HEADER_SIZE, payload.len());
     let padding = total_size - SEGMENT_HEADER_SIZE - payload.len();
@@ -115,6 +120,7 @@ mod tests {
         let magic = u32::from_le_bytes([seg[0], seg[1], seg[2], seg[3]]);
         assert_eq!(magic, SEGMENT_MAGIC);
         assert_eq!(seg[4], SEGMENT_VERSION);
+        assert_eq!(seg[0x20], DEFAULT_CHECKSUM_ALGO);
     }
 
     #[test]

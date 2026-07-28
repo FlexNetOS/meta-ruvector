@@ -1,5 +1,4 @@
-//! Segment content hashing for the runtime's on-disk format — the single
-//! source of truth.
+//! Read-only compatibility hashing for historical runtime segments.
 //!
 //! The runtime's 0.2.0 format stores a 16-byte content hash built from four
 //! byte-rotations of an IEEE CRC32 (poly 0xEDB88320) over the payload, with
@@ -8,16 +7,8 @@
 //! and `read_path` (verifying them) delegate here. Previously each file
 //! carried its own copy of the same function.
 //!
-//! Relationship to `rvf-wire`: the wire crate defines the standard
-//! algorithm registry (0 = legacy CRC32C upgraded to XXH3-128,
-//! 1 = XXH3-128, 2 = SHAKE-256/128) which is NOT byte-compatible with this
-//! legacy hash — the runtime historically labelled its CRC-rotation hash
-//! with `checksum_algo = 0`, which rvf-wire interprets as XXH3-128.
-//! Migrating the runtime onto the rvf-wire registry therefore requires a
-//! format-version bump plus a dual-accept reader (verify XXH3 first, fall
-//! back to this legacy hash) so existing .rvf files keep opening. That
-//! migration is tracked as follow-up work; until then this module keeps the
-//! 0.2.0 on-disk contract byte-for-byte intact.
+//! Canonical writes are owned by `rvf-wire` and use SHAKE-256/128 with padded
+//! framing. This module must never be called by a writer.
 
 /// Compute the legacy 16-byte content hash: IEEE CRC32 over the payload
 /// (via `crc32fast`), rotated left by 0/8/16/24 bits to fill four distinct

@@ -236,7 +236,7 @@ impl TieredMemory {
             .ok_or("Tier not found")?
             .insert(page)?;
 
-        self.page_index.write().unwrap().insert(page_id, tier);
+        self.page_index.write().unwrap_or_else(std::sync::PoisonError::into_inner).insert(page_id, tier);
         Ok(())
     }
 
@@ -246,7 +246,7 @@ impl TieredMemory {
         let current_tier = self
             .page_index
             .read()
-            .unwrap()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
             .get(&page_id)
             .copied()
             .ok_or("Page not found")?;
@@ -273,7 +273,7 @@ impl TieredMemory {
         let current_tier = self
             .page_index
             .read()
-            .unwrap()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
             .get(&page_id)
             .copied()
             .ok_or("Page not found")?;
@@ -319,7 +319,7 @@ impl TieredMemory {
         // Update index
         self.page_index
             .write()
-            .unwrap()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
             .insert(page_id, target_tier);
 
         // Log migration
@@ -340,7 +340,7 @@ impl TieredMemory {
         let current_tier = self
             .page_index
             .read()
-            .unwrap()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
             .get(&page_id)
             .copied()
             .ok_or("Page not found")?;
@@ -374,7 +374,7 @@ impl TieredMemory {
         // Update index
         self.page_index
             .write()
-            .unwrap()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
             .insert(page_id, target_tier);
 
         // Log migration
@@ -483,7 +483,7 @@ impl TieredMemory {
 
     /// Log migration event
     fn log_migration(&self, event: MigrationEvent) {
-        let mut log = self.migration_log.write().unwrap();
+        let mut log = self.migration_log.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         log.push_back(event);
 
         // Keep log bounded
@@ -511,8 +511,8 @@ impl TieredMemory {
             l2: self.tier_stats(Tier::L2Cxl),
             l3: self.tier_stats(Tier::L3Ssd),
             l4: self.tier_stats(Tier::L4Hdd),
-            total_pages: self.page_index.read().unwrap().len(),
-            migration_count: self.migration_log.read().unwrap().len(),
+            total_pages: self.page_index.read().unwrap_or_else(std::sync::PoisonError::into_inner).len(),
+            migration_count: self.migration_log.read().unwrap_or_else(std::sync::PoisonError::into_inner).len(),
         }
     }
 }

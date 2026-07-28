@@ -142,7 +142,7 @@ impl EntropyConsensus {
     /// Get current entropy of belief distribution
     #[wasm_bindgen]
     pub fn entropy(&self) -> f32 {
-        let beliefs = self.beliefs.read().unwrap();
+        let beliefs = self.beliefs.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         self.compute_entropy(&beliefs)
     }
 
@@ -159,7 +159,7 @@ impl EntropyConsensus {
             return None;
         }
 
-        let beliefs = self.beliefs.read().unwrap();
+        let beliefs = self.beliefs.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         beliefs.iter()
             .max_by(|a, b| a.1.partial_cmp(b.1).unwrap_or(std::cmp::Ordering::Equal))
             .map(|(&id, _)| id)
@@ -168,7 +168,7 @@ impl EntropyConsensus {
     /// Get number of negotiation rounds completed
     #[wasm_bindgen(js_name = getRounds)]
     pub fn get_rounds(&self) -> usize {
-        *self.negotiation_rounds.read().unwrap()
+        *self.negotiation_rounds.read().unwrap_or_else(std::sync::PoisonError::into_inner)
     }
 
     /// Get the entropy threshold for convergence
@@ -180,13 +180,13 @@ impl EntropyConsensus {
     /// Check if negotiation has timed out
     #[wasm_bindgen(js_name = hasTimedOut)]
     pub fn has_timed_out(&self) -> bool {
-        *self.negotiation_rounds.read().unwrap() >= self.max_rounds
+        *self.negotiation_rounds.read().unwrap_or_else(std::sync::PoisonError::into_inner) >= self.max_rounds
     }
 
     /// Get belief probability for a decision
     #[wasm_bindgen(js_name = getBelief)]
     pub fn get_belief(&self, decision_id: u64) -> f32 {
-        self.beliefs.read().unwrap()
+        self.beliefs.read().unwrap_or_else(std::sync::PoisonError::into_inner)
             .get(&decision_id)
             .copied()
             .unwrap_or(0.0)
@@ -196,7 +196,7 @@ impl EntropyConsensus {
     #[wasm_bindgen(js_name = setBelief)]
     pub fn set_belief(&self, decision_id: u64, probability: f32) {
         let prob = probability.clamp(self.min_prob, 1.0);
-        self.beliefs.write().unwrap().insert(decision_id, prob);
+        self.beliefs.write().unwrap_or_else(std::sync::PoisonError::into_inner).insert(decision_id, prob);
         self.normalize_beliefs();
     }
 
@@ -204,7 +204,7 @@ impl EntropyConsensus {
     /// Call normalize_beliefs() after all set_belief_raw calls
     pub fn set_belief_raw(&self, decision_id: u64, probability: f32) {
         let prob = probability.clamp(self.min_prob, 1.0);
-        self.beliefs.write().unwrap().insert(decision_id, prob);
+        self.beliefs.write().unwrap_or_else(std::sync::PoisonError::into_inner).insert(decision_id, prob);
     }
 
     /// Manually trigger normalization (for use after set_belief_raw)
@@ -215,19 +215,19 @@ impl EntropyConsensus {
     /// Get number of decision options
     #[wasm_bindgen(js_name = optionCount)]
     pub fn option_count(&self) -> usize {
-        self.beliefs.read().unwrap().len()
+        self.beliefs.read().unwrap_or_else(std::sync::PoisonError::into_inner).len()
     }
 
     /// Get current temperature (for annealing)
     #[wasm_bindgen(js_name = getTemperature)]
     pub fn get_temperature(&self) -> f32 {
-        *self.temperature.read().unwrap()
+        *self.temperature.read().unwrap_or_else(std::sync::PoisonError::into_inner)
     }
 
     /// Get entropy history as JSON
     #[wasm_bindgen(js_name = getEntropyHistory)]
     pub fn get_entropy_history(&self) -> String {
-        let history = self.entropy_history.read().unwrap();
+        let history = self.entropy_history.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         serde_json::to_string(&*history).unwrap_or_else(|_| "[]".to_string())
     }
 
@@ -235,10 +235,10 @@ impl EntropyConsensus {
     #[wasm_bindgen(js_name = getStats)]
     pub fn get_stats(&self) -> String {
         let entropy = self.entropy();
-        let rounds = *self.negotiation_rounds.read().unwrap();
+        let rounds = *self.negotiation_rounds.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         let converged = entropy < self.entropy_threshold;
-        let temp = *self.temperature.read().unwrap();
-        let options = self.beliefs.read().unwrap().len();
+        let temp = *self.temperature.read().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let options = self.beliefs.read().unwrap_or_else(std::sync::PoisonError::into_inner).len();
 
         format!(
             r#"{{"entropy":{:.4},"rounds":{},"converged":{},"temperature":{:.4},"options":{},"threshold":{:.4}}}"#,
@@ -249,10 +249,10 @@ impl EntropyConsensus {
     /// Reset consensus state for new decision
     #[wasm_bindgen]
     pub fn reset(&self) {
-        *self.beliefs.write().unwrap() = FxHashMap::default();
-        *self.negotiation_rounds.write().unwrap() = 0;
-        *self.temperature.write().unwrap() = self.initial_temperature;
-        self.entropy_history.write().unwrap().clear();
+        *self.beliefs.write().unwrap_or_else(std::sync::PoisonError::into_inner) = FxHashMap::default();
+        *self.negotiation_rounds.write().unwrap_or_else(std::sync::PoisonError::into_inner) = 0;
+        *self.temperature.write().unwrap_or_else(std::sync::PoisonError::into_inner) = self.initial_temperature;
+        self.entropy_history.write().unwrap_or_else(std::sync::PoisonError::into_inner).clear();
     }
 }
 
@@ -290,7 +290,7 @@ impl EntropyConsensus {
 
         // Apply temperature-scaled mixing if annealing is enabled
         let effective_peer_weight = if self.enable_annealing {
-            let temp = *self.temperature.read().unwrap();
+            let temp = *self.temperature.read().unwrap_or_else(std::sync::PoisonError::into_inner);
             peer_weight * temp
         } else {
             peer_weight
@@ -299,7 +299,7 @@ impl EntropyConsensus {
         let effective_local_weight = 1.0 - effective_peer_weight;
 
         {
-            let mut beliefs = self.beliefs.write().unwrap();
+            let mut beliefs = self.beliefs.write().unwrap_or_else(std::sync::PoisonError::into_inner);
 
             // Update beliefs for all known decisions
             for (decision_id, peer_prob) in peer_beliefs {
@@ -326,20 +326,20 @@ impl EntropyConsensus {
 
         // Update negotiation round count
         {
-            let mut rounds = self.negotiation_rounds.write().unwrap();
+            let mut rounds = self.negotiation_rounds.write().unwrap_or_else(std::sync::PoisonError::into_inner);
             *rounds += 1;
         }
 
         // Update temperature (simulated annealing)
         if self.enable_annealing {
-            let mut temp = self.temperature.write().unwrap();
+            let mut temp = self.temperature.write().unwrap_or_else(std::sync::PoisonError::into_inner);
             *temp = (*temp * 0.95).max(0.01); // Exponential cooling
         }
 
         // Record entropy history
         {
             let entropy = self.entropy();
-            let mut history = self.entropy_history.write().unwrap();
+            let mut history = self.entropy_history.write().unwrap_or_else(std::sync::PoisonError::into_inner);
             history.push(entropy);
         }
     }
@@ -355,7 +355,7 @@ impl EntropyConsensus {
     /// Add a decision option with initial belief
     pub fn add_option(&self, decision: Decision, initial_belief: f32) {
         let prob = initial_belief.clamp(self.min_prob, 1.0);
-        self.beliefs.write().unwrap().insert(decision.id(), prob);
+        self.beliefs.write().unwrap_or_else(std::sync::PoisonError::into_inner).insert(decision.id(), prob);
         self.normalize_beliefs();
     }
 
@@ -365,7 +365,7 @@ impl EntropyConsensus {
             return None;
         }
 
-        let beliefs = self.beliefs.read().unwrap();
+        let beliefs = self.beliefs.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         beliefs.iter()
             .max_by(|a, b| a.1.partial_cmp(b.1).unwrap_or(std::cmp::Ordering::Equal))
             .map(|(&id, &prob)| (id, prob))
@@ -373,13 +373,13 @@ impl EntropyConsensus {
 
     /// Get all beliefs as a map
     pub fn get_all_beliefs(&self) -> FxHashMap<u64, f32> {
-        self.beliefs.read().unwrap().clone()
+        self.beliefs.read().unwrap_or_else(std::sync::PoisonError::into_inner).clone()
     }
 
     /// Set multiple beliefs at once (normalized together)
     /// This avoids the issue where individual set_belief calls normalize prematurely
     pub fn set_beliefs(&self, new_beliefs: &[(u64, f32)]) {
-        let mut beliefs = self.beliefs.write().unwrap();
+        let mut beliefs = self.beliefs.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         for (decision_id, probability) in new_beliefs {
             let prob = probability.clamp(self.min_prob, 1.0);
             beliefs.insert(*decision_id, prob);
@@ -406,7 +406,7 @@ impl EntropyConsensus {
 
     /// Normalize beliefs to sum to 1.0
     fn normalize_beliefs(&self) {
-        let mut beliefs = self.beliefs.write().unwrap();
+        let mut beliefs = self.beliefs.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         let sum: f32 = beliefs.values().sum();
 
         if sum > 0.0 && sum != 1.0 {
@@ -467,14 +467,14 @@ impl ConsensusCoordinator {
 
     /// Start consensus for a topic
     pub fn start_consensus(&self, topic: &str, config: EntropyConsensusConfig) {
-        let mut instances = self.instances.write().unwrap();
+        let mut instances = self.instances.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         instances.insert(topic.to_string(), EntropyConsensus::with_config(config));
-        *self.phase.write().unwrap() = ConsensusPhase::Proposal;
+        *self.phase.write().unwrap_or_else(std::sync::PoisonError::into_inner) = ConsensusPhase::Proposal;
     }
 
     /// Get consensus instance for topic
     pub fn get_instance(&self, topic: &str) -> Option<EntropyConsensus> {
-        self.instances.read().unwrap().get(topic).map(|c| {
+        self.instances.read().unwrap_or_else(std::sync::PoisonError::into_inner).get(topic).map(|c| {
             // Return a new instance with same state
             let config = EntropyConsensusConfig {
                 entropy_threshold: c.entropy_threshold,
@@ -490,10 +490,10 @@ impl ConsensusCoordinator {
 
     /// Advance phase based on state
     pub fn advance_phase(&self, topic: &str) -> ConsensusPhase {
-        let instances = self.instances.read().unwrap();
+        let instances = self.instances.read().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         if let Some(consensus) = instances.get(topic) {
-            let mut phase = self.phase.write().unwrap();
+            let mut phase = self.phase.write().unwrap_or_else(std::sync::PoisonError::into_inner);
 
             match *phase {
                 ConsensusPhase::Proposal => {
@@ -527,7 +527,7 @@ impl ConsensusCoordinator {
 
     /// Get current phase
     pub fn current_phase(&self) -> ConsensusPhase {
-        *self.phase.read().unwrap()
+        *self.phase.read().unwrap_or_else(std::sync::PoisonError::into_inner)
     }
 }
 
