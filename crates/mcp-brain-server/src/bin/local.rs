@@ -734,7 +734,7 @@ async fn health(State(st): State<SharedState>) -> Json<serde_json::Value> {
 }
 
 async fn brain_info(State(st): State<SharedState>) -> Json<serde_json::Value> {
-    let db = st.db.lock().unwrap();
+    let db = st.db.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
     let mem_count: i64 = db
         .query_row("SELECT count(*) FROM memories", [], |r| r.get(0))
         .unwrap_or(0);
@@ -758,7 +758,7 @@ async fn store_mode_handler(State(st): State<SharedState>) -> Json<serde_json::V
 }
 
 async fn index_stats(State(st): State<SharedState>) -> Json<serde_json::Value> {
-    let idx = st.index.lock().unwrap();
+    let idx = st.index.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
     let mode = if idx.len() < 2000 {
         "brute_force"
     } else {
@@ -828,12 +828,12 @@ async fn brain_search(
     // Request extra results from index to account for DB misses and dedup
     let fetch_k = (k * 3).max(10);
     let results = {
-        let idx = st.index.lock().unwrap();
+        let idx = st.index.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
         idx.search(&query_vec, fetch_k)
     };
 
     // Fetch metadata for each result, deduplicate by content_hash
-    let db = st.db.lock().unwrap();
+    let db = st.db.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
     let mut items = Vec::new();
     let mut seen_hashes = std::collections::HashSet::new();
     for (score, id_hex) in &results {
@@ -911,7 +911,7 @@ async fn embed_text(text: &str) -> Result<Vec<f32>, String> {
 }
 
 async fn brain_checkpoint(State(st): State<SharedState>) -> Json<serde_json::Value> {
-    let db = st.db.lock().unwrap();
+    let db = st.db.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
     let result = db.execute_batch("PRAGMA wal_checkpoint(PASSIVE);");
     Json(serde_json::json!({
         "ok": result.is_ok(),
@@ -1062,7 +1062,7 @@ async fn brain_export_pairs_inner(
     let limit = q.limit.unwrap_or(1000).min(10000);
     let jsonl = q.format.as_deref() == Some("jsonl");
 
-    let db = st.db.lock().unwrap();
+    let db = st.db.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
     let mut stmt = match db.prepare(
         "SELECT p.chosen, p.rejected, p.direction,
                 mc.embedding, mc.quality, mc.content_hash,
@@ -1143,7 +1143,7 @@ struct TrainingStats {
 }
 
 async fn brain_training_stats(State(st): State<SharedState>) -> Json<TrainingStats> {
-    let db = st.db.lock().unwrap();
+    let db = st.db.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
 
     let total: i64 = db
         .query_row("SELECT count(*) FROM preference_pairs", [], |r| r.get(0))
@@ -1198,7 +1198,7 @@ async fn list_memories(
 ) -> Json<serde_json::Value> {
     let limit = q.limit.unwrap_or(20).min(500);
     let offset = q.offset.unwrap_or(0);
-    let db = st.db.lock().unwrap();
+    let db = st.db.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
 
     // Get total count for this query
     let total: i64 = match &q.category {
@@ -1317,7 +1317,7 @@ async fn create_memory(
     // Write content to blob store
     blob_write(&st.blob_dir, &hash, &req.content);
 
-    let db = st.db.lock().unwrap();
+    let db = st.db.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
     let result = db.execute(
         "INSERT INTO memories (id, category, content_hash, created_at, embedding, quality)
          VALUES (?1, ?2, ?3, ?4, ?5, 0.5)",
@@ -1329,7 +1329,7 @@ async fn create_memory(
             // Add to index if we have an embedding
             if !emb_blob.is_empty() {
                 let emb = bytes_to_f32(&emb_blob);
-                let mut idx = st.index.lock().unwrap();
+                let mut idx = st.index.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
                 idx.insert(&id_hex, &req.category, &emb);
             }
             (
@@ -1355,7 +1355,7 @@ async fn get_memory(
     Path(id_str): Path<String>,
 ) -> Result<Json<serde_json::Value>, StatusCode> {
     let id_blob = hex_to_id(&id_str).ok_or(StatusCode::BAD_REQUEST)?;
-    let db = st.db.lock().unwrap();
+    let db = st.db.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
     let row_data = db.query_row(
         "SELECT hex(id), category, content_hash, created_at, quality FROM memories WHERE id = ?1",
         [&id_blob],
@@ -1396,7 +1396,7 @@ async fn list_preference_pairs(
     Query(q): Query<PairListQuery>,
 ) -> Json<serde_json::Value> {
     let limit = q.limit.unwrap_or(20).min(500);
-    let db = st.db.lock().unwrap();
+    let db = st.db.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
 
     let (sql, params): (String, Vec<Box<dyn rusqlite::types::ToSql>>) = match &q.direction {
         Some(dir) => (
@@ -1473,7 +1473,7 @@ async fn create_preference_pair(
     let id_hex = id_hex(&id);
     let now = now_epoch();
 
-    let db = st.db.lock().unwrap();
+    let db = st.db.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
     let result = db.execute(
         "INSERT INTO preference_pairs (id, chosen, rejected, direction, created_at) VALUES (?1, ?2, ?3, ?4, ?5)",
         rusqlite::params![id, chosen, rejected, req.direction, now],
@@ -1527,7 +1527,7 @@ async fn security_status() -> Json<serde_json::Value> {
 // ── Learning Stats ──────────────────────────────────────────────────────────
 
 async fn learning_stats(State(st): State<SharedState>) -> Json<serde_json::Value> {
-    let db = st.db.lock().unwrap();
+    let db = st.db.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
 
     let memories: i64 = db
         .query_row("SELECT count(*) FROM memories", [], |r| r.get(0))

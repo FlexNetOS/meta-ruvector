@@ -89,7 +89,7 @@ impl FsBackend {
     ) -> Result<()> {
         let filename = filename.into();
         Self::validate_filename(&filename)?;
-        let mut idx = self.index.write().unwrap();
+        let mut idx = self.index.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         idx.insert(collection.into(), filename);
         Ok(())
     }
@@ -202,7 +202,7 @@ impl FsBackend {
     }
 
     fn path_of(&self, collection: &str) -> Result<PathBuf> {
-        let idx = self.index.read().unwrap();
+        let idx = self.index.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         let fname = idx
             .get(collection)
             .ok_or_else(|| RuLakeError::UnknownCollection {
@@ -233,7 +233,7 @@ impl BackendAdapter for FsBackend {
     }
 
     fn list_collections(&self) -> Result<Vec<CollectionId>> {
-        Ok(self.index.read().unwrap().keys().cloned().collect())
+        Ok(self.index.read().unwrap_or_else(std::sync::PoisonError::into_inner).keys().cloned().collect())
     }
 
     fn pull_vectors(&self, collection: &str) -> Result<PulledBatch> {

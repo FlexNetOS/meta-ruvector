@@ -355,13 +355,13 @@ impl ReputationCurve {
     /// Get node count
     #[wasm_bindgen(js_name = getNodeCount)]
     pub fn get_node_count(&self) -> usize {
-        self.reputations.read().unwrap().len()
+        self.reputations.read().unwrap_or_else(std::sync::PoisonError::into_inner).len()
     }
 
     /// Get average reputation
     #[wasm_bindgen(js_name = getAverageReputation)]
     pub fn get_average_reputation(&self) -> f32 {
-        let reps = self.reputations.read().unwrap();
+        let reps = self.reputations.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         if reps.is_empty() {
             return 0.0;
         }
@@ -372,7 +372,7 @@ impl ReputationCurve {
     /// Get reputation for a specific node
     #[wasm_bindgen(js_name = getReputation)]
     pub fn get_reputation(&self, node_id: &str) -> f32 {
-        self.reputations.read().unwrap()
+        self.reputations.read().unwrap_or_else(std::sync::PoisonError::into_inner)
             .get(node_id)
             .map(|r| r.reputation)
             .unwrap_or(0.0)
@@ -381,13 +381,13 @@ impl ReputationCurve {
     /// Get current epoch
     #[wasm_bindgen(js_name = getEpoch)]
     pub fn get_epoch(&self) -> u64 {
-        *self.epoch.read().unwrap()
+        *self.epoch.read().unwrap_or_else(std::sync::PoisonError::into_inner)
     }
 
     /// Get tier distribution as JSON
     #[wasm_bindgen(js_name = getTierDistribution)]
     pub fn get_tier_distribution(&self) -> String {
-        let reps = self.reputations.read().unwrap();
+        let reps = self.reputations.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         let mut newcomer = 0;
         let mut bronze = 0;
         let mut silver = 0;
@@ -428,7 +428,7 @@ impl ReputationCurve {
         let now = js_sys::Date::now() as u64;
         let initial_rep = self.reputation_from_stake(initial_stake).min(50.0); // Cap initial rep
 
-        let mut reps = self.reputations.write().unwrap();
+        let mut reps = self.reputations.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         reps.entry(node_id.to_string()).or_insert(NodeReputation {
             node_id: node_id.to_string(),
             reputation: initial_rep,
@@ -444,7 +444,7 @@ impl ReputationCurve {
     /// Record task completion and update reputation
     pub fn record_task(&self, node_id: &str, success: bool, compute_seconds: u64) {
         let now = js_sys::Date::now() as u64;
-        let mut reps = self.reputations.write().unwrap();
+        let mut reps = self.reputations.write().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         if let Some(rep) = reps.get_mut(node_id) {
             rep.tasks_completed += 1;
@@ -469,7 +469,7 @@ impl ReputationCurve {
     /// Update stake for a node
     pub fn update_stake(&self, node_id: &str, new_stake: u64) {
         let now = js_sys::Date::now() as u64;
-        let mut reps = self.reputations.write().unwrap();
+        let mut reps = self.reputations.write().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         if let Some(rep) = reps.get_mut(node_id) {
             rep.stake_locked = new_stake;
@@ -479,10 +479,10 @@ impl ReputationCurve {
 
     /// Apply decay to all reputations (call once per epoch)
     pub fn apply_decay(&self) {
-        let mut epoch = self.epoch.write().unwrap();
+        let mut epoch = self.epoch.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         *epoch += 1;
 
-        let mut reps = self.reputations.write().unwrap();
+        let mut reps = self.reputations.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         let decay_factor = 1.0 - self.config.decay_rate;
 
         for rep in reps.values_mut() {
@@ -499,12 +499,12 @@ impl ReputationCurve {
 
     /// Get node reputation record
     pub fn get_node_reputation(&self, node_id: &str) -> Option<NodeReputation> {
-        self.reputations.read().unwrap().get(node_id).cloned()
+        self.reputations.read().unwrap_or_else(std::sync::PoisonError::into_inner).get(node_id).cloned()
     }
 
     /// Get top nodes by reputation
     pub fn get_top_nodes(&self, limit: usize) -> Vec<NodeReputation> {
-        let reps = self.reputations.read().unwrap();
+        let reps = self.reputations.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         let mut nodes: Vec<_> = reps.values().cloned().collect();
         nodes.sort_by(|a, b| b.reputation.partial_cmp(&a.reputation).unwrap());
         nodes.into_iter().take(limit).collect()
@@ -512,7 +512,7 @@ impl ReputationCurve {
 
     /// Select nodes for task allocation using weighted random selection
     pub fn select_nodes_for_task(&self, count: usize, excluded: &[String]) -> Vec<String> {
-        let reps = self.reputations.read().unwrap();
+        let reps = self.reputations.read().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         // Filter eligible nodes and calculate weights
         let eligible: Vec<_> = reps.values()
@@ -547,7 +547,7 @@ impl ReputationCurve {
     /// Slash reputation for misbehavior
     pub fn slash_reputation(&self, node_id: &str, amount: f32, reason: &str) {
         let now = js_sys::Date::now() as u64;
-        let mut reps = self.reputations.write().unwrap();
+        let mut reps = self.reputations.write().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         if let Some(rep) = reps.get_mut(node_id) {
             rep.reputation = (rep.reputation - amount).max(0.0);
@@ -558,7 +558,7 @@ impl ReputationCurve {
 
     /// Prune inactive nodes with zero reputation
     pub fn prune_inactive(&self) {
-        let mut reps = self.reputations.write().unwrap();
+        let mut reps = self.reputations.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         reps.retain(|_, r| r.reputation > 0.1 || r.stake_locked > 0);
     }
 }

@@ -182,13 +182,13 @@ impl SwarmIntelligence {
             ..Default::default()
         };
         let consensus = EntropyConsensus::with_config(config);
-        self.active_topics.write().unwrap().insert(topic.to_string(), consensus);
+        self.active_topics.write().unwrap_or_else(std::sync::PoisonError::into_inner).insert(topic.to_string(), consensus);
     }
 
     /// Set belief for a topic's decision
     #[wasm_bindgen(js_name = setBelief)]
     pub fn set_belief(&self, topic: &str, decision_id: u64, probability: f32) {
-        if let Some(consensus) = self.active_topics.write().unwrap().get(topic) {
+        if let Some(consensus) = self.active_topics.write().unwrap_or_else(std::sync::PoisonError::into_inner).get(topic) {
             consensus.set_belief(decision_id, probability);
         }
     }
@@ -201,7 +201,7 @@ impl SwarmIntelligence {
             Err(_) => return false,
         };
 
-        if let Some(consensus) = self.active_topics.write().unwrap().get(topic) {
+        if let Some(consensus) = self.active_topics.write().unwrap_or_else(std::sync::PoisonError::into_inner).get(topic) {
             consensus.negotiate(&beliefs);
             true
         } else {
@@ -212,7 +212,7 @@ impl SwarmIntelligence {
     /// Check if topic has reached consensus
     #[wasm_bindgen(js_name = hasConsensus)]
     pub fn has_consensus(&self, topic: &str) -> bool {
-        self.active_topics.read().unwrap()
+        self.active_topics.read().unwrap_or_else(std::sync::PoisonError::into_inner)
             .get(topic)
             .map(|c| c.converged())
             .unwrap_or(false)
@@ -221,7 +221,7 @@ impl SwarmIntelligence {
     /// Get consensus decision for topic
     #[wasm_bindgen(js_name = getConsensusDecision)]
     pub fn get_consensus_decision(&self, topic: &str) -> Option<u64> {
-        self.active_topics.read().unwrap()
+        self.active_topics.read().unwrap_or_else(std::sync::PoisonError::into_inner)
             .get(topic)
             .and_then(|c| c.get_decision())
     }
@@ -270,7 +270,7 @@ impl SwarmIntelligence {
     #[wasm_bindgen(js_name = getStats)]
     pub fn get_stats(&self) -> String {
         let memory_stats = self.memory.get_stats();
-        let active_topics = self.active_topics.read().unwrap().len();
+        let active_topics = self.active_topics.read().unwrap_or_else(std::sync::PoisonError::into_inner).len();
 
         format!(
             r#"{{"node_id":"{}","active_topics":{},"memory":{}}}"#,
@@ -287,7 +287,7 @@ impl SwarmIntelligence {
 
     /// Get consensus for a topic
     pub fn get_consensus(&self, topic: &str) -> Option<EntropyConsensus> {
-        self.active_topics.read().unwrap()
+        self.active_topics.read().unwrap_or_else(std::sync::PoisonError::into_inner)
             .get(topic)
             .map(|c| {
                 // Create new consensus with same config
@@ -301,7 +301,7 @@ impl SwarmIntelligence {
 
     /// Set multiple beliefs for a topic at once (avoids intermediate normalization)
     pub fn set_beliefs(&self, topic: &str, beliefs: &[(u64, f32)]) {
-        if let Some(consensus) = self.active_topics.write().unwrap().get(topic) {
+        if let Some(consensus) = self.active_topics.write().unwrap_or_else(std::sync::PoisonError::into_inner).get(topic) {
             consensus.set_beliefs(beliefs);
         }
     }

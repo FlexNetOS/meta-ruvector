@@ -394,7 +394,7 @@ impl DiscoveryPipeline {
         let records = self.ingester.ingest_all(&source).await?;
 
         {
-            let mut stats = self.stats.write().unwrap();
+            let mut stats = self.stats.write().unwrap_or_else(std::sync::PoisonError::into_inner);
             stats.records_processed = records.len() as u64;
         }
 
@@ -403,7 +403,7 @@ impl DiscoveryPipeline {
         let signals = self.coherence.compute_from_records(&records)?;
 
         {
-            let mut stats = self.stats.write().unwrap();
+            let mut stats = self.stats.write().unwrap_or_else(std::sync::PoisonError::into_inner);
             stats.signals_computed = signals.len() as u64;
             stats.nodes_created = self.coherence.node_count() as u64;
             stats.edges_created = self.coherence.edge_count() as u64;
@@ -414,7 +414,7 @@ impl DiscoveryPipeline {
         let patterns = self.discovery.detect(&signals)?;
 
         {
-            let mut stats = self.stats.write().unwrap();
+            let mut stats = self.stats.write().unwrap_or_else(std::sync::PoisonError::into_inner);
             stats.patterns_discovered = patterns.len() as u64;
             stats.duration_ms = start_time.elapsed().as_millis() as u64;
         }
@@ -430,7 +430,7 @@ impl DiscoveryPipeline {
 
     /// Get current statistics
     pub fn stats(&self) -> DiscoveryStats {
-        self.stats.read().unwrap().clone()
+        self.stats.read().unwrap_or_else(std::sync::PoisonError::into_inner).clone()
     }
 }
 

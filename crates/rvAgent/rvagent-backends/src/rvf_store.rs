@@ -72,19 +72,19 @@ impl<B: Backend> RvfStoreBackend<B> {
         manifest: RvfManifest,
         verify_status: RvfVerifyStatus,
     ) -> RvfMountHandle {
-        let mut table = self.mount_table.lock().unwrap();
+        let mut table = self.mount_table.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
         table.mount(manifest, verify_status)
     }
 
     /// Unmount a package by handle.
     pub fn unmount_package(&self, handle: RvfMountHandle) -> bool {
-        let mut table = self.mount_table.lock().unwrap();
+        let mut table = self.mount_table.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
         table.unmount(handle)
     }
 
     /// List all tools from mounted packages.
     pub fn mounted_tools(&self) -> Vec<MountedToolInfo> {
-        let table = self.mount_table.lock().unwrap();
+        let table = self.mount_table.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
         table
             .all_tools()
             .into_iter()
@@ -128,7 +128,7 @@ pub struct MountedToolInfo {
 impl<B: Backend + 'static> Backend for RvfStoreBackend<B> {
     async fn ls_info(&self, path: &str) -> Vec<FileInfo> {
         if Self::is_rvf_path(path) {
-            let table = self.mount_table.lock().unwrap();
+            let table = self.mount_table.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
             if let Some((pkg_name, _internal)) = Self::parse_rvf_path(path) {
                 if pkg_name.is_empty() {
                     // List all mounted packages
@@ -181,7 +181,7 @@ impl<B: Backend + 'static> Backend for RvfStoreBackend<B> {
         limit: usize,
     ) -> Result<String, FileOperationError> {
         if Self::is_rvf_path(file_path) {
-            let table = self.mount_table.lock().unwrap();
+            let table = self.mount_table.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
             if let Some((pkg_name, internal_path)) = Self::parse_rvf_path(file_path) {
                 // O(1) lookup by name via index
                 if let Some(entry) = table.get_by_name(pkg_name) {
@@ -246,7 +246,7 @@ impl<B: Backend + 'static> Backend for RvfStoreBackend<B> {
 
     async fn glob_info(&self, pattern: &str, path: &str) -> Vec<FileInfo> {
         if Self::is_rvf_path(path) {
-            let table = self.mount_table.lock().unwrap();
+            let table = self.mount_table.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
             let search = pattern.trim_start_matches('*').trim_end_matches('*');
             let mut results = Vec::new();
             for entry in table.list() {
@@ -466,7 +466,7 @@ mod tests {
         let handle = backend.mount_package(sample_manifest(), RvfVerifyStatus::SignatureValid);
         assert!(backend.unmount_package(handle));
 
-        let table = backend.mount_table().lock().unwrap();
+        let table = backend.mount_table().lock().unwrap_or_else(std::sync::PoisonError::into_inner);
         assert!(table.is_empty());
     }
 

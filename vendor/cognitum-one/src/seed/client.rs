@@ -200,7 +200,7 @@ impl SeedClient {
     /// failover state machine transparently cycles (per ADR-0016a §D3).
     pub fn session(&self) -> SeedSession<'_> {
         let pinned_peer = {
-            let guard = self.inner.peers.lock().expect("peers lock poisoned");
+            let guard = self.inner.peers.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
             guard.pick().endpoint.key()
         };
         SeedSession {
@@ -212,7 +212,7 @@ impl SeedClient {
     /// Snapshot view of the SDK-local peer table (ADR-0016a §D7 —
     /// `client.peers()`).
     pub fn peers(&self) -> Vec<Peer> {
-        let guard = self.inner.peers.lock().expect("peers lock poisoned");
+        let guard = self.inner.peers.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
         guard.peers().to_vec()
     }
 
@@ -936,7 +936,7 @@ impl SeedClientBuilder {
         // seed the TokenBook for every peer (ADR-0016a §D5 "single token
         // for all peers when the caller asserts they share").
         if let SeedAuth::PairingToken(tok) = &self.auth {
-            let guard = peers.lock().expect("peers lock poisoned");
+            let guard = peers.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
             for p in guard.peers() {
                 if token_book.get(&p.endpoint.key()).is_none() {
                     token_book.set(&p.endpoint.key(), tok.clone());
@@ -1111,7 +1111,7 @@ mod tests {
             .routing(Routing::Session)
             .build()
             .expect("mesh builds");
-        assert_eq!(client.inner().peers.lock().unwrap().len(), 2);
+        assert_eq!(client.inner().peers.lock().unwrap_or_else(std::sync::PoisonError::into_inner).len(), 2);
     }
 
     #[test]

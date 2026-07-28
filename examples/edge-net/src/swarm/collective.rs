@@ -387,19 +387,19 @@ impl CollectiveMemory {
     /// Get pattern count in shared index
     #[wasm_bindgen(js_name = patternCount)]
     pub fn pattern_count(&self) -> usize {
-        self.shared_patterns.read().unwrap().len()
+        self.shared_patterns.read().unwrap_or_else(std::sync::PoisonError::into_inner).len()
     }
 
     /// Get queue size
     #[wasm_bindgen(js_name = queueSize)]
     pub fn queue_size(&self) -> usize {
-        self.consolidation_queue.lock().unwrap().len()
+        self.consolidation_queue.lock().unwrap_or_else(std::sync::PoisonError::into_inner).len()
     }
 
     /// Get statistics as JSON
     #[wasm_bindgen(js_name = getStats)]
     pub fn get_stats(&self) -> String {
-        let stats = self.stats.read().unwrap();
+        let stats = self.stats.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         serde_json::to_string(&*stats).unwrap_or_else(|_| "{}".to_string())
     }
 
@@ -407,8 +407,8 @@ impl CollectiveMemory {
     #[wasm_bindgen]
     pub fn consolidate(&self) -> usize {
         let mut consolidated = 0;
-        let mut queue = self.consolidation_queue.lock().unwrap();
-        let mut index = self.shared_patterns.write().unwrap();
+        let mut queue = self.consolidation_queue.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut index = self.shared_patterns.write().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         let batch_size = self.batch_size.min(queue.len());
 
@@ -422,7 +422,7 @@ impl CollectiveMemory {
                         if *sim > self.merge_threshold {
                             // Merge with existing pattern
                             // Note: In production, we'd modify the existing pattern
-                            self.stats.write().unwrap().patterns_merged += 1;
+                            self.stats.write().unwrap_or_else(std::sync::PoisonError::into_inner).patterns_merged += 1;
                         } else {
                             // Add as new pattern
                             index.insert(pattern);
@@ -434,15 +434,15 @@ impl CollectiveMemory {
                         consolidated += 1;
                     }
 
-                    self.stats.write().unwrap().patterns_accepted += 1;
+                    self.stats.write().unwrap_or_else(std::sync::PoisonError::into_inner).patterns_accepted += 1;
                 } else {
-                    self.stats.write().unwrap().patterns_rejected += 1;
+                    self.stats.write().unwrap_or_else(std::sync::PoisonError::into_inner).patterns_rejected += 1;
                 }
             }
         }
 
         if consolidated > 0 || batch_size > 0 {
-            self.stats.write().unwrap().consolidation_runs += 1;
+            self.stats.write().unwrap_or_else(std::sync::PoisonError::into_inner).consolidation_runs += 1;
         }
 
         consolidated
@@ -456,7 +456,7 @@ impl CollectiveMemory {
             Err(_) => return "[]".to_string(),
         };
 
-        let index = self.shared_patterns.read().unwrap();
+        let index = self.shared_patterns.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         let results = index.search(&query, k);
 
         let results_json: Vec<_> = results.iter()
@@ -480,7 +480,7 @@ impl CollectiveMemory {
     /// Check if a pattern ID exists
     #[wasm_bindgen(js_name = hasPattern)]
     pub fn has_pattern(&self, pattern_id: &str) -> bool {
-        self.shared_patterns.read().unwrap().get(pattern_id).is_some()
+        self.shared_patterns.read().unwrap_or_else(std::sync::PoisonError::into_inner).get(pattern_id).is_some()
     }
 }
 
@@ -553,10 +553,10 @@ impl CollectiveMemory {
         }
 
         // Add to consolidation queue
-        let mut queue = self.consolidation_queue.lock().unwrap();
+        let mut queue = self.consolidation_queue.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
         if queue.len() < self.max_patterns {
             queue.push_back(pattern);
-            self.stats.write().unwrap().patterns_received += 1;
+            self.stats.write().unwrap_or_else(std::sync::PoisonError::into_inner).patterns_received += 1;
             true
         } else {
             false
@@ -569,7 +569,7 @@ impl CollectiveMemory {
             return false;
         }
 
-        let mut queue = self.consolidation_queue.lock().unwrap();
+        let mut queue = self.consolidation_queue.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
         if queue.len() < self.max_patterns {
             queue.push_back(pattern);
             true
@@ -587,7 +587,7 @@ impl CollectiveMemory {
             return 0;
         }
 
-        let index = self.shared_patterns.read().unwrap();
+        let index = self.shared_patterns.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         let patterns: Vec<_> = index.patterns.iter()
             .filter(|p| p.quality > 0.9) // Only high-quality patterns
             .take(10) // Limit replay batch
@@ -601,7 +601,7 @@ impl CollectiveMemory {
         // 3. Prune weak connections
 
         if replayed > 0 {
-            self.stats.write().unwrap().replay_events += replayed;
+            self.stats.write().unwrap_or_else(std::sync::PoisonError::into_inner).replay_events += replayed;
         }
 
         replayed
@@ -634,12 +634,12 @@ impl CollectiveMemory {
 
     /// Get pattern by ID
     pub fn get_pattern(&self, id: &str) -> Option<Pattern> {
-        self.shared_patterns.read().unwrap().get(id).cloned()
+        self.shared_patterns.read().unwrap_or_else(std::sync::PoisonError::into_inner).get(id).cloned()
     }
 
     /// Get patterns by similarity threshold
     pub fn get_similar_patterns(&self, embedding: &[f32], threshold: f32) -> Vec<Pattern> {
-        let index = self.shared_patterns.read().unwrap();
+        let index = self.shared_patterns.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         let results = index.search(embedding, 20);
 
         results.iter()
@@ -650,7 +650,7 @@ impl CollectiveMemory {
 
     /// Export patterns as JSON for sharing
     pub fn export_patterns(&self) -> String {
-        let index = self.shared_patterns.read().unwrap();
+        let index = self.shared_patterns.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         serde_json::to_string(&index.patterns).unwrap_or_else(|_| "[]".to_string())
     }
 

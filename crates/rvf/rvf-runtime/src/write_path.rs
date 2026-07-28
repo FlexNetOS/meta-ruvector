@@ -6,7 +6,7 @@
 //! 3. Write segment header + payload, fsync
 //! 4. Build new MANIFEST_SEG, fsync (two-fsync protocol)
 
-use rvf_types::{SegmentHeader, SegmentType, SEGMENT_HEADER_SIZE};
+use rvf_types::{SegmentFlags, SegmentType};
 use std::io::{self, Seek, Write};
 
 /// Segment writer that handles the append-only write protocol.
@@ -184,6 +184,38 @@ impl SegmentWriter {
         deleted_ids: &[u64],
         file_identity: Option<&rvf_types::FileIdentity>,
     ) -> io::Result<(u64, u64)> {
+        self.write_manifest_seg_with_state(
+            writer,
+            epoch,
+            dimension,
+            total_vectors,
+            profile_id,
+            metric_id,
+            segment_dir,
+            deleted_ids,
+            file_identity,
+            0,
+            0,
+        )
+    }
+
+    /// Write a manifest including the anti-replay generations for the latest
+    /// COW_MAP and MEMBERSHIP directory entries.
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn write_manifest_seg_with_state<W: Write + Seek>(
+        &mut self,
+        writer: &mut W,
+        epoch: u32,
+        dimension: u16,
+        total_vectors: u64,
+        profile_id: u8,
+        metric_id: u8,
+        segment_dir: &[(u64, u64, u64, u8)],
+        deleted_ids: &[u64],
+        file_identity: Option<&rvf_types::FileIdentity>,
+        cow_map_generation: u32,
+        membership_generation: u32,
+    ) -> io::Result<(u64, u64)> {
         let seg_id = self.alloc_seg_id();
 
         // Build manifest payload.
@@ -192,7 +224,8 @@ impl SegmentWriter {
         let payload_size = 4 + 2 + 8 + 4 + 1 + 3 // header fields
             + (segment_dir.len() * (8 + 8 + 8 + 1)) // directory
             + 4 + (deleted_ids.len() * 8) // deletion bitmap
-            + if file_identity.is_some() { 4 + 68 } else { 0 }; // lineage marker + identity
+            + if file_identity.is_some() { 4 + 68 } else { 0 } // lineage marker + identity
+            + 12; // RVGN marker + two generations
 
         let mut payload = Vec::with_capacity(payload_size);
 
@@ -227,6 +260,12 @@ impl SegmentWriter {
             payload.extend_from_slice(&0x4649_4449u32.to_le_bytes()); // "FIDI"
             payload.extend_from_slice(&fi.to_bytes());
         }
+
+        // Versioned state trailer. Older readers ignore it after parsing the
+        // optional identity; new readers use it to reject replayed metadata.
+        payload.extend_from_slice(&0x5256_474Eu32.to_le_bytes()); // "RVGN"
+        payload.extend_from_slice(&cow_map_generation.to_le_bytes());
+        payload.extend_from_slice(&membership_generation.to_le_bytes());
 
         let offset = self.write_segment(writer, SegmentType::Manifest as u8, seg_id, &payload)?;
         Ok((seg_id, offset))
@@ -436,7 +475,7 @@ impl SegmentWriter {
 
     /// Low-level: write a segment header + payload to the writer.
     /// Returns the byte offset where the segment was written.
-    fn write_segment<W: Write + Seek>(
+    pub(crate) fn write_payload_seg<W: Write + Seek>(
         &self,
         writer: &mut W,
         seg_type: u8,
@@ -444,21 +483,19 @@ impl SegmentWriter {
         payload: &[u8],
     ) -> io::Result<u64> {
         let offset = writer.stream_position()?;
-
-        let mut header = SegmentHeader::new(seg_type, seg_id);
-        header.payload_length = payload.len() as u64;
-
-        // Content hash: single shared implementation (see crate::hashing).
-        header.content_hash = crate::hashing::legacy_content_hash(payload);
-
-        // Write header as raw bytes.
-        let header_bytes = header_to_bytes(&header);
-        writer.write_all(&header_bytes)?;
-
-        // Write payload.
-        writer.write_all(payload)?;
-
+        let frame = rvf_wire::write_segment(seg_type, payload, SegmentFlags::empty(), seg_id);
+        writer.write_all(&frame)?;
         Ok(offset)
+    }
+
+    fn write_segment<W: Write + Seek>(
+        &self,
+        writer: &mut W,
+        seg_type: u8,
+        seg_id: u64,
+        payload: &[u8],
+    ) -> io::Result<u64> {
+        self.write_payload_seg(writer, seg_type, seg_id, payload)
     }
 
     /// Current next segment ID.
@@ -468,30 +505,10 @@ impl SegmentWriter {
     }
 }
 
-/// Convert a SegmentHeader to its 64-byte wire representation.
-fn header_to_bytes(h: &SegmentHeader) -> [u8; SEGMENT_HEADER_SIZE] {
-    let mut buf = [0u8; SEGMENT_HEADER_SIZE];
-    buf[0x00..0x04].copy_from_slice(&h.magic.to_le_bytes());
-    buf[0x04] = h.version;
-    buf[0x05] = h.seg_type;
-    buf[0x06..0x08].copy_from_slice(&h.flags.to_le_bytes());
-    buf[0x08..0x10].copy_from_slice(&h.segment_id.to_le_bytes());
-    buf[0x10..0x18].copy_from_slice(&h.payload_length.to_le_bytes());
-    buf[0x18..0x20].copy_from_slice(&h.timestamp_ns.to_le_bytes());
-    buf[0x20] = h.checksum_algo;
-    buf[0x21] = h.compression;
-    buf[0x22..0x24].copy_from_slice(&h.reserved_0.to_le_bytes());
-    buf[0x24..0x28].copy_from_slice(&h.reserved_1.to_le_bytes());
-    buf[0x28..0x38].copy_from_slice(&h.content_hash);
-    buf[0x38..0x3C].copy_from_slice(&h.uncompressed_len.to_le_bytes());
-    buf[0x3C..0x40].copy_from_slice(&h.alignment_pad.to_le_bytes());
-    buf
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rvf_types::SEGMENT_MAGIC;
+    use rvf_types::{SEGMENT_ALIGNMENT, SEGMENT_HEADER_SIZE, SEGMENT_MAGIC};
     use std::io::Cursor;
 
     #[test]
@@ -529,10 +546,18 @@ mod tests {
     }
 
     #[test]
-    fn header_to_bytes_size() {
-        let h = SegmentHeader::new(0x01, 42);
-        let bytes = header_to_bytes(&h);
-        assert_eq!(bytes.len(), SEGMENT_HEADER_SIZE);
+    fn writes_canonical_shake_padded_frame() {
+        let mut buf = Cursor::new(Vec::new());
+        let writer = SegmentWriter::new(1);
+        writer
+            .write_payload_seg(&mut buf, SegmentType::Meta as u8, 42, b"canonical")
+            .unwrap();
+        let bytes = buf.into_inner();
+        assert_eq!(bytes.len() % SEGMENT_ALIGNMENT, 0);
+        let (header, payload) = rvf_wire::read_segment(&bytes).unwrap();
+        rvf_wire::validate_segment(&header, payload).unwrap();
+        assert_eq!(header.checksum_algo, 2);
+        assert!(header.alignment_pad > 0);
     }
 
     #[test]

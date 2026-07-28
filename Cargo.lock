@@ -11890,9 +11890,11 @@ name = "rvf-runtime"
 version = "0.3.0"
 dependencies = [
  "crc32fast",
+ "rvf-crypto",
  "rvf-index",
  "rvf-quant",
  "rvf-types",
+ "rvf-wire",
 ]
 
 [[package]]
@@ -11904,8 +11906,8 @@ name = "rvf-wire"
 version = "0.1.0"
 dependencies = [
  "crc32c",
+ "rvf-crypto",
  "rvf-types",
- "sha3",
  "subtle",
  "xxhash-rust",
 ]

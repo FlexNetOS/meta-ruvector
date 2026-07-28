@@ -241,7 +241,7 @@ impl MmapNeuralField {
         }
 
         // Read from memory-mapped region (zero-copy)
-        let mmap = self.mmap.read().unwrap();
+        let mmap = self.mmap.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         let byte_slice = &mmap[byte_start..byte_end];
 
         // Reinterpret as f32 slice
@@ -280,7 +280,7 @@ impl MmapNeuralField {
         }
 
         // Write to memory-mapped region
-        let mut mmap = self.mmap.write().unwrap();
+        let mut mmap = self.mmap.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         let byte_slice = &mut mmap[byte_start..byte_end];
 
         // Reinterpret as f32 slice
@@ -293,7 +293,7 @@ impl MmapNeuralField {
 
         // Mark page as dirty
         let page_id = addr / self.page_size as u64;
-        if let Some(page) = self.pages.write().unwrap().get_mut(&page_id) {
+        if let Some(page) = self.pages.write().unwrap_or_else(std::sync::PoisonError::into_inner).get_mut(&page_id) {
             page.is_dirty = true;
         }
 
@@ -302,19 +302,19 @@ impl MmapNeuralField {
 
     /// Flush dirty pages to disk (async)
     pub fn flush(&self) -> Result<()> {
-        self.mmap.write().unwrap().flush_async()
+        self.mmap.write().unwrap_or_else(std::sync::PoisonError::into_inner).flush_async()
     }
 
     /// Get page metadata
     pub fn get_page(&self, page_id: u64) -> Option<PageMetadata> {
-        self.pages.read().unwrap().get(&page_id).cloned()
+        self.pages.read().unwrap_or_else(std::sync::PoisonError::into_inner).get(&page_id).cloned()
     }
 
     /// Record access for prefetch prediction
     fn record_access(&self, page_id: u64, tier: StorageTier, latency_us: u64) {
         // Update page metadata
         {
-            let mut pages = self.pages.write().unwrap();
+            let mut pages = self.pages.write().unwrap_or_else(std::sync::PoisonError::into_inner);
             let page = pages
                 .entry(page_id)
                 .or_insert_with(|| PageMetadata::new(page_id, self.page_size));
@@ -323,7 +323,7 @@ impl MmapNeuralField {
 
         // Log access
         {
-            let mut log = self.access_log.write().unwrap();
+            let mut log = self.access_log.write().unwrap_or_else(std::sync::PoisonError::into_inner);
             log.push(AccessEntry {
                 page_id,
                 timestamp: Instant::now(),
@@ -340,14 +340,14 @@ impl MmapNeuralField {
 
     /// Get recent access patterns (for prefetch prediction)
     pub fn recent_accesses(&self, count: usize) -> Vec<AccessEntry> {
-        let log = self.access_log.read().unwrap();
+        let log = self.access_log.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         log.iter().rev().take(count).cloned().collect()
     }
 
     /// Get statistics
     pub fn stats(&self) -> FieldStats {
-        let pages = self.pages.read().unwrap();
-        let log = self.access_log.read().unwrap();
+        let pages = self.pages.read().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let log = self.access_log.read().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         let total_pages = pages.len();
         let dirty_pages = pages.values().filter(|p| p.is_dirty).count();

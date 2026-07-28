@@ -186,7 +186,7 @@ async fn demo_pattern_detection() -> Result<(), Box<dyn std::error::Error>> {
 
     engine
         .set_pattern_callback(move |pattern| {
-            let mut count = pc.lock().unwrap();
+            let mut count = pc.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
             *count += 1;
             println!("  🔍 Pattern detected: {:?}", pattern.pattern.pattern_type);
             println!("     Confidence: {:.2}", pattern.pattern.confidence);
@@ -217,7 +217,7 @@ async fn demo_pattern_detection() -> Result<(), Box<dyn std::error::Error>> {
     engine.ingest_stream(vector_stream).await?;
 
     let metrics = engine.metrics().await;
-    let total_patterns = *pattern_count.lock().unwrap();
+    let total_patterns = *pattern_count.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
 
     println!("\n✓ Processed {} vectors", metrics.vectors_processed);
     println!(

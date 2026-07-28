@@ -30,7 +30,7 @@ impl<T: Send + 'static> BufferPool<T> {
 
         // Pre-allocate initial buffers
         if memory_opt_enabled() {
-            let mut pool_lock = pool.lock().unwrap();
+            let mut pool_lock = pool.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
             for _ in 0..initial_size {
                 pool_lock.push_back(factory());
             }
@@ -48,7 +48,7 @@ impl<T: Send + 'static> BufferPool<T> {
         let buffer = if memory_opt_enabled() {
             self.pool
                 .lock()
-                .unwrap()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
                 .pop_front()
                 .unwrap_or_else(|| (self.factory)())
         } else {
@@ -63,12 +63,12 @@ impl<T: Send + 'static> BufferPool<T> {
 
     /// Get current pool size
     pub fn size(&self) -> usize {
-        self.pool.lock().unwrap().len()
+        self.pool.lock().unwrap_or_else(std::sync::PoisonError::into_inner).len()
     }
 
     /// Clear the pool
     pub fn clear(&self) {
-        self.pool.lock().unwrap().clear();
+        self.pool.lock().unwrap_or_else(std::sync::PoisonError::into_inner).clear();
     }
 }
 
@@ -94,7 +94,7 @@ impl<T> Drop for PooledBuffer<T> {
     fn drop(&mut self) {
         if memory_opt_enabled() {
             if let Some(buffer) = self.buffer.take() {
-                let mut pool = self.pool.lock().unwrap();
+                let mut pool = self.pool.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
                 pool.push_back(buffer);
             }
         }

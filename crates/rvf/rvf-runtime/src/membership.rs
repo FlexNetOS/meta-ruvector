@@ -14,6 +14,7 @@ use rvf_types::membership::{FilterMode, MembershipHeader, MEMBERSHIP_MAGIC};
 use rvf_types::{ErrorCode, RvfError};
 
 /// Membership filter backed by a dense bitmap.
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MembershipFilter {
     /// Include or exclude mode.
     mode: FilterMode,
@@ -130,8 +131,20 @@ impl MembershipFilter {
     }
 
     /// Increment generation ID.
-    pub fn bump_generation(&mut self) {
-        self.generation_id += 1;
+    pub fn bump_generation(&mut self) -> Result<(), RvfError> {
+        self.generation_id = self
+            .generation_id
+            .checked_add(1)
+            .ok_or(RvfError::Code(ErrorCode::GenerationStale))?;
+        Ok(())
+    }
+
+    pub(crate) fn set_generation(&mut self, generation_id: u32) -> Result<(), RvfError> {
+        if generation_id == 0 {
+            return Err(RvfError::Code(ErrorCode::GenerationStale));
+        }
+        self.generation_id = generation_id;
+        Ok(())
     }
 
     /// Serialize the bitmap to bytes (just the raw bitmap words).
@@ -145,14 +158,14 @@ impl MembershipFilter {
 
     /// Deserialize a MembershipFilter from bitmap bytes and a header.
     pub fn deserialize(data: &[u8], header: &MembershipHeader) -> Result<Self, RvfError> {
+        // `rvf-wire` is the sole validator for persisted membership payloads.
+        rvf_wire::encode_membership(header, data)?;
         let mode = FilterMode::try_from(header.filter_mode)
             .map_err(|_| RvfError::Code(ErrorCode::MembershipInvalid))?;
 
-        let word_count = header.vector_count.div_ceil(64) as usize;
-        let expected_bytes = word_count * 8;
-        if data.len() < expected_bytes {
-            return Err(RvfError::Code(ErrorCode::MembershipInvalid));
-        }
+        let word_count_u64 = header.vector_count.div_ceil(64);
+        let word_count = usize::try_from(word_count_u64)
+            .map_err(|_| RvfError::Code(ErrorCode::MembershipInvalid))?;
 
         let mut bitmap = Vec::with_capacity(word_count);
         for i in 0..word_count {
@@ -170,22 +183,31 @@ impl MembershipFilter {
             bitmap.push(word);
         }
 
-        // Recount set bits
-        let member_count: u64 = bitmap.iter().map(|w| w.count_ones() as u64).sum();
-
         Ok(Self {
             mode,
             bitmap,
             vector_count: header.vector_count,
-            member_count,
+            member_count: header.member_count,
             generation_id: header.generation_id,
         })
+    }
+
+    /// Encode the complete canonical MEMBERSHIP payload.
+    pub fn encode_payload(&self) -> Result<Vec<u8>, RvfError> {
+        let bitmap = self.serialize();
+        rvf_wire::encode_membership(&self.to_header(), &bitmap)
+    }
+
+    /// Decode a complete canonical MEMBERSHIP payload.
+    pub fn decode_payload(payload: &[u8]) -> Result<Self, RvfError> {
+        let decoded = rvf_wire::decode_membership(payload)?;
+        Self::deserialize(&decoded.filter, &decoded.header)
     }
 
     /// Build a MembershipHeader for this filter.
     pub fn to_header(&self) -> MembershipHeader {
         let bitmap_bytes = self.serialize();
-        let filter_hash = crate::store::simple_shake256_256(&bitmap_bytes);
+        let filter_hash = rvf_crypto::shake256_256(&bitmap_bytes);
 
         MembershipHeader {
             magic: MEMBERSHIP_MAGIC,
@@ -282,6 +304,7 @@ mod tests {
         filter.add(64);
         filter.add(127);
         filter.add(199);
+        filter.bump_generation().unwrap();
 
         let header = filter.to_header();
         let bitmap_data = filter.serialize();
@@ -302,8 +325,47 @@ mod tests {
     fn generation_bump() {
         let mut filter = MembershipFilter::new_include(10);
         assert_eq!(filter.generation_id(), 0);
-        filter.bump_generation();
+        filter.bump_generation().unwrap();
         assert_eq!(filter.generation_id(), 1);
+    }
+
+    #[test]
+    fn deserialize_rejects_hash_count_trailing_and_unused_bits() {
+        let mut filter = MembershipFilter::new_include(65);
+        filter.add(0);
+        filter.add(64);
+        filter.bump_generation().unwrap();
+        let header = filter.to_header();
+        let bytes = filter.serialize();
+
+        let mut bad_hash = header;
+        bad_hash.filter_hash[0] ^= 1;
+        assert!(MembershipFilter::deserialize(&bytes, &bad_hash).is_err());
+
+        let mut bad_count = header;
+        bad_count.member_count += 1;
+        assert!(MembershipFilter::deserialize(&bytes, &bad_count).is_err());
+
+        let mut trailing = bytes.clone();
+        trailing.push(0);
+        assert!(MembershipFilter::deserialize(&trailing, &header).is_err());
+
+        let mut unused = bytes;
+        unused[15] |= 0x80;
+        let mut unused_header = header;
+        unused_header.filter_hash = rvf_crypto::shake256_256(&unused);
+        unused_header.member_count += 1;
+        assert!(MembershipFilter::deserialize(&unused, &unused_header).is_err());
+    }
+
+    #[test]
+    fn generation_overflow_fails() {
+        let mut filter = MembershipFilter::new_include(1);
+        filter.generation_id = u32::MAX;
+        assert_eq!(
+            filter.bump_generation(),
+            Err(RvfError::Code(ErrorCode::GenerationStale))
+        );
     }
 
     #[test]

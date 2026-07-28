@@ -191,8 +191,8 @@ fn serialization_round_trip_include() {
     for &id in &test_ids {
         filter.add(id);
     }
-    filter.bump_generation();
-    filter.bump_generation();
+    filter.bump_generation().unwrap();
+    filter.bump_generation().unwrap();
 
     let header = filter.to_header();
     let bitmap_data = filter.serialize();
@@ -238,6 +238,7 @@ fn serialization_round_trip_exclude() {
     let mut filter = MembershipFilter::new_exclude(200);
     filter.add(10); // exclude vector 10
     filter.add(100); // exclude vector 100
+    filter.bump_generation().unwrap();
 
     let header = filter.to_header();
     let bitmap_data = filter.serialize();
@@ -268,11 +269,11 @@ fn generation_id_tracking() {
     let mut filter = MembershipFilter::new_include(64);
     assert_eq!(filter.generation_id(), 0);
 
-    filter.bump_generation();
+    filter.bump_generation().unwrap();
     assert_eq!(filter.generation_id(), 1);
 
-    filter.bump_generation();
-    filter.bump_generation();
+    filter.bump_generation().unwrap();
+    filter.bump_generation().unwrap();
     assert_eq!(filter.generation_id(), 3);
 
     // Serialize and verify generation survives
@@ -300,6 +301,7 @@ fn large_filter_stress() {
         filter.add(id);
         expected_count += 1;
     }
+    filter.bump_generation().unwrap();
 
     assert_eq!(filter.member_count(), expected_count);
 

@@ -932,7 +932,7 @@ mod async_tests {
 
         // Submit requests
         {
-            let mut q = queue.lock().unwrap();
+            let mut q = queue.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
             for _ in 0..8 {
                 q.submit(InferenceRequest::new(
                     vec![1, 2, 3, 4, 5],
@@ -945,7 +945,7 @@ mod async_tests {
         let mut processed = 0;
         while processed < 8 {
             let batch = {
-                let mut q = queue.lock().unwrap();
+                let mut q = queue.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
                 scheduler.schedule(&mut q)
             };
 

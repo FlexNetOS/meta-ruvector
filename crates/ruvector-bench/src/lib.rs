@@ -250,7 +250,7 @@ impl MemoryProfiler {
         {
             use jemalloc_ctl::{epoch, stats};
             epoch::mib().unwrap().advance().unwrap();
-            let allocated = stats::allocated::mib().unwrap().read().unwrap();
+            let allocated = stats::allocated::mib().unwrap().read().unwrap_or_else(std::sync::PoisonError::into_inner);
             Self {
                 initial_allocated: allocated,
             }
@@ -266,7 +266,7 @@ impl MemoryProfiler {
         {
             use jemalloc_ctl::{epoch, stats};
             epoch::mib().unwrap().advance().unwrap();
-            let allocated = stats::allocated::mib().unwrap().read().unwrap();
+            let allocated = stats::allocated::mib().unwrap().read().unwrap_or_else(std::sync::PoisonError::into_inner);
             (allocated - self.initial_allocated) as f64 / 1_048_576.0
         }
         #[cfg(not(feature = "profiling"))]

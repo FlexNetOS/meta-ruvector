@@ -203,8 +203,7 @@ async fn bounded_channel_drops_oldest_without_blocking_producer() {
     // it comes in well under 100 ms because `broadcast::send` is
     // non-blocking.
     let burst_dur = elapsed
-        .lock()
-        .expect("runner recorded elapsed — runner did not run to completion");
+        .lock().unwrap_or_else(std::sync::PoisonError::into_inner);
     assert!(
         burst_dur < Duration::from_secs(5),
         "producer burst took {:?} — expected <5s, producer appears to be blocked",

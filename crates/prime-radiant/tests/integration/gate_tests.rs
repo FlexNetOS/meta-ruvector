@@ -601,7 +601,7 @@ fn test_gate_thread_safety_simulation() {
             let gate = Arc::clone(&gate);
             thread::spawn(move || {
                 let energy = 0.1 * (i as f32);
-                let mut gate = gate.lock().unwrap();
+                let mut gate = gate.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
                 let decision = gate.decide(energy);
                 (i, decision)
             })

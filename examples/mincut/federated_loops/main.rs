@@ -471,7 +471,7 @@ impl FederationConsensus {
         let mut response_patterns = Vec::new();
         for cluster_id in registry.all_ids() {
             if let Some(endpoint) = registry.get(&cluster_id) {
-                let endpoint = endpoint.lock().unwrap();
+                let endpoint = endpoint.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
                 // Simulate response spike pattern based on cluster state
                 let response = SpikePattern {
                     cluster_id: cluster_id.clone(),
@@ -837,7 +837,7 @@ impl FederatedStrangeLoop {
 
         for cluster_id in self.registry.all_ids() {
             if let Some(endpoint) = self.registry.get(&cluster_id) {
-                let endpoint = endpoint.lock().unwrap();
+                let endpoint = endpoint.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
                 let response = endpoint.observe();
 
                 let observation = ClusterObservation {
@@ -916,7 +916,7 @@ impl FederatedStrangeLoop {
         action: Option<MetaAction>,
     ) {
         if let Some(endpoint) = self.registry.get(cluster_id) {
-            let mut endpoint = endpoint.lock().unwrap();
+            let mut endpoint = endpoint.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
             for (i, &delta) in delta_meta.iter().enumerate() {
                 endpoint.update_state(i, delta);
             }
@@ -1007,7 +1007,7 @@ fn main() {
     println!("Registered 3 cluster endpoints:");
     for id in federation.registry.all_ids() {
         if let Some(endpoint) = federation.registry.get(&id) {
-            let e = endpoint.lock().unwrap();
+            let e = endpoint.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
             println!(
                 "  • {} (nodes: {}, mincut: {:.2}, sync: {:.2})",
                 id.0, e.stats.node_count, e.mincut, e.synchrony
@@ -1238,7 +1238,7 @@ fn main() {
     println!("\nFinal cluster states:");
     for id in federation.registry.all_ids() {
         if let Some(endpoint) = federation.registry.get(&id) {
-            let e = endpoint.lock().unwrap();
+            let e = endpoint.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
             println!(
                 "  {} -> mincut: {:.2}, sync: {:.2}, meta: {:?}",
                 id.0,

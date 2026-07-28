@@ -51,7 +51,7 @@ impl Embedding for DelayWorker {
             &request,
             &request.get_ref().request_id,
         );
-        self.seen_request_ids.lock().unwrap().push(observed);
+        self.seen_request_ids.lock().unwrap_or_else(std::sync::PoisonError::into_inner).push(observed);
         self.calls.fetch_add(1, Ordering::SeqCst);
         if self.delay_ms > 0 {
             tokio::time::sleep(Duration::from_millis(self.delay_ms)).await;
@@ -95,7 +95,7 @@ impl Embedding for DelayWorker {
             &request,
             &request.get_ref().request_id,
         );
-        self.seen_request_ids.lock().unwrap().push(observed);
+        self.seen_request_ids.lock().unwrap_or_else(std::sync::PoisonError::into_inner).push(observed);
         let req = request.into_inner();
         let (tx, rx) = tokio::sync::mpsc::channel::<Result<EmbedStreamResponse, Status>>(
             req.texts.len().max(1),
@@ -569,7 +569,7 @@ fn caller_supplied_request_id_propagates_to_worker() {
         .embed_one_blocking_with_request_id("hello", "trace-12345")
         .expect("embed should succeed");
 
-    let observed = seen.lock().unwrap().clone();
+    let observed = seen.lock().unwrap_or_else(std::sync::PoisonError::into_inner).clone();
     assert_eq!(
         observed,
         vec!["trace-12345".to_string()],
@@ -581,7 +581,7 @@ fn caller_supplied_request_id_propagates_to_worker() {
     let _ = cluster
         .embed_one_blocking("world")
         .expect("embed should succeed");
-    let observed = seen.lock().unwrap().clone();
+    let observed = seen.lock().unwrap_or_else(std::sync::PoisonError::into_inner).clone();
     assert_eq!(observed.len(), 2);
     assert_ne!(observed[1], "trace-12345");
     assert!(
@@ -613,7 +613,7 @@ fn caller_supplied_request_id_propagates_through_batch() {
         )
         .expect("batch embed should succeed");
 
-    let observed = seen.lock().unwrap().clone();
+    let observed = seen.lock().unwrap_or_else(std::sync::PoisonError::into_inner).clone();
     // One streaming RPC, one entry in seen.
     assert_eq!(observed, vec!["batch-trace-99".to_string()]);
 
@@ -621,7 +621,7 @@ fn caller_supplied_request_id_propagates_through_batch() {
     let _ = cluster
         .embed_batch_blocking(&["d".to_string()])
         .expect("plain batch should succeed");
-    let observed = seen.lock().unwrap().clone();
+    let observed = seen.lock().unwrap_or_else(std::sync::PoisonError::into_inner).clone();
     assert_eq!(observed.len(), 2);
     assert_ne!(observed[1], "batch-trace-99");
     assert!(!observed[1].is_empty());
@@ -659,7 +659,7 @@ fn async_embed_one_with_request_id_propagates() {
     });
     let _ = result.expect("async embed_one_with_request_id should succeed");
 
-    let observed = seen.lock().unwrap().clone();
+    let observed = seen.lock().unwrap_or_else(std::sync::PoisonError::into_inner).clone();
     assert_eq!(observed, vec!["async-trace-42".to_string()]);
 }
 
@@ -696,6 +696,6 @@ fn async_embed_batch_with_request_id_propagates() {
     assert_eq!(vectors.len(), 3);
 
     // One streaming RPC, one captured id.
-    let observed = seen.lock().unwrap().clone();
+    let observed = seen.lock().unwrap_or_else(std::sync::PoisonError::into_inner).clone();
     assert_eq!(observed, vec!["async-batch-trace-7".to_string()]);
 }

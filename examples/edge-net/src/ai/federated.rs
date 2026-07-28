@@ -174,13 +174,13 @@ impl TopKSparsifier {
     /// Get error feedback buffer size
     #[wasm_bindgen(js_name = getErrorBufferSize)]
     pub fn get_error_buffer_size(&self) -> usize {
-        self.error_feedback.read().unwrap().len()
+        self.error_feedback.read().unwrap_or_else(std::sync::PoisonError::into_inner).len()
     }
 
     /// Reset error feedback buffer
     #[wasm_bindgen(js_name = resetErrorFeedback)]
     pub fn reset_error_feedback(&self) {
-        self.error_feedback.write().unwrap().clear();
+        self.error_feedback.write().unwrap_or_else(std::sync::PoisonError::into_inner).clear();
     }
 }
 
@@ -206,7 +206,7 @@ impl TopKSparsifier {
 
         // Add error feedback from previous round
         let mut accumulated = {
-            let error = self.error_feedback.read().unwrap();
+            let error = self.error_feedback.read().unwrap_or_else(std::sync::PoisonError::into_inner);
             if error.len() == n {
                 gradients.iter()
                     .zip(error.iter())
@@ -249,7 +249,7 @@ impl TopKSparsifier {
         };
 
         // Store residuals as error feedback for next round
-        *self.error_feedback.write().unwrap() = accumulated;
+        *self.error_feedback.write().unwrap_or_else(std::sync::PoisonError::into_inner) = accumulated;
 
         sparse
     }
@@ -660,19 +660,19 @@ impl GradientGossip {
     /// Get number of active peers
     #[wasm_bindgen(js_name = peerCount)]
     pub fn peer_count(&self) -> usize {
-        self.peer_gradients.read().unwrap().len()
+        self.peer_gradients.read().unwrap_or_else(std::sync::PoisonError::into_inner).len()
     }
 
     /// Get gradient dimension
     #[wasm_bindgen(js_name = getDimension)]
     pub fn get_dimension(&self) -> usize {
-        self.local_gradients.read().unwrap().len()
+        self.local_gradients.read().unwrap_or_else(std::sync::PoisonError::into_inner).len()
     }
 
     /// Set local gradients from JavaScript
     #[wasm_bindgen(js_name = setLocalGradients)]
     pub fn set_local_gradients(&self, gradients: &[f32]) -> Result<(), JsValue> {
-        let mut local = self.local_gradients.write().unwrap();
+        let mut local = self.local_gradients.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         if gradients.len() != local.len() {
             return Err(JsValue::from_str("Gradient dimension mismatch"));
         }
@@ -692,7 +692,7 @@ impl GradientGossip {
         if hash.len() != 32 {
             return Err(JsValue::from_str("Model hash must be 32 bytes"));
         }
-        let mut model_hash = self.model_hash.write().unwrap();
+        let mut model_hash = self.model_hash.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         model_hash.copy_from_slice(hash);
         Ok(())
     }
@@ -700,13 +700,13 @@ impl GradientGossip {
     /// Enable/disable differential privacy
     #[wasm_bindgen(js_name = setDPEnabled)]
     pub fn set_dp_enabled(&self, enabled: bool) {
-        self.dp.write().unwrap().set_enabled(enabled);
+        self.dp.write().unwrap_or_else(std::sync::PoisonError::into_inner).set_enabled(enabled);
     }
 
     /// Configure differential privacy
     #[wasm_bindgen(js_name = configureDifferentialPrivacy)]
     pub fn configure_dp(&self, epsilon: f64, sensitivity: f64) {
-        let mut dp = self.dp.write().unwrap();
+        let mut dp = self.dp.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         *dp = DifferentialPrivacy::new(epsilon, sensitivity);
     }
 
@@ -720,7 +720,7 @@ impl GradientGossip {
     #[wasm_bindgen(js_name = pruneStale)]
     pub fn prune_stale(&self) -> usize {
         let current_round = self.consensus_round.load(Ordering::Relaxed);
-        let mut peers = self.peer_gradients.write().unwrap();
+        let mut peers = self.peer_gradients.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         let before = peers.len();
 
         peers.retain(|_, state| {
@@ -733,9 +733,9 @@ impl GradientGossip {
     /// Get statistics as JSON
     #[wasm_bindgen(js_name = getStats)]
     pub fn get_stats(&self) -> String {
-        let peers = self.peer_gradients.read().unwrap();
+        let peers = self.peer_gradients.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         let current_round = self.consensus_round.load(Ordering::Relaxed);
-        let dimension = self.local_gradients.read().unwrap().len();
+        let dimension = self.local_gradients.read().unwrap_or_else(std::sync::PoisonError::into_inner).len();
 
         let avg_reputation: f64 = if peers.is_empty() {
             0.0
@@ -750,7 +750,7 @@ impl GradientGossip {
             dimension,
             avg_reputation,
             self.get_compression_ratio() * 100.0,
-            self.dp.read().unwrap().is_enabled()
+            self.dp.read().unwrap_or_else(std::sync::PoisonError::into_inner).is_enabled()
         )
     }
 }
@@ -758,14 +758,14 @@ impl GradientGossip {
 impl GradientGossip {
     /// Create gradient message for sharing via gossipsub
     pub fn create_message(&self) -> Result<GradientMessage, String> {
-        let gradients = self.local_gradients.read().unwrap();
-        let model_hash = *self.model_hash.read().unwrap();
+        let gradients = self.local_gradients.read().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let model_hash = *self.model_hash.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         let round = self.consensus_round.load(Ordering::Relaxed);
 
         // Apply differential privacy if enabled
         let mut grads = gradients.clone();
         {
-            let dp = self.dp.read().unwrap();
+            let dp = self.dp.read().unwrap_or_else(std::sync::PoisonError::into_inner);
             dp.clip_l2(&mut grads);
             dp.add_noise(&mut grads);
         }
@@ -784,7 +784,7 @@ impl GradientGossip {
     /// Process received gradient message
     pub fn receive_message(&self, msg: &GradientMessage, sender_reputation: f64) -> Result<(), String> {
         // Check model compatibility
-        let model_hash = *self.model_hash.read().unwrap();
+        let model_hash = *self.model_hash.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         if msg.model_hash != model_hash && model_hash != [0u8; 32] {
             return Err("Model version mismatch".to_string());
         }
@@ -816,7 +816,7 @@ impl GradientGossip {
             round: msg.round,
         };
 
-        self.peer_gradients.write().unwrap().insert(msg.sender, state);
+        self.peer_gradients.write().unwrap_or_else(std::sync::PoisonError::into_inner).insert(msg.sender, state);
         Ok(())
     }
 
@@ -825,8 +825,8 @@ impl GradientGossip {
     /// Returns the aggregated gradient vector combining local and peer gradients
     /// with reputation-based weighting.
     pub fn aggregate(&self) -> Vec<f32> {
-        let local = self.local_gradients.read().unwrap();
-        let peers = self.peer_gradients.read().unwrap();
+        let local = self.local_gradients.read().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let peers = self.peer_gradients.read().unwrap_or_else(std::sync::PoisonError::into_inner);
         let dim = local.len();
 
         if peers.is_empty() {
@@ -884,7 +884,7 @@ impl GradientGossip {
 
     /// Get Byzantine-detected peers
     pub fn get_byzantine_peers(&self) -> Vec<PeerId> {
-        let peers = self.peer_gradients.read().unwrap();
+        let peers = self.peer_gradients.read().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         let peer_list: Vec<(&PeerId, &[f32])> = peers.iter()
             .map(|(id, state)| (id, state.gradients.as_slice()))
@@ -895,7 +895,7 @@ impl GradientGossip {
 
     /// Update peer reputation after aggregation round
     pub fn update_peer_reputation(&self, peer_id: &PeerId, new_reputation: f64) {
-        let mut peers = self.peer_gradients.write().unwrap();
+        let mut peers = self.peer_gradients.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         if let Some(state) = peers.get_mut(peer_id) {
             state.reputation = new_reputation.clamp(0.0, 1.0);
         }
@@ -903,7 +903,7 @@ impl GradientGossip {
 
     /// Get peer reputations
     pub fn get_peer_reputations(&self) -> Vec<(PeerId, f64)> {
-        self.peer_gradients.read().unwrap()
+        self.peer_gradients.read().unwrap_or_else(std::sync::PoisonError::into_inner)
             .iter()
             .map(|(id, state)| (*id, state.reputation))
             .collect()
@@ -955,19 +955,19 @@ impl FederatedModel {
     /// Get parameter dimension
     #[wasm_bindgen(js_name = getDimension)]
     pub fn get_dimension(&self) -> usize {
-        self.parameters.read().unwrap().len()
+        self.parameters.read().unwrap_or_else(std::sync::PoisonError::into_inner).len()
     }
 
     /// Get parameters as array
     #[wasm_bindgen(js_name = getParameters)]
     pub fn get_parameters(&self) -> Vec<f32> {
-        self.parameters.read().unwrap().clone()
+        self.parameters.read().unwrap_or_else(std::sync::PoisonError::into_inner).clone()
     }
 
     /// Set parameters from array
     #[wasm_bindgen(js_name = setParameters)]
     pub fn set_parameters(&self, params: &[f32]) -> Result<(), JsValue> {
-        let mut parameters = self.parameters.write().unwrap();
+        let mut parameters = self.parameters.write().unwrap_or_else(std::sync::PoisonError::into_inner);
         if params.len() != parameters.len() {
             return Err(JsValue::from_str("Parameter dimension mismatch"));
         }
@@ -978,8 +978,8 @@ impl FederatedModel {
     /// Apply aggregated gradients to update model
     #[wasm_bindgen(js_name = applyGradients)]
     pub fn apply_gradients(&self, gradients: &[f32]) -> Result<(), JsValue> {
-        let mut parameters = self.parameters.write().unwrap();
-        let mut velocity = self.velocity.write().unwrap();
+        let mut parameters = self.parameters.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut velocity = self.velocity.write().unwrap_or_else(std::sync::PoisonError::into_inner);
 
         if gradients.len() != parameters.len() {
             return Err(JsValue::from_str("Gradient dimension mismatch"));

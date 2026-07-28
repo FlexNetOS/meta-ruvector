@@ -247,7 +247,7 @@ mod tests {
     #[async_trait]
     impl ChatModel for MockModel {
         async fn complete(&self, _messages: &[Message]) -> Result<Message> {
-            let mut resps = self.responses.lock().unwrap();
+            let mut resps = self.responses.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
             if resps.is_empty() {
                 Ok(Message::ai("done"))
             } else {

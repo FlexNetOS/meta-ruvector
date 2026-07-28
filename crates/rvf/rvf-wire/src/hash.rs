@@ -3,16 +3,12 @@
 //! The segment header stores a 128-bit content hash. The algorithm is
 //! identified by the `checksum_algo` field:
 //!
-//! - 0 = deprecated CRC32C (transparently upgraded to XXH3-128)
+//! - 0 = reserved for historical runtime framing (rejected here)
 //! - 1 = XXH3-128 (default, ~50 GB/s)
 //! - 2 = SHAKE-256 first 128 bits (cryptographic, ~300 MB/s)
 //! - 3 = HMAC-SHAKE-256 (reserved, not yet implemented)
 
 use rvf_types::SegmentHeader;
-use sha3::{
-    digest::{ExtendableOutput, Update},
-    Shake256,
-};
 use subtle::ConstantTimeEq;
 
 /// Compute the XXH3-128 hash of `data`, returning a 16-byte array.
@@ -35,28 +31,22 @@ pub fn compute_crc32c(data: &[u8]) -> u32 {
 /// family. Truncating to 128 bits provides 128-bit collision resistance and
 /// post-quantum preimage resistance, at ~300 MB/s throughput.
 pub fn compute_shake256_128(data: &[u8]) -> [u8; 16] {
-    let mut hasher = Shake256::default();
-    hasher.update(data);
-    let mut out = [0u8; 16];
-    hasher.finalize_xof_into(&mut out);
-    out
+    rvf_crypto::shake256_128(data)
 }
 
 /// Compute the content hash for a payload using the algorithm specified
 /// by `algo` (the `checksum_algo` field from the segment header).
 ///
-/// - 0 = DEPRECATED CRC32C — upgraded to XXH3-128 for full 128-bit security.
+/// - 0 = reserved legacy discriminator (returns zero; legacy runtime
+///   verification lives in `rvf-runtime`).
 /// - 1 = XXH3-128 (16 bytes)
 /// - 2 = SHAKE-256 (first 128 bits, cryptographic)
-/// - 3 = HMAC-SHAKE-256 — reserved, falls back to XXH3-128 until key
-///   management is implemented.
-/// - Other values fall back to XXH3-128.
+/// - Other values are unsupported and return zero.
 pub fn compute_content_hash(algo: u8, data: &[u8]) -> [u8; 16] {
     match algo {
+        1 => compute_xxh3_128(data),
         2 => compute_shake256_128(data),
-        // 0 (deprecated CRC32C), 1 (XXH3-128), 3 (reserved HMAC), and
-        // unknown values all use XXH3-128.
-        _ => compute_xxh3_128(data),
+        _ => [0; 16],
     }
 }
 
@@ -68,6 +58,9 @@ pub fn compute_content_hash(algo: u8, data: &[u8]) -> [u8; 16] {
 ///
 /// Returns `true` if the computed hash matches `header.content_hash`.
 pub fn verify_content_hash(header: &SegmentHeader, payload: &[u8]) -> bool {
+    if !matches!(header.checksum_algo, 1 | 2) {
+        return false;
+    }
     let expected = compute_content_hash(header.checksum_algo, payload);
     expected.ct_eq(&header.content_hash).into()
 }
@@ -103,9 +96,9 @@ mod tests {
     }
 
     #[test]
-    fn compute_content_hash_dispatches_algo_0_to_xxh3() {
+    fn compute_content_hash_does_not_reinterpret_legacy_algo_zero() {
         let data = b"algo zero";
-        assert_eq!(compute_content_hash(0, data), compute_xxh3_128(data));
+        assert_eq!(compute_content_hash(0, data), [0; 16]);
     }
 
     #[test]
@@ -121,9 +114,14 @@ mod tests {
     }
 
     #[test]
-    fn compute_content_hash_unknown_algo_falls_back_to_xxh3() {
+    fn verify_content_hash_rejects_unknown_algo() {
         let data = b"unknown algo";
-        assert_eq!(compute_content_hash(255, data), compute_xxh3_128(data));
+        let header = SegmentHeader {
+            checksum_algo: 255,
+            content_hash: compute_xxh3_128(data),
+            ..SegmentHeader::new(0x01, 1)
+        };
+        assert!(!verify_content_hash(&header, data));
     }
 
     #[test]
@@ -151,8 +149,7 @@ mod tests {
     }
 
     #[test]
-    fn verify_content_hash_algo_zero_uses_xxh3() {
-        // algo=0 (formerly CRC32C) is upgraded to XXH3-128.
+    fn verify_content_hash_rejects_legacy_algo_zero() {
         let payload = b"crc payload";
         let hash = compute_xxh3_128(payload);
         let header = SegmentHeader {
@@ -171,7 +168,7 @@ mod tests {
             uncompressed_len: 0,
             alignment_pad: 0,
         };
-        assert!(verify_content_hash(&header, payload));
+        assert!(!verify_content_hash(&header, payload));
     }
 
     #[test]

@@ -117,7 +117,7 @@ impl ParallelExecutor {
                     // Execute partition
                     let batch = self.execute_partition(plan, partition_id, num_partitions);
                     if let Ok(Some(b)) = batch {
-                        results.lock().unwrap().push(b);
+                        results.lock().unwrap_or_else(std::sync::PoisonError::into_inner).push(b);
                     }
                 });
             }

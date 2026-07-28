@@ -49,16 +49,16 @@ impl MockQuDagServer {
             finalized: false,
         };
 
-        self.proposals.lock().unwrap().insert(id.clone(), proposal);
+        self.proposals.lock().unwrap_or_else(std::sync::PoisonError::into_inner).insert(id.clone(), proposal);
         id
     }
 
     pub fn get_proposal(&self, id: &str) -> Option<MockProposal> {
-        self.proposals.lock().unwrap().get(id).cloned()
+        self.proposals.lock().unwrap_or_else(std::sync::PoisonError::into_inner).get(id).cloned()
     }
 
     pub fn finalize_proposal(&self, id: &str, accept: bool) {
-        if let Some(proposal) = self.proposals.lock().unwrap().get_mut(id) {
+        if let Some(proposal) = self.proposals.lock().unwrap_or_else(std::sync::PoisonError::into_inner).get_mut(id) {
             proposal.status = if accept { "accepted" } else { "rejected" }.to_string();
             proposal.finalized = true;
             proposal.votes_for = if accept { 100 } else { 30 };
@@ -69,7 +69,7 @@ impl MockQuDagServer {
     pub fn add_pattern(&self, vector: Vec<f32>, round: u64) -> String {
         let id = format!("pat_{}", rand::random::<u64>());
 
-        self.patterns.lock().unwrap().push(MockPattern {
+        self.patterns.lock().unwrap_or_else(std::sync::PoisonError::into_inner).push(MockPattern {
             id: id.clone(),
             vector,
             round,
@@ -79,7 +79,7 @@ impl MockQuDagServer {
     }
 
     pub fn get_patterns_since(&self, round: u64) -> Vec<MockPattern> {
-        self.patterns.lock().unwrap()
+        self.patterns.lock().unwrap_or_else(std::sync::PoisonError::into_inner)
             .iter()
             .filter(|p| p.round >= round)
             .cloned()
@@ -87,15 +87,15 @@ impl MockQuDagServer {
     }
 
     pub fn set_balance(&self, node_id: &str, balance: f64) {
-        self.balances.lock().unwrap().insert(node_id.to_string(), balance);
+        self.balances.lock().unwrap_or_else(std::sync::PoisonError::into_inner).insert(node_id.to_string(), balance);
     }
 
     pub fn get_balance(&self, node_id: &str) -> f64 {
-        self.balances.lock().unwrap().get(node_id).copied().unwrap_or(0.0)
+        self.balances.lock().unwrap_or_else(std::sync::PoisonError::into_inner).get(node_id).copied().unwrap_or(0.0)
     }
 
     pub fn stake(&self, node_id: &str, amount: f64) -> Result<(), String> {
-        let mut balances = self.balances.lock().unwrap();
+        let mut balances = self.balances.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
         let balance = balances.get(node_id).copied().unwrap_or(0.0);
 
         if balance < amount {

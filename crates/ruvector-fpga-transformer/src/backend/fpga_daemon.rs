@@ -535,7 +535,7 @@ impl TransformerBackend for FpgaDaemonBackend {
     }
 
     fn stats(&self) -> BackendStats {
-        self.stats.read().unwrap().clone()
+        self.stats.read().unwrap_or_else(std::sync::PoisonError::into_inner).clone()
     }
 }
 

@@ -303,7 +303,7 @@ impl Middleware for WitnessMiddleware {
 
         // Log each tool call to the witness chain
         if !response.tool_calls.is_empty() {
-            let mut builder = self.builder.lock().unwrap();
+            let mut builder = self.builder.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
             for tc in &response.tool_calls {
                 builder.add_tool_call_entry(&tc.name, &tc.args);
             }
@@ -383,7 +383,7 @@ mod tests {
         let request = ModelRequest::new(vec![Message::user("test")]);
         let _response = mw.wrap_model_call(request, &handler);
 
-        let builder = mw.builder().lock().unwrap();
+        let builder = mw.builder().lock().unwrap_or_else(std::sync::PoisonError::into_inner);
         assert_eq!(builder.len(), 2);
         assert_eq!(builder.entries()[0].tool_name, "read_file");
         assert_eq!(builder.entries()[1].tool_name, "execute");
@@ -397,7 +397,7 @@ mod tests {
         let request = ModelRequest::new(vec![]);
         let _response = mw.wrap_model_call(request, &handler);
 
-        let builder = mw.builder().lock().unwrap();
+        let builder = mw.builder().lock().unwrap_or_else(std::sync::PoisonError::into_inner);
         assert!(builder.is_empty());
     }
 
@@ -427,7 +427,7 @@ mod tests {
         mw1.wrap_model_call(req1, &handler1);
         mw2.wrap_model_call(req2, &handler2);
 
-        let builder = builder.lock().unwrap();
+        let builder = builder.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
         assert_eq!(builder.len(), 2);
     }
 
