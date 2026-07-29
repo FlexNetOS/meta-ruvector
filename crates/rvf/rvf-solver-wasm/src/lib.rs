@@ -394,7 +394,7 @@ pub extern "C" fn rvf_solver_witness_read(handle: i32, out_ptr: i32) -> i32 {
 // Panic handler
 // ═════════════════════════════════════════════════════════════════════
 
-#[cfg(not(test))]
+#[cfg(all(not(test), target_arch = "wasm32"))]
 #[panic_handler]
 fn panic(_info: &core::panic::PanicInfo) -> ! {
     core::arch::wasm32::unreachable()

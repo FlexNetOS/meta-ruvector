@@ -766,7 +766,7 @@ pub extern "C" fn rvf_witness_count(chain_len: i32) -> i32 {
 // rvf_alloc and rvf_free are exported from alloc_setup module.
 
 /// Panic handler for no_std WASM.
-#[cfg(not(test))]
+#[cfg(all(not(test), target_arch = "wasm32"))]
 #[panic_handler]
 fn panic(_info: &core::panic::PanicInfo) -> ! {
     core::arch::wasm32::unreachable()
