@@ -450,12 +450,19 @@ pub unsafe extern "C" fn canonical_hashes_equal(a: *const u8, b: *const u8) -> i
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::Mutex;
 
-    // Each test acquires the global lock via canonical_init/canonical_free,
-    // so they are safe to run in parallel (mutex serializes access).
+    // The exported WASM API intentionally has process-global state.  The
+    // production calls lock individual operations, but a test's init/add/
+    // compute/read sequence must remain together or another test can replace
+    // the graph between calls.
+    static WASM_TEST_LOCK: Mutex<()> = Mutex::new(());
 
     #[test]
     fn test_wasm_init_and_compute() {
+        let _test_guard = WASM_TEST_LOCK
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         assert_eq!(canonical_init(3), 0);
         assert_eq!(canonical_add_edge(0, 1, 1u64 << 32), 0);
         assert_eq!(canonical_add_edge(1, 2, 1u64 << 32), 0);
@@ -479,17 +486,26 @@ mod tests {
 
     #[test]
     fn test_wasm_init_too_large() {
+        let _test_guard = WASM_TEST_LOCK
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         assert_eq!(canonical_init(100_000), -1);
     }
 
     #[test]
     fn test_wasm_add_edge_no_init() {
+        let _test_guard = WASM_TEST_LOCK
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         canonical_free();
         assert_eq!(canonical_add_edge(0, 1, 1u64 << 32), -1);
     }
 
     #[test]
     fn test_wasm_self_loop_rejected() {
+        let _test_guard = WASM_TEST_LOCK
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         assert_eq!(canonical_init(3), 0);
         assert_eq!(canonical_add_edge(0, 0, 1u64 << 32), -2);
         canonical_free();
@@ -497,6 +513,9 @@ mod tests {
 
     #[test]
     fn test_wasm_hash_comparison() {
+        let _test_guard = WASM_TEST_LOCK
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         assert_eq!(canonical_init(3), 0);
         assert_eq!(canonical_add_edge(0, 1, 1u64 << 32), 0);
         assert_eq!(canonical_add_edge(1, 2, 1u64 << 32), 0);
@@ -522,6 +541,9 @@ mod tests {
 
     #[test]
     fn test_wasm_get_side_vertices() {
+        let _test_guard = WASM_TEST_LOCK
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         assert_eq!(canonical_init(3), 0);
         assert_eq!(canonical_add_edge(0, 1, 1u64 << 32), 0);
         assert_eq!(canonical_add_edge(1, 2, 1u64 << 32), 0);
@@ -538,6 +560,9 @@ mod tests {
 
     #[test]
     fn test_wasm_null_safety() {
+        let _test_guard = WASM_TEST_LOCK
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         let rc = unsafe { canonical_get_hash(std::ptr::null_mut()) };
         assert_eq!(rc, -1);
 
@@ -557,6 +582,9 @@ mod tests {
 
     #[test]
     fn test_dynamic_wasm_init_and_compute() {
+        let _test_guard = WASM_TEST_LOCK
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         assert_eq!(dynamic_init(100), 0);
 
         // Add edges to build a triangle
@@ -574,6 +602,9 @@ mod tests {
 
     #[test]
     fn test_dynamic_wasm_add_remove() {
+        let _test_guard = WASM_TEST_LOCK
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         assert_eq!(dynamic_init(50), 0);
 
         assert_eq!(dynamic_add_edge(0, 1, 1u64 << 32), 0);
@@ -596,6 +627,9 @@ mod tests {
 
     #[test]
     fn test_dynamic_wasm_stale_check() {
+        let _test_guard = WASM_TEST_LOCK
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         assert_eq!(dynamic_init(100), 0);
 
         assert_eq!(dynamic_add_edge(0, 1, 1u64 << 32), 0);
@@ -609,6 +643,9 @@ mod tests {
 
     #[test]
     fn test_dynamic_wasm_not_initialized() {
+        let _test_guard = WASM_TEST_LOCK
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         dynamic_free();
         assert_eq!(dynamic_add_edge(0, 1, 1u64 << 32), -1);
         assert_eq!(dynamic_remove_edge(0, 1), -1);
@@ -621,6 +658,9 @@ mod tests {
 
     #[test]
     fn test_dynamic_wasm_force_recompute() {
+        let _test_guard = WASM_TEST_LOCK
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         assert_eq!(dynamic_init(100), 0);
 
         assert_eq!(dynamic_add_edge(0, 1, 1u64 << 32), 0);
