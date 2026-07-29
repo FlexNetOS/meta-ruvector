@@ -60,6 +60,16 @@ Distances there are **signed** — a correct run looks like
 `-1.0, -0.9, -0.0`, not a column of zeros. Zeros mean something
 clamped the negation and destroyed the ranking.
 
+The membership filter must actually restrict `query` on a non-COW store:
+after `filter --include-ids 1,2` on a four-vector store, `query` returns
+exactly ids 1 and 2, and `--exclude-ids 1,4` returns 2 and 3. If every id
+still comes back, the visibility check in `query_exact` is gone.
+`index_eligible`/`rabitq_eligible` both refuse a store that has a
+membership filter, so the exact scan is the only path such a query takes.
+A COW child is deliberately exempt — `branch()` sizes the child's include
+filter to the parent's `vector_count` and `insert()` never registers
+child-local ids, so filtering a child's own slab would erase its writes.
+
 Known dead end: `rebuild-refcounts` reports "No COW map found in file"
 after derive, freeze and ingest alike. No rvf-cli flow observed so far
 writes a COW_MAP segment, so the `append_cow_map` path and the
