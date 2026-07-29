@@ -327,23 +327,23 @@ impl DeterministicLocalKCut {
         let mut results = Vec::new();
         let mut seen_cuts: HashSet<Vec<VertexId>> = HashSet::new();
 
-        // For each (forest, red-blue coloring, green-yellow coloring) triple
-        for forest_id in 0..self.forests.num_forests {
-            for rb_coloring in &self.red_blue_colorings {
-                for gy_coloring in &self.green_yellow_colorings {
-                    // Execute color-coded DFS
-                    if let Some(cut) = self.color_coded_dfs(v, forest_id, rb_coloring, gy_coloring)
-                    {
-                        // Deduplicate cuts
-                        let mut sorted_vertices: Vec<_> = cut.vertices.iter().copied().collect();
-                        sorted_vertices.sort();
+        // The current color-coded DFS uses the forest packing's shared edge
+        // membership and does not vary by forest ID. Iterating every forest
+        // here would therefore repeat the exact same search thousands of
+        // times (the default λ bound creates 6,000 forests). Keep the
+        // independent coloring-family combinations, which are the dimensions
+        // that affect the traversal, and deduplicate their cuts below.
+        for rb_coloring in &self.red_blue_colorings {
+            for gy_coloring in &self.green_yellow_colorings {
+                if let Some(cut) = self.color_coded_dfs(v, rb_coloring, gy_coloring) {
+                    let mut sorted_vertices: Vec<_> = cut.vertices.iter().copied().collect();
+                    sorted_vertices.sort();
 
-                        if !seen_cuts.contains(&sorted_vertices)
-                            && cut.cut_value <= self.lambda_max as f64
-                        {
-                            seen_cuts.insert(sorted_vertices);
-                            results.push(cut);
-                        }
+                    if !seen_cuts.contains(&sorted_vertices)
+                        && cut.cut_value <= self.lambda_max as f64
+                    {
+                        seen_cuts.insert(sorted_vertices);
+                        results.push(cut);
                     }
                 }
             }
@@ -358,7 +358,6 @@ impl DeterministicLocalKCut {
     fn color_coded_dfs(
         &self,
         start: VertexId,
-        _forest_id: usize,
         rb_coloring: &EdgeColoring,
         gy_coloring: &EdgeColoring,
     ) -> Option<LocalCut> {
