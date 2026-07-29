@@ -6,7 +6,7 @@ use pgrx::prelude::*;
 #[pg_extern]
 fn dag_attention_scores(
     query_text: &str,
-    mechanism: default!(&str, "auto"),
+    mechanism: default!(&str, "'auto'"),
 ) -> TableIterator<'static, (name!(node_id, i32), name!(attention_weight, f64))> {
     // Validate mechanism
     let valid = [
@@ -42,7 +42,7 @@ fn dag_attention_scores(
 
 /// Get attention matrix for visualization (node-to-node attention)
 #[pg_extern]
-fn dag_attention_matrix(query_text: &str, mechanism: default!(&str, "auto")) -> Vec<Vec<f64>> {
+fn dag_attention_matrix(query_text: &str, mechanism: default!(&str, "'auto'")) -> Vec<Vec<f64>> {
     // Compute full attention matrix (NxN where N is number of nodes)
     // Each entry [i,j] represents attention from node i to node j
 
@@ -58,8 +58,8 @@ fn dag_attention_matrix(query_text: &str, mechanism: default!(&str, "auto")) -> 
 #[pg_extern]
 fn dag_attention_visualize(
     query_text: &str,
-    mechanism: default!(&str, "auto"),
-    format: default!(&str, "dot"),
+    mechanism: default!(&str, "'auto'"),
+    format: default!(&str, "'dot'"),
 ) -> String {
     match format {
         "dot" => {

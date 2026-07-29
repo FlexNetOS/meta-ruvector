@@ -11707,6 +11707,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "rvagent-engine"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "blake3",
+ "chrono",
+ "rusqlite",
+ "ruvector-sona 0.2.1",
+ "rvagent-a2a",
+ "rvagent-backends",
+ "schemars 1.2.1",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 2.0.19",
+ "tokio",
+]
+
+[[package]]
 name = "rvagent-mcp"
 version = "0.1.0"
 dependencies = [

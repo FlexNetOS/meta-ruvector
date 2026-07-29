@@ -12,7 +12,7 @@ use super::get_or_create_engine;
 pub fn ruvector_domain_transfer(
     embeddings_json: JsonB,
     target_domain: &str,
-    config_json: default!(JsonB, "JsonB(serde_json::json!({}))"),
+    config_json: default!(JsonB, "'{}'::jsonb"),
 ) -> JsonB {
     let engine_lock = get_or_create_engine("default");
     let mut engine = engine_lock.write();

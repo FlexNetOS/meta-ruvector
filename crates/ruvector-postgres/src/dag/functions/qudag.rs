@@ -139,7 +139,7 @@ fn qudag_staking_info() -> pgrx::JsonB {
 fn qudag_calculate_reward(
     stake_weight: f64,
     pattern_quality: f64,
-    reward_type: default!(&str, "validation"),
+    reward_type: default!(&str, "'validation'"),
 ) -> f64 {
     match reward_type {
         "validation" => {
@@ -164,7 +164,7 @@ fn qudag_calculate_reward(
 fn qudag_create_proposal(
     title: &str,
     description: &str,
-    proposal_type: default!(&str, "parameter_change"),
+    proposal_type: default!(&str, "'parameter_change'"),
     voting_duration_days: default!(i32, 7),
 ) -> pgrx::JsonB {
     let proposal_id = format!("prop_{}", rand::random::<u64>());

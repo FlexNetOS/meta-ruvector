@@ -27,7 +27,7 @@ use super::{lorentz::LorentzModel, poincare::PoincareBall, DEFAULT_CURVATURE};
 fn ruvector_poincare_distance(
     a: Vec<f32>,
     b: Vec<f32>,
-    curvature: default!(f32, "DEFAULT_CURVATURE"),
+    curvature: default!(f32, "-1.0"),
 ) -> f32 {
     if a.is_empty() || b.is_empty() {
         error!("Vectors cannot be empty");
@@ -65,7 +65,7 @@ fn ruvector_poincare_distance(
 fn ruvector_lorentz_distance(
     a: Vec<f32>,
     b: Vec<f32>,
-    curvature: default!(f32, "DEFAULT_CURVATURE"),
+    curvature: default!(f32, "-1.0"),
 ) -> f32 {
     if a.len() < 2 || b.len() < 2 {
         error!("Lorentz vectors must have at least 2 dimensions");
@@ -103,7 +103,7 @@ fn ruvector_lorentz_distance(
 fn ruvector_mobius_add(
     a: Vec<f32>,
     b: Vec<f32>,
-    curvature: default!(f32, "DEFAULT_CURVATURE"),
+    curvature: default!(f32, "-1.0"),
 ) -> Vec<f32> {
     if a.is_empty() || b.is_empty() {
         error!("Vectors cannot be empty");
@@ -142,7 +142,7 @@ fn ruvector_mobius_add(
 fn ruvector_exp_map(
     base: Vec<f32>,
     tangent: Vec<f32>,
-    curvature: default!(f32, "DEFAULT_CURVATURE"),
+    curvature: default!(f32, "-1.0"),
 ) -> Vec<f32> {
     if base.is_empty() || tangent.is_empty() {
         error!("Vectors cannot be empty");
@@ -181,7 +181,7 @@ fn ruvector_exp_map(
 fn ruvector_log_map(
     base: Vec<f32>,
     target: Vec<f32>,
-    curvature: default!(f32, "DEFAULT_CURVATURE"),
+    curvature: default!(f32, "-1.0"),
 ) -> Vec<f32> {
     if base.is_empty() || target.is_empty() {
         error!("Vectors cannot be empty");
@@ -216,7 +216,7 @@ fn ruvector_log_map(
 #[pg_extern(immutable, parallel_safe)]
 fn ruvector_poincare_to_lorentz(
     poincare: Vec<f32>,
-    curvature: default!(f32, "DEFAULT_CURVATURE"),
+    curvature: default!(f32, "-1.0"),
 ) -> Vec<f32> {
     if poincare.is_empty() {
         error!("Vector cannot be empty");
@@ -248,7 +248,7 @@ fn ruvector_poincare_to_lorentz(
 #[pg_extern(immutable, parallel_safe)]
 fn ruvector_lorentz_to_poincare(
     lorentz: Vec<f32>,
-    curvature: default!(f32, "DEFAULT_CURVATURE"),
+    curvature: default!(f32, "-1.0"),
 ) -> Vec<f32> {
     if lorentz.len() < 2 {
         error!("Lorentz vector must have at least 2 dimensions");
