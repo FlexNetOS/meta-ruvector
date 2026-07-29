@@ -19,6 +19,9 @@
   "scripts": {
     "build": "tsc",
     "test": "jest",
+    "smoke": "node scripts/smoke-query-create.mjs",
+    "smoke:idmap": "node scripts/smoke-idmap-durability.mjs",
+    "smoke:cow": "node scripts/smoke-cow-durability.mjs",
     "bench": "tsx bench/index.ts",
     "typecheck": "tsc --noEmit"
   },
@@ -33,7 +36,7 @@
   "license": "MIT",
   "repository": "https://github.com/FlexNetOS/ruvector",
   "dependencies": {
-    "@ruvector/rvf-node": "^0.1.7"
+    "@ruvector/rvf-node": "^0.2.3"
   },
   "optionalDependencies": {
     "@ruvector/rvf-wasm": "^0.1.7",

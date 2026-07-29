@@ -51,6 +51,8 @@ export interface RvfBackend {
   parentId(): Promise<string>;
   lineageDepth(): Promise<number>;
   derive(childPath: string, options?: RvfOptions): Promise<RvfBackend>;
+  branch(childPath: string): Promise<RvfBackend>;
+  freeze(): Promise<number>;
   // Kernel / eBPF
   embedKernel(arch: number, kernelType: number, flags: number,
               image: Uint8Array, apiPort: number, cmdline?: string): Promise<number>;
@@ -113,15 +115,84 @@ export class NodeBackend implements RvfBackend {
     }
   }
 
+  /** Release a native handle without persisting mappings after open failed. */
+  private discardHandle(): void {
+    try {
+      this.handle?.close();
+    } catch {
+      // Preserve the original open/sidecar error.
+    } finally {
+      this.handle = null;
+      this.storePath = '';
+      this.idToLabel.clear();
+      this.labelToId.clear();
+      this.nextLabel = 1;
+    }
+  }
+
   async create(path: string, options: RvfOptions): Promise<void> {
     await this.loadNative();
+    const fs = await import('fs');
+    const sidecarPath = `${path}.idmap.json`;
+    const existingPaths = [path, sidecarPath].filter((candidate) => fs.existsSync(candidate));
+    const backups: Array<{ original: string; backup: string }> = [];
     try {
+      // Precondition: refuse to clobber an existing file unless asked to.
+      // The native layer surfaces this as a misleading FsyncFailed, so check
+      // here and raise a clear, actionable error. An orphaned sidecar also
+      // blocks creation because silently retaining it can desynchronize IDs.
+      if (existingPaths.length > 0 && !options.overwrite) {
+        throw new RvfError(
+          RvfErrorCode.FileExists,
+          `${existingPaths.join(', ')} already exists; use RvfDatabase.open() to reuse the store, or pass { overwrite: true } to replace it`,
+        );
+      }
+
+      if (options.overwrite) {
+        const { randomUUID } = await import('crypto');
+        for (const original of existingPaths) {
+          if (!fs.lstatSync(original).isFile()) {
+            throw new RvfError(
+              RvfErrorCode.InvalidArgument,
+              `refusing to overwrite non-file path ${original}`,
+            );
+          }
+          const backup = `${original}.overwrite-${process.pid}-${randomUUID()}.bak`;
+          fs.renameSync(original, backup);
+          backups.push({ original, backup });
+        }
+      }
+
       this.handle = await this.native.create(path, mapOptionsToNative(options));
       this.storePath = path;
       this.idToLabel.clear();
       this.labelToId.clear();
       this.nextLabel = 1;
+      for (const { backup } of backups) {
+        try {
+          fs.rmSync(backup, { force: true });
+        } catch {
+          // The new store is valid; retain the recoverable backup if cleanup fails.
+        }
+      }
     } catch (err) {
+      // If replacement fails after moving the old store aside, remove any
+      // partially-created replacement and restore the original files.
+      if (backups.length > 0) {
+        try {
+          fs.rmSync(path, { force: true });
+          fs.rmSync(sidecarPath, { force: true });
+        } catch {
+          // Continue restoring every backup that can be recovered.
+        }
+        for (const { original, backup } of backups.reverse()) {
+          try {
+            if (fs.existsSync(backup)) fs.renameSync(backup, original);
+          } catch {
+            // The backup remains on disk with a unique, discoverable suffix.
+          }
+        }
+      }
       throw RvfError.fromNative(err);
     }
   }
@@ -133,6 +204,7 @@ export class NodeBackend implements RvfBackend {
       this.storePath = path;
       await this.loadMappings();
     } catch (err) {
+      this.discardHandle();
       throw RvfError.fromNative(err);
     }
   }
@@ -144,6 +216,7 @@ export class NodeBackend implements RvfBackend {
       this.storePath = path;
       await this.loadMappings();
     } catch (err) {
+      this.discardHandle();
       throw RvfError.fromNative(err);
     }
   }
@@ -264,11 +337,16 @@ export class NodeBackend implements RvfBackend {
 
   async close(): Promise<void> {
     if (!this.handle) return;
+    let failure: unknown;
     try {
       await this.saveMappings();
+    } catch (err) {
+      failure = err;
+    }
+    try {
       this.handle.close();
     } catch (err) {
-      throw RvfError.fromNative(err);
+      failure ??= err;
     } finally {
       this.handle = null;
       this.idToLabel.clear();
@@ -276,6 +354,7 @@ export class NodeBackend implements RvfBackend {
       this.nextLabel = 1;
       this.storePath = '';
     }
+    if (failure) throw RvfError.fromNative(failure);
   }
 
   async fileId(): Promise<string> {
@@ -307,9 +386,10 @@ export class NodeBackend implements RvfBackend {
 
   async derive(childPath: string, options?: RvfOptions): Promise<RvfBackend> {
     this.ensureHandle();
+    let childHandle: any = null;
     try {
       const nativeOpts = options ? mapOptionsToNative(options) : undefined;
-      const childHandle = this.handle.derive(childPath, nativeOpts);
+      childHandle = this.handle.derive(childPath, nativeOpts);
       const child = new NodeBackend();
       child.native = this.native;
       child.handle = childHandle;
@@ -320,6 +400,36 @@ export class NodeBackend implements RvfBackend {
       child.nextLabel = this.nextLabel;
       await child.saveMappings();
       return child;
+    } catch (err) {
+      await this.cleanupFailedChild(childHandle, childPath);
+      throw RvfError.fromNative(err);
+    }
+  }
+
+  async branch(childPath: string): Promise<RvfBackend> {
+    this.ensureHandle();
+    let childHandle: any = null;
+    try {
+      childHandle = this.handle.branch(childPath);
+      const child = new NodeBackend();
+      child.native = this.native;
+      child.handle = childHandle;
+      child.storePath = childPath;
+      child.idToLabel = new Map(this.idToLabel);
+      child.labelToId = new Map(this.labelToId);
+      child.nextLabel = this.nextLabel;
+      await child.saveMappings();
+      return child;
+    } catch (err) {
+      await this.cleanupFailedChild(childHandle, childPath);
+      throw RvfError.fromNative(err);
+    }
+  }
+
+  async freeze(): Promise<number> {
+    this.ensureHandle();
+    try {
+      return this.handle.freeze();
     } catch (err) {
       throw RvfError.fromNative(err);
     }
@@ -437,43 +547,158 @@ export class NodeBackend implements RvfBackend {
     return this.storePath ? this.storePath + '.idmap.json' : '';
   }
 
-  /** Persist the string↔label mapping to a sidecar JSON file. */
+  /**
+   * Persist the string↔label mapping to a sidecar JSON file.
+   *
+   * `delete()` resolves string ids through this map and silently filters out
+   * anything unresolvable, so a lost or torn write turns every ingest since
+   * the last good save into an undeletable-by-id vector. Persistence is
+   * therefore NOT best-effort: the write is made atomic (temp file + rename,
+   * so a crash/ENOSPC mid-write can never leave partial JSON at `mp`) and a
+   * failure is surfaced rather than swallowed.
+   */
   private async saveMappings(): Promise<void> {
     const mp = this.mappingsPath();
     if (!mp) return;
+    const fs = await import('fs');
+    const data = JSON.stringify({
+      idToLabel: Object.fromEntries(this.idToLabel),
+      labelToId: Object.fromEntries(
+        Array.from(this.labelToId.entries()).map(([k, v]) => [String(k), v]),
+      ),
+      nextLabel: this.nextLabel,
+    });
+    // A shared `${mp}.tmp` races across processes opening the same store.
+    // Synchronous writes cannot interleave within one Node process; PID plus
+    // timestamp also keeps independently-running writers on separate paths.
+    const tmp = `${mp}.${process.pid}.${Date.now()}.tmp`;
     try {
-      const fs = await import('fs');
-      const data = JSON.stringify({
-        idToLabel: Object.fromEntries(this.idToLabel),
-        labelToId: Object.fromEntries(
-          Array.from(this.labelToId.entries()).map(([k, v]) => [String(k), v]),
-        ),
-        nextLabel: this.nextLabel,
-      });
-      fs.writeFileSync(mp, data, 'utf-8');
-    } catch {
-      // Non-fatal: mapping persistence is best-effort (e.g. read-only FS).
+      fs.writeFileSync(tmp, data, 'utf-8');
+      fs.renameSync(tmp, mp);
+    } catch (err) {
+      try {
+        fs.rmSync(tmp, { force: true });
+      } catch {
+        // best-effort cleanup of the temp file
+      }
+      throw new RvfError(
+        RvfErrorCode.SidecarWriteFailed,
+        `at ${mp}: ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
   }
 
-  /** Load the string↔label mapping from the sidecar JSON file if it exists. */
+  private async cleanupFailedChild(childHandle: any, childPath: string): Promise<void> {
+    // If native creation failed before returning a handle (for example because
+    // childPath already exists), the path is not ours to remove.
+    if (!childHandle) return;
+    try {
+      childHandle?.close();
+    } catch {
+      // Preserve the original branch/sidecar error.
+    }
+    try {
+      const fs = await import('fs');
+      fs.rmSync(childPath, { force: true });
+      fs.rmSync(`${childPath}.idmap.json`, { force: true });
+    } catch {
+      // Best-effort rollback; the original operation error remains primary.
+    }
+  }
+
+  /**
+   * Load the string↔label mapping from the sidecar JSON file if it exists.
+   *
+   * A corrupt sidecar must NOT degrade to empty maps: `nextLabel` would reset
+   * to 1 and subsequent ingests would assign labels colliding with existing
+   * vectors (silent data corruption), and the next `saveMappings()` would
+   * overwrite the recoverable file. Instead the corrupt sidecar is quarantined
+   * (renamed aside so it is not clobbered) and a `SidecarCorrupt` error is
+   * raised so the caller learns string-id operations are unsafe.
+   */
   private async loadMappings(): Promise<void> {
     const mp = this.mappingsPath();
     if (!mp) return;
+    const fs = await import('fs');
+    if (!fs.existsSync(mp)) return; // fresh store: no sidecar yet is legitimate
+    let parsed: {
+      idToLabel: Record<string, number>;
+      labelToId: Record<string, string>;
+      nextLabel: number;
+    };
     try {
-      const fs = await import('fs');
-      if (!fs.existsSync(mp)) return;
-      const raw = JSON.parse(fs.readFileSync(mp, 'utf-8'));
-      this.idToLabel = new Map(Object.entries(raw.idToLabel ?? {}).map(
-        ([k, v]) => [k, Number(v)],
-      ));
-      this.labelToId = new Map(
-        Object.entries(raw.labelToId ?? {}).map(([k, v]) => [Number(k), v as string]),
+      const candidate: unknown = JSON.parse(fs.readFileSync(mp, 'utf-8'));
+      if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) {
+        throw new TypeError('sidecar root must be an object');
+      }
+      const raw = candidate as Record<string, unknown>;
+      if (
+        !raw.idToLabel ||
+        typeof raw.idToLabel !== 'object' ||
+        Array.isArray(raw.idToLabel) ||
+        !raw.labelToId ||
+        typeof raw.labelToId !== 'object' ||
+        Array.isArray(raw.labelToId) ||
+        !Number.isSafeInteger(raw.nextLabel) ||
+        (raw.nextLabel as number) < 1
+      ) {
+        throw new TypeError('sidecar must contain idToLabel, labelToId, and a positive nextLabel');
+      }
+
+      const idToLabel = raw.idToLabel as Record<string, unknown>;
+      const labelToId = raw.labelToId as Record<string, unknown>;
+      let maxLabel = 0;
+      for (const [id, label] of Object.entries(idToLabel)) {
+        if (!Number.isSafeInteger(label) || (label as number) < 1) {
+          throw new TypeError(`invalid label for id ${JSON.stringify(id)}`);
+        }
+        if (labelToId[String(label)] !== id) {
+          throw new TypeError(`idToLabel/labelToId mismatch for id ${JSON.stringify(id)}`);
+        }
+        maxLabel = Math.max(maxLabel, label as number);
+      }
+      for (const [label, id] of Object.entries(labelToId)) {
+        const numericLabel = Number(label);
+        if (
+          !Number.isSafeInteger(numericLabel) ||
+          numericLabel < 1 ||
+          String(numericLabel) !== label ||
+          typeof id !== 'string' ||
+          idToLabel[id] !== numericLabel
+        ) {
+          throw new TypeError(`invalid reverse mapping for label ${JSON.stringify(label)}`);
+        }
+      }
+      if ((raw.nextLabel as number) <= maxLabel) {
+        throw new TypeError('nextLabel must be greater than every allocated label');
+      }
+      parsed = {
+        idToLabel: idToLabel as Record<string, number>,
+        labelToId: labelToId as Record<string, string>,
+        nextLabel: raw.nextLabel as number,
+      };
+    } catch (err) {
+      const { randomUUID } = await import('crypto');
+      const quarantine = `${mp}.corrupt-${Date.now()}-${randomUUID()}`;
+      try {
+        fs.renameSync(mp, quarantine);
+      } catch {
+        // if we cannot move it aside, leave it in place — still fail loud
+      }
+      throw new RvfError(
+        RvfErrorCode.SidecarCorrupt,
+        `at ${mp} (quarantined to ${quarantine}): string-id delete()/ingest would ` +
+          `silently corrupt data — restore a valid sidecar or recreate the store; ` +
+          `${err instanceof Error ? err.message : String(err)}`,
       );
-      this.nextLabel = raw.nextLabel ?? this.idToLabel.size + 1;
-    } catch {
-      // Non-fatal: start with empty mappings.
     }
+    this.idToLabel = new Map(
+      Object.entries(parsed.idToLabel),
+    );
+    this.labelToId = new Map(
+      Object.entries(parsed.labelToId).map(([k, v]) => [Number(k), v]),
+    );
+    this.nextLabel = parsed.nextLabel;
   }
 }
 
@@ -685,6 +910,12 @@ export class WasmBackend implements RvfBackend {
   }
   async derive(_childPath: string, _options?: RvfOptions): Promise<RvfBackend> {
     throw new RvfError(RvfErrorCode.BackendNotFound, 'derive not supported in WASM backend');
+  }
+  async branch(_childPath: string): Promise<RvfBackend> {
+    throw new RvfError(RvfErrorCode.BackendNotFound, 'branch not supported in WASM backend');
+  }
+  async freeze(): Promise<number> {
+    throw new RvfError(RvfErrorCode.BackendNotFound, 'freeze not supported in WASM backend');
   }
   async embedKernel(): Promise<number> {
     throw new RvfError(RvfErrorCode.BackendNotFound, 'embedKernel not supported in WASM backend');

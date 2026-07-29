@@ -253,6 +253,46 @@ which samples exactly one token from the initial prefill logits then sends
 `Done`). `get_embeddings` returns `RuvLLMError::NotImplemented` today; lattice
 does not yet expose hidden-state pooling through this seam.
 
+### Lattice Backend Example (macOS only)
+
+[Lattice](https://crates.io/crates/lattice-inference) is a pure-Rust Qwen3.5
+inference engine with a hand-written Metal GPU forward pass. Enable it via
+the `lattice` feature (macOS only today: the dependency and the backend
+module are both target-gated with `cfg(target_os = "macos")`, so
+`--all-features` builds on other platforms are unaffected):
+
+```rust,ignore
+use ruvllm::{LatticeBackend, ModelConfig, GenerateParams, LlmBackend};
+
+let mut backend = LatticeBackend::new()?;
+
+// A local directory containing tokenizer.json + config.json, plus either a
+// lattice Q4 weight set (*.q4 files) or a Qwen3.5 safetensors checkpoint.
+backend.load_model("/path/to/qwen3.5-0.8b", ModelConfig::default())?;
+
+let params = GenerateParams::default()
+    .with_max_tokens(256)
+    .with_temperature(0.7);
+
+let response = backend.generate("Hello, world!", params)?;
+```
+
+#### Benchmarking it
+
+`examples/lattice_bench.rs` measures load time, TTFT, and decode throughput.
+Its doc header walks through preparing a model: download Qwen3.5-0.8B from
+HuggingFace for the f16 path, or quantize it yourself with lattice's
+`quantize_q4` (installed via `cargo install lattice-inference --features
+metal-gpu,f16`) and copy `tokenizer.json` + `config.json` next to the `.q4`
+output. Run with `BENCH_GREEDY=1` for apples-to-apples comparison against
+standalone-engine numbers.
+
+`generate_stream_v2` streams every decoded token in real time via the real
+autoregressive decode loop (unlike the candle backend's `generate_stream_v2`,
+which samples exactly one token from the initial prefill logits then sends
+`Done`). `get_embeddings` returns `RuvLLMError::NotImplemented` today; lattice
+does not yet expose hidden-state pooling through this seam.
+
 ## Architecture
 
 ```

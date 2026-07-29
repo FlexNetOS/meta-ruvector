@@ -24,7 +24,7 @@ const {
 } = require('@modelcontextprotocol/sdk/types.js');
 const path = require('path');
 const fs = require('fs');
-const { execSync, execFileSync } = require('child_process');
+const { execFileSync } = require('child_process');
 
 // ADR-256: default-deny MCP tool-access policy (RUVECTOR_MCP_ALLOW/DENY/PROFILE)
 const { buildToolPolicy, isToolAllowed, filterAllowedTools } = require('./mcp-policy.js');
@@ -97,6 +97,33 @@ function sanitizeShellArg(arg) {
 function sanitizeNumericArg(arg, defaultVal) {
   const n = parseInt(arg, 10);
   return Number.isFinite(n) && n > 0 ? n : (defaultVal || 0);
+}
+
+const RUVECTOR_CLI = path.join(__dirname, 'cli.js');
+const NPX_COMMAND = process.platform === 'win32' ? 'npx.cmd' : 'npx';
+
+/**
+ * Execute this package's CLI without a shell.
+ *
+ * MCP arguments are untrusted. Keeping the executable and every argument
+ * separate prevents quotes, substitutions, and shell metacharacters from
+ * becoming executable syntax.
+ */
+function runRuvectorCli(args, options = {}) {
+  return execFileSync(process.execPath, [RUVECTOR_CLI, ...args.map(String)], {
+    encoding: 'utf-8',
+    ...options,
+  });
+}
+
+/**
+ * Execute an external npx package without a shell.
+ */
+function runNpxPackage(packageSpec, args, options = {}) {
+  return execFileSync(NPX_COMMAND, [packageSpec, ...args.map(String)], {
+    encoding: 'utf-8',
+    ...options,
+  });
 }
 
 // MCP tool result returned when @ruvector/pi-brain is absent or unusable, so
@@ -1396,7 +1423,7 @@ const TOOLS = [
   },
   {
     name: 'rvf_derive',
-    description: 'Derive a child RVF store from a parent using copy-on-write branching',
+    description: 'Derive a lineage child RVF store (does not inherit parent query results)',
     inputSchema: {
       type: 'object',
       properties: {
@@ -1404,6 +1431,29 @@ const TOOLS = [
         child_path: { type: 'string', description: 'Path for the new child .rvf store' }
       },
       required: ['parent_path', 'child_path']
+    }
+  },
+  {
+    name: 'rvf_branch',
+    description: 'Create a durable copy-on-write branch that inherits parent query results',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        parent_path: { type: 'string', description: 'Path to a frozen parent .rvf store' },
+        child_path: { type: 'string', description: 'Path for the new child .rvf store' }
+      },
+      required: ['parent_path', 'child_path']
+    }
+  },
+  {
+    name: 'rvf_freeze',
+    description: 'Freeze an RVF generation before creating copy-on-write branches',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        path: { type: 'string', description: 'Path to the .rvf store to freeze' }
+      },
+      required: ['path']
     }
   },
   {
@@ -1831,13 +1881,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case 'hooks_init': {
-        let cmd = 'npx ruvector hooks init';
-        if (args.force) cmd += ' --force';
-        if (args.pretrain) cmd += ' --pretrain';
-        if (args.build_agents) cmd += ` --build-agents ${sanitizeShellArg(args.build_agents)}`;
+        const commandArgs = ['hooks', 'init'];
+        if (args.force) commandArgs.push('--force');
+        if (args.pretrain) commandArgs.push('--pretrain');
+        if (args.build_agents) commandArgs.push('--build-agents', args.build_agents);
 
         try {
-          const output = execSync(cmd, { encoding: 'utf-8', timeout: 60000 });
+          const output = runRuvectorCli(commandArgs, { timeout: 60000 });
           return {
             content: [{
               type: 'text',
@@ -1855,13 +1905,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case 'hooks_pretrain': {
-        let cmd = 'npx ruvector hooks pretrain';
-        if (args.depth) cmd += ` --depth ${sanitizeNumericArg(args.depth, 3)}`;
-        if (args.skip_git) cmd += ' --skip-git';
-        if (args.verbose) cmd += ' --verbose';
+        const commandArgs = ['hooks', 'pretrain'];
+        if (args.depth) commandArgs.push('--depth', sanitizeNumericArg(args.depth, 3));
+        if (args.skip_git) commandArgs.push('--skip-git');
+        if (args.verbose) commandArgs.push('--verbose');
 
         try {
-          const output = execSync(cmd, { encoding: 'utf-8', timeout: 120000 });
+          const output = runRuvectorCli(commandArgs, { timeout: 120000 });
           // Reload intelligence after pretrain
           intel.data = intel.load();
           return {
@@ -1885,12 +1935,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case 'hooks_build_agents': {
-        let cmd = 'npx ruvector hooks build-agents';
-        if (args.focus) cmd += ` --focus ${sanitizeShellArg(args.focus)}`;
-        if (args.include_prompts) cmd += ' --include-prompts';
+        const commandArgs = ['hooks', 'build-agents'];
+        if (args.focus) commandArgs.push('--focus', args.focus);
+        if (args.include_prompts) commandArgs.push('--include-prompts');
 
         try {
-          const output = execSync(cmd, { encoding: 'utf-8', timeout: 30000 });
+          const output = runRuvectorCli(commandArgs, { timeout: 30000 });
           return {
             content: [{
               type: 'text',
@@ -1909,7 +1959,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case 'hooks_verify': {
         try {
-          const output = execSync('npx ruvector hooks verify', { encoding: 'utf-8', timeout: 15000 });
+          const output = runRuvectorCli(['hooks', 'verify'], { timeout: 15000 });
           return {
             content: [{
               type: 'text',
@@ -1927,11 +1977,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case 'hooks_doctor': {
-        let cmd = 'npx ruvector hooks doctor';
-        if (args.fix) cmd += ' --fix';
+        const commandArgs = ['hooks', 'doctor'];
+        if (args.fix) commandArgs.push('--fix');
 
         try {
-          const output = execSync(cmd, { encoding: 'utf-8', timeout: 15000 });
+          const output = runRuvectorCli(commandArgs, { timeout: 15000 });
           return {
             content: [{
               type: 'text',
@@ -2413,8 +2463,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case 'hooks_ast_analyze': {
         try {
-          const safeFile = sanitizeShellArg(args.file);
-          const output = execSync(`npx ruvector hooks ast-analyze "${safeFile}" --json`, { encoding: 'utf-8', timeout: 30000 });
+          const output = runRuvectorCli(['hooks', 'ast-analyze', args.file, '--json'], { timeout: 30000 });
           return { content: [{ type: 'text', text: output }] };
         } catch (e) {
           return { content: [{ type: 'text', text: JSON.stringify({ success: false, error: e.message }, null, 2) }] };
@@ -2423,9 +2472,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case 'hooks_ast_complexity': {
         try {
-          const filesArg = args.files.map(f => `"${sanitizeShellArg(f)}"`).join(' ');
           const threshold = parseInt(args.threshold, 10) || 10;
-          const output = execSync(`npx ruvector hooks ast-complexity ${filesArg} --threshold ${threshold}`, { encoding: 'utf-8', timeout: 60000 });
+          const output = runRuvectorCli(
+            ['hooks', 'ast-complexity', ...args.files, '--threshold', threshold],
+            { timeout: 60000 },
+          );
           return { content: [{ type: 'text', text: output }] };
         } catch (e) {
           return { content: [{ type: 'text', text: JSON.stringify({ success: false, error: e.message }, null, 2) }] };
@@ -2434,8 +2485,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case 'hooks_diff_analyze': {
         try {
-          const cmd = args.commit ? `npx ruvector hooks diff-analyze "${sanitizeShellArg(args.commit)}" --json` : 'npx ruvector hooks diff-analyze --json';
-          const output = execSync(cmd, { encoding: 'utf-8', timeout: 60000 });
+          const commandArgs = ['hooks', 'diff-analyze'];
+          if (args.commit) commandArgs.push(args.commit);
+          commandArgs.push('--json');
+          const output = runRuvectorCli(commandArgs, { timeout: 60000 });
           return { content: [{ type: 'text', text: output }] };
         } catch (e) {
           return { content: [{ type: 'text', text: JSON.stringify({ success: false, error: e.message }, null, 2) }] };
@@ -2444,8 +2497,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case 'hooks_diff_classify': {
         try {
-          const cmd = args.commit ? `npx ruvector hooks diff-classify "${sanitizeShellArg(args.commit)}"` : 'npx ruvector hooks diff-classify';
-          const output = execSync(cmd, { encoding: 'utf-8', timeout: 30000 });
+          const commandArgs = ['hooks', 'diff-classify'];
+          if (args.commit) commandArgs.push(args.commit);
+          const output = runRuvectorCli(commandArgs, { timeout: 30000 });
           return { content: [{ type: 'text', text: output }] };
         } catch (e) {
           return { content: [{ type: 'text', text: JSON.stringify({ success: false, error: e.message }, null, 2) }] };
@@ -2456,7 +2510,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         try {
           const topK = parseInt(args.top_k, 10) || 5;
           const commits = parseInt(args.commits, 10) || 50;
-          const output = execSync(`npx ruvector hooks diff-similar -k ${topK} --commits ${commits}`, { encoding: 'utf-8', timeout: 120000 });
+          const output = runRuvectorCli(
+            ['hooks', 'diff-similar', '-k', topK, '--commits', commits],
+            { timeout: 120000 },
+          );
           return { content: [{ type: 'text', text: output }] };
         } catch (e) {
           return { content: [{ type: 'text', text: JSON.stringify({ success: false, error: e.message }, null, 2) }] };
@@ -2465,8 +2522,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case 'hooks_coverage_route': {
         try {
-          const safeFile = sanitizeShellArg(args.file);
-          const output = execSync(`npx ruvector hooks coverage-route "${safeFile}"`, { encoding: 'utf-8', timeout: 15000 });
+          const output = runRuvectorCli(['hooks', 'coverage-route', args.file], { timeout: 15000 });
           return { content: [{ type: 'text', text: output }] };
         } catch (e) {
           return { content: [{ type: 'text', text: JSON.stringify({ success: false, error: e.message }, null, 2) }] };
@@ -2475,8 +2531,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case 'hooks_coverage_suggest': {
         try {
-          const filesArg = args.files.map(f => `"${sanitizeShellArg(f)}"`).join(' ');
-          const output = execSync(`npx ruvector hooks coverage-suggest ${filesArg}`, { encoding: 'utf-8', timeout: 30000 });
+          const output = runRuvectorCli(['hooks', 'coverage-suggest', ...args.files], { timeout: 30000 });
           return { content: [{ type: 'text', text: output }] };
         } catch (e) {
           return { content: [{ type: 'text', text: JSON.stringify({ success: false, error: e.message }, null, 2) }] };
@@ -2485,8 +2540,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case 'hooks_graph_mincut': {
         try {
-          const filesArg = args.files.map(f => `"${sanitizeShellArg(f)}"`).join(' ');
-          const output = execSync(`npx ruvector hooks graph-mincut ${filesArg}`, { encoding: 'utf-8', timeout: 60000 });
+          const output = runRuvectorCli(['hooks', 'graph-mincut', ...args.files], { timeout: 60000 });
           return { content: [{ type: 'text', text: output }] };
         } catch (e) {
           return { content: [{ type: 'text', text: JSON.stringify({ success: false, error: e.message }, null, 2) }] };
@@ -2495,10 +2549,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case 'hooks_graph_cluster': {
         try {
-          const filesArg = args.files.map(f => `"${sanitizeShellArg(f)}"`).join(' ');
-          const method = sanitizeShellArg(args.method || 'louvain');
+          const method = args.method || 'louvain';
           const clusters = parseInt(args.clusters, 10) || 3;
-          const output = execSync(`npx ruvector hooks graph-cluster ${filesArg} --method ${method} --clusters ${clusters}`, { encoding: 'utf-8', timeout: 60000 });
+          const output = runRuvectorCli(
+            ['hooks', 'graph-cluster', ...args.files, '--method', method, '--clusters', clusters],
+            { timeout: 60000 },
+          );
           return { content: [{ type: 'text', text: output }] };
         } catch (e) {
           return { content: [{ type: 'text', text: JSON.stringify({ success: false, error: e.message }, null, 2) }] };
@@ -2507,8 +2563,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case 'hooks_security_scan': {
         try {
-          const filesArg = args.files.map(f => `"${sanitizeShellArg(f)}"`).join(' ');
-          const output = execSync(`npx ruvector hooks security-scan ${filesArg}`, { encoding: 'utf-8', timeout: 120000 });
+          const output = runRuvectorCli(['hooks', 'security-scan', ...args.files], { timeout: 120000 });
           return { content: [{ type: 'text', text: output }] };
         } catch (e) {
           return { content: [{ type: 'text', text: JSON.stringify({ success: false, error: e.message }, null, 2) }] };
@@ -2517,11 +2572,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case 'hooks_rag_context': {
         try {
-          const safeQuery = sanitizeShellArg(args.query);
           const topK = parseInt(args.top_k, 10) || 5;
-          let cmd = `npx ruvector hooks rag-context "${safeQuery}" -k ${topK}`;
-          if (args.rerank) cmd += ' --rerank';
-          const output = execSync(cmd, { encoding: 'utf-8', timeout: 30000 });
+          const commandArgs = ['hooks', 'rag-context', args.query, '-k', topK];
+          if (args.rerank) commandArgs.push('--rerank');
+          const output = runRuvectorCli(commandArgs, { timeout: 30000 });
           return { content: [{ type: 'text', text: output }] };
         } catch (e) {
           return { content: [{ type: 'text', text: JSON.stringify({ success: false, error: e.message }, null, 2) }] };
@@ -2532,7 +2586,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         try {
           const days = parseInt(args.days, 10) || 30;
           const top = parseInt(args.top, 10) || 10;
-          const output = execSync(`npx ruvector hooks git-churn --days ${days} --top ${top}`, { encoding: 'utf-8', timeout: 30000 });
+          const output = runRuvectorCli(
+            ['hooks', 'git-churn', '--days', days, '--top', top],
+            { timeout: 30000 },
+          );
           return { content: [{ type: 'text', text: output }] };
         } catch (e) {
           return { content: [{ type: 'text', text: JSON.stringify({ success: false, error: e.message }, null, 2) }] };
@@ -3028,10 +3085,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       // BACKGROUND WORKERS HANDLERS (via agentic-flow)
       // ============================================
       case 'workers_dispatch': {
-        const prompt = sanitizeShellArg(args.prompt);
+        const prompt = String(args.prompt);
         try {
-          const result = execSync(`npx agentic-flow@alpha workers dispatch "${prompt.replace(/"/g, '\\"')}"`, {
-            encoding: 'utf-8',
+          const result = runNpxPackage('agentic-flow@alpha', ['workers', 'dispatch', prompt], {
             timeout: 30000,
             stdio: ['pipe', 'pipe', 'pipe']
           });
@@ -3051,9 +3107,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case 'workers_status': {
         try {
-          const cmdArgs = args.workerId ? `workers status ${sanitizeShellArg(args.workerId)}` : 'workers status';
-          const result = execSync(`npx agentic-flow@alpha ${cmdArgs}`, {
-            encoding: 'utf-8',
+          const commandArgs = ['workers', 'status'];
+          if (args.workerId) commandArgs.push(String(args.workerId));
+          const result = runNpxPackage('agentic-flow@alpha', commandArgs, {
             timeout: 15000,
             stdio: ['pipe', 'pipe', 'pipe']
           });
@@ -3072,9 +3128,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case 'workers_results': {
         try {
-          const cmdArgs = args.json ? 'workers results --json' : 'workers results';
-          const result = execSync(`npx agentic-flow@alpha ${cmdArgs}`, {
-            encoding: 'utf-8',
+          const commandArgs = ['workers', 'results'];
+          if (args.json) commandArgs.push('--json');
+          const result = runNpxPackage('agentic-flow@alpha', commandArgs, {
             timeout: 15000,
             stdio: ['pipe', 'pipe', 'pipe']
           });
@@ -3103,8 +3159,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case 'workers_triggers': {
         try {
-          const result = execSync('npx agentic-flow@alpha workers triggers', {
-            encoding: 'utf-8',
+          const result = runNpxPackage('agentic-flow@alpha', ['workers', 'triggers'], {
             timeout: 15000,
             stdio: ['pipe', 'pipe', 'pipe']
           });
@@ -3123,8 +3178,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case 'workers_stats': {
         try {
-          const result = execSync('npx agentic-flow@alpha workers stats', {
-            encoding: 'utf-8',
+          const result = runNpxPackage('agentic-flow@alpha', ['workers', 'stats'], {
             timeout: 15000,
             stdio: ['pipe', 'pipe', 'pipe']
           });
@@ -3144,8 +3198,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       // Custom Worker System handlers (agentic-flow@alpha.39+)
       case 'workers_presets': {
         try {
-          const result = execSync('npx agentic-flow@alpha workers presets', {
-            encoding: 'utf-8',
+          const result = runNpxPackage('agentic-flow@alpha', ['workers', 'presets'], {
             timeout: 15000,
             stdio: ['pipe', 'pipe', 'pipe']
           });
@@ -3164,8 +3217,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case 'workers_phases': {
         try {
-          const result = execSync('npx agentic-flow@alpha workers phases', {
-            encoding: 'utf-8',
+          const result = runNpxPackage('agentic-flow@alpha', ['workers', 'phases'], {
             timeout: 15000,
             stdio: ['pipe', 'pipe', 'pipe']
           });
@@ -3183,14 +3235,16 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case 'workers_create': {
-        const name = args.name;
-        const preset = args.preset || 'quick-scan';
-        const triggers = args.triggers;
+        const name = String(args.name || '');
+        const preset = String(args.preset || 'quick-scan');
+        const triggers = args.triggers == null ? null : String(args.triggers);
         try {
-          let cmd = `npx agentic-flow@alpha workers create "${name}" --preset ${preset}`;
-          if (triggers) cmd += ` --triggers "${triggers}"`;
-          const result = execSync(cmd, {
-            encoding: 'utf-8',
+          // Never interpolate MCP-controlled fields into a shell command.
+          // execFileSync passes each value as one argument, so names/triggers
+          // containing quotes or shell metacharacters cannot escape to a shell.
+          const commandArgs = ['workers', 'create', name, '--preset', preset];
+          if (triggers) commandArgs.push('--triggers', triggers);
+          const result = runNpxPackage('agentic-flow@alpha', commandArgs, {
             timeout: 30000,
             stdio: ['pipe', 'pipe', 'pipe']
           });
@@ -3209,11 +3263,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case 'workers_run': {
-        const name = sanitizeShellArg(args.name);
-        const targetPath = sanitizeShellArg(args.path || '.');
+        const name = String(args.name);
+        const targetPath = String(args.path || '.');
         try {
-          const result = execSync(`npx agentic-flow@alpha workers run "${name}" --path "${targetPath}"`, {
-            encoding: 'utf-8',
+          const result = runNpxPackage('agentic-flow@alpha', ['workers', 'run', name, '--path', targetPath], {
             timeout: 120000,
             stdio: ['pipe', 'pipe', 'pipe']
           });
@@ -3234,8 +3287,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case 'workers_custom': {
         try {
-          const result = execSync('npx agentic-flow@alpha workers custom', {
-            encoding: 'utf-8',
+          const result = runNpxPackage('agentic-flow@alpha', ['workers', 'custom'], {
             timeout: 15000,
             stdio: ['pipe', 'pipe', 'pipe']
           });
@@ -3254,10 +3306,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case 'workers_init_config': {
         try {
-          let cmd = 'npx agentic-flow@alpha workers init-config';
-          if (args.force) cmd += ' --force';
-          const result = execSync(cmd, {
-            encoding: 'utf-8',
+          const commandArgs = ['workers', 'init-config'];
+          if (args.force) commandArgs.push('--force');
+          const result = runNpxPackage('agentic-flow@alpha', commandArgs, {
             timeout: 15000,
             stdio: ['pipe', 'pipe', 'pipe']
           });
@@ -3276,10 +3327,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case 'workers_load_config': {
-        const configFile = sanitizeShellArg(args.file || 'workers.yaml');
+        const configFile = String(args.file || 'workers.yaml');
         try {
-          const result = execSync(`npx agentic-flow@alpha workers load-config --file "${configFile}"`, {
-            encoding: 'utf-8',
+          const result = runNpxPackage('agentic-flow@alpha', ['workers', 'load-config', '--file', configFile], {
             timeout: 30000,
             stdio: ['pipe', 'pipe', 'pipe']
           });
@@ -3399,16 +3449,65 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case 'rvf_derive': {
+        let store;
+        let child;
         try {
           const safeParent = validateRvfPath(args.parent_path);
           const safeChild = validateRvfPath(args.child_path);
           const { openRvfStore, rvfDerive, rvfClose } = require('../dist/core/rvf-wrapper.js');
-          const store = await openRvfStore(safeParent);
-          await rvfDerive(store, safeChild);
-          await rvfClose(store);
+          store = await openRvfStore(safeParent);
+          child = await rvfDerive(store, safeChild);
           return { content: [{ type: 'text', text: JSON.stringify({ success: true, parent: safeParent, child: safeChild }, null, 2) }] };
         } catch (e) {
           return { content: [{ type: 'text', text: JSON.stringify({ success: false, error: e.message }, null, 2) }], isError: true };
+        } finally {
+          const { rvfClose } = require('../dist/core/rvf-wrapper.js');
+          await Promise.allSettled([child && rvfClose(child), store && rvfClose(store)]);
+        }
+      }
+
+      case 'rvf_branch': {
+        let parent;
+        let child;
+        try {
+          const safeParent = validateRvfPath(args.parent_path);
+          const safeChild = validateRvfPath(args.child_path);
+          const { openRvfStore, rvfBranch } = require('../dist/core/rvf-wrapper.js');
+          parent = await openRvfStore(safeParent);
+          child = await rvfBranch(parent, safeChild);
+          return { content: [{ type: 'text', text: JSON.stringify({
+            success: true,
+            parent: safeParent,
+            child: safeChild,
+            durable: true
+          }, null, 2) }] };
+        } catch (e) {
+          return { content: [{ type: 'text', text: JSON.stringify({ success: false, error: e.message }, null, 2) }], isError: true };
+        } finally {
+          const { rvfClose } = require('../dist/core/rvf-wrapper.js');
+          await Promise.allSettled([child && rvfClose(child), parent && rvfClose(parent)]);
+        }
+      }
+
+      case 'rvf_freeze': {
+        let store;
+        try {
+          const safePath = validateRvfPath(args.path);
+          const { openRvfStore, rvfFreeze } = require('../dist/core/rvf-wrapper.js');
+          store = await openRvfStore(safePath);
+          const epoch = await rvfFreeze(store);
+          return { content: [{ type: 'text', text: JSON.stringify({
+            success: true,
+            path: safePath,
+            epoch
+          }, null, 2) }] };
+        } catch (e) {
+          return { content: [{ type: 'text', text: JSON.stringify({ success: false, error: e.message }, null, 2) }], isError: true };
+        } finally {
+          if (store) {
+            const { rvfClose } = require('../dist/core/rvf-wrapper.js');
+            await Promise.allSettled([rvfClose(store)]);
+          }
         }
       }
 

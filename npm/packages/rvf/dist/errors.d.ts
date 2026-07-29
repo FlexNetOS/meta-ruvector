@@ -40,7 +40,11 @@ export declare enum RvfErrorCode {
     BackendInitFailed = 65281,
     StoreClosed = 65282,
     InvalidOptions = 65283,
-    MetadataNotSupported = 65284
+    MetadataNotSupported = 65284,
+    InvalidArgument = 65285,
+    SidecarWriteFailed = 65286,
+    SidecarCorrupt = 65287,
+    FileExists = 65288
 }
 /**
  * Custom error class for all RVF operations.

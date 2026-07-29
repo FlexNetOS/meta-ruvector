@@ -8138,13 +8138,16 @@ const mcpCmd = program.command('mcp').description('MCP (Model Context Protocol) 
 mcpCmd.command('start')
   .description('Start the RuVector MCP server')
   .action(() => {
-    // Execute the mcp-server.js directly
     const mcpServerPath = path.join(__dirname, 'mcp-server.js');
     if (!fs.existsSync(mcpServerPath)) {
       console.error(chalk.red('Error: MCP server not found at'), mcpServerPath);
       process.exit(1);
     }
-    require(mcpServerPath);
+    const { main } = require(mcpServerPath);
+    main().catch((error) => {
+      console.error(error);
+      process.exitCode = 1;
+    });
   });
 
 mcpCmd.command('info')
@@ -8387,7 +8390,7 @@ mcpCmd.command('tools')
 
 mcpCmd.command('test')
   .description('Test MCP server setup and tool registration')
-  .action(() => {
+  .action(async () => {
     console.log(chalk.bold.cyan('\nMCP Server Test Results'));
     console.log(chalk.dim('-'.repeat(40)));
 
@@ -8442,16 +8445,94 @@ mcpCmd.command('test')
       console.log(`  ${chalk.yellow('WARN')} Could not parse tool count: ${e.message}`);
     }
 
-    // Test 5: version check
-    try {
-      const src = fs.readFileSync(mcpServerPath, 'utf8');
-      const verMatch = src.match(/version:\s*'([^']+)'/);
-      if (verMatch) {
-        const pkg = require(path.join(__dirname, '..', 'package.json'));
-        const match = verMatch[1] === pkg.version;
-        console.log(`  ${match ? chalk.green('PASS') : chalk.yellow('WARN')} Server version: ${verMatch[1]}${match ? '' : ` (package: ${pkg.version})`}`);
-      }
-    } catch {}
+    // Test 5: live handshake.
+    //
+    // Every check above is static — the file parses, the SDK resolves, the
+    // TOOLS array greps to N entries. All of them passed against a server that
+    // never started, because nothing here launched it. This spawns the real
+    // `mcp start` path and speaks the protocol, which is the only check that
+    // can tell a working server from a dead one.
+    const handshake = await new Promise((resolve) => {
+      const { spawn } = require('child_process');
+      const child = spawn(process.execPath, [__filename, 'mcp', 'start'], {
+        stdio: ['pipe', 'pipe', 'ignore'],
+      });
+
+      let buf = '';
+      const noise = [];
+      let settled = false;
+      let draining = false;
+      const finish = (r) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        try { child.stdin.end(); } catch {}
+        try { child.kill('SIGTERM'); } catch {}
+        resolve(r);
+      };
+      const timer = setTimeout(
+        () => finish({ ok: false, reason: 'no response within 45s (transport never connected?)' }),
+        45000
+      );
+
+      child.stdout.on('data', (chunk) => {
+        buf += chunk.toString();
+        const lines = buf.split('\n');
+        buf = lines.pop();
+        for (const raw of lines) {
+          const line = raw.trim();
+          if (!line) continue;
+          if (!line.startsWith('{')) { noise.push(line); continue; }
+          try {
+            const msg = JSON.parse(line);
+            if (msg.id === 1 && msg.error) {
+              return finish({ ok: false, reason: JSON.stringify(msg.error), noise });
+            }
+            if (msg.id === 1 && msg.result && !draining) {
+              // Drain before settling: the loader's stdout chatter is written
+              // *after* the initialize reply, so returning here immediately
+              // would race past the very noise this check exists to catch.
+              draining = true;
+              const info = msg.result.serverInfo;
+              setTimeout(() => finish({ ok: true, info, noise }), 3000);
+            }
+          } catch { noise.push(line); }
+        }
+      });
+      child.on('error', (e) => finish({ ok: false, reason: e.message }));
+      child.on('exit', (code) => finish({ ok: false, reason: `server exited early (code ${code})` }));
+
+      child.stdin.write(JSON.stringify({
+        jsonrpc: '2.0', id: 1, method: 'initialize',
+        params: {
+          protocolVersion: '2025-06-18', capabilities: {},
+          clientInfo: { name: 'ruvector-mcp-test', version: '1.0.0' },
+        },
+      }) + '\n');
+    });
+
+    if (!handshake.ok) {
+      console.log(`  ${chalk.red('FAIL')} live handshake: ${handshake.reason}`);
+      console.log(chalk.bold.red('\n  Checks failed — the server does not answer MCP requests.\n'));
+      process.exit(1);
+    }
+    console.log(`  ${chalk.green('PASS')} live handshake (server: ${handshake.info && handshake.info.name})`);
+
+    const pkg = require(path.join(__dirname, '..', 'package.json'));
+    if (!handshake.info || handshake.info.version !== pkg.version) {
+      console.log(`  ${chalk.red('FAIL')} Server version: ${handshake.info && handshake.info.version} (package: ${pkg.version})`);
+      console.log(chalk.bold.red('\n  Checks failed — the live server version does not match the package.\n'));
+      process.exit(1);
+    }
+    console.log(`  ${chalk.green('PASS')} Server version: ${handshake.info.version}`);
+
+    if (handshake.noise && handshake.noise.length) {
+      // stdio MCP requires stdout to carry only newline-delimited JSON-RPC.
+      console.log(`  ${chalk.red('FAIL')} stdout carries non-JSON output: ${JSON.stringify(handshake.noise.slice(0, 2))}`);
+      console.log(chalk.bold.red('\n  Checks failed — stdout noise corrupts the JSON-RPC stream.\n'));
+      process.exit(1);
+    }
+    console.log(`  ${chalk.green('PASS')} stdout carries only JSON-RPC`);
 
     console.log(chalk.bold.green('\n  All checks passed.\n'));
     console.log(chalk.dim('  Setup: claude mcp add ruvector npx ruvector mcp start\n'));

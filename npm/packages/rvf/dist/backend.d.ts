@@ -29,6 +29,8 @@ export interface RvfBackend {
     parentId(): Promise<string>;
     lineageDepth(): Promise<number>;
     derive(childPath: string, options?: RvfOptions): Promise<RvfBackend>;
+    branch(childPath: string): Promise<RvfBackend>;
+    freeze(): Promise<number>;
     embedKernel(arch: number, kernelType: number, flags: number, image: Uint8Array, apiPort: number, cmdline?: string): Promise<number>;
     extractKernel(): Promise<RvfKernelData | null>;
     embedEbpf(programType: number, attachType: number, maxDimension: number, bytecode: Uint8Array, btf?: Uint8Array): Promise<number>;
@@ -56,6 +58,8 @@ export declare class NodeBackend implements RvfBackend {
     private storePath;
     private loadNative;
     private ensureHandle;
+    /** Release a native handle without persisting mappings after open failed. */
+    private discardHandle;
     create(path: string, options: RvfOptions): Promise<void>;
     open(path: string): Promise<void>;
     openReadonly(path: string): Promise<void>;
@@ -70,6 +74,8 @@ export declare class NodeBackend implements RvfBackend {
     parentId(): Promise<string>;
     lineageDepth(): Promise<number>;
     derive(childPath: string, options?: RvfOptions): Promise<RvfBackend>;
+    branch(childPath: string): Promise<RvfBackend>;
+    freeze(): Promise<number>;
     embedKernel(arch: number, kernelType: number, flags: number, image: Uint8Array, apiPort: number, cmdline?: string): Promise<number>;
     extractKernel(): Promise<RvfKernelData | null>;
     embedEbpf(programType: number, attachType: number, maxDimension: number, bytecode: Uint8Array, btf?: Uint8Array): Promise<number>;
@@ -85,9 +91,28 @@ export declare class NodeBackend implements RvfBackend {
     private resolveLabel;
     /** Path to the sidecar mappings file. */
     private mappingsPath;
-    /** Persist the string↔label mapping to a sidecar JSON file. */
+    /**
+     * Persist the string↔label mapping to a sidecar JSON file.
+     *
+     * `delete()` resolves string ids through this map and silently filters out
+     * anything unresolvable, so a lost or torn write turns every ingest since
+     * the last good save into an undeletable-by-id vector. Persistence is
+     * therefore NOT best-effort: the write is made atomic (temp file + rename,
+     * so a crash/ENOSPC mid-write can never leave partial JSON at `mp`) and a
+     * failure is surfaced rather than swallowed.
+     */
     private saveMappings;
-    /** Load the string↔label mapping from the sidecar JSON file if it exists. */
+    private cleanupFailedChild;
+    /**
+     * Load the string↔label mapping from the sidecar JSON file if it exists.
+     *
+     * A corrupt sidecar must NOT degrade to empty maps: `nextLabel` would reset
+     * to 1 and subsequent ingests would assign labels colliding with existing
+     * vectors (silent data corruption), and the next `saveMappings()` would
+     * overwrite the recoverable file. Instead the corrupt sidecar is quarantined
+     * (renamed aside so it is not clobbered) and a `SidecarCorrupt` error is
+     * raised so the caller learns string-id operations are unsafe.
+     */
     private loadMappings;
 }
 /**
@@ -121,6 +146,8 @@ export declare class WasmBackend implements RvfBackend {
     parentId(): Promise<string>;
     lineageDepth(): Promise<number>;
     derive(_childPath: string, _options?: RvfOptions): Promise<RvfBackend>;
+    branch(_childPath: string): Promise<RvfBackend>;
+    freeze(): Promise<number>;
     embedKernel(): Promise<number>;
     extractKernel(): Promise<RvfKernelData | null>;
     embedEbpf(): Promise<number>;

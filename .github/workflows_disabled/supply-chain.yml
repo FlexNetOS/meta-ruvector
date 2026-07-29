@@ -67,6 +67,11 @@ jobs:
         with:
           submodules: recursive
       - name: dependency-review-action
+        # The repository dependency graph is not currently exposed by GitHub,
+        # so the action returns "Dependency review is not supported". Keep the
+        # other four supply-chain layers hard-gated while #689 tracks enabling
+        # this service-side prerequisite.
+        continue-on-error: true
         uses: actions/dependency-review-action@v4
         with:
           fail-on-severity: moderate
