@@ -540,6 +540,7 @@ mod tests {
         for i in 0..100 {
             let page = (i % 10) as u64;
             let features = AccessFeatures::new(page);
+            let _ = predictor.predict(&features, 1);
             predictor.update(page, &features);
         }
 

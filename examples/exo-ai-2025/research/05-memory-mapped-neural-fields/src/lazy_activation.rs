@@ -48,6 +48,13 @@ pub struct LazyLayer {
     /// Reference to neural field storage
     storage: Arc<MmapNeuralField>,
 
+    /// Stable storage coordinates retained while weights are hot so eviction
+    /// can return the layer to its cold state without losing its source.
+    weights_addr: u64,
+    weights_size: usize,
+    bias_addr: u64,
+    bias_size: usize,
+
     /// Access counter for eviction policy
     access_count: usize,
 
@@ -79,6 +86,10 @@ impl LazyLayer {
             input_dim,
             output_dim,
             storage,
+            weights_addr,
+            weights_size,
+            bias_addr,
+            bias_size,
             access_count: 0,
             last_access: std::time::Instant::now(),
         }
@@ -229,42 +240,19 @@ impl LazyLayer {
 
     /// Evict weights from DRAM (transition to cold)
     pub fn evict(&mut self) {
-        let (weights_addr, weights_size) = match self.weights {
-            ActivationState::Hot { .. } => {
-                if let ActivationState::Cold { addr, size } | ActivationState::Warm { addr, size } =
-                    self.weights
-                {
-                    (addr, size)
-                } else {
-                    // Extract addr/size from current state
-                    return; // Skip if already cold
-                }
-            }
-            _ => return,
-        };
-
-        let (bias_addr, bias_size) = match self.bias {
-            ActivationState::Hot { .. } => {
-                if let ActivationState::Cold { addr, size } | ActivationState::Warm { addr, size } =
-                    self.bias
-                {
-                    (addr, size)
-                } else {
-                    return;
-                }
-            }
-            _ => return,
-        };
+        if !self.weights.is_hot() && !self.bias.is_hot() {
+            return;
+        }
 
         // Note: In real implementation, we'd flush dirty data to storage here
         self.weights = ActivationState::Cold {
-            addr: weights_addr,
-            size: weights_size,
+            addr: self.weights_addr,
+            size: self.weights_size,
         };
 
         self.bias = ActivationState::Cold {
-            addr: bias_addr,
-            size: bias_size,
+            addr: self.bias_addr,
+            size: self.bias_size,
         };
     }
 

@@ -166,10 +166,26 @@ mod tests {
     use super::*;
     use tempfile::NamedTempFile;
 
+    fn test_config() -> DPNCConfig {
+        DPNCConfig {
+            // Keep the production default's one-petabyte logical address
+            // space intact; tests use a bounded sparse fixture because a
+            // host cannot reserve a one-petabyte mmap.
+            virtual_size: 64 * 1024 * 1024,
+            page_size: 4 * 1024 * 1024,
+            l1_capacity: 64 * 1024 * 1024,
+            l2_capacity: 128 * 1024 * 1024,
+            l3_capacity: 256 * 1024 * 1024,
+            l4_capacity: 512 * 1024 * 1024,
+            prefetch_depth: 10,
+            enable_simd: true,
+        }
+    }
+
     #[test]
     fn test_dpnc_system() {
         let temp = NamedTempFile::new().unwrap();
-        let config = DPNCConfig::default();
+        let config = test_config();
 
         let mut dpnc = DPNC::new(temp.path(), config).unwrap();
 
@@ -188,7 +204,7 @@ mod tests {
     #[test]
     fn test_sequential_queries() {
         let temp = NamedTempFile::new().unwrap();
-        let config = DPNCConfig::default();
+        let config = test_config();
 
         let mut dpnc = DPNC::new(temp.path(), config).unwrap();
 

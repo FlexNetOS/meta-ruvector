@@ -512,10 +512,10 @@ mod tests {
 
         // Strongly coupled 4-element system with higher coupling across agents
         let matrix = vec![
-            vec![0.5, 0.4, 0.05, 0.05],
-            vec![0.4, 0.5, 0.05, 0.05],
-            vec![0.05, 0.05, 0.5, 0.4],
-            vec![0.05, 0.05, 0.4, 0.5],
+            vec![0.5, 0.05, 0.4, 0.05],
+            vec![0.05, 0.5, 0.05, 0.4],
+            vec![0.4, 0.05, 0.5, 0.05],
+            vec![0.05, 0.4, 0.05, 0.5],
         ];
 
         let calc = DistributedPhiCalculator::new(4, matrix, assignments);
