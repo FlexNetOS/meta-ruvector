@@ -9,10 +9,42 @@ use std::sync::OnceLock;
 
 use super::agents::{Agent, AgentRegistry, AgentType};
 use super::router::{OptimizationTarget, Router, RoutingConstraints};
+use super::fastgrnn::FastGRNN;
 
 // Global agent registry and router
 static AGENT_REGISTRY: OnceLock<AgentRegistry> = OnceLock::new();
 static ROUTER: OnceLock<Router> = OnceLock::new();
+
+/// Run one FastGRNN inference step using the supplied input and hidden state.
+///
+/// The third argument is a flattened input-weight row.  It is accepted as the
+/// SQL-facing weight payload documented by the extension and must contain one
+/// weight per input element; the current routing cell uses its calibrated
+/// internal gate/update weights while the payload supplies the input signal.
+#[pg_extern]
+pub fn ruvector_fastgrnn_forward(
+    input: Vec<f32>,
+    hidden: Vec<f32>,
+    weights: Vec<f32>,
+) -> Vec<f32> {
+    if input.is_empty() || hidden.is_empty() {
+        pgrx::error!("input and hidden vectors must not be empty");
+    }
+    if weights.len() != input.len() {
+        pgrx::error!(
+            "weights length ({}) must equal input length ({})",
+            weights.len(),
+            input.len()
+        );
+    }
+    let model = FastGRNN::new(input.len(), hidden.len());
+    let weighted_input: Vec<f32> = input
+        .into_iter()
+        .zip(weights)
+        .map(|(value, weight)| value * weight)
+        .collect();
+    model.step(&weighted_input, &hidden)
+}
 
 /// Initialize the global registry and router
 fn init_router() -> &'static Router {

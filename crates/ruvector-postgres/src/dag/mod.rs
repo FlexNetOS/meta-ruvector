@@ -4,6 +4,9 @@
 //! with PostgreSQL's query planner to provide learned query optimization.
 
 pub mod functions;
+pub mod extension;
+pub mod guc;
 pub mod state;
+pub mod worker;
 
 pub use state::{DagConfig, DagState, DAG_STATE};

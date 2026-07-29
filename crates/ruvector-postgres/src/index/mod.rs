@@ -38,9 +38,9 @@ mod ivfflat_am;
 mod ivfflat_storage;
 
 // Parallel execution support
-// pub mod parallel;
-// pub mod bgworker;
-// pub mod parallel_ops;
+pub mod parallel;
+pub mod bgworker;
+pub mod parallel_ops;
 
 pub use hnsw::*;
 pub use ivfflat::*;
