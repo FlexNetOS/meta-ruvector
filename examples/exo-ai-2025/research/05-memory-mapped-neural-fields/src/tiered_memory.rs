@@ -221,22 +221,10 @@ impl TieredMemory {
         let mut tiers = HashMap::new();
 
         // Initialize tiers with the requested capacities.
-        tiers.insert(
-            Tier::L1Dram,
-            TierStorage::new(Tier::L1Dram, l1_capacity),
-        );
-        tiers.insert(
-            Tier::L2Cxl,
-            TierStorage::new(Tier::L2Cxl, l2_capacity),
-        );
-        tiers.insert(
-            Tier::L3Ssd,
-            TierStorage::new(Tier::L3Ssd, l3_capacity),
-        );
-        tiers.insert(
-            Tier::L4Hdd,
-            TierStorage::new(Tier::L4Hdd, l4_capacity),
-        );
+        tiers.insert(Tier::L1Dram, TierStorage::new(Tier::L1Dram, l1_capacity));
+        tiers.insert(Tier::L2Cxl, TierStorage::new(Tier::L2Cxl, l2_capacity));
+        tiers.insert(Tier::L3Ssd, TierStorage::new(Tier::L3Ssd, l3_capacity));
+        tiers.insert(Tier::L4Hdd, TierStorage::new(Tier::L4Hdd, l4_capacity));
 
         Self {
             tiers,

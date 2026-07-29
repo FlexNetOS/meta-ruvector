@@ -301,7 +301,7 @@ pub fn interference_visibility(amplitude1: Amplitude, amplitude2: Amplitude) -> 
     let p_min = (amplitude1 - amplitude2).norm_sqr();
 
     if p_max + p_min > 1e-10 {
-        (p_max - p_min) / (p_max + p_min)
+        ((p_max - p_min) / (p_max + p_min)).abs()
     } else {
         0.0
     }

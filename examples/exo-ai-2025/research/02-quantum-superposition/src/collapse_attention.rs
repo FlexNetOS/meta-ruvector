@@ -220,22 +220,16 @@ pub fn quantum_zeno_effect(
     n_measurements: usize,
     total_time: f64,
 ) -> f64 {
-    let dt = total_time / n_measurements as f64;
-    let mut current_state = initial_state.clone();
+    assert!(n_measurements > 0);
+    assert!(measurement_operator_index < initial_state.dimension());
 
-    for _ in 0..n_measurements {
-        // Apply projective measurement at index
-        let mut attention = AttentionOperator::full_attention(
-            measurement_operator_index,
-            current_state.dimension(),
-            1.0 / dt,
-        );
-
-        current_state = attention.apply(&current_state);
-    }
-
-    // Return fidelity with initial state
-    initial_state.fidelity(&current_state)
+    // This module has no Hamiltonian/propagator, so repeated projective
+    // sampling cannot model a Zeno survival curve: the first random collapse
+    // would erase the frequency dependence. Use the standard small-step
+    // survival approximation for the controlled transition probability.
+    let initial_probability = initial_state.probabilities()[measurement_operator_index];
+    let leakage = 1.0 - initial_probability;
+    (1.0 - leakage * total_time * total_time / n_measurements as f64).clamp(0.0, 1.0)
 }
 
 /// Attention-induced decoherence model
@@ -331,9 +325,13 @@ impl ConsciousnessThreshold {
         if max_entropy > 0.0 {
             // Normalized entropy distance from both extremes
             let structure = (max_entropy - entropy) / max_entropy;
-            let distribution = participation / state.dimension() as f64;
+            let distribution = if state.dimension() > 1 {
+                (participation - 1.0) / (state.dimension() as f64 - 1.0)
+            } else {
+                0.0
+            };
 
-            structure * distribution
+            structure * distribution.clamp(0.0, 1.0)
         } else {
             0.0
         }

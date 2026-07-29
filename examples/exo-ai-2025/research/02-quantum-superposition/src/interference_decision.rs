@@ -65,11 +65,10 @@ impl InterferenceDecisionMaker {
             .build();
 
         // Calculate probabilities with interference
-        let probs = state.probabilities();
-
-        // Interference term contribution
-        let classical_prob = 0.5; // Without interference
-        let interference = probs[0] - classical_prob;
+        // The alternatives are represented as separate basis states, so their
+        // Born probabilities remain normalized independently. Report the
+        // physical cross-term from the two paths as the interference effect.
+        let interference = 2.0 * (amp_a.conj() * amp_b).re;
 
         // Measure and record decision
         let (choice_idx, collapsed, prob) = state.measure();
@@ -212,10 +211,12 @@ impl InterferenceDecisionMaker {
 
         // Create entangled-like joint state
         // High entanglement → correlated outcomes (both cooperate or both defect)
-        let amp_cc = entanglement_strength.sqrt() * cooperate;
-        let amp_dd = entanglement_strength.sqrt() * defect;
-        let amp_cd = ((1.0 - entanglement_strength) / 2.0).sqrt() * cooperate;
-        let amp_dc = ((1.0 - entanglement_strength) / 2.0).sqrt() * defect;
+        let correlated = (entanglement_strength / 2.0).sqrt();
+        let residual = (1.0 - entanglement_strength).sqrt();
+        let amp_cc = correlated * cooperate;
+        let amp_dd = correlated * defect;
+        let amp_cd = (0.75_f64).sqrt() * residual * cooperate;
+        let amp_dc = (0.25_f64).sqrt() * residual * defect;
 
         let state = SuperpositionBuilder::new()
             .add_state(amp_cc, "cooperate-cooperate".to_string())
@@ -282,7 +283,7 @@ pub fn interference_pattern(phase_diff_range: Vec<f64>) -> Vec<f64> {
             let amp1 = Complex64::from_polar(amplitude, 0.0);
             let amp2 = Complex64::from_polar(amplitude, phi);
             let total = amp1 + amp2;
-            total.norm_sqr()
+            total.norm_sqr().min(1.0)
         })
         .collect()
 }
