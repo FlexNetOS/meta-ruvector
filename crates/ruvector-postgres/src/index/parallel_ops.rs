@@ -211,7 +211,7 @@ pub fn ruvector_benchmark_parallel(
             "parallel_setup_overhead_ms": 2.3,
             "merge_overhead_ms": 1.1,
             "total_overhead_ms": 3.4,
-            "effective_speedup": format!("{:.2}x", (sequential_ms / (parallel_ms + 3.4)).max(1.0))
+            "effective_speedup": format!("{:.2}x", (sequential_ms / (parallel_ms + 3.4_f64)).max(1.0))
         }
     });
 

@@ -40,8 +40,7 @@ pub extern "C" fn dag_learning_worker_main(_arg: pg_sys::Datum) {
         // Sleep for interval (1 minute)
         BackgroundWorker::wait_latch(Some(Duration::from_secs(60)));
 
-        // Reset latch
-        BackgroundWorker::reset_latch();
+        // The wait call consumes the latch state; pgrx 0.12 has no reset helper.
     }
 }
 

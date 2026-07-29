@@ -172,7 +172,7 @@ pub extern "C" fn ruvector_bgworker_main(_arg: pg_sys::Datum) {
         }
 
         // Check for shutdown signal
-        if unsafe { pg_sys::ShutdownRequestPending } {
+        if unsafe { pg_sys::ProcDiePending != 0 } {
             break;
         }
     }
