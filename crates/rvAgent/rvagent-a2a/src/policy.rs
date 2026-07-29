@@ -141,7 +141,10 @@ impl PolicyGuard {
     pub fn acquire(&self, caller: AgentID, skill: &str) -> Result<BucketTicket, PolicyError> {
         self.policy.check_skill(skill)?;
         let key = (caller, skill.to_string());
-        let mut map = self.buckets.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut map = self
+            .buckets
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         let current = *map.get(&key).unwrap_or(&0);
         if let Some(limit) = self.policy.max_concurrency {
             if current >= limit {

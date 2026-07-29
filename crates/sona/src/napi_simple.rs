@@ -73,8 +73,12 @@ impl SonaEngine {
         let embedding: Vec<f32> = query_embedding.iter().map(|&x| x as f32).collect();
         let builder = self.inner.begin_trajectory(embedding);
 
-        let mut builders = get_trajectory_builders().lock().unwrap_or_else(std::sync::PoisonError::into_inner);
-        let mut next_id = get_next_builder_id().lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut builders = get_trajectory_builders()
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut next_id = get_next_builder_id()
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         let id = *next_id;
         *next_id += 1;
         builders.insert(id, builder);
@@ -94,7 +98,9 @@ impl SonaEngine {
         attention_weights: Vec<f64>,
         reward: f64,
     ) {
-        let mut builders = get_trajectory_builders().lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut builders = get_trajectory_builders()
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         if let Some(builder) = builders.get_mut(&trajectory_id) {
             let act: Vec<f32> = activations.iter().map(|&x| x as f32).collect();
             let att: Vec<f32> = attention_weights.iter().map(|&x| x as f32).collect();
@@ -107,7 +113,9 @@ impl SonaEngine {
     /// @param route - Model route identifier
     #[napi]
     pub fn set_trajectory_route(&self, trajectory_id: u32, route: String) {
-        let mut builders = get_trajectory_builders().lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut builders = get_trajectory_builders()
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         if let Some(builder) = builders.get_mut(&trajectory_id) {
             builder.set_model_route(&route);
         }
@@ -118,7 +126,9 @@ impl SonaEngine {
     /// @param context_id - Context identifier
     #[napi]
     pub fn add_trajectory_context(&self, trajectory_id: u32, context_id: String) {
-        let mut builders = get_trajectory_builders().lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut builders = get_trajectory_builders()
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         if let Some(builder) = builders.get_mut(&trajectory_id) {
             builder.add_context(&context_id);
         }
@@ -129,7 +139,9 @@ impl SonaEngine {
     /// @param quality - Final quality score [0.0, 1.0]
     #[napi]
     pub fn end_trajectory(&self, trajectory_id: u32, quality: f64) {
-        let mut builders = get_trajectory_builders().lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut builders = get_trajectory_builders()
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         if let Some(builder) = builders.remove(&trajectory_id) {
             let trajectory = builder.build(quality as f32);
             self.inner.submit_trajectory(trajectory);

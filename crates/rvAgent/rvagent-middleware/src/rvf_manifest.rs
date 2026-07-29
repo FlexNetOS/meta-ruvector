@@ -71,7 +71,10 @@ impl RvfManifestMiddleware {
         };
 
         let handle = {
-            let mut table = self.mount_table.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+            let mut table = self
+                .mount_table
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
             table.mount(manifest, verify_status)
         };
 
@@ -83,7 +86,10 @@ impl RvfManifestMiddleware {
 
     /// Rebuild the cached tool adapters from the mount table.
     fn rebuild_tool_cache(&self) {
-        let table = self.mount_table.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let table = self
+            .mount_table
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         let tools: Vec<RvfToolAdapter> = table
             .all_tools()
             .into_iter()
@@ -97,7 +103,10 @@ impl RvfManifestMiddleware {
                     .unwrap_or_else(|| serde_json::json!({"type": "object", "properties": {}})),
             })
             .collect();
-        *self.cached_tools.lock().unwrap_or_else(std::sync::PoisonError::into_inner) = tools;
+        *self
+            .cached_tools
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner) = tools;
     }
 
     /// Parse a manifest from JSON (the fallback format without rvf-manifest crate).
@@ -159,7 +168,10 @@ impl Middleware for RvfManifestMiddleware {
         }
 
         // Inject RVF mount info into state extensions
-        let table = self.mount_table.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let table = self
+            .mount_table
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         if table.is_empty() {
             return None;
         }
@@ -196,7 +208,10 @@ impl Middleware for RvfManifestMiddleware {
         if !self.config.enabled {
             return vec![];
         }
-        let cached = self.cached_tools.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let cached = self
+            .cached_tools
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         cached
             .iter()
             .map(|t| Box::new(t.clone()) as Box<dyn Tool>)
@@ -353,7 +368,10 @@ mod tests {
 
         // mw2 should see the mounted package via shared table
         // (tools need rebuild on mw2 side, but mount table is shared)
-        let table = mw2.mount_table().lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let table = mw2
+            .mount_table()
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         assert_eq!(table.len(), 1);
     }
 }

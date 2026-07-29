@@ -97,7 +97,10 @@ impl WorkOrderStore {
 
     /// All WorkOrders with the given status, id-ordered.
     pub fn list_by_status(&self, status: Status) -> Result<Vec<WorkOrder>, StoreError> {
-        self.query("SELECT workorder_json FROM task_graph WHERE status = ?1 ORDER BY id ASC", params![token(&status)])
+        self.query(
+            "SELECT workorder_json FROM task_graph WHERE status = ?1 ORDER BY id ASC",
+            params![token(&status)],
+        )
     }
 
     /// All WorkOrders, id-ordered.
@@ -174,7 +177,11 @@ mod tests {
         let (_dir, s) = store();
         s.upsert(&wo("TASK-1", Status::Backlog)).expect("insert");
         s.upsert(&wo("TASK-1", Status::Done)).expect("update");
-        assert_eq!(s.count().expect("count"), 1, "same id updates, not duplicates");
+        assert_eq!(
+            s.count().expect("count"),
+            1,
+            "same id updates, not duplicates"
+        );
         assert_eq!(s.get("TASK-1").expect("get").unwrap().status, Status::Done);
     }
 

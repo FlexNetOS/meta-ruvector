@@ -52,7 +52,9 @@ pub extern "C" fn canonical_init(num_vertices: u32) -> i32 {
         g.add_vertex(i);
     }
 
-    let mut state = WASM_STATE.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let mut state = WASM_STATE
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
     state.graph = Some(g);
     state.last_cut = None;
     0
@@ -64,7 +66,9 @@ pub extern "C" fn canonical_init(num_vertices: u32) -> i32 {
 /// Returns 0 on success, -1 if graph not initialized, -2 if edge invalid.
 #[no_mangle]
 pub extern "C" fn canonical_add_edge(u: u64, v: u64, weight_fixed: u64) -> i32 {
-    let state = WASM_STATE.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let state = WASM_STATE
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
     let graph = match state.graph.as_ref() {
         Some(g) => g,
         None => return -1,
@@ -92,7 +96,9 @@ pub extern "C" fn canonical_add_edge(u: u64, v: u64, weight_fixed: u64) -> i32 {
 /// After a successful call, use `canonical_get_result` to read the result.
 #[no_mangle]
 pub extern "C" fn canonical_compute(source: u64) -> i32 {
-    let mut state = WASM_STATE.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let mut state = WASM_STATE
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
     let graph = match state.graph.as_ref() {
         Some(g) => g,
         None => return -1,
@@ -130,7 +136,9 @@ pub extern "C" fn canonical_compute(source: u64) -> i32 {
 /// The returned pointer must not be used after the next mutation call.
 #[no_mangle]
 pub extern "C" fn canonical_get_result() -> *const CanonicalMinCutResult {
-    let state = WASM_STATE.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let state = WASM_STATE
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
     if state.last_cut.is_some() {
         &state.last_result as *const CanonicalMinCutResult
     } else {
@@ -151,7 +159,9 @@ pub unsafe extern "C" fn canonical_get_hash(out_buf: *mut u8) -> i32 {
     if out_buf.is_null() {
         return -1;
     }
-    let state = WASM_STATE.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let state = WASM_STATE
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
     match state.last_cut.as_ref() {
         Some(cut) => {
             std::ptr::copy_nonoverlapping(cut.cut_hash.as_ptr(), out_buf, 32);
@@ -174,7 +184,9 @@ pub unsafe extern "C" fn canonical_get_side(out_buf: *mut u64, buf_len: u32) -> 
     if out_buf.is_null() {
         return -1;
     }
-    let state = WASM_STATE.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let state = WASM_STATE
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
     match state.last_cut.as_ref() {
         Some(cut) => {
             let count = cut.side_vertices.len().min(buf_len as usize);
@@ -200,7 +212,9 @@ pub unsafe extern "C" fn canonical_get_cut_edges(out_buf: *mut u64, buf_len: u32
     if out_buf.is_null() {
         return -1;
     }
-    let state = WASM_STATE.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let state = WASM_STATE
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
     match state.last_cut.as_ref() {
         Some(cut) => {
             let count = cut.cut_edges.len().min(buf_len as usize);
@@ -217,7 +231,9 @@ pub unsafe extern "C" fn canonical_get_cut_edges(out_buf: *mut u64, buf_len: u32
 /// Free the WASM graph and any cached results.
 #[no_mangle]
 pub extern "C" fn canonical_free() {
-    let mut state = WASM_STATE.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let mut state = WASM_STATE
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
     state.graph = None;
     state.last_cut = None;
 }
@@ -261,7 +277,9 @@ pub extern "C" fn dynamic_init(staleness_threshold: u64) -> i32 {
     };
     let engine = DynamicMinCut::with_config(config);
 
-    let mut state = DYNAMIC_STATE.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let mut state = DYNAMIC_STATE
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
     state.engine = Some(engine);
     0
 }
@@ -271,7 +289,9 @@ pub extern "C" fn dynamic_init(staleness_threshold: u64) -> i32 {
 /// Returns 0 on success, -1 if not initialized, -2 on error.
 #[no_mangle]
 pub extern "C" fn dynamic_add_edge(u: u64, v: u64, weight_fixed: u64) -> i32 {
-    let mut state = DYNAMIC_STATE.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let mut state = DYNAMIC_STATE
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
     let engine = match state.engine.as_mut() {
         Some(e) => e,
         None => return -1,
@@ -289,7 +309,9 @@ pub extern "C" fn dynamic_add_edge(u: u64, v: u64, weight_fixed: u64) -> i32 {
 /// Returns 0 on success, -1 if not initialized, -2 on error.
 #[no_mangle]
 pub extern "C" fn dynamic_remove_edge(u: u64, v: u64) -> i32 {
-    let mut state = DYNAMIC_STATE.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let mut state = DYNAMIC_STATE
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
     let engine = match state.engine.as_mut() {
         Some(e) => e,
         None => return -1,
@@ -306,7 +328,9 @@ pub extern "C" fn dynamic_remove_edge(u: u64, v: u64) -> i32 {
 /// Returns 0 on success, -1 if not initialized, -2 if cut not found.
 #[no_mangle]
 pub extern "C" fn dynamic_compute() -> i32 {
-    let mut state = DYNAMIC_STATE.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let mut state = DYNAMIC_STATE
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
     let engine = match state.engine.as_mut() {
         Some(e) => e,
         None => return -1,
@@ -326,7 +350,9 @@ pub extern "C" fn dynamic_compute() -> i32 {
 /// Returns the epoch, or u64::MAX if not initialized.
 #[no_mangle]
 pub extern "C" fn dynamic_epoch() -> u64 {
-    let state = DYNAMIC_STATE.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let state = DYNAMIC_STATE
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
     match state.engine.as_ref() {
         Some(e) => e.epoch(),
         None => u64::MAX,
@@ -338,7 +364,9 @@ pub extern "C" fn dynamic_epoch() -> u64 {
 /// Returns 1 if stale, 0 if not, -1 if not initialized.
 #[no_mangle]
 pub extern "C" fn dynamic_is_stale() -> i32 {
-    let state = DYNAMIC_STATE.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let state = DYNAMIC_STATE
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
     match state.engine.as_ref() {
         Some(e) => {
             if e.is_stale() {
@@ -356,7 +384,9 @@ pub extern "C" fn dynamic_is_stale() -> i32 {
 /// Returns 0 on success, -1 if not initialized.
 #[no_mangle]
 pub extern "C" fn dynamic_force_recompute() -> i32 {
-    let mut state = DYNAMIC_STATE.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let mut state = DYNAMIC_STATE
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
     let engine = match state.engine.as_mut() {
         Some(e) => e,
         None => return -1,
@@ -371,7 +401,9 @@ pub extern "C" fn dynamic_force_recompute() -> i32 {
 /// Returns a pointer to the `CanonicalMinCutResult` struct, or null.
 #[no_mangle]
 pub extern "C" fn dynamic_get_result() -> *const CanonicalMinCutResult {
-    let state = DYNAMIC_STATE.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let state = DYNAMIC_STATE
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
     if state.engine.is_some() && state.last_result.lambda_raw > 0 {
         &state.last_result as *const CanonicalMinCutResult
     } else {
@@ -382,7 +414,9 @@ pub extern "C" fn dynamic_get_result() -> *const CanonicalMinCutResult {
 /// Free the dynamic engine.
 #[no_mangle]
 pub extern "C" fn dynamic_free() {
-    let mut state = DYNAMIC_STATE.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let mut state = DYNAMIC_STATE
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
     state.engine = None;
 }
 
@@ -433,7 +467,9 @@ mod tests {
         let ptr = canonical_get_result();
         assert!(!ptr.is_null());
 
-        let state = WASM_STATE.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let state = WASM_STATE
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         assert_eq!(state.last_result.source_vertex, 0);
         assert_eq!(state.last_result.first_separable_vertex, 1);
         drop(state);

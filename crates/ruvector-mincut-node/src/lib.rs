@@ -149,14 +149,20 @@ impl MinCut {
     /// Get minimum cut value
     #[napi(getter)]
     pub fn min_cut_value(&self) -> f64 {
-        let mincut = self.inner.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mincut = self
+            .inner
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         mincut.min_cut_value()
     }
 
     /// Get detailed minimum cut result
     #[napi]
     pub fn min_cut(&self) -> JsMinCutResult {
-        let mincut = self.inner.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mincut = self
+            .inner
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         let result = mincut.min_cut();
 
         JsMinCutResult {
@@ -185,7 +191,10 @@ impl MinCut {
     /// Get cut edges
     #[napi]
     pub fn cut_edges(&self) -> Vec<JsEdge> {
-        let mincut = self.inner.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mincut = self
+            .inner
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         let edges = mincut.cut_edges();
 
         edges
@@ -202,28 +211,40 @@ impl MinCut {
     /// Get number of vertices
     #[napi(getter)]
     pub fn num_vertices(&self) -> u32 {
-        let mincut = self.inner.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mincut = self
+            .inner
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         mincut.num_vertices() as u32
     }
 
     /// Get number of edges
     #[napi(getter)]
     pub fn num_edges(&self) -> u32 {
-        let mincut = self.inner.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mincut = self
+            .inner
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         mincut.num_edges() as u32
     }
 
     /// Check if graph is connected
     #[napi]
     pub fn is_connected(&self) -> bool {
-        let mincut = self.inner.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mincut = self
+            .inner
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         mincut.is_connected()
     }
 
     /// Get algorithm statistics
     #[napi(getter)]
     pub fn stats(&self) -> JsStats {
-        let mincut = self.inner.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mincut = self
+            .inner
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         let stats = mincut.stats();
 
         JsStats {
@@ -237,7 +258,10 @@ impl MinCut {
     /// Reset statistics
     #[napi]
     pub fn reset_stats(&self) {
-        let mut mincut = self.inner.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut mincut = self
+            .inner
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         mincut.reset_stats();
     }
 }

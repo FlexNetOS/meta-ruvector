@@ -135,7 +135,9 @@ fn test_witness_middleware_logs_tool_calls() {
     let _response = mw.wrap_model_call(request, &handler);
 
     // Verify witness chain recorded both calls
-    let chain = builder.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let chain = builder
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
     assert_eq!(chain.len(), 2, "Witness must log all tool calls");
     assert_eq!(chain.entries()[0].tool_name, "read_file");
     assert_eq!(chain.entries()[1].tool_name, "execute");

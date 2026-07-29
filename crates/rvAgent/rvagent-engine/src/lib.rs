@@ -29,13 +29,13 @@ pub use adapter::{taskspec_to_workorder, workorder_to_taskspec, AdapterError};
 pub use csv::workorders_to_csv;
 pub use learning::{LearningError, RecordedRun, TrajectoryRecorder};
 pub use ledger::{LedgerError, ProofLedger};
-pub use store::{StoreError, WorkOrderStore};
 pub use proof::{ProofRecord, ProofStatus, PROOF_SCHEMA_VERSION};
 pub use schema::{proof_record_schema, workorder_schema};
 pub use selection::{
     parse_ready, top_ready, ClaimedTask, CommandOutput, CommandRunner, ReadyTask, SelectionError,
     Selector, SystemRunner,
 };
+pub use store::{StoreError, WorkOrderStore};
 pub use workorder::{IntentLock, Priority, Status, WorkOrder};
 
 use std::collections::BTreeMap;
@@ -430,7 +430,10 @@ mod tests {
         let wo = work_order(Some("true"));
         let mut spec = crate::adapter::workorder_to_taskspec(&wo).expect("to taskspec");
         spec.metadata = serde_json::Value::Null;
-        let err = RvAgentEngine::new().run(spec).await.expect_err("must error");
+        let err = RvAgentEngine::new()
+            .run(spec)
+            .await
+            .expect_err("must error");
         assert!(matches!(err, A2aError::Internal(_)));
     }
 
@@ -440,15 +443,19 @@ mod tests {
     async fn with_ledger_passing_run_witnesses_a_completed_proof() {
         let tmp = tempfile::NamedTempFile::new().expect("temp file");
         let engine = RvAgentEngine::with_ledger(tmp.path().to_path_buf());
-        let spec = crate::adapter::workorder_to_taskspec(&work_order(Some("true")))
-            .expect("to taskspec");
+        let spec =
+            crate::adapter::workorder_to_taskspec(&work_order(Some("true"))).expect("to taskspec");
 
         let task = engine.run(spec).await.expect("run ok");
         assert_eq!(task.status.state, TaskState::Completed);
 
         let ledger = crate::ledger::ProofLedger::new(tmp.path().to_path_buf());
         let records = ledger.read_all().expect("read_all");
-        assert_eq!(records.len(), 1, "a passing run must witness exactly one proof");
+        assert_eq!(
+            records.len(),
+            1,
+            "a passing run must witness exactly one proof"
+        );
         assert_eq!(records[0].status, ProofStatus::Completed);
         assert_eq!(records[0].task_id, "TEASTASK-011-test");
         assert_eq!(records[0].actor, "rvagent-engine");
@@ -460,8 +467,8 @@ mod tests {
     async fn with_ledger_failing_run_witnesses_a_failed_proof() {
         let tmp = tempfile::NamedTempFile::new().expect("temp file");
         let engine = RvAgentEngine::with_ledger(tmp.path().to_path_buf());
-        let spec = crate::adapter::workorder_to_taskspec(&work_order(Some("false")))
-            .expect("to taskspec");
+        let spec =
+            crate::adapter::workorder_to_taskspec(&work_order(Some("false"))).expect("to taskspec");
 
         let task = engine.run(spec).await.expect("run ok");
         assert_eq!(task.status.state, TaskState::Failed);
@@ -492,8 +499,8 @@ mod tests {
     async fn with_recorder_passing_run_records_reward_one() {
         let recorder = Arc::new(crate::learning::TrajectoryRecorder::new());
         let engine = RvAgentEngine::new().with_recorder(recorder.clone());
-        let spec = crate::adapter::workorder_to_taskspec(&work_order(Some("true")))
-            .expect("to taskspec");
+        let spec =
+            crate::adapter::workorder_to_taskspec(&work_order(Some("true"))).expect("to taskspec");
 
         let task = engine.run(spec).await.expect("run ok");
         assert_eq!(task.status.state, TaskState::Completed);
@@ -515,8 +522,8 @@ mod tests {
     async fn with_recorder_failing_run_records_reward_zero() {
         let recorder = Arc::new(crate::learning::TrajectoryRecorder::new());
         let engine = RvAgentEngine::new().with_recorder(recorder.clone());
-        let spec = crate::adapter::workorder_to_taskspec(&work_order(Some("false")))
-            .expect("to taskspec");
+        let spec =
+            crate::adapter::workorder_to_taskspec(&work_order(Some("false"))).expect("to taskspec");
 
         let task = engine.run(spec).await.expect("run ok");
         assert_eq!(task.status.state, TaskState::Failed);
@@ -536,8 +543,7 @@ mod tests {
         // recorded (matches the proof-ledger seam: only Completed/Failed are witnessed).
         let recorder = Arc::new(crate::learning::TrajectoryRecorder::new());
         let engine = RvAgentEngine::new().with_recorder(recorder.clone());
-        let spec =
-            crate::adapter::workorder_to_taskspec(&work_order(None)).expect("to taskspec");
+        let spec = crate::adapter::workorder_to_taskspec(&work_order(None)).expect("to taskspec");
 
         let task = engine.run(spec).await.expect("run ok");
         assert_eq!(task.status.state, TaskState::InputRequired);
@@ -565,8 +571,8 @@ mod tests {
         let recorder = Arc::new(crate::learning::TrajectoryRecorder::new());
         let engine =
             RvAgentEngine::with_ledger(tmp.path().to_path_buf()).with_recorder(recorder.clone());
-        let spec = crate::adapter::workorder_to_taskspec(&work_order(Some("true")))
-            .expect("to taskspec");
+        let spec =
+            crate::adapter::workorder_to_taskspec(&work_order(Some("true"))).expect("to taskspec");
 
         let task = engine.run(spec).await.expect("run ok");
         assert_eq!(task.status.state, TaskState::Completed);

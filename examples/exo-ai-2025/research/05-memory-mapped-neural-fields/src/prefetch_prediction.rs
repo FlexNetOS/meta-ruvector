@@ -217,7 +217,10 @@ impl HoeffdingTreePredictor {
     /// Predict next N pages likely to be accessed
     pub fn predict(&self, features: &AccessFeatures, n: usize) -> Vec<u64> {
         let feature_vec = features.to_vector();
-        let tree = self.root.read().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let tree = self
+            .root
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
 
         let mut predictions = Vec::new();
         for _ in 0..n {
@@ -226,7 +229,10 @@ impl HoeffdingTreePredictor {
         }
 
         // Queue predictions for accuracy tracking
-        let mut queue = self.prediction_queue.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut queue = self
+            .prediction_queue
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         for &pred in &predictions {
             queue.push_back(pred);
         }
@@ -239,14 +245,26 @@ impl HoeffdingTreePredictor {
         let feature_vec = features.to_vector();
 
         // Update tree (streaming learning)
-        let mut tree = self.root.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut tree = self
+            .root
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         tree.update(&feature_vec, actual_page);
 
         // Track accuracy
-        let mut queue = self.prediction_queue.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut queue = self
+            .prediction_queue
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         if let Some(predicted) = queue.pop_front() {
-            let mut total = self.total.write().unwrap_or_else(std::sync::PoisonError::into_inner);
-            let mut hits = self.hits.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+            let mut total = self
+                .total
+                .write()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            let mut hits = self
+                .hits
+                .write()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
 
             *total += 1;
             if predicted == actual_page {
@@ -255,7 +273,10 @@ impl HoeffdingTreePredictor {
         }
 
         // Update feature window
-        let mut window = self.feature_window.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut window = self
+            .feature_window
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         window.push_back(features.clone());
         if window.len() > 10 {
             window.pop_front();
@@ -264,12 +285,18 @@ impl HoeffdingTreePredictor {
 
     /// Get prediction accuracy
     pub fn accuracy(&self) -> f32 {
-        let total = *self.total.read().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let total = *self
+            .total
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         if total == 0 {
             return 0.0;
         }
 
-        let hits = *self.hits.read().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let hits = *self
+            .hits
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         hits as f32 / total as f32
     }
 
@@ -277,9 +304,19 @@ impl HoeffdingTreePredictor {
     pub fn stats(&self) -> PredictorStats {
         PredictorStats {
             accuracy: self.accuracy(),
-            total_predictions: *self.total.read().unwrap_or_else(std::sync::PoisonError::into_inner),
-            hits: *self.hits.read().unwrap_or_else(std::sync::PoisonError::into_inner),
-            window_size: self.feature_window.read().unwrap_or_else(std::sync::PoisonError::into_inner).len(),
+            total_predictions: *self
+                .total
+                .read()
+                .unwrap_or_else(std::sync::PoisonError::into_inner),
+            hits: *self
+                .hits
+                .read()
+                .unwrap_or_else(std::sync::PoisonError::into_inner),
+            window_size: self
+                .feature_window
+                .read()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .len(),
         }
     }
 }
@@ -306,7 +343,10 @@ impl MarkovPredictor {
 
     /// Predict next page based on current page
     pub fn predict(&self, current_page: u64, n: usize) -> Vec<u64> {
-        let transitions = self.transitions.read().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let transitions = self
+            .transitions
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
 
         let next_counts = transitions.get(&current_page);
         if next_counts.is_none() {
@@ -324,14 +364,20 @@ impl MarkovPredictor {
 
     /// Update transition probabilities
     pub fn update(&self, current_page: u64, next_page: u64) {
-        let mut transitions = self.transitions.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut transitions = self
+            .transitions
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         *transitions
             .entry(current_page)
             .or_default()
             .entry(next_page)
             .or_insert(0) += 1;
 
-        let mut history = self.history.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut history = self
+            .history
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         history.push(next_page);
 
         // Keep history bounded
@@ -389,7 +435,10 @@ impl PrefetchCoordinator {
         }
 
         // Queue for prefetching
-        let mut queue = self.prefetch_queue.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut queue = self
+            .prefetch_queue
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         for &page in &combined {
             queue.push_back(page);
         }
@@ -399,7 +448,10 @@ impl PrefetchCoordinator {
 
     /// Record actual access and update models
     pub fn record_access(&self, page_id: u64, context: &[f32]) {
-        let mut history = self.access_history.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut history = self
+            .access_history
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
 
         // Update models
         let history_vec: Vec<_> = history.iter().copied().collect();
@@ -419,15 +471,26 @@ impl PrefetchCoordinator {
 
     /// Get next prefetch target
     pub fn next_prefetch(&self) -> Option<u64> {
-        self.prefetch_queue.write().unwrap_or_else(std::sync::PoisonError::into_inner).pop_front()
+        self.prefetch_queue
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .pop_front()
     }
 
     /// Get statistics
     pub fn stats(&self) -> CoordinatorStats {
         CoordinatorStats {
             ml_accuracy: self.predictor.accuracy(),
-            queue_size: self.prefetch_queue.read().unwrap_or_else(std::sync::PoisonError::into_inner).len(),
-            history_size: self.access_history.read().unwrap_or_else(std::sync::PoisonError::into_inner).len(),
+            queue_size: self
+                .prefetch_queue
+                .read()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .len(),
+            history_size: self
+                .access_history
+                .read()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .len(),
         }
     }
 }

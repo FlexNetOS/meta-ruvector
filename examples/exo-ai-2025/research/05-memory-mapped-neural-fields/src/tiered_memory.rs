@@ -236,7 +236,10 @@ impl TieredMemory {
             .ok_or("Tier not found")?
             .insert(page)?;
 
-        self.page_index.write().unwrap_or_else(std::sync::PoisonError::into_inner).insert(page_id, tier);
+        self.page_index
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .insert(page_id, tier);
         Ok(())
     }
 
@@ -483,7 +486,10 @@ impl TieredMemory {
 
     /// Log migration event
     fn log_migration(&self, event: MigrationEvent) {
-        let mut log = self.migration_log.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut log = self
+            .migration_log
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         log.push_back(event);
 
         // Keep log bounded
@@ -511,8 +517,16 @@ impl TieredMemory {
             l2: self.tier_stats(Tier::L2Cxl),
             l3: self.tier_stats(Tier::L3Ssd),
             l4: self.tier_stats(Tier::L4Hdd),
-            total_pages: self.page_index.read().unwrap_or_else(std::sync::PoisonError::into_inner).len(),
-            migration_count: self.migration_log.read().unwrap_or_else(std::sync::PoisonError::into_inner).len(),
+            total_pages: self
+                .page_index
+                .read()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .len(),
+            migration_count: self
+                .migration_log
+                .read()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .len(),
         }
     }
 }

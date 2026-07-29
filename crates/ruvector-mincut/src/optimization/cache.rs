@@ -158,7 +158,10 @@ impl PathDistanceCache {
         let key = CacheKey::new(source, target);
 
         // Try to read from cache
-        let cache = self.cache.read().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let cache = self
+            .cache
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         if let Some(entry) = cache.get(&key) {
             self.hits.fetch_add(1, Ordering::Relaxed);
             if entry.prefetched {
@@ -218,8 +221,14 @@ impl PathDistanceCache {
 
     /// Internal insert with eviction
     fn insert_entry(&self, key: CacheKey, entry: CacheEntry) {
-        let mut cache = self.cache.write().unwrap_or_else(std::sync::PoisonError::into_inner);
-        let mut lru = self.lru_order.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut cache = self
+            .cache
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut lru = self
+            .lru_order
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
 
         // Evict if at capacity
         while cache.len() >= self.config.max_entries {
@@ -238,8 +247,14 @@ impl PathDistanceCache {
 
     /// Batch insert multiple distances
     pub fn insert_batch(&self, entries: &[(VertexId, VertexId, f64)]) {
-        let mut cache = self.cache.write().unwrap_or_else(std::sync::PoisonError::into_inner);
-        let mut lru = self.lru_order.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut cache = self
+            .cache
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut lru = self
+            .lru_order
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
 
         for &(source, target, distance) in entries {
             let key = CacheKey::new(source, target);
@@ -270,8 +285,14 @@ impl PathDistanceCache {
 
     /// Invalidate entries involving a vertex
     pub fn invalidate_vertex(&self, vertex: VertexId) {
-        let mut cache = self.cache.write().unwrap_or_else(std::sync::PoisonError::into_inner);
-        let mut lru = self.lru_order.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut cache = self
+            .cache
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut lru = self
+            .lru_order
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
 
         let keys_to_remove: Vec<CacheKey> = cache
             .keys()
@@ -287,8 +308,14 @@ impl PathDistanceCache {
 
     /// Clear entire cache
     pub fn clear(&self) {
-        let mut cache = self.cache.write().unwrap_or_else(std::sync::PoisonError::into_inner);
-        let mut lru = self.lru_order.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut cache = self
+            .cache
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut lru = self
+            .lru_order
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         cache.clear();
         lru.clear();
     }
@@ -347,7 +374,10 @@ impl PathDistanceCache {
 
     /// Get prefetch hints based on access patterns
     pub fn get_prefetch_hints(&self) -> Vec<PrefetchHint> {
-        let history = self.query_history.read().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let history = self
+            .query_history
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         if history.is_empty() {
             return Vec::new();
         }
@@ -376,13 +406,19 @@ impl PathDistanceCache {
 
     /// Get predicted queries for prefetching
     pub fn get_predicted_queries(&self) -> Vec<(VertexId, VertexId)> {
-        let pred = self.predicted_queries.read().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let pred = self
+            .predicted_queries
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         pred.iter().map(|key| (key.source, key.target)).collect()
     }
 
     /// Get cache statistics
     pub fn stats(&self) -> CacheStats {
-        let cache = self.cache.read().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let cache = self
+            .cache
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         CacheStats {
             hits: self.hits.load(Ordering::Relaxed),
             misses: self.misses.load(Ordering::Relaxed),
@@ -394,12 +430,18 @@ impl PathDistanceCache {
 
     /// Get current cache size
     pub fn len(&self) -> usize {
-        self.cache.read().unwrap_or_else(std::sync::PoisonError::into_inner).len()
+        self.cache
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .len()
     }
 
     /// Check if cache is empty
     pub fn is_empty(&self) -> bool {
-        self.cache.read().unwrap_or_else(std::sync::PoisonError::into_inner).is_empty()
+        self.cache
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .is_empty()
     }
 }
 

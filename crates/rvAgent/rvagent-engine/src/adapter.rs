@@ -136,7 +136,10 @@ mod tests {
         let wo = sample();
         let spec = workorder_to_taskspec(&wo).unwrap();
         assert_eq!(spec.id, "HFTASK-0058");
-        assert_eq!(spec.skill, "backend-dev", "role is preferred as the skill/capability key");
+        assert_eq!(
+            spec.skill, "backend-dev",
+            "role is preferred as the skill/capability key"
+        );
         match &spec.message.parts[0] {
             Part::Text { text } => assert_eq!(text, "emit WorkOrders from ExecutionPlan"),
             other => panic!("objective must project to a Text part, got {other:?}"),
@@ -146,7 +149,11 @@ mod tests {
     #[test]
     fn skill_prefers_role_then_lane_then_default() {
         let mut wo = sample();
-        assert_eq!(workorder_to_taskspec(&wo).unwrap().skill, "backend-dev", "role wins");
+        assert_eq!(
+            workorder_to_taskspec(&wo).unwrap().skill,
+            "backend-dev",
+            "role wins"
+        );
         wo.role = None;
         assert_eq!(
             workorder_to_taskspec(&wo).unwrap().skill,
@@ -177,7 +184,10 @@ mod tests {
                 wo.status = status;
                 wo.priority = priority;
                 let back = taskspec_to_workorder(&workorder_to_taskspec(&wo).unwrap()).unwrap();
-                assert_eq!(wo, back, "status {status:?} / priority {priority:?} round-trip");
+                assert_eq!(
+                    wo, back,
+                    "status {status:?} / priority {priority:?} round-trip"
+                );
             }
         }
     }

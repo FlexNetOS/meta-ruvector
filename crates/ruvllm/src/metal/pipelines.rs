@@ -226,7 +226,10 @@ impl PipelineCache {
 
         // Check cache
         {
-            let cache = self.cache.read().unwrap_or_else(std::sync::PoisonError::into_inner);
+            let cache = self
+                .cache
+                .read()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
             if let Some(pipeline) = cache.get(&key) {
                 return Ok(pipeline.clone());
             }
@@ -249,7 +252,10 @@ impl PipelineCache {
 
         // Cache
         {
-            let mut cache = self.cache.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+            let mut cache = self
+                .cache
+                .write()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
             cache.insert(key, pipeline.clone());
         }
 
@@ -258,7 +264,10 @@ impl PipelineCache {
 
     /// Clear the cache
     pub fn clear(&self) {
-        let mut cache = self.cache.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut cache = self
+            .cache
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         cache.clear();
     }
 }

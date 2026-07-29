@@ -152,7 +152,7 @@ pub use config::{QatConfig, QatLossWeights, QuantGranularity, SteVariant};
 
 // Candle-autodiff QAT engine (candle feature only)
 #[cfg(feature = "candle")]
-pub use candle_qat::{FakeQuant, QuantizedMlp, fake_quantize, train_qat_mse};
+pub use candle_qat::{fake_quantize, train_qat_mse, FakeQuant, QuantizedMlp};
 
 // Differentiable quantization
 pub use differentiable_quant::{

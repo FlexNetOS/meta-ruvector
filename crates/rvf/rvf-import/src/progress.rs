@@ -40,7 +40,10 @@ impl CollectingProgress {
     }
 
     pub fn reports(&self) -> Vec<(u64, u64, u64)> {
-        self.reports.lock().unwrap_or_else(std::sync::PoisonError::into_inner).clone()
+        self.reports
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .clone()
     }
 }
 

@@ -100,10 +100,15 @@ impl AcornGraph {
         let neighbors_lock: Vec<Mutex<Vec<u32>>> = forward.into_iter().map(Mutex::new).collect();
         // Walk i in increasing order so back-edges are merged deterministically.
         for i in 0..n {
-            let forward_i: Vec<u32> = neighbors_lock[i].lock().unwrap_or_else(std::sync::PoisonError::into_inner).clone();
+            let forward_i: Vec<u32> = neighbors_lock[i]
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .clone();
             for &j in &forward_i {
                 let j = j as usize;
-                let mut nj = neighbors_lock[j].lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+                let mut nj = neighbors_lock[j]
+                    .lock()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner);
                 if nj.len() < max_neighbors {
                     nj.push(i as u32);
                 }

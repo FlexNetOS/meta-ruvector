@@ -31,7 +31,10 @@ impl Backend for EditMockBackend {
         WriteResult::default()
     }
     fn edit(&self, path: &str, old: &str, new: &str, replace_all: bool) -> WriteResult {
-        let mut files = self.files.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut files = self
+            .files
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         match files.get(path).cloned() {
             None => WriteResult {
                 error: Some(format!("Error: file not found: {}", path)),

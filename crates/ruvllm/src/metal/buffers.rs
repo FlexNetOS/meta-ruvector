@@ -132,10 +132,16 @@ impl MetalBufferPool {
 
         // Try to get from pool
         {
-            let mut free = self.free_buffers.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+            let mut free = self
+                .free_buffers
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
             if let Some(buffers) = free.get_mut(&size_class) {
                 if let Some(buffer) = buffers.pop() {
-                    let mut current = self.current_size.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+                    let mut current = self
+                        .current_size
+                        .lock()
+                        .unwrap_or_else(std::sync::PoisonError::into_inner);
                     *current -= size_class;
                     return MetalBuffer {
                         buffer,
@@ -164,13 +170,19 @@ impl MetalBufferPool {
             return;
         }
 
-        let mut current = self.current_size.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut current = self
+            .current_size
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         if *current + metal_buffer.size > self.max_pool_size {
             // Pool is full, let buffer be dropped
             return;
         }
 
-        let mut free = self.free_buffers.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut free = self
+            .free_buffers
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         let buffers = free.entry(metal_buffer.size).or_insert_with(Vec::new);
         buffers.push(metal_buffer.buffer);
         *current += metal_buffer.size;
@@ -178,16 +190,28 @@ impl MetalBufferPool {
 
     /// Clear all pooled buffers
     pub fn clear(&self) {
-        let mut free = self.free_buffers.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut free = self
+            .free_buffers
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         free.clear();
-        let mut current = self.current_size.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut current = self
+            .current_size
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         *current = 0;
     }
 
     /// Get pool statistics
     pub fn stats(&self) -> BufferPoolStats {
-        let free = self.free_buffers.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
-        let current = self.current_size.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let free = self
+            .free_buffers
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let current = self
+            .current_size
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
 
         let mut total_buffers = 0;
         let mut size_class_counts = HashMap::new();

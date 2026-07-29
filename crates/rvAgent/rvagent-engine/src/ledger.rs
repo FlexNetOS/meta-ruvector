@@ -170,7 +170,11 @@ impl ProofLedger {
                     record.ledger_seq
                 )));
             }
-            let expected_prev = if i == 0 { None } else { Some(prev_hash.clone()) };
+            let expected_prev = if i == 0 {
+                None
+            } else {
+                Some(prev_hash.clone())
+            };
             if record.prev_action_hash != expected_prev {
                 return Err(LedgerError::ChainBroken(format!(
                     "record {i}: prev_action_hash {:?} does not link to predecessor {expected_prev:?}",

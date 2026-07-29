@@ -412,7 +412,9 @@ mod tests {
         let tmp = TempDir::new().unwrap();
         let (thermal, cpufreq) = write_synthetic_sysfs(&tmp);
         let sensor = ThermalSensor::with_roots(thermal, cpufreq);
-        let snap = sensor.read().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let snap = sensor
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
 
         // 3 valid zones (the malformed `thermal_zone_bogus` was skipped).
         assert_eq!(snap.cpu_temps_celsius.len(), 3);
@@ -467,7 +469,9 @@ mod tests {
         assert_eq!(p1.trim(), "2600000");
 
         // Re-read with the sensor → snapshot reflects the new max.
-        let snap = sensor.read().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let snap = sensor
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         assert_eq!(snap.cpu_policies.len(), 2);
         assert_eq!(snap.cpu_policies[0].max_hz, 2_600_000_000);
         assert_eq!(snap.cpu_policies[1].max_hz, 2_600_000_000);
@@ -489,7 +493,9 @@ mod tests {
         // Both roots point at a path that doesn't exist — no panic, empty snapshot.
         let sensor =
             ThermalSensor::with_roots("/nonexistent-path-thermal", "/nonexistent-path-cpufreq");
-        let snap = sensor.read().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let snap = sensor
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         assert!(snap.cpu_temps_celsius.is_empty());
         assert!(snap.cpu_policies.is_empty());
     }

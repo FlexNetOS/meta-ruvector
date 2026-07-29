@@ -327,7 +327,11 @@ impl VectorCache {
     }
 
     pub fn stats(&self) -> CacheStats {
-        self.inner.lock().unwrap_or_else(std::sync::PoisonError::into_inner).stats.clone()
+        self.inner
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .stats
+            .clone()
     }
 
     /// Per-backend counters. Populated lazily on first activity
@@ -377,7 +381,10 @@ impl VectorCache {
         crate::backend::validate_pulled_batch(&batch)?;
         // Fast path: target witness already cached — just point and return.
         {
-            let mut inner = self.inner.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+            let mut inner = self
+                .inner
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
             if inner.entries.contains_key(&witness) {
                 return self.inner_install_pointer_unlocked(&mut inner, key, witness, true);
             }
@@ -422,7 +429,10 @@ impl VectorCache {
             refcount: 0, // install_pointer bumps it
         };
 
-        let mut inner = self.inner.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut inner = self
+            .inner
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         // Another thread might have raced us and installed the witness
         // in the meantime — if so, drop our work and take the shared
         // entry (the two builds produce identical codes by determinism).
@@ -511,7 +521,10 @@ impl VectorCache {
                 idx.len()
             )));
         }
-        let mut inner = self.inner.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut inner = self
+            .inner
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         // Fast path: target witness already cached — just point and
         // bookkeep as a shared install. `shared=true` bumps
         // `shared_hits` — but this is a warm install, not a coherence
@@ -609,7 +622,10 @@ impl VectorCache {
     }
 
     pub(crate) fn invalidate_interned(&self, key: &InternedKey) {
-        let mut inner = self.inner.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut inner = self
+            .inner
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         if let Some(old_w) = inner.pointers.remove(key) {
             if let Some(e) = inner.entries.get_mut(&old_w) {
                 e.refcount = e.refcount.saturating_sub(1);
@@ -626,7 +642,11 @@ impl VectorCache {
 
     pub fn has(&self, key: &CacheKey) -> bool {
         let interned = intern_cache_key(key);
-        self.inner.lock().unwrap_or_else(std::sync::PoisonError::into_inner).pointers.contains_key(&interned)
+        self.inner
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .pointers
+            .contains_key(&interned)
     }
 
     /// What witness currently resolves from this key? `None` if unprimed.
@@ -636,7 +656,12 @@ impl VectorCache {
     }
 
     pub(crate) fn witness_of_interned(&self, key: &InternedKey) -> Option<WitnessKey> {
-        self.inner.lock().unwrap_or_else(std::sync::PoisonError::into_inner).pointers.get(key).cloned()
+        self.inner
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .pointers
+            .get(key)
+            .cloned()
     }
 
     /// How many external pointers resolve to this witness? (diagnostic)
@@ -653,7 +678,11 @@ impl VectorCache {
     /// How many distinct compressed-index entries exist in the cache?
     /// Differs from `pointers.len()` when witnesses are shared.
     pub fn entry_count(&self) -> usize {
-        self.inner.lock().unwrap_or_else(std::sync::PoisonError::into_inner).entries.len()
+        self.inner
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .entries
+            .len()
     }
 
     /// Clone out the `Arc<RabitqPlusIndex>` backing `witness` and its
@@ -665,7 +694,10 @@ impl VectorCache {
         &self,
         witness: &str,
     ) -> Option<(Arc<RabitqPlusIndex>, Arc<Vec<u64>>)> {
-        let inner = self.inner.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let inner = self
+            .inner
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         inner
             .entries
             .get(witness)
@@ -674,19 +706,28 @@ impl VectorCache {
 
     pub fn dim_of(&self, key: &CacheKey) -> Option<usize> {
         let interned = intern_cache_key(key);
-        let inner = self.inner.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let inner = self
+            .inner
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         let w = inner.pointers.get(&interned)?;
         inner.entries.get(w).map(|e| e.dim)
     }
 
     pub(crate) fn mark_hit(&self, key: &InternedKey) {
-        let mut inner = self.inner.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut inner = self
+            .inner
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         inner.stats.hits += 1;
         inner.per_backend_mut(&key.0).hits += 1;
         inner.per_collection_mut(key).hits += 1;
     }
     pub(crate) fn mark_miss(&self, key: &InternedKey) {
-        let mut inner = self.inner.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut inner = self
+            .inner
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         inner.stats.misses += 1;
         inner.per_backend_mut(&key.0).misses += 1;
         inner.per_collection_mut(key).misses += 1;
@@ -732,7 +773,10 @@ impl VectorCache {
         // is CPU-bound and needs no shared state beyond the index
         // (which is Arc-owned; no `&mut` required).
         let (index, pos_to_id, dim) = {
-            let mut inner = self.inner.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+            let mut inner = self
+                .inner
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
             let witness = inner
                 .pointers
                 .get(key)
@@ -803,7 +847,10 @@ impl VectorCache {
         // run the N scans unlocked. Concurrent batches against the
         // same or different keys parallelize — the scan is pure CPU.
         let (index, pos_to_id) = {
-            let mut inner = self.inner.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+            let mut inner = self
+                .inner
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
             let witness = inner
                 .pointers
                 .get(key)
@@ -850,7 +897,10 @@ impl VectorCache {
     }
 
     pub(crate) fn touch_interned(&self, key: &InternedKey) {
-        let mut inner = self.inner.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut inner = self
+            .inner
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         inner.last_checked.insert(key.clone(), Instant::now());
     }
 
@@ -867,7 +917,10 @@ impl VectorCache {
         match consistency {
             Consistency::Fresh => false,
             Consistency::Eventual { ttl_ms } => {
-                let inner = self.inner.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+                let inner = self
+                    .inner
+                    .lock()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner);
                 match inner.last_checked.get(key) {
                     Some(t) => t.elapsed().as_millis() < ttl_ms as u128,
                     None => false,
@@ -878,7 +931,10 @@ impl VectorCache {
             // that the caller has asserted immutability, so we never
             // round-trip to the backend again.
             Consistency::Frozen => {
-                let inner = self.inner.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+                let inner = self
+                    .inner
+                    .lock()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner);
                 inner.pointers.contains_key(key)
             }
         }

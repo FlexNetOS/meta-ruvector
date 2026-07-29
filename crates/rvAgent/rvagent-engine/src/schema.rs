@@ -101,7 +101,10 @@ mod tests {
         }
         for pr in [Priority::P0, Priority::P1, Priority::P2, Priority::P3] {
             let tok = serde_json::to_string(&pr).unwrap();
-            assert!(s.contains(&tok), "priority {tok} missing from emitted schema");
+            assert!(
+                s.contains(&tok),
+                "priority {tok} missing from emitted schema"
+            );
         }
     }
 
@@ -109,7 +112,9 @@ mod tests {
     /// status enum values.
     #[test]
     fn proof_schema_status_conforms_to_canonical() {
-        let s = serde_json::to_value(proof_record_schema()).unwrap().to_string();
+        let s = serde_json::to_value(proof_record_schema())
+            .unwrap()
+            .to_string();
         for st in [
             ProofStatus::Completed,
             ProofStatus::Passed,
@@ -118,7 +123,10 @@ mod tests {
             ProofStatus::RolledBack,
         ] {
             let tok = serde_json::to_string(&st).unwrap();
-            assert!(s.contains(&tok), "proof status {tok} missing from emitted schema");
+            assert!(
+                s.contains(&tok),
+                "proof status {tok} missing from emitted schema"
+            );
         }
     }
 }

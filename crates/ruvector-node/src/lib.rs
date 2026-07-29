@@ -602,7 +602,9 @@ impl CollectionManager {
         let manager = self.inner.clone();
 
         tokio::task::spawn_blocking(move || {
-            let manager = manager.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+            let manager = manager
+                .write()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
             manager.create_collection(&name, core_config)
         })
         .await
@@ -622,7 +624,9 @@ impl CollectionManager {
         let manager = self.inner.clone();
 
         tokio::task::spawn_blocking(move || {
-            let manager = manager.read().unwrap_or_else(std::sync::PoisonError::into_inner);
+            let manager = manager
+                .read()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
             manager.list_collections()
         })
         .await
@@ -640,7 +644,9 @@ impl CollectionManager {
         let manager = self.inner.clone();
 
         tokio::task::spawn_blocking(move || {
-            let manager = manager.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+            let manager = manager
+                .write()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
             manager.delete_collection(&name)
         })
         .await
@@ -660,7 +666,9 @@ impl CollectionManager {
         let manager = self.inner.clone();
 
         tokio::task::spawn_blocking(move || {
-            let manager = manager.read().unwrap_or_else(std::sync::PoisonError::into_inner);
+            let manager = manager
+                .read()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
             manager.collection_stats(&name)
         })
         .await
@@ -680,7 +688,9 @@ impl CollectionManager {
         let manager = self.inner.clone();
 
         tokio::task::spawn_blocking(move || {
-            let manager = manager.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+            let manager = manager
+                .write()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
             manager.create_alias(&alias, &collection)
         })
         .await
@@ -699,7 +709,9 @@ impl CollectionManager {
         let manager = self.inner.clone();
 
         tokio::task::spawn_blocking(move || {
-            let manager = manager.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+            let manager = manager
+                .write()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
             manager.delete_alias(&alias)
         })
         .await
@@ -721,7 +733,9 @@ impl CollectionManager {
         let manager = self.inner.clone();
 
         let aliases = tokio::task::spawn_blocking(move || {
-            let manager = manager.read().unwrap_or_else(std::sync::PoisonError::into_inner);
+            let manager = manager
+                .read()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
             manager.list_aliases()
         })
         .await

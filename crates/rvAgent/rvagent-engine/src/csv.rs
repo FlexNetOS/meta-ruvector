@@ -41,7 +41,11 @@ fn cell(value: Option<&serde_json::Value>) -> String {
         None | Some(serde_json::Value::Null) => String::new(),
         Some(serde_json::Value::Array(items)) => items
             .iter()
-            .map(|i| i.as_str().map(String::from).unwrap_or_else(|| i.to_string()))
+            .map(|i| {
+                i.as_str()
+                    .map(String::from)
+                    .unwrap_or_else(|| i.to_string())
+            })
             .collect::<Vec<_>>()
             .join("|"),
         Some(serde_json::Value::String(s)) => s.clone(),
@@ -110,13 +114,22 @@ mod tests {
         assert_eq!(lines.next().unwrap(), COLUMNS.join(","));
         let row = lines.next().unwrap();
         assert!(row.starts_with("HFTASK-1,"));
-        assert!(row.contains("\"Title, with a comma\""), "comma field must be quoted");
+        assert!(
+            row.contains("\"Title, with a comma\""),
+            "comma field must be quoted"
+        );
         assert!(row.contains("active,"), "status enum projected lowercase");
         assert!(row.contains("P0,"), "priority projected");
         assert!(row.contains("src/a|src/b"), "path_scope pipe-joined");
-        assert!(row.contains("true"), "human_approval_required bool projected");
+        assert!(
+            row.contains("true"),
+            "human_approval_required bool projected"
+        );
         // empty optional (role=None) yields an empty cell, not the literal "null"
-        assert!(!row.contains("null"), "absent optionals must be empty, not 'null'");
+        assert!(
+            !row.contains("null"),
+            "absent optionals must be empty, not 'null'"
+        );
     }
 
     #[test]

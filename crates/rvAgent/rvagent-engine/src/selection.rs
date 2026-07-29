@@ -473,7 +473,11 @@ mod tests {
             .script("git-kb", out(READY_FIXTURE, "", Some(0)))
             .script(
                 "hf",
-                out("", "hf claim: tasks/alpha BLOCKED — conflict: held by other", Some(1)),
+                out(
+                    "",
+                    "hf claim: tasks/alpha BLOCKED — conflict: held by other",
+                    Some(1),
+                ),
             );
         let selector = Selector::new(runner).with_holder("agent-loser");
 
@@ -491,10 +495,8 @@ mod tests {
 
     #[test]
     fn select_and_claim_ready_nonzero_exit_is_ready_command_failed() {
-        let runner = FakeRunner::new().script(
-            "git-kb",
-            out("", "git-kb: not a repository", Some(2)),
-        );
+        let runner =
+            FakeRunner::new().script("git-kb", out("", "git-kb: not a repository", Some(2)));
         let selector = Selector::new(runner).with_holder("agent-x");
         let err = selector.select_and_claim().expect_err("ready failed → err");
         match err {

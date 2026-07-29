@@ -423,12 +423,16 @@ impl SharedAgentFactory {
 
     /// Get read access to factory
     pub fn read(&self) -> std::sync::RwLockReadGuard<'_, AgentFactory> {
-        self.inner.read().unwrap_or_else(std::sync::PoisonError::into_inner)
+        self.inner
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
     }
 
     /// Get write access to factory
     pub fn write(&self) -> std::sync::RwLockWriteGuard<'_, AgentFactory> {
-        self.inner.write().unwrap_or_else(std::sync::PoisonError::into_inner)
+        self.inner
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
     }
 
     /// Clone the Arc

@@ -176,10 +176,7 @@ impl TrajectoryRecorder {
             Err(poison) => poison.into_inner(),
         };
         bank.extract_patterns();
-        bank.find_similar(&query, k)
-            .into_iter()
-            .cloned()
-            .collect()
+        bank.find_similar(&query, k).into_iter().cloned().collect()
     }
 }
 

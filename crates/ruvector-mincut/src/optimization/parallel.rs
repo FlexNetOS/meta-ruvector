@@ -104,7 +104,10 @@ impl WorkStealingScheduler {
 
     /// Submit work item
     pub fn submit(&self, item: WorkItem) {
-        let mut queue = self.work_queue.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut queue = self
+            .work_queue
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         let estimated_work = item.estimated_work;
         queue.push(item);
 
@@ -117,7 +120,10 @@ impl WorkStealingScheduler {
 
     /// Submit multiple work items
     pub fn submit_batch(&self, items: Vec<WorkItem>) {
-        let mut queue = self.work_queue.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut queue = self
+            .work_queue
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
 
         for item in items {
             self.total_work
@@ -131,7 +137,10 @@ impl WorkStealingScheduler {
 
     /// Try to steal work from queue
     pub fn steal(&self) -> Option<WorkItem> {
-        let mut queue = self.work_queue.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut queue = self
+            .work_queue
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
 
         if queue.is_empty() {
             return None;
@@ -145,28 +154,43 @@ impl WorkStealingScheduler {
 
     /// Record result
     pub fn complete(&self, result: LevelUpdateResult) {
-        let mut results = self.results.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut results = self
+            .results
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         results.insert(result.level, result);
     }
 
     /// Get all results
     pub fn get_results(&self) -> HashMap<usize, LevelUpdateResult> {
-        self.results.read().unwrap_or_else(std::sync::PoisonError::into_inner).clone()
+        self.results
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .clone()
     }
 
     /// Clear results
     pub fn clear_results(&self) {
-        self.results.write().unwrap_or_else(std::sync::PoisonError::into_inner).clear();
+        self.results
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .clear();
     }
 
     /// Check if queue is empty
     pub fn is_empty(&self) -> bool {
-        self.work_queue.read().unwrap_or_else(std::sync::PoisonError::into_inner).is_empty()
+        self.work_queue
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .is_empty()
     }
 
     /// Get queue size
     pub fn queue_size(&self) -> usize {
-        self.work_queue.read().unwrap_or_else(std::sync::PoisonError::into_inner).len()
+        self.work_queue
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .len()
     }
 
     /// Get total steals

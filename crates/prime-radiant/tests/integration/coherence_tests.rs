@@ -689,7 +689,9 @@ fn test_parallel_energy_computation() {
                     }
                 }
 
-                let mut total = total.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+                let mut total = total
+                    .lock()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner);
                 *total += local_sum;
             })
         })
@@ -699,7 +701,9 @@ fn test_parallel_energy_computation() {
         h.join().unwrap();
     }
 
-    let parallel_total = *total.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let parallel_total = *total
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
 
     // Verify against sequential
     let (sequential_total, _) = compute_total_energy(&states, &edges);

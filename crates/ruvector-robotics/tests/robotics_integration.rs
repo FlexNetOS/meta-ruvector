@@ -578,7 +578,9 @@ fn test_concurrent_spatial_search() {
         let handle = std::thread::spawn(move || {
             let query = [(thread_id as f32) * 2.5, (thread_id as f32) * 2.5, 5.0_f32];
             let neighbors = idx.search_nearest(&query, 5).unwrap();
-            res.lock().unwrap_or_else(std::sync::PoisonError::into_inner).push((thread_id, neighbors));
+            res.lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .push((thread_id, neighbors));
         });
         handles.push(handle);
     }
@@ -587,7 +589,9 @@ fn test_concurrent_spatial_search() {
         handle.join().expect("Thread should not panic");
     }
 
-    let final_results = results.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let final_results = results
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
     assert_eq!(final_results.len(), 4, "All 4 threads should complete");
     for (tid, neighbors) in final_results.iter() {
         assert_eq!(

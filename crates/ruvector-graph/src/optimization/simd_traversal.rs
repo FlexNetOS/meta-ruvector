@@ -77,7 +77,9 @@ impl SimdTraversal {
             batch.par_chunks(chunk_size).for_each(|chunk| {
                 for &node in chunk {
                     let neighbors = {
-                        let mut vf = visit_fn.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+                        let mut vf = visit_fn
+                            .lock()
+                            .unwrap_or_else(std::sync::PoisonError::into_inner);
                         vf(node)
                     };
 
@@ -225,7 +227,9 @@ impl SimdTraversal {
                                 active_workers.fetch_add(1, Ordering::SeqCst);
 
                                 let neighbors = {
-                                    let mut vf = visit_fn.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+                                    let mut vf = visit_fn
+                                        .lock()
+                                        .unwrap_or_else(std::sync::PoisonError::into_inner);
                                     vf(node)
                                 };
 

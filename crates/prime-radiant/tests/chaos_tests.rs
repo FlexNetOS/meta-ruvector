@@ -386,7 +386,9 @@ fn test_concurrent_state_modifications() {
 
     // Initialize some nodes
     {
-        let mut s = state.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut s = state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         for i in 0..100 {
             s.add_node(i, vec![i as f32 / 100.0; 4]);
         }
@@ -402,7 +404,9 @@ fn test_concurrent_state_modifications() {
             thread::spawn(move || {
                 let mut rng = ChaCha8Rng::seed_from_u64(thread_id);
                 for _ in 0..100 {
-                    let mut s = state.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+                    let mut s = state
+                        .lock()
+                        .unwrap_or_else(std::sync::PoisonError::into_inner);
                     let node_id = rng.gen_range(0..100);
                     s.perturb_node(node_id, &mut rng);
                 }
@@ -415,7 +419,9 @@ fn test_concurrent_state_modifications() {
     }
 
     // State should still be valid
-    let s = state.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let s = state
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
     assert_eq!(s.nodes.len(), 100);
     assert_eq!(s.edges.len(), 99);
 
@@ -430,7 +436,9 @@ fn test_concurrent_energy_computation() {
 
     // Initialize
     {
-        let mut s = state.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut s = state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         for i in 0..50 {
             s.add_node(i, vec![i as f32 / 50.0; 4]);
         }
@@ -444,7 +452,9 @@ fn test_concurrent_energy_computation() {
         .map(|_| {
             let state = Arc::clone(&state);
             thread::spawn(move || {
-                let s = state.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+                let s = state
+                    .lock()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner);
                 s.compute_energy()
             })
         })

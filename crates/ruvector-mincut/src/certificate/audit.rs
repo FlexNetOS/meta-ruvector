@@ -125,8 +125,14 @@ impl AuditLogger {
 
     /// Log a new entry
     pub fn log(&self, entry_type: AuditEntryType, data: AuditData) {
-        let mut entries = self.entries.write().unwrap_or_else(std::sync::PoisonError::into_inner);
-        let mut next_id = self.next_id.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut entries = self
+            .entries
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut next_id = self
+            .next_id
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
 
         let entry = AuditEntry::new(*next_id, entry_type, data);
         *next_id += 1;
@@ -231,14 +237,20 @@ impl AuditLogger {
 
     /// Get recent entries (up to count)
     pub fn recent(&self, count: usize) -> Vec<AuditEntry> {
-        let entries = self.entries.read().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let entries = self
+            .entries
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         let start = entries.len().saturating_sub(count);
         entries.iter().skip(start).cloned().collect()
     }
 
     /// Get entries by type
     pub fn by_type(&self, entry_type: AuditEntryType) -> Vec<AuditEntry> {
-        let entries = self.entries.read().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let entries = self
+            .entries
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         entries
             .iter()
             .filter(|e| e.entry_type == entry_type)
@@ -248,7 +260,10 @@ impl AuditLogger {
 
     /// Export full log
     pub fn export(&self) -> Vec<AuditEntry> {
-        let entries = self.entries.read().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let entries = self
+            .entries
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         entries.iter().cloned().collect()
     }
 
@@ -260,15 +275,24 @@ impl AuditLogger {
 
     /// Clear the log
     pub fn clear(&self) {
-        let mut entries = self.entries.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut entries = self
+            .entries
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         entries.clear();
-        let mut next_id = self.next_id.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut next_id = self
+            .next_id
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         *next_id = 0;
     }
 
     /// Get number of entries
     pub fn len(&self) -> usize {
-        let entries = self.entries.read().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let entries = self
+            .entries
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         entries.len()
     }
 

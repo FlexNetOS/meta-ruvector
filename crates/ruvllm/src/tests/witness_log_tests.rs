@@ -484,7 +484,10 @@ fn test_unique_ids_concurrent() {
                     vec![0.0; 768],
                     RoutingDecision::default(),
                 );
-                ids_clone.lock().unwrap_or_else(std::sync::PoisonError::into_inner).insert(entry.request_id);
+                ids_clone
+                    .lock()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner)
+                    .insert(entry.request_id);
             }
         }));
     }
@@ -493,7 +496,10 @@ fn test_unique_ids_concurrent() {
         handle.join().unwrap();
     }
 
-    let unique_count = ids.lock().unwrap_or_else(std::sync::PoisonError::into_inner).len();
+    let unique_count = ids
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+        .len();
     assert_eq!(unique_count, 1000, "All IDs should be unique");
 }
 

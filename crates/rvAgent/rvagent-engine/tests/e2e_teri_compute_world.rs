@@ -112,7 +112,10 @@ async fn teri_compute_world_flows_through_teas_end_to_end() {
 
     // 3. S3 adapter -> REAL execution through the hardened backend.
     let spec = workorder_to_taskspec(&wo).expect("adapt WorkOrder -> TaskSpec");
-    let task = engine.run(spec).await.expect("engine.run must return a verdict");
+    let task = engine
+        .run(spec)
+        .await
+        .expect("engine.run must return a verdict");
 
     // 4. Verdict: proof-backed Completed, never paper.
     assert_eq!(
@@ -144,7 +147,11 @@ async fn teri_compute_world_flows_through_teas_end_to_end() {
     let mut done = wo;
     done.status = Status::Done;
     store.upsert(&done).expect("mark Done");
-    assert_eq!(store.count().expect("count still one"), 1, "same id updates, no dupe");
+    assert_eq!(
+        store.count().expect("count still one"),
+        1,
+        "same id updates, no dupe"
+    );
     assert_eq!(store.list_by_status(Status::Done).expect("done").len(), 1);
 
     eprintln!(

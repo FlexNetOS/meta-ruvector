@@ -132,7 +132,10 @@ async fn happy_path_one_workorder_flows_end_to_end() {
     let claimed: ClaimedTask = selector
         .select_and_claim()
         .expect("happy-path claim must acquire the lease");
-    assert_eq!(claimed.slug, READY_SLUG, "we claimed the milestone task slug");
+    assert_eq!(
+        claimed.slug, READY_SLUG,
+        "we claimed the milestone task slug"
+    );
     assert_eq!(claimed.holder, HOLDER, "claim recorded under our holder");
 
     // --- adapter -> engine.run (REAL execution) with a live ledger ----------------------
@@ -182,7 +185,11 @@ async fn happy_path_one_workorder_flows_end_to_end() {
 async fn gate_refusal_claim_conflict_never_runs_the_workorder() {
     let boundary = FakeBoundary {
         gitkb: out(&ready_json(), "", Some(0)),
-        hf: out("", "hf claim: TEASTASK-007 BLOCKED — conflict: held by other peer", Some(1)),
+        hf: out(
+            "",
+            "hf claim: TEASTASK-007 BLOCKED — conflict: held by other peer",
+            Some(1),
+        ),
     };
     let selector = Selector::new(boundary).with_holder(HOLDER);
 
@@ -192,14 +199,19 @@ async fn gate_refusal_claim_conflict_never_runs_the_workorder() {
 
     match selector.select_and_claim() {
         Err(SelectionError::ClaimConflict { slug, code, stderr }) => {
-            assert_eq!(slug, READY_SLUG, "the conflict names the task we could not claim");
+            assert_eq!(
+                slug, READY_SLUG,
+                "the conflict names the task we could not claim"
+            );
             assert_eq!(code, Some(1));
             assert!(stderr.contains("conflict"), "conflict surfaced: {stderr}");
             // Refused: the WorkOrder is NOT ours, so `engine.run` is deliberately never
             // invoked here. `engine` is intentionally left unused in this branch.
             let _ = &engine;
         }
-        other => panic!("expected ClaimConflict; a refused lease must not read as success: {other:?}"),
+        other => {
+            panic!("expected ClaimConflict; a refused lease must not read as success: {other:?}")
+        }
     }
 
     // No claim => no run => no proof. The ledger was never written.
@@ -229,14 +241,19 @@ async fn no_paper_completion_failing_verification_is_failed_not_completed() {
         hf: out("hf claim: acquired lease", "", Some(0)),
     };
     let selector = Selector::new(boundary).with_holder(HOLDER);
-    let claimed = selector.select_and_claim().expect("claim acquires the lease");
+    let claimed = selector
+        .select_and_claim()
+        .expect("claim acquires the lease");
     assert_eq!(claimed.slug, READY_SLUG);
 
     let tmp = tempfile::NamedTempFile::new().expect("temp ledger file");
     let engine = RvAgentEngine::with_ledger(tmp.path().to_path_buf());
     let spec = workorder_to_taskspec(&work_order("false")).expect("adapt WorkOrder -> TaskSpec");
 
-    let task = engine.run(spec).await.expect("engine.run returns a verdict");
+    let task = engine
+        .run(spec)
+        .await
+        .expect("engine.run returns a verdict");
 
     // A failing verification is Failed, and NEVER Completed.
     assert_eq!(task.status.state, TaskState::Failed);

@@ -191,7 +191,9 @@ impl EmbeddingCache {
             Miss,
         }
         let arc_vec: Option<Arc<Vec<f32>>> = {
-            let mut shard = self.shards[shard_idx].lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+            let mut shard = self.shards[shard_idx]
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
             shard.counter = shard.counter.wrapping_add(1);
             let now_counter = shard.counter;
             let now = if self.ttl.is_some() {
@@ -246,7 +248,9 @@ impl EmbeddingCache {
         let k = Self::key(fingerprint, text);
         let shard_idx = self.shard_for(&k);
         let arc = Arc::new(value);
-        let mut shard = self.shards[shard_idx].lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut shard = self.shards[shard_idx]
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         shard.counter = shard.counter.wrapping_add(1);
         let now_counter = shard.counter;
         shard.map.insert(

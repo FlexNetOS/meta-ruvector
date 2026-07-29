@@ -354,7 +354,9 @@ fn test_concurrent_send_recv_single_producer_single_consumer() {
         for i in 0..message_count {
             let msg = format!("Message {}", i);
             loop {
-                let mut q = queue_sender.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+                let mut q = queue_sender
+                    .lock()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner);
                 match q.send(msg.as_bytes(), MsgPriority::Normal) {
                     Ok(()) => break,
                     Err(KernelError::QueueFull) => {
@@ -374,7 +376,9 @@ fn test_concurrent_send_recv_single_producer_single_consumer() {
         let mut received = 0;
 
         while received < message_count {
-            let mut q = queue_receiver.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+            let mut q = queue_receiver
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
             match q.recv(&mut buf) {
                 Ok(_len) => {
                     received += 1;
@@ -417,7 +421,9 @@ fn test_concurrent_multiple_producers() {
             for i in 0..messages_per_producer {
                 let msg = format!("P{}-M{}", producer_id, i);
                 loop {
-                    let mut q = queue_clone.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+                    let mut q = queue_clone
+                        .lock()
+                        .unwrap_or_else(std::sync::PoisonError::into_inner);
                     match q.send(msg.as_bytes(), MsgPriority::Normal) {
                         Ok(()) => break,
                         Err(KernelError::QueueFull) => {
@@ -443,7 +449,9 @@ fn test_concurrent_multiple_producers() {
         let mut attempts = 0;
 
         while received < total_messages && attempts < max_attempts {
-            let mut q = queue_consumer.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+            let mut q = queue_consumer
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
             match q.recv(&mut buf) {
                 Ok(_len) => {
                     received += 1;
@@ -489,7 +497,9 @@ fn test_stress_high_throughput() {
         let msg = [0xABu8; 32];
         for _ in 0..message_count {
             loop {
-                let mut q = queue_sender.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+                let mut q = queue_sender
+                    .lock()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner);
                 match q.send(&msg, MsgPriority::High) {
                     Ok(()) => {
                         sent_clone.fetch_add(1, Ordering::SeqCst);
@@ -513,7 +523,9 @@ fn test_stress_high_throughput() {
         let mut attempts = 0;
 
         while received < message_count && attempts < max_attempts {
-            let mut q = queue_receiver.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+            let mut q = queue_receiver
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
             match q.recv(&mut buf) {
                 Ok(_) => {
                     received += 1;

@@ -264,7 +264,10 @@ impl PeerRegistry {
     }
 
     pub fn add(&self, peer: PeerSnapshot) {
-        let mut guard = self.inner.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut guard = self
+            .inner
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         if let Some(slot) = guard.iter_mut().find(|e| e.snapshot.id == peer.id) {
             slot.snapshot = peer;
             return;
@@ -278,7 +281,8 @@ impl PeerRegistry {
 
     pub fn remove(&self, id: &AgentID) {
         self.inner
-            .write().unwrap_or_else(std::sync::PoisonError::into_inner)
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
             .retain(|e| &e.snapshot.id != id);
     }
 
@@ -287,7 +291,10 @@ impl PeerRegistry {
     /// background sweeper needed.
     pub fn healthy_pool(&self) -> Vec<PeerSnapshot> {
         let now = Instant::now();
-        let mut guard = self.inner.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut guard = self
+            .inner
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         for entry in guard.iter_mut() {
             if let PeerHealth::Open { until, .. } = &entry.health {
                 if now >= *until {
@@ -306,7 +313,10 @@ impl PeerRegistry {
 
     #[tracing::instrument(skip(self), fields(peer = %id.0))]
     pub fn record_success(&self, id: &AgentID) {
-        let mut guard = self.inner.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut guard = self
+            .inner
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         if let Some(e) = guard.iter_mut().find(|e| &e.snapshot.id == id) {
             e.consecutive_failures = 0;
             e.health = PeerHealth::Healthy;
@@ -316,7 +326,10 @@ impl PeerRegistry {
     #[tracing::instrument(skip(self), fields(peer = %id.0))]
     pub fn record_failure(&self, id: &AgentID) {
         let now = Instant::now();
-        let mut guard = self.inner.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut guard = self
+            .inner
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         if let Some(e) = guard.iter_mut().find(|e| &e.snapshot.id == id) {
             e.consecutive_failures = e.consecutive_failures.saturating_add(1);
             if e.consecutive_failures >= self.failure_threshold {
@@ -330,7 +343,10 @@ impl PeerRegistry {
 
     /// EWMA-fold a fresh observation (alpha = 0.3) into rolling stats.
     pub fn update_stats(&self, id: &AgentID, latency_ms: f64, cost_usd: f64) {
-        let mut guard = self.inner.write().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut guard = self
+            .inner
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         if let Some(e) = guard.iter_mut().find(|e| &e.snapshot.id == id) {
             let s = &mut e.snapshot;
             s.ewma_latency_ms = EWMA_ALPHA * latency_ms + (1.0 - EWMA_ALPHA) * s.ewma_latency_ms;
@@ -341,7 +357,8 @@ impl PeerRegistry {
     #[cfg(test)]
     fn health_of(&self, id: &AgentID) -> Option<PeerHealth> {
         self.inner
-            .read().unwrap_or_else(std::sync::PoisonError::into_inner)
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
             .iter()
             .find(|e| &e.snapshot.id == id)
             .map(|e| e.health.clone())

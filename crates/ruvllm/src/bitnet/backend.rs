@@ -788,7 +788,10 @@ impl BitNetBackend {
         self.scratch.allocate(&config);
 
         // Initialize routing history
-        self.routing_history.lock().unwrap_or_else(std::sync::PoisonError::into_inner).clear();
+        self.routing_history
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .clear();
 
         self.config = Some(config);
         self.loaded = true;
@@ -1489,7 +1492,10 @@ impl BitNetBackend {
         // Rebuild every 16 tokens to amortize the transition matrix cost.
         self.predictor_stale_count += 1;
         if self.predictor_stale_count >= 16 {
-            let hist = self.routing_history.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+            let hist = self
+                .routing_history
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
             if hist.len() >= 2 {
                 self.expert_predictor =
                     Some(ExpertPredictor::from_history(config.num_experts, &hist));
@@ -1965,7 +1971,10 @@ impl BitNetBackend {
                 // This pulls weight cache lines into L2/L3 during the router computation,
                 // hiding memory latency for the upcoming expert GEMVs.
                 if let Some(ref predictor) = self.expert_predictor {
-                    let hist = self.routing_history.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+                    let hist = self
+                        .routing_history
+                        .lock()
+                        .unwrap_or_else(std::sync::PoisonError::into_inner);
                     if let Some(last) = hist.last() {
                         let predicted = predictor.predict_next(last, config.active_experts);
                         let experts = &self.layers[layer_idx].experts;
@@ -1992,7 +2001,10 @@ impl BitNetBackend {
                 // For GLM-4.7-Flash, layer 0 is Dense (first_k_dense_replace=1), so
                 // the first MoE layer is at index first_k_dense_replace.
                 if layer_idx == config.first_k_dense_replace {
-                    let mut hist = self.routing_history.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+                    let mut hist = self
+                        .routing_history
+                        .lock()
+                        .unwrap_or_else(std::sync::PoisonError::into_inner);
                     hist.push(indices.clone());
                     if hist.len() > self.max_routing_history {
                         hist.remove(0);

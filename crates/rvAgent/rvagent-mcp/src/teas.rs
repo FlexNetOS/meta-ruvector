@@ -366,7 +366,11 @@ mod tests {
         assert!(names.contains(&"teas_list".to_string()));
 
         // list_mcp_tools (wire form) also exposes them.
-        let wire: Vec<String> = reg.list_mcp_tools().iter().map(|t| t.name.clone()).collect();
+        let wire: Vec<String> = reg
+            .list_mcp_tools()
+            .iter()
+            .map(|t| t.name.clone())
+            .collect();
         assert!(wire.contains(&"teas_run".to_string()));
     }
 
@@ -392,7 +396,10 @@ mod tests {
         let body = result_json(&result);
         assert_eq!(body["state"], "completed");
         assert_eq!(body["task_id"], "TEASTASK-010-test");
-        assert!(body.get("artifact").is_some(), "completed run carries artifact");
+        assert!(
+            body.get("artifact").is_some(),
+            "completed run carries artifact"
+        );
     }
 
     #[tokio::test]
@@ -403,11 +410,17 @@ mod tests {
             .call_tool("teas_run", work_order_json(Some("false")))
             .await
             .expect("call ok");
-        assert!(!result.is_error, "a failing verification is an outcome, not a tool error");
+        assert!(
+            !result.is_error,
+            "a failing verification is an outcome, not a tool error"
+        );
         let body = result_json(&result);
         assert_eq!(body["state"], "failed");
         assert_ne!(body["state"], "completed");
-        assert!(body.get("message").is_some(), "failed run carries a failure message");
+        assert!(
+            body.get("message").is_some(),
+            "failed run carries a failure message"
+        );
     }
 
     #[tokio::test]
@@ -419,7 +432,10 @@ mod tests {
             .call_tool("teas_run", json!({ "not": "a workorder" }))
             .await
             .expect("call returns a result (no panic)");
-        assert!(result.is_error, "malformed WorkOrder must be a tool-error result");
+        assert!(
+            result.is_error,
+            "malformed WorkOrder must be a tool-error result"
+        );
     }
 
     #[tokio::test]
@@ -439,10 +455,7 @@ mod tests {
 
         // Verify the witness chain via the tool.
         let verified = reg
-            .call_tool(
-                "teas_verify_ledger",
-                json!({ "ledger_path": ledger_path }),
-            )
+            .call_tool("teas_verify_ledger", json!({ "ledger_path": ledger_path }))
             .await
             .expect("verify ok");
         assert!(!verified.is_error);
@@ -464,7 +477,10 @@ mod tests {
     async fn teas_list_returns_the_tool_names() {
         let reg = McpToolRegistry::new();
         register_teas_tools(&reg).expect("register");
-        let result = reg.call_tool("teas_list", Value::Null).await.expect("call ok");
+        let result = reg
+            .call_tool("teas_list", Value::Null)
+            .await
+            .expect("call ok");
         assert!(!result.is_error);
         let body = result_json(&result);
         assert_eq!(body["status"], "ready");

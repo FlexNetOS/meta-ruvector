@@ -116,20 +116,29 @@ impl BoundedInstance {
         self.rebuild_adjacency();
 
         // Invalidate current witness since structure changed
-        *self.best_witness.lock().unwrap_or_else(std::sync::PoisonError::into_inner) = None;
+        *self
+            .best_witness
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner) = None;
         // Note: boundary cache is already updated incrementally above
     }
 
     /// Incrementally update boundary cache on edge insertion
     fn update_boundary_on_insert(&self, u: VertexId, v: VertexId) {
-        let witness_ref = self.best_witness.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let witness_ref = self
+            .best_witness
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         if let Some((_, ref witness)) = *witness_ref {
             let u_in = witness.contains(u);
             let v_in = witness.contains(v);
 
             // If edge crosses the cut, increment boundary
             if u_in != v_in {
-                let mut cache = self.boundary_cache.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+                let mut cache = self
+                    .boundary_cache
+                    .lock()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner);
                 if cache.valid {
                     cache.value += 1;
                 }
@@ -139,14 +148,20 @@ impl BoundedInstance {
 
     /// Incrementally update boundary cache on edge deletion
     fn update_boundary_on_delete(&self, u: VertexId, v: VertexId) {
-        let witness_ref = self.best_witness.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let witness_ref = self
+            .best_witness
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         if let Some((_, ref witness)) = *witness_ref {
             let u_in = witness.contains(u);
             let v_in = witness.contains(v);
 
             // If edge crossed the cut, decrement boundary
             if u_in != v_in {
-                let mut cache = self.boundary_cache.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+                let mut cache = self
+                    .boundary_cache
+                    .lock()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner);
                 if cache.valid {
                     cache.value = cache.value.saturating_sub(1);
                 }
@@ -156,7 +171,10 @@ impl BoundedInstance {
 
     /// Check if witness needs invalidation after edge change
     fn maybe_invalidate_witness(&mut self, u: VertexId, v: VertexId) {
-        let mut witness_ref = self.best_witness.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut witness_ref = self
+            .best_witness
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         if let Some((_, ref witness)) = *witness_ref {
             let u_in = witness.contains(u);
             let v_in = witness.contains(v);
@@ -268,7 +286,10 @@ impl BoundedInstance {
                 match self.oracle.search(&graph, query) {
                     LocalKCutResult::Found { witness, cut_value } => {
                         // Update certificate
-                        let mut cert = self.certificate.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+                        let mut cert = self
+                            .certificate
+                            .lock()
+                            .unwrap_or_else(std::sync::PoisonError::into_inner);
                         if let Some(last) = cert.localkcut_responses.last_mut() {
                             last.result = LocalKCutResultSummary::Found {
                                 cut_value,
@@ -387,7 +408,10 @@ impl BoundedInstance {
     /// Returns O(1) if cache is valid, otherwise recomputes in O(m)
     /// and caches the result for future incremental updates.
     fn get_cached_boundary(&self) -> Option<u64> {
-        let cache = self.boundary_cache.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let cache = self
+            .boundary_cache
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         if cache.valid {
             Some(cache.value)
         } else {
@@ -397,20 +421,29 @@ impl BoundedInstance {
 
     /// Set boundary cache with new value
     fn set_boundary_cache(&self, value: u64) {
-        let mut cache = self.boundary_cache.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut cache = self
+            .boundary_cache
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         cache.value = value;
         cache.valid = true;
     }
 
     /// Invalidate boundary cache
     fn invalidate_boundary_cache(&self) {
-        let mut cache = self.boundary_cache.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut cache = self
+            .boundary_cache
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         cache.valid = false;
     }
 
     /// Get the certificate
     pub fn certificate(&self) -> CutCertificate {
-        self.certificate.lock().unwrap_or_else(std::sync::PoisonError::into_inner).clone()
+        self.certificate
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .clone()
     }
 }
 
@@ -455,7 +488,10 @@ impl ProperCutInstance for BoundedInstance {
 
         // Use cached witness if valid
         {
-            let witness_ref = self.best_witness.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+            let witness_ref = self
+                .best_witness
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
             if let Some((value, ref witness)) = *witness_ref {
                 if value >= self.lambda_min && value <= self.lambda_max {
                     return InstanceResult::ValueInRange {
@@ -470,7 +506,11 @@ impl ProperCutInstance for BoundedInstance {
         if self.vertices.len() < 20 {
             if let Some((value, witness)) = self.brute_force_min_cut() {
                 // Cache the result and initialize boundary cache for incremental updates
-                *self.best_witness.lock().unwrap_or_else(std::sync::PoisonError::into_inner) = Some((value, witness.clone()));
+                *self
+                    .best_witness
+                    .lock()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner) =
+                    Some((value, witness.clone()));
                 self.set_boundary_cache(value);
 
                 if value <= self.lambda_max {
@@ -484,7 +524,11 @@ impl ProperCutInstance for BoundedInstance {
         // Use LocalKCut oracle for larger graphs
         if let Some((value, witness)) = self.search_for_cuts() {
             // Cache the result and initialize boundary cache for incremental updates
-            *self.best_witness.lock().unwrap_or_else(std::sync::PoisonError::into_inner) = Some((value, witness.clone()));
+            *self
+                .best_witness
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner) =
+                Some((value, witness.clone()));
             self.set_boundary_cache(value);
             return InstanceResult::ValueInRange { value, witness };
         }

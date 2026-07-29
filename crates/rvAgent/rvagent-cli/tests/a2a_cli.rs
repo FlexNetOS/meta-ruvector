@@ -56,12 +56,17 @@ async fn a2a_serve_discover_and_send_task() {
                 if n == 0 {
                     break;
                 }
-                buf.lock().unwrap_or_else(std::sync::PoisonError::into_inner).extend_from_slice(&chunk[..n]);
+                buf.lock()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner)
+                    .extend_from_slice(&chunk[..n]);
             }
         });
     }
     let dump_stderr = || -> String {
-        let raw = stderr_buf.lock().unwrap_or_else(std::sync::PoisonError::into_inner).clone();
+        let raw = stderr_buf
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .clone();
         String::from_utf8_lossy(&raw).into_owned()
     };
 

@@ -58,7 +58,10 @@ impl P2cPool {
 
     /// Total worker count in the pool, regardless of healthy state.
     pub fn size(&self) -> usize {
-        self.inner.lock().unwrap_or_else(std::sync::PoisonError::into_inner).len()
+        self.inner
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .len()
     }
 
     /// Snapshot of every worker's endpoint, healthy or not. Cheap clone.
@@ -76,7 +79,10 @@ impl P2cPool {
     /// pool, return the one with lower EWMA latency. If only one healthy
     /// worker exists, returns that. If none, returns None.
     pub fn choose_two_random(&self) -> Option<WorkerEndpoint> {
-        let inner = self.inner.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let inner = self
+            .inner
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         let healthy: Vec<&WorkerStats> = inner.iter().filter(|w| w.healthy).collect();
         match healthy.len() {
             0 => None,
@@ -103,7 +109,10 @@ impl P2cPool {
     /// `alpha` controls memory: 0.1 = slow / smoother, 0.5 = fast / reactive.
     pub fn record_latency(&self, name: &str, observed: Duration, alpha: f64) {
         let observed_us = observed.as_micros() as f64;
-        let mut inner = self.inner.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut inner = self
+            .inner
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         if let Some(w) = inner.iter_mut().find(|w| w.endpoint.name == name) {
             w.ewma_latency_us = (1.0 - alpha) * w.ewma_latency_us + alpha * observed_us;
             w.failed_health_checks = 0;
@@ -112,7 +121,10 @@ impl P2cPool {
 
     /// Increment failed-health counter; eject if threshold reached.
     pub fn record_health_failure(&self, name: &str, threshold: u32) {
-        let mut inner = self.inner.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut inner = self
+            .inner
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         if let Some(w) = inner.iter_mut().find(|w| w.endpoint.name == name) {
             w.failed_health_checks += 1;
             if w.failed_health_checks >= threshold {
@@ -124,7 +136,10 @@ impl P2cPool {
     /// Mark a worker healthy again (used by the health-check loop after a
     /// successful probe of a previously-ejected worker).
     pub fn mark_healthy(&self, name: &str) {
-        let mut inner = self.inner.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut inner = self
+            .inner
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         if let Some(w) = inner.iter_mut().find(|w| w.endpoint.name == name) {
             w.healthy = true;
             w.failed_health_checks = 0;
@@ -136,7 +151,10 @@ impl P2cPool {
     /// doesn't match the coordinator's expected model — that's a hard
     /// disqualification, not a transient blip.
     pub fn eject(&self, name: &str) {
-        let mut inner = self.inner.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut inner = self
+            .inner
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         if let Some(w) = inner.iter_mut().find(|w| w.endpoint.name == name) {
             w.healthy = false;
         }
