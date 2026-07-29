@@ -199,24 +199,43 @@ impl Default for TieredMemory {
 impl TieredMemory {
     /// Create new tiered memory system
     pub fn new() -> Self {
+        Self::with_capacities(
+            64 * 1024 * 1024 * 1024,
+            512 * 1024 * 1024 * 1024,
+            4 * 1024 * 1024 * 1024 * 1024,
+            1024 * 1024 * 1024 * 1024 * 1024,
+        )
+    }
+
+    /// Create a tiered memory system with explicit capacities.
+    ///
+    /// Production callers use `new` and the architectural DRAM/CXL/SSD/HDD
+    /// capacities above; focused tests can exercise eviction without
+    /// allocating gigabytes of host memory.
+    pub fn with_capacities(
+        l1_capacity: u64,
+        l2_capacity: u64,
+        l3_capacity: u64,
+        l4_capacity: u64,
+    ) -> Self {
         let mut tiers = HashMap::new();
 
-        // Initialize tiers with typical capacities
+        // Initialize tiers with the requested capacities.
         tiers.insert(
             Tier::L1Dram,
-            TierStorage::new(Tier::L1Dram, 64 * 1024 * 1024 * 1024), // 64 GB
+            TierStorage::new(Tier::L1Dram, l1_capacity),
         );
         tiers.insert(
             Tier::L2Cxl,
-            TierStorage::new(Tier::L2Cxl, 512 * 1024 * 1024 * 1024), // 512 GB
+            TierStorage::new(Tier::L2Cxl, l2_capacity),
         );
         tiers.insert(
             Tier::L3Ssd,
-            TierStorage::new(Tier::L3Ssd, 4 * 1024 * 1024 * 1024 * 1024), // 4 TB
+            TierStorage::new(Tier::L3Ssd, l3_capacity),
         );
         tiers.insert(
             Tier::L4Hdd,
-            TierStorage::new(Tier::L4Hdd, 1024 * 1024 * 1024 * 1024 * 1024), // 1 PB
+            TierStorage::new(Tier::L4Hdd, l4_capacity),
         );
 
         Self {
@@ -599,11 +618,16 @@ mod tests {
 
     #[test]
     fn test_eviction() {
-        let mut memory = TieredMemory::new();
+        let page_size = 1024 * 1024; // 1 MiB per page in this host fixture
+        let mut memory = TieredMemory::with_capacities(
+            8 * page_size as u64,
+            16 * page_size as u64,
+            32 * page_size as u64,
+            64 * page_size as u64,
+        );
 
         // Fill L1 to near capacity
-        let page_size = 1024 * 1024 * 1024; // 1 GB per page
-        for i in 0..60 {
+        for i in 0..8 {
             let page = Page::new(i, vec![i as f32; page_size / 4], Tier::L4Hdd);
             memory.insert(page).unwrap();
             memory.promote(i, Tier::L1Dram, "test").ok();
@@ -613,7 +637,7 @@ mod tests {
         assert!(stats.page_count > 0);
 
         // Insert large page should trigger eviction
-        let large_page = Page::new(100, vec![100.0; page_size / 4], Tier::L4Hdd);
+        let large_page = Page::new(100, vec![100.0; (4 * page_size) / 4], Tier::L4Hdd);
         memory.insert(large_page).unwrap();
         memory.promote(100, Tier::L1Dram, "test").ok();
 
