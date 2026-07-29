@@ -362,6 +362,7 @@ impl ComparisonSummary {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::BenchmarkResult;
 
     #[test]
     fn test_comparison_mappings() {
