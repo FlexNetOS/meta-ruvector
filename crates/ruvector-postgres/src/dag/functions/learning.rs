@@ -44,26 +44,6 @@ fn dag_reset_learning(
     pgrx::notice!("Learning state reset complete");
 }
 
-/// Export learned state
-#[pg_extern]
-fn dag_export_state() -> Vec<u8> {
-    crate::dag::state::DAG_STATE.export_state()
-}
-
-/// Import learned state
-#[pg_extern]
-fn dag_import_state(state_data: Vec<u8>) -> TableIterator<'static, (
-    name!(patterns_imported, i32),
-    name!(trajectories_imported, i32),
-    name!(clusters_restored, i32),
-)> {
-    let result = crate::dag::state::DAG_STATE.import_state(&state_data);
-
-    TableIterator::new(vec![
-        (result.patterns as i32, result.trajectories as i32, result.clusters as i32)
-    ])
-}
-
 /// Get EWC constraint info
 #[pg_extern]
 fn dag_ewc_constraints() -> TableIterator<'static, (
