@@ -50,7 +50,7 @@ pub fn ruvector_inner_product(a: RuVector, b: RuVector) -> f32 {
             b.dimensions()
         );
     }
-    -inner_product_distance(a.as_slice(), b.as_slice())
+    inner_product_distance(a.as_slice(), b.as_slice())
 }
 
 /// Compute Manhattan (L1) distance between two native ruvector types
