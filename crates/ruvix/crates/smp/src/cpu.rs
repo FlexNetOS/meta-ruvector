@@ -156,7 +156,6 @@ impl fmt::Display for CpuIdError {
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[repr(u8)]
-#[derive(Default)]
 pub enum CpuState {
     /// CPU is powered off or not present
     #[default]

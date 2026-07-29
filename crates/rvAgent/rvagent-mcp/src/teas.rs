@@ -42,7 +42,7 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use serde_json::{json, Value};
 
-use rvagent_a2a::executor::TaskRunner;
+use rvagent_a2a::{executor::TaskRunner, types::Task};
 use rvagent_engine::{workorder_to_taskspec, ProofLedger, RvAgentEngine, WorkOrder};
 
 use crate::protocol::{Content, ToolCallResult};
@@ -112,7 +112,7 @@ impl McpToolHandler for TeasRunHandler {
             Some(path) => RvAgentEngine::with_ledger(path),
             None => RvAgentEngine::new(),
         };
-        let task = match engine.run(spec).await {
+        let task: Task = match engine.run(spec).await {
             Ok(task) => task,
             Err(e) => {
                 return Ok(err_result(format!("teas_run: engine run failed: {e}")));

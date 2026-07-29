@@ -204,14 +204,12 @@ impl GraphDatabase {
             let mut hg = hypergraph
                 .write()
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
-            hg.add_entity(id.clone(), embedding);
+            hg.add_entity(id.clone(), embedding.clone());
 
             // Add to property graph
-            let gdb = graph_db
+            let mut gdb = graph_db
                 .write()
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
-            let mut builder = NodeBuilder::new().id(&id);
-
             register_node(
                 &mut hg,
                 &mut gdb,

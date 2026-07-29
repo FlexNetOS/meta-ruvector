@@ -12,6 +12,8 @@ path = "src/main.rs"
 
 [dependencies]
 rvagent-core = { path = "../rvagent-core" }
+rvagent-a2a = { path = "../rvagent-a2a" }
+rvagent-engine = { path = "../rvagent-engine" }
 rvagent-tools = { path = "../rvagent-tools" }
 rvagent-middleware = { path = "../rvagent-middleware" }
 serde = { workspace = true }
