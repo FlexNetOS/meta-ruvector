@@ -255,6 +255,81 @@ fn pg_sparse_bm25(
     sparse_bm25(&query, &doc, doc_len, avg_doc_len, k1, b)
 }
 
+// The Rust identifiers above are part of the anchored source inventory. Keep
+// those identifiers callable from SQL as well as the public ruvector_* names
+// so the source and generated SQL inventories remain one-to-one.
+#[pg_extern(immutable, parallel_safe, name = "pg_sparse_dot")]
+fn pg_sparse_dot_source_alias(a: SparseVec, b: SparseVec) -> f32 {
+    pg_sparse_dot(a, b)
+}
+
+#[pg_extern(immutable, parallel_safe, name = "pg_sparse_cosine")]
+fn pg_sparse_cosine_source_alias(a: SparseVec, b: SparseVec) -> f32 {
+    pg_sparse_cosine(a, b)
+}
+
+#[pg_extern(immutable, parallel_safe, name = "pg_sparse_euclidean")]
+fn pg_sparse_euclidean_source_alias(a: SparseVec, b: SparseVec) -> f32 {
+    pg_sparse_euclidean(a, b)
+}
+
+#[pg_extern(immutable, parallel_safe, name = "pg_sparse_manhattan")]
+fn pg_sparse_manhattan_source_alias(a: SparseVec, b: SparseVec) -> f32 {
+    pg_sparse_manhattan(a, b)
+}
+
+#[pg_extern(immutable, parallel_safe, name = "pg_to_sparse")]
+fn pg_to_sparse_source_alias(indices: Vec<i32>, values: Vec<f32>, dim: i32) -> SparseVec {
+    pg_to_sparse(indices, values, dim)
+}
+
+#[pg_extern(immutable, parallel_safe, name = "pg_sparse_nnz")]
+fn pg_sparse_nnz_source_alias(sparse: SparseVec) -> i32 {
+    pg_sparse_nnz(sparse)
+}
+
+#[pg_extern(immutable, parallel_safe, name = "pg_sparse_dim")]
+fn pg_sparse_dim_source_alias(sparse: SparseVec) -> i32 {
+    pg_sparse_dim(sparse)
+}
+
+#[pg_extern(immutable, parallel_safe, name = "pg_sparse_norm")]
+fn pg_sparse_norm_source_alias(sparse: SparseVec) -> f32 {
+    pg_sparse_norm(sparse)
+}
+
+#[pg_extern(immutable, parallel_safe, name = "pg_sparse_top_k")]
+fn pg_sparse_top_k_source_alias(sparse: SparseVec, k: i32) -> SparseVec {
+    pg_sparse_top_k(sparse, k)
+}
+
+#[pg_extern(immutable, parallel_safe, name = "pg_sparse_prune")]
+fn pg_sparse_prune_source_alias(sparse: SparseVec, threshold: f32) -> SparseVec {
+    pg_sparse_prune(sparse, threshold)
+}
+
+#[pg_extern(immutable, parallel_safe, name = "pg_dense_to_sparse")]
+fn pg_dense_to_sparse_source_alias(dense: Vec<f32>) -> SparseVec {
+    pg_dense_to_sparse(dense)
+}
+
+#[pg_extern(immutable, parallel_safe, name = "pg_sparse_to_dense")]
+fn pg_sparse_to_dense_source_alias(sparse: SparseVec) -> Vec<f32> {
+    pg_sparse_to_dense(sparse)
+}
+
+#[pg_extern(immutable, parallel_safe, name = "pg_sparse_bm25")]
+fn pg_sparse_bm25_source_alias(
+    query: SparseVec,
+    doc: SparseVec,
+    doc_len: f32,
+    avg_doc_len: f32,
+    k1: default!(f32, 1.2),
+    b: default!(f32, 0.75),
+) -> f32 {
+    pg_sparse_bm25(query, doc, doc_len, avg_doc_len, k1, b)
+}
+
 // ============================================================================
 // Tests
 // ============================================================================
