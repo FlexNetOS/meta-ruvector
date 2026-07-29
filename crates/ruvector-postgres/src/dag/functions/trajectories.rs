@@ -56,7 +56,7 @@ fn dag_trajectory_history(
 /// Analyze trajectory trends
 #[pg_extern]
 fn dag_trajectory_trends(
-    window_size: default!(&str, "1 hour"),
+    window_size: default!(&str, "'1 hour'"),
 ) -> TableIterator<'static, (
     name!(window_start, String),
     name!(trajectory_count, i32),
