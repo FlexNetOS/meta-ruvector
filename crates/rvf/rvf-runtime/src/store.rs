@@ -863,28 +863,6 @@ impl RvfStore {
             if self.deletion_bitmap.is_deleted(vec_id) {
                 continue;
             }
-            // Membership visibility for this store's own vectors.
-            //
-            // A COW child is deliberately excluded: `branch()` sizes its
-            // include filter to the parent's vector_count and `insert()` never
-            // registers child-local IDs, so consulting the filter here would
-            // hide the child's own writes. For a COW child the filter keeps its
-            // existing meaning — which parent-inherited IDs remain visible —
-            // and is applied to parent rows by `cow_exact_parent_scan` and
-            // `query_via_index_cow`.
-            //
-            // For a non-COW store the filter is a plain visibility set over the
-            // store's own vectors, which is exactly what `rvf filter` writes.
-            // `index_eligible` and `rabitq_eligible` both refuse to serve a
-            // store that has a membership filter, so this scan is the only path
-            // such a query can reach — one check is sufficient.
-            if self.cow_engine.is_none() {
-                if let Some(ref mf) = self.membership_filter {
-                    if !mf.contains(vec_id) {
-                        continue;
-                    }
-                }
-            }
             if let Some(ref filter_expr) = options.filter {
                 if !filter::evaluate(filter_expr, vec_id, &self.metadata) {
                     continue;
@@ -3472,89 +3450,6 @@ mod tests {
         assert!(results.iter().all(|r| r.id != 2));
 
         store.close().unwrap();
-    }
-
-    #[test]
-    fn membership_filter_restricts_query_on_a_non_cow_store() {
-        // `rvf filter --include-ids` writes a membership filter over a store's
-        // own vectors. Nothing consulted it on the local scan path, so queries
-        // returned every id regardless of the filter.
-        let dir = TempDir::new().unwrap();
-        let path = dir.path().join("membership_local.rvf");
-        let options = RvfOptions {
-            dimension: 4,
-            metric: DistanceMetric::L2,
-            ..Default::default()
-        };
-        let mut store = RvfStore::create(&path, options).unwrap();
-
-        let v1 = vec![1.0, 0.0, 0.0, 0.0];
-        let v2 = vec![0.0, 1.0, 0.0, 0.0];
-        let v3 = vec![0.0, 0.0, 1.0, 0.0];
-        let vecs: Vec<&[f32]> = vec![&v1, &v2, &v3];
-        store.ingest_batch(&vecs, &[1, 2, 3], None).unwrap();
-
-        let q = vec![1.0, 0.0, 0.0, 0.0];
-        let before = store.query(&q, 10, &QueryOptions::default()).unwrap();
-        assert_eq!(before.len(), 3, "unfiltered query should see every vector");
-
-        // Include {1, 3}: id 2 must disappear.
-        let mut filter = MembershipFilter::new_include(4);
-        filter.add(1);
-        filter.add(3);
-        store.append_membership_filter(filter).unwrap();
-
-        let after = store.query(&q, 10, &QueryOptions::default()).unwrap();
-        let ids: Vec<u64> = after.iter().map(|r| r.id).collect();
-        assert_eq!(ids, vec![1, 3], "include filter must hide id 2, got {ids:?}");
-
-        // Exclude mode is the complement, and `contains` already encodes that.
-        let mut excl = MembershipFilter::new_exclude(4);
-        excl.add(1);
-        store.append_membership_filter(excl).unwrap();
-        let after = store.query(&q, 10, &QueryOptions::default()).unwrap();
-        let ids: Vec<u64> = after.iter().map(|r| r.id).collect();
-        assert_eq!(ids, vec![2, 3], "exclude filter must hide id 1, got {ids:?}");
-    }
-
-    #[test]
-    fn membership_filter_does_not_hide_a_cow_child_own_writes() {
-        // Guard for the gate in query_exact: branch() sizes the child's include
-        // filter to the parent's vector_count and insert() never registers
-        // child-local ids, so applying the filter to a child's own slab would
-        // erase its writes. The filter must keep meaning "which inherited
-        // parent ids are visible" for a COW child.
-        let dir = TempDir::new().unwrap();
-        let parent_path = dir.path().join("parent.rvf");
-        let child_path = dir.path().join("child.rvf");
-        let options = RvfOptions {
-            dimension: 4,
-            metric: DistanceMetric::L2,
-            ..Default::default()
-        };
-
-        let mut parent = RvfStore::create(&parent_path, options).unwrap();
-        let p1 = vec![1.0, 0.0, 0.0, 0.0];
-        let p2 = vec![0.0, 1.0, 0.0, 0.0];
-        let pvecs: Vec<&[f32]> = vec![&p1, &p2];
-        parent.ingest_batch(&pvecs, &[1, 2], None).unwrap();
-        parent.close().unwrap();
-
-        let parent = RvfStore::open_readonly(&parent_path).unwrap();
-        let mut child = parent.branch(&child_path).unwrap();
-
-        // A child-local write whose id is outside the parent-sized filter.
-        let c9 = vec![0.0, 0.0, 0.0, 1.0];
-        let cvecs: Vec<&[f32]> = vec![&c9];
-        child.ingest_batch(&cvecs, &[9], None).unwrap();
-
-        let q = vec![0.0, 0.0, 0.0, 1.0];
-        let res = child.query(&q, 10, &QueryOptions::default()).unwrap();
-        let ids: Vec<u64> = res.iter().map(|r| r.id).collect();
-        assert!(
-            ids.contains(&9),
-            "COW child must still see its own write, got {ids:?}"
-        );
     }
 
     #[test]
