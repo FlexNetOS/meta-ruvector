@@ -33,26 +33,31 @@ repo root does **not** cover it. Any rvf change needs its own
 invocation from `crates/rvf`, otherwise a broken rvf compiles "clean".
 
 ```bash
-cd crates/rvf && rtk proxy -- env PKG_CONFIG_PATH="$PKG_CONFIG_PATH" cargo build -p rvf-cli
-RVF=/run/user/1001/yazelix/volatile/cargo-target/debug/rvf
+cd crates/rvf
+RVF=/home/flexnetos/.nix-profile/bin/rvf
+rtk stat "$RVF"
 ```
+
+The real CLI surface is unavailable until Yazelix packages and pins this binary.
+Use `rtk cargo test` for source validation; never fall back to a workspace target
+binary as a runtime frontdoor.
 
 ## Drive rvf
 
 ```bash
-W=$(mktemp -d); cd $W
-$RVF create parent.rvf --dimension 4
-cat > v.json <<'JSON'
+W=$(rtk mktemp -d); cd $W
+rtk proxy -- "$RVF" create parent.rvf --dimension 4
+rtk proxy -- tee v.json >/dev/null <<'JSON'
 [{"id":1,"vector":[1,0,0,0]},{"id":2,"vector":[0,1,0,0]},
  {"id":3,"vector":[0,0,1,0]},{"id":4,"vector":[0.9,0.1,0,0]}]
 JSON
-$RVF ingest parent.rvf --input v.json
-$RVF status parent.rvf
-$RVF derive parent.rvf child.rvf        # CoW branch
-$RVF inspect child.rvf                  # lineage: parent id, depth, is_root
-$RVF filter parent.rvf --include-ids 1,2   # writes a Membership segment
-$RVF inspect parent.rvf                 # segment list should now show Membership
-$RVF query parent.rvf --vector "1,0,0,0" -k 3
+rtk proxy -- "$RVF" ingest parent.rvf --input v.json
+rtk proxy -- "$RVF" status parent.rvf
+rtk proxy -- "$RVF" derive parent.rvf child.rvf
+rtk proxy -- "$RVF" inspect child.rvf
+rtk proxy -- "$RVF" filter parent.rvf --include-ids 1,2
+rtk proxy -- "$RVF" inspect parent.rvf
+rtk proxy -- "$RVF" query parent.rvf --vector "1,0,0,0" -k 3
 ```
 
 Use `--metric ip` on `create` to exercise the inner-product path.
@@ -96,12 +101,12 @@ against belongs on a `branch`, i.e. `filter --output <child>`.
 
 ```bash
 cd /home/flexnetos/meta/src/meta-ruvector
-rtk proxy -- env PKG_CONFIG_PATH="$PKG_CONFIG_PATH" cargo build -p ruvector-cli
-RV=/run/user/1001/yazelix/volatile/cargo-target/debug/ruvector
-$RV create --dimensions 4 --path core.db
-$RV insert --db core.db --input v.json    # --input, not --file
-$RV search --db core.db --query "1,0,0,0" -k 3
-$RV info --db core.db
+RV=/home/flexnetos/.nix-profile/bin/ruvector
+rtk stat "$RV"
+rtk proxy -- "$RV" create --dimensions 4 --path core.db
+rtk proxy -- "$RV" insert --db core.db --input v.json
+rtk proxy -- "$RV" search --db core.db --query "1,0,0,0" -k 3
+rtk proxy -- "$RV" info --db core.db
 ```
 
 For cosine, an identical vector scores 0.0, a near-parallel one ~0.006,
